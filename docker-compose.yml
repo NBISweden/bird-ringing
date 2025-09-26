@@ -8,8 +8,6 @@ services:
       PGDATA: /var/lib/postgresql/data/17/docker
       POSTGRES_PASSWORD_FILE: /run/secrets/db-root-pass
       DB_ENV_FILE: /run/secrets/db-env
-    ports:
-      - 127.0.0.1:5432:5432
     volumes:
       - database-vol:/var/lib/postgresql/data
       - ./initdb.d:/docker-entrypoint-initdb.d:ro
