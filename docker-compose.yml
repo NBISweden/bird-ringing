@@ -3,13 +3,12 @@ name: bird-ringing
 services:
 
   database:
-    image: postgres:17-alpine
+    image: postgres:18-alpine
     environment:
-      PGDATA: /var/lib/postgresql/data/17/docker
       POSTGRES_PASSWORD_FILE: /run/secrets/db-root-pass
       DB_ENV_FILE: /run/secrets/db-env
     volumes:
-      - database-vol:/var/lib/postgresql/data
+      - database-vol:/var/lib/postgresql
       - ./initdb.d:/docker-entrypoint-initdb.d:ro
     secrets:
       - db-root-pass
