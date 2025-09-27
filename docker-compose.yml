@@ -2,7 +2,7 @@ name: bird-ringing
 
 services:
 
-  database:
+  database-init:
     image: postgres:18-alpine
     environment:
       POSTGRES_PASSWORD_FILE: /run/secrets/db-root-pass
@@ -13,12 +13,22 @@ services:
     secrets:
       - db-root-pass
       - db-env
+    command: ["docker-ensure-initdb.sh"]
+    restart: "no"
+
+  database:
+    image: postgres:18-alpine
+    volumes:
+      - database-vol:/var/lib/postgresql
     healthcheck:
       test: ["CMD", "pg_isready", "-U", "postgres"]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 10s
+    depends_on:
+      database-init:
+        condition: service_completed_successfully
 
 volumes:
   database-vol:
