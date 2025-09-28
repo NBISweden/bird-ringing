@@ -1,52 +1,58 @@
 # The Bird Ringing Project
 
-## Initial database setup
+## Database management
 
-### Secrets
+The database used by this project is a PostgreSQL database running in a
+Docker container called `database`. The name of the database in the
+container is `ringdb`. Apart from the database superuser `postgres`,
+there are two other users that differ in their access rights:
 
-Secrets are stored in the `secrets` directory at the root of the
-project. The following files are required and must be created before
-attempting to set up the database.
+- `user_ro` with read-only access to the database, and
+- `user_rw` with both read and write access to the database.
 
-Text files that contain only the secret value:
+These users are intended to be used by applications connecting to the
+database.
 
-- `secrets/db-root-pass.txt` - The password for the PostgreSQL superuser
+### Passwords
+
+Passwords used for accessing the database are stored in separate files
+in the `secrets` directory at the root of the project. The following
+files are required and must be created before attempting to set up the
+initial database.
+
+The files should only contain the secret values themselves.
+
+- `secrets/db-pass.txt` - The password for the PostgreSQL superuser
   `postgres`.
 
-The superuser password is only ever used during the initial database
-setup, and when performing manual maintenance on the database server.
+- `secrets/db-pass-ro.txt` - The password for the PostgreSQL user
+  `user_ro` with read-only access to the database.
 
-Text files that contain environment variable-like assignments:
-
-- `secrets/database.env` - The environment variables for the application
-  database connection. It should contain assignments for the following
-  variables:
-
-  - `DB_NAME` - The name of the database.
-  - `DB_USER_RO` - The username for the database's read-only user.
-  - `DB_PASS_RO` - The password for the database's read-only user.
-  - `DB_USER_RW` - The username for the database's read-write user.
-  - `DB_PASS_RW` - The password for the database's read-write user.
-
-There is a template for the `database.env` file at
-`secrets/database.env.dist`, while the `db-root-pass.txt` file must be
-created from scratch.
+- `secrets/db-pass-rw.txt` - The password for the PostgreSQL user
+  `user_rw` with both read and write access to the database.
 
 ### Database initialisation
 
-The database is initialised if the `database` service is started and the
-database does not already exist. The database does not exist if the
-Docker volume `database-vol` was removed with, e.g.,
-`docker compose down -v`.
+If the `database-vol` Docker volume does not exist, the database is
+initialised when the servics are started with `docker compose up`.
 
-If a file called `initdb.d/database.dump` exists, it is restored into
-the new database. Otherwise, an empty database is created.
+### Database backup
 
-A database dump can be created from a running database container with:
+A backup of the database can be created with the following command while
+the `database` container is running:
 
 ``` sh
-docker compose exec database pg_dump --format=custom -U postgres {DB_NAME} > initdb.d/database.dump
+docker compose exec database pg_dump --format=custom -U postgres ringdb >initdb.d/database.dump
 ```
 
-... where `{DB_NAME}` is replaced with the name of the database as
-defined in `secrets/database.env`.
+### Restoring a database from a backup
+
+A database dump file called `initdb.d/database.dump` will be restored
+automatically when the services are started with `docker compose up` if
+the `database-vol` Docker volume does not exist.
+
+The Docker volume can be removed with the following command:
+
+``` sh
+docker compose down -v
+```

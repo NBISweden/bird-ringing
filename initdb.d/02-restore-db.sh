@@ -8,13 +8,11 @@
 
 set -u
 
-. "$DB_ENV_FILE" || exit
-
 db_dump_file="$(dirname "$0")/database.dump"
 if [ -s "$db_dump_file" ]; then
 	printf 'Restoring database from dump file: %s\n' "$db_dump_file"
 	pg_restore \
 		--username "$POSTGRES_USER" \
-		--dbname "$DB_NAME" \
+		--dbname "$POSTGRES_DB" \
 		"$db_dump_file"
 fi

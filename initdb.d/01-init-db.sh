@@ -1,36 +1,39 @@
 #!/bin/sh -
 
-# This script initializes a PostgreSQL database with specific users and
-# permissions.
+# This script creates two database users with different privileges:
+# - A read-only user ("user_ro") that can only perform SELECT queries.
+# - A read-write user ("user_rw") that can perform all operations including
+#   SELECT, INSERT, UPDATE, DELETE, and schema modifications.
 
 set -u
 
-. "$DB_ENV_FILE" || exit
+IFS= read -r db_pass_ro </run/secrets/db-pass-ro || exit
+IFS= read -r db_pass_rw </run/secrets/db-pass-rw || exit
+
+user_ro="user_ro"
+user_rw="user_rw"
 
 psql -v ON_ERROR_STOP=1 \
 	--username "$POSTGRES_USER" \
 	--dbname "$POSTGRES_DB" <<-SQL
-	CREATE DATABASE $DB_NAME;
-
-	\c $DB_NAME
 
 	-- Roles
-	CREATE USER $DB_USER_RW WITH PASSWORD '$DB_PASS_RW';
-	CREATE USER $DB_USER_RO WITH PASSWORD '$DB_PASS_RO';
+	CREATE USER $user_ro WITH PASSWORD '$db_pass_ro';
+	CREATE USER $user_rw WITH PASSWORD '$db_pass_rw';
 
 	-- Basic connect
-	GRANT CONNECT ON DATABASE $DB_NAME TO $DB_USER_RW, $DB_USER_RO;
+	GRANT CONNECT ON DATABASE $POSTGRES_DB TO $user_ro, $user_rw;
 
 	-- RW: full control over public schema
-	GRANT USAGE, CREATE ON SCHEMA public TO $DB_USER_RW;
-	ALTER DEFAULT PRIVILEGES FOR ROLE $DB_USER_RW IN SCHEMA public
-		GRANT ALL PRIVILEGES ON TABLES TO $DB_USER_RW;
-	ALTER DEFAULT PRIVILEGES FOR ROLE $DB_USER_RW IN SCHEMA public
-		GRANT ALL PRIVILEGES ON SEQUENCES TO $DB_USER_RW;
+	GRANT USAGE, CREATE ON SCHEMA public TO $user_rw;
+	ALTER DEFAULT PRIVILEGES FOR ROLE $user_rw IN SCHEMA public
+		GRANT ALL PRIVILEGES ON TABLES TO $user_rw;
+	ALTER DEFAULT PRIVILEGES FOR ROLE $user_rw IN SCHEMA public
+		GRANT ALL PRIVILEGES ON SEQUENCES TO $user_rw;
 
 	-- RO: strictly SELECT
-	GRANT USAGE ON SCHEMA public TO $DB_USER_RO;
-	GRANT SELECT ON ALL TABLES IN SCHEMA public TO $DB_USER_RO;
-	ALTER DEFAULT PRIVILEGES FOR ROLE $DB_USER_RO IN SCHEMA public
-		GRANT SELECT ON TABLES TO $DB_USER_RO;
+	GRANT USAGE ON SCHEMA public TO $user_ro;
+	GRANT SELECT ON ALL TABLES IN SCHEMA public TO $user_ro;
+	ALTER DEFAULT PRIVILEGES FOR ROLE $user_ro IN SCHEMA public
+		GRANT SELECT ON TABLES TO $user_ro;
 SQL
