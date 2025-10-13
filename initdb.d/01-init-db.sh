@@ -1,39 +1,29 @@
 #!/bin/sh -
 
-# This script creates two database users with different privileges:
-# - A read-only user ("user_ro") that can only perform SELECT queries.
-# - A read-write user ("user_rw") that can perform all operations including
-#   SELECT, INSERT, UPDATE, DELETE, and schema modifications.
+# This script is run by the official postgres image to initialize
+# the database on first run. It creates a database user and grants
+# privileges to the default database.
 
 set -u
 
-IFS= read -r db_pass_ro </run/secrets/db-pass-ro || exit
-IFS= read -r db_pass_rw </run/secrets/db-pass-rw || exit
+IFS= read -r db_pass </run/secrets/db-user-pass || exit
 
-user_ro="user_ro"
-user_rw="user_rw"
+db_user=appuser
 
 psql -v ON_ERROR_STOP=1 \
 	--username "$POSTGRES_USER" \
 	--dbname "$POSTGRES_DB" <<-SQL
 
 	-- Roles
-	CREATE USER $user_ro WITH PASSWORD '$db_pass_ro';
-	CREATE USER $user_rw WITH PASSWORD '$db_pass_rw';
+	CREATE USER $db_user WITH PASSWORD '$db_pass';
 
 	-- Basic connect
-	GRANT CONNECT ON DATABASE $POSTGRES_DB TO $user_ro, $user_rw;
+	GRANT CONNECT ON DATABASE $POSTGRES_DB TO $db_user;
 
-	-- RW: full control over public schema
-	GRANT USAGE, CREATE ON SCHEMA public TO $user_rw;
-	ALTER DEFAULT PRIVILEGES FOR ROLE $user_rw IN SCHEMA public
-		GRANT ALL PRIVILEGES ON TABLES TO $user_rw;
-	ALTER DEFAULT PRIVILEGES FOR ROLE $user_rw IN SCHEMA public
-		GRANT ALL PRIVILEGES ON SEQUENCES TO $user_rw;
-
-	-- RO: strictly SELECT
-	GRANT USAGE ON SCHEMA public TO $user_ro;
-	GRANT SELECT ON ALL TABLES IN SCHEMA public TO $user_ro;
-	ALTER DEFAULT PRIVILEGES FOR ROLE $user_ro IN SCHEMA public
-		GRANT SELECT ON TABLES TO $user_ro;
+	-- Schema privileges
+	GRANT USAGE, CREATE ON SCHEMA public TO $db_user;
+	ALTER DEFAULT PRIVILEGES FOR ROLE $db_user IN SCHEMA public
+		GRANT ALL PRIVILEGES ON TABLES TO $db_user;
+	ALTER DEFAULT PRIVILEGES FOR ROLE $db_user IN SCHEMA public
+		GRANT ALL PRIVILEGES ON SEQUENCES TO $db_user;
 SQL

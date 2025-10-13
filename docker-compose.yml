@@ -5,15 +5,14 @@ services:
   database-init:
     image: postgres:18-alpine
     environment:
-      POSTGRES_PASSWORD_FILE: /run/secrets/db-pass
+      POSTGRES_PASSWORD_FILE: /run/secrets/db-admin-pass
       POSTGRES_DB: ringdb
     volumes:
       - database-vol:/var/lib/postgresql
       - ./initdb.d:/docker-entrypoint-initdb.d:ro
     secrets:
-      - db-pass
-      - db-pass-ro
-      - db-pass-rw
+      - db-admin-pass
+      - db-user-pass
     command: ["docker-ensure-initdb.sh"]
     restart: "no"
 
@@ -35,9 +34,7 @@ volumes:
   database-vol:
 
 secrets:
-  db-pass:
-    file: ./secrets/db-pass.txt
-  db-pass-ro:
-    file: ./secrets/db-pass-ro.txt
-  db-pass-rw:
-    file: ./secrets/db-pass-rw.txt
+  db-admin-pass:
+    file: ./secrets/db-admin-pass.txt
+  db-user-pass:
+    file: ./secrets/db-user-pass.txt
