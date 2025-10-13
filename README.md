@@ -4,16 +4,10 @@
 
 The database used by this project is a PostgreSQL database running in a
 Docker container called `database`. The name of the database in the
-container is `ringdb`. Apart from the database superuser `postgres`,
-there are two other users that differ in their access rights:
+container is `ringdb`. Apart from the database superuser, `postgres`,
+there is the application user, `appuser`.
 
-- `user_ro` with read-only access to the database, and
-- `user_rw` with both read and write access to the database.
-
-These users are intended to be used by applications connecting to the
-database.
-
-### Passwords
+### Database passwords
 
 Passwords used for accessing the database are stored in separate files
 in the `secrets` directory at the root of the project. The following
@@ -22,14 +16,11 @@ initial database.
 
 The files should only contain the secret values themselves.
 
-- `secrets/db-pass.txt` - The password for the PostgreSQL superuser
-  `postgres`.
+- `secrets/db-admin-pass.txt` - The password for the PostgreSQL
+  superuser `postgres`.
 
-- `secrets/db-pass-ro.txt` - The password for the PostgreSQL user
-  `user_ro` with read-only access to the database.
-
-- `secrets/db-pass-rw.txt` - The password for the PostgreSQL user
-  `user_rw` with both read and write access to the database.
+- `secrets/db-user-pass.txt` - The password for the PostgreSQL
+  application user `appuser`.
 
 ### Database initialisation
 
