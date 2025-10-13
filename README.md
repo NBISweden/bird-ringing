@@ -63,7 +63,7 @@ The files should only contain the secret values themselves.
 ### Database initialisation
 
 If the `database-vol` Docker volume does not exist, the database is
-initialised when the servics are started with `docker compose up`.
+initialised when the services are started with `docker compose up`.
 
 ### Database backup
 
