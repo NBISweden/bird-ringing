@@ -12,18 +12,21 @@ db_user=appuser
 
 psql -v ON_ERROR_STOP=1 \
 	--username "$POSTGRES_USER" \
-	--dbname "$POSTGRES_DB" <<-SQL
+	--dbname "$POSTGRES_DB" \
+	-v db="$POSTGRES_DB" \
+	-v user="$db_user" \
+	-v pass="$db_pass" <<-'SQL'
 
 	-- Roles
-	CREATE USER $db_user WITH PASSWORD '$db_pass';
+	CREATE USER :user WITH PASSWORD :'pass';
 
 	-- Basic connect
-	GRANT CONNECT ON DATABASE $POSTGRES_DB TO $db_user;
+	GRANT CONNECT ON DATABASE :db TO :user;
 
 	-- Schema privileges
-	GRANT USAGE, CREATE ON SCHEMA public TO $db_user;
-	ALTER DEFAULT PRIVILEGES FOR ROLE $db_user IN SCHEMA public
-		GRANT ALL PRIVILEGES ON TABLES TO $db_user;
-	ALTER DEFAULT PRIVILEGES FOR ROLE $db_user IN SCHEMA public
-		GRANT ALL PRIVILEGES ON SEQUENCES TO $db_user;
+	GRANT USAGE, CREATE ON SCHEMA public TO :user;
+	ALTER DEFAULT PRIVILEGES FOR ROLE :user IN SCHEMA public
+		GRANT ALL PRIVILEGES ON TABLES TO :user;
+	ALTER DEFAULT PRIVILEGES FOR ROLE :user IN SCHEMA public
+		GRANT ALL PRIVILEGES ON SEQUENCES TO :user;
 SQL
