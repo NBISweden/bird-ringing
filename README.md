@@ -1,5 +1,43 @@
 # The Bird Ringing Project
 
+## Development and production environments
+
+The `docker-compose.yml` file defines the production environment, while
+the `docker-compose.dev.yml` contains the overrides for the development
+environment.
+
+Thus, to start the production environment, use:
+
+``` sh
+docker compose up
+```
+
+To start the development environment, use:
+
+``` sh
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+```
+
+There is also a convenience script, `docker-compose.sh`, that can be
+used as a wrapper for `docker compose` commands addressing the
+development environment:
+
+``` sh
+./docker-compose.sh {up|down|...}
+```
+
+### Differences between development and production environments
+
+The main differences between the two environments are:
+
+- The database is exposed to the host on port 5432 in the development
+  environment for easier access, while it is not exposed in the
+  production environment.
+
+That is the only difference at the moment. In the future, there may be
+other differences, such as mounting source code into the application
+container in the development environment.
+
 ## Database management
 
 The database used by this project is a PostgreSQL database running in a
