@@ -8,7 +8,13 @@ set -u
 
 # Read the first line from the file with the application user's
 # password.
-IFS= read -r db_pass <"$DB_USER_PASSWORD_FILE" || exit
+IFS= read -r db_pass <"$DB_USER_PASSWORD_FILE"
+
+# Ensure the password is not empty.
+test -n "$db_pass" || {
+	echo 'ERROR: Application user password is empty.' >&2
+	exit 1
+}
 
 db_user=appuser
 
