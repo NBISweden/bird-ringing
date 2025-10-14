@@ -6,7 +6,9 @@
 
 set -u
 
-IFS= read -r db_pass </run/secrets/db-user-pass || exit
+# Read the first line from the file with the application user's
+# password.
+IFS= read -r db_pass <"$DB_USER_PASSWORD_FILE" || exit
 
 db_user=appuser
 

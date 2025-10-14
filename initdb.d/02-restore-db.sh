@@ -3,8 +3,8 @@
 # This script will restore the database from a dump file if a file named
 # "database.dump" is found in the same directory as this script.
 #
-# It is assumed that the application username have not changed since
-# the dump was created.
+# It is assumed that the credentials for the admin and application users
+# are unchanged from when the dump was created.
 
 set -u
 
