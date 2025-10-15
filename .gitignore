@@ -1,0 +1,6 @@
+# IDEs and editors
+.idea
+.vscode
+.env
+.env-django
+.temp_branch
