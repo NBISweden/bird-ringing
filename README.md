@@ -26,17 +26,25 @@ development environment:
 ./docker-compose.sh {up|down|...}
 ```
 
+Regardless of the environment, once started, the website will be
+available at `http://localhost:3210`.
+
 ### Differences between development and production environments
 
 The main differences between the two environments are:
 
-- The database is exposed to the host on port 5432 in the development
-  environment for easier access, while it is not exposed in the
-  production environment.
+- The `frontend` directory is bind-mounted into the "frontend" service
+  container in the development environment, while in the production
+  environment, the source code is copied into the container at build
+  time.
 
-That is the only difference at the moment. In the future, there may be
-other differences, such as mounting source code into the application
-container in the development environment.
+- The "frontend" service in the development environment runs the
+  development server with hot reloading, while in the production
+  environment, it runs a production web server.
+
+  - The development server is served by `npm run dev`.
+  - The production server built as an exported static site and served by
+    a Caddy web server.
 
 ## Database management
 
