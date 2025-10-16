@@ -1,7 +1,6 @@
 name: bird-ringing
 
 services:
-
   database-init:
     image: postgres:18-alpine
     environment:
@@ -30,6 +29,17 @@ services:
     depends_on:
       database-init:
         condition: service_completed_successfully
+
+  frontend:
+    build:
+      context: ./frontend
+    command: npm run start
+    ports:
+      - "3210:3000"
+    working_dir: /app
+    volumes:
+      - ./frontend:/app # bind-mount source code
+      - /app/node_modules # separate volume for node_modules inside the container
 
 volumes:
   database-vol:
