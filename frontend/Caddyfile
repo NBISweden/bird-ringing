@@ -1,0 +1,12 @@
+# Configuration for Caddy, what serves the exported static site.
+# This is used when serving the frontend in production mode.
+
+:{$CADDY_PORT}
+
+root * /usr/share/caddy
+file_server
+
+# Health endpoint
+handle /api/health {
+	respond "{\"status\":\"ok\"}" 200
+}
