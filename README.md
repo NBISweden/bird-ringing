@@ -9,25 +9,25 @@ environment.
 Thus, to start the production environment, use:
 
 ``` sh
-docker compose up
+docker compose up --build
 ```
 
-To start the development environment, use:
+To start the development environment, use the convenience script
+`docker-compose.sh`:
 
 ``` sh
-docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+./docker-compose.sh up --build
 ```
 
-There is also a convenience script, `docker-compose.sh`, that can be
-used as a wrapper for `docker compose` commands addressing the
-development environment:
+This script, `docker-compose.sh`, should be used as a wrapper for
+`docker compose` commands addressing the development environment:
 
 ``` sh
 ./docker-compose.sh {up|down|...}
 ```
 
 Regardless of the environment, once started, the website will be
-available at `http://localhost:3210`.
+available at `http://localhost:3210/`.
 
 ### Differences between development and production environments
 
