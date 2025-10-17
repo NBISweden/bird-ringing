@@ -37,7 +37,7 @@ ENV NODE_ENV=production \
 WORKDIR /app
 
 ### Copy only what's needed for "npm ci".
-COPY --chown="$UID" package*.json ./
+COPY --chown="$UID:$GID" package*.json ./
 RUN --mount=type=cache,id=npm-cache,uid="$UID",target=/var/cache/npm \
 	npm --cache=/var/cache/npm ci
 
@@ -45,8 +45,8 @@ RUN --mount=type=cache,id=npm-cache,uid="$UID",target=/var/cache/npm \
 ### "node_modules" and potentially a lot of other files and directories
 ### that we don't need.  Instead, we pick the things that are actually
 ### needed.
-COPY --chown="$UID" ./tsconfig.json next*.ts ./
-COPY --chown="$UID" ./src ./src
+COPY --chown="$UID:$GID" ./tsconfig.json next*.ts ./
+COPY --chown="$UID:$GID" ./src ./src
 
 ### Export static site into /app/out
 RUN --mount=type=cache,id=npm-cache,uid="$UID",target=/var/cache/npm \
