@@ -29,6 +29,28 @@ This script, `docker-compose.sh`, should be used as a wrapper for
 Regardless of the environment, once started, the website will be
 available at `http://localhost:3210/`.
 
+### Switching between development and production deployments
+
+When switching between development and production deployments, e.g.,
+when testing, it is important to bring down the currently running
+environment before rebuilding and starting the other environment.
+
+For example, to switch from a running development environment to a
+production environment, use the following commands:
+
+``` sh
+./docker-compose.sh down    # Bring down the development environment
+docker compose up --build   # Build and start the production environment
+```
+
+To switch from a running production environment to a development
+environment, use the following commands:
+
+``` sh
+docker compose down             # Bring down the production environment
+./docker-compose.sh up --build  # Build and start the development environment
+```
+
 ### Differences between development and production environments
 
 The main differences between the two environments are:
