@@ -20,7 +20,7 @@ ENV NODE_ENV=development \
 
 WORKDIR /app
 
-CMD ["sh", "-c", "npm ci && npm run dev"]
+CMD ["sh", "-x", "-c", "npm ci --loglevel=info && npm run dev"]
 
 ## Production build stage
 FROM base AS prod-build
