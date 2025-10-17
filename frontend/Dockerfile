@@ -54,14 +54,8 @@ RUN --mount=type=cache,id=npm-cache,uid="$UID",target=/var/cache/npm \
 	npm --cache=/var/cache/npm run build
 
 ## Production stage
-FROM caddy:2-alpine AS prod
+FROM busybox:stable-musl AS prod
 
-ARG UID=1000
-ARG GID=1000
+COPY --from=prod-build /app/out /vol
 
-USER "$UID:$GID"
-
-ENV CADDY_PORT=3000
-
-COPY --from=prod-build /app/out /usr/share/caddy
-COPY Caddyfile /etc/caddy/
+CMD ["test", "-d", "/vol/_next"]
