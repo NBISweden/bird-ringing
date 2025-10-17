@@ -1,6 +1,7 @@
 name: bird-ringing
 
 services:
+
   database-init:
     image: postgres:18-alpine
     environment:
@@ -33,16 +34,35 @@ services:
   frontend:
     build:
       context: ./frontend
-    command: npm run start
-    ports:
-      - "3210:3000"
-    working_dir: /app
+      target: prod
     volumes:
-      - ./frontend:/app # bind-mount source code
-      - /app/node_modules # separate volume for node_modules inside the container
+      - frontend-vol:/vol
+    depends_on:
+      database:
+        condition: service_healthy
+
+  proxy:
+    image: caddy:2-alpine
+    ports:
+      - 127.0.0.1:3210:80
+    volumes:
+      - ./caddy:/etc/caddy:ro
+      - frontend-vol:/vol:ro
+      - proxy-vol:/data
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "--timeout=5", "http://proxy/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    depends_on:
+      frontend:
+        condition: service_completed_successfully
 
 volumes:
   database-vol:
+  frontend-vol:
+  proxy-vol:
 
 secrets:
   db-admin-pass:

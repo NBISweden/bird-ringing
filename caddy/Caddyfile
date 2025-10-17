@@ -1,0 +1,22 @@
+# Serve static export in production, proxy to development server in
+# development.
+
+:80
+
+# Health endpoint
+handle /api/health {
+	respond "{\"status\":\"ok\"}" 200
+}
+
+@dev {
+	expression {env.SERVICE_MODE} == "development"
+}
+
+handle @dev {
+	reverse_proxy frontend:3000
+}
+
+handle {
+	root * /vol
+	file_server
+}

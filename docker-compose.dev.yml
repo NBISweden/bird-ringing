@@ -1,11 +1,24 @@
 services:
-  database:
-    ports:
-      # Expose the database port to the host machine.
-      - 127.0.0.1:5432:5432
 
   frontend:
-    command: npm run dev
+    build:
+      context: ./frontend
+      target: dev
+      args:
+        UID: "${UID:-1000}"
+        GID: "${GID:-1000}"
+    volumes:
+      - ./frontend:/app
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://frontend:3000"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  proxy:
     environment:
-      # Can give a faster dev experience for Next 15 (App Router)
-      TURBOPACK: "1"
+      SERVICE_MODE: development
+    depends_on:
+      frontend:
+        condition: service_healthy
