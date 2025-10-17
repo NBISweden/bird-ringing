@@ -9,3 +9,16 @@ services:
         GID: "${GID:-1000}"
     volumes:
       - ./frontend:/app
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://frontend:3000"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  proxy:
+    environment:
+      SERVICE_MODE: development
+    depends_on:
+      frontend:
+        condition: service_healthy

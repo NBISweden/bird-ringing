@@ -35,20 +35,34 @@ services:
     build:
       context: ./frontend
       target: prod
+    volumes:
+      - frontend-vol:/vol
+    depends_on:
+      database:
+        condition: service_healthy
+
+  proxy:
+    image: caddy:2-alpine
     ports:
-      - 127.0.0.1:3210:3000
+      - 127.0.0.1:3210:80
+    volumes:
+      - ./caddy:/etc/caddy:ro
+      - frontend-vol:/vol:ro
+      - proxy-vol:/data
     healthcheck:
-      test: ["CMD", "wget", "--spider", "--quiet", "http://frontend:3000/api/health"]
+      test: ["CMD", "wget", "--spider", "--timeout=5", "http://proxy/api/health"]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 10s
     depends_on:
-      database:
-        condition: service_healthy
+      frontend:
+        condition: service_completed_successfully
 
 volumes:
   database-vol:
+  frontend-vol:
+  proxy-vol:
 
 secrets:
   db-admin-pass:
