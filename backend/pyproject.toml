@@ -1,0 +1,7 @@
+[project]
+name = "bird_ringing"
+version = "0.1.0"
+description = "The bird ringing project"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = []
