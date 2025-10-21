@@ -18,15 +18,25 @@ source = { virtual = "." }
 dependencies = [
     { name = "django" },
     { name = "gunicorn" },
+]
+
+[package.dev-dependencies]
+dev = [
     { name = "psycopg" },
+]
+prod = [
+    { name = "psycopg", extra = ["c"] },
 ]
 
 [package.metadata]
 requires-dist = [
     { name = "django", specifier = ">=5.2.7" },
     { name = "gunicorn", specifier = ">=23.0.0" },
-    { name = "psycopg", specifier = ">=3.2.11" },
 ]
+
+[package.metadata.requires-dev]
+dev = [{ name = "psycopg", specifier = ">=3.2.11" }]
+prod = [{ name = "psycopg", extras = ["c"], specifier = ">=3.2.11" }]
 
 [[package]]
 name = "django"
@@ -75,6 +85,17 @@ sdist = { url = "https://files.pythonhosted.org/packages/27/02/9fdfc018c026df2bc
 wheels = [
     { url = "https://files.pythonhosted.org/packages/aa/1b/96ee90ed0007d64936d9bd1bb3108d0af3cf762b4f11dbd73359f0687c3d/psycopg-3.2.11-py3-none-any.whl", hash = "sha256:217231b2b6b72fba88281b94241b2f16043ee67f81def47c52a01b72ff0c086a", size = 206766, upload-time = "2025-10-18T22:43:32.114Z" },
 ]
+
+[package.optional-dependencies]
+c = [
+    { name = "psycopg-c", marker = "implementation_name != 'pypy'" },
+]
+
+[[package]]
+name = "psycopg-c"
+version = "3.2.11"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/4a/64/68900809282759f5c573f17873c65287348cd2a8c8dff3e81377b7b6829e/psycopg_c-3.2.11.tar.gz", hash = "sha256:b3104bcbd62e34cfc736bbdaa4cdcb7e9bfc9a4c0a1f0992cac0f68ea941a450", size = 608046, upload-time = "2025-10-18T22:48:29.646Z" }
 
 [[package]]
 name = "sqlparse"
