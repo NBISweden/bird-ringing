@@ -19,6 +19,9 @@ RUN pip install --no-cache-dir uv
 ## Development stage
 FROM base AS dev
 
+ARG UID=1000
+ARG GID=1000
+
 WORKDIR /app
 
 RUN --mount=type=cache,target=/root/.cache/uv \
@@ -28,24 +31,22 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 
 COPY . /app
 
+# Set directory ownership so that migrations can run
+RUN chown -R "${UID}:${GID}" /app
+
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --locked
-
-RUN uv run python manage.py migrate
 
 # Place executables in the environment at the front of the path
 ENV PATH="/app/.venv/bin:$PATH"
 
-ARG UID=1000
-ARG GID=1000
-
 USER "$UID:$GID"
 
-# Expose Django runserver port
 EXPOSE 8000
 
-# Start Django app
-CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+COPY --chmod=755 entrypoint.sh .
+
+ENTRYPOINT ["./entrypoint.sh", "dev"]
 
 ## Production build stage
 FROM base AS prod-build
@@ -61,8 +62,6 @@ COPY . /app
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --locked --no-dev
 
-RUN uv run python manage.py migrate
-
 ## Production stage
 FROM python:3.12-alpine AS prod
 
@@ -77,9 +76,10 @@ ENV PATH="/app/.venv/bin:$PATH"
 
 USER "$UID:$GID"
 
-WORKDIR /app
-
 EXPOSE 8000
 
-# Start Django app with WSGI layer
-CMD ["gunicorn", "bird_ringing.wsgi", "--bind", "0.0.0.0:8000"]
+WORKDIR /app
+
+COPY --chmod=755 entrypoint.sh .
+
+ENTRYPOINT ["./entrypoint.sh", "prod"]
