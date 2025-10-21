@@ -36,8 +36,8 @@ RUN uv run python manage.py migrate
 # Place executables in the environment at the front of the path
 ENV PATH="/app/.venv/bin:$PATH"
 
-ARG UID=65534
-ARG GID=65534
+ARG UID=1000
+ARG GID=1000
 
 USER "$UID:$GID"
 
@@ -66,9 +66,8 @@ RUN uv run python manage.py migrate
 ## Production stage
 FROM python:3.12-alpine AS prod
 
-# Setup a non-root user
-ARG UID=65534
-ARG GID=65534
+ARG UID=1000
+ARG GID=1000
 
 # Copy the application from the builder
 COPY --from=prod-build --chown="$UID:$GID" /app /app
@@ -76,12 +75,11 @@ COPY --from=prod-build --chown="$UID:$GID" /app /app
 # Place executables in the environment at the front of the path
 ENV PATH="/app/.venv/bin:$PATH"
 
-# Use the non-root user to run our application
 USER "$UID:$GID"
 
-# Use `/app` as the working directory
 WORKDIR /app
 
-# Start Django app with WSGI layer
+EXPOSE 8000
 
-CMD ["gunicorn", "bird_ringing.wsgi"]
+# Start Django app with WSGI layer
+CMD ["gunicorn", "bird_ringing.wsgi", "--bind", "0.0.0.0:8000"]
