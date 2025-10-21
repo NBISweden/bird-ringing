@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 from pathlib import Path
 from os import getenv
+from bird_ringing.helpers import get_secret_from_file
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -78,7 +79,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': getenv('POSTGRES_DB', 'ringdb'),
         'USER': getenv('POSTGRES_USER', 'postgres'),
-        'PASSWORD': getenv('POSTGRES_PASSWORD', 'postgres'),
+        'PASSWORD': get_secret_from_file('POSTGRES_PASSWORD_FILE', default='postgres'),
         'HOST': getenv('POSTGRES_HOST', 'localhost'),
         'PORT': getenv('POSTGRES_PORT', '5432'),
     }
