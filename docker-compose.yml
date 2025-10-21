@@ -59,6 +59,24 @@ services:
       frontend:
         condition: service_completed_successfully
 
+  backend:
+    build:
+      context: ./backend
+      target: prod
+    container_name: backend
+    environment:
+      POSTGRES_DB: ringdb
+      POSTGRES_PASSWORD_FILE: /run/secrets/db-admin-pass
+      POSTGRES_HOST: database
+      POSTGRES_PORT: "5432"
+    depends_on:
+      database:
+        condition: service_healthy
+    ports:
+      - 8080:8000
+    secrets:
+      - db-admin-pass
+
 volumes:
   database-vol:
   frontend-vol:
