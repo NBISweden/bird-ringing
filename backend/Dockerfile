@@ -11,7 +11,7 @@ WORKDIR /app
 
 # Install system dependencies
 RUN apk update && \
-    apk add --no-cache build-base
+    apk add --no-cache postgresql-dev gcc musl-dev
 
 # Install uv via pip
 RUN pip install --no-cache-dir uv
@@ -64,6 +64,8 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 
 ## Production stage
 FROM python:3.12-alpine AS prod
+
+RUN apk update && apk add --no-cache postgresql-libs
 
 ARG UID=1000
 ARG GID=1000
