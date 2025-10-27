@@ -6,24 +6,29 @@ The `docker-compose.yml` file defines the production environment, while
 the `docker-compose.dev.yml` contains the overrides for the development
 environment.
 
-Thus, to start the production environment, use:
+Two convenience scripts are provided for starting the two different
+environments: `compose-prod.sh` for the production environment and
+`compose-dev.sh` for the development environment.
+
+To start and stop the production environment, use:
 
 ``` sh
-docker compose up --build
+./compose-prod.sh up --build
+./compose-prod.sh down
 ```
 
-To start the development environment, use the convenience script
-`docker-compose.sh`:
+To start and stop the development environment, use:
 
 ``` sh
-./docker-compose.sh up --build
+./compose-dev.sh up --build
+./compose-dev.sh down
 ```
 
-This script, `docker-compose.sh`, should be used as a wrapper for
-`docker compose` commands addressing the development environment:
+In general, the scripts can be used with any `docker compose` command,
+for example:
 
 ``` sh
-./docker-compose.sh {up|down|...}
+./compose-dev.sh {up|down|logs|ps|...} [options]
 ```
 
 Regardless of the environment, once started, the website will be
@@ -39,16 +44,16 @@ For example, to switch from a running development environment to a
 production environment, use the following commands:
 
 ``` sh
-./docker-compose.sh down    # Bring down the development environment
-docker compose up --build   # Build and start the production environment
+./compose-dev.sh down           # Bring down the development environment
+./compose-prod.sh up --build    # Build and start the production environment
 ```
 
 To switch from a running production environment to a development
 environment, use the following commands:
 
 ``` sh
-docker compose down             # Bring down the production environment
-./docker-compose.sh up --build  # Build and start the development environment
+./compose-prod.sh down          # Bring down the production environment
+./compose-dev.sh up --build     # Build and start the development environment
 ```
 
 ### Differences between development and production environments
@@ -77,6 +82,15 @@ Docker container called `database`. The name of the database in the
 container is `ringdb`. Apart from the database superuser, `postgres`,
 there is the application user, `appuser`.
 
+Direct access to the database can be obtained by exposing the database
+port for the `database` container in the `docker-compose.yml` file and
+connecting to it directly from the host, or by using the `psql` command
+in the `database` container:
+
+``` sh
+./compose-prod.sh exec database psql -U appuser -d ringdb
+```
+
 ### Database passwords
 
 Passwords used for accessing the database are stored in separate files
@@ -103,7 +117,7 @@ A backup of the database can be created with the following command while
 the `database` container is running:
 
 ``` sh
-docker compose exec database pg_dump --format=custom -U postgres ringdb >initdb.d/database.dump
+./compose-prod.sh exec database pg_dump --format=custom -U postgres ringdb >initdb.d/database.dump
 ```
 
 ### Restoring a database from a backup
@@ -112,8 +126,16 @@ A database dump file called `initdb.d/database.dump` will be restored
 automatically when the services are started with `docker compose up` if
 the `database-vol` Docker volume does not exist.
 
-The Docker volume can be removed with the following command:
+All Docker volumes asseciated with the project can be removed with the
+following command:
 
 ``` sh
-docker compose down -v
+./compose-prod.sh down -v
+```
+
+Or, to only remove the database volume (assuming all services are
+stopped), use:
+
+``` sh
+docker volume rm bird-ringing_database-vol
 ```

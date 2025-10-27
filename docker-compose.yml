@@ -35,6 +35,9 @@ services:
     build:
       context: ./frontend
       target: prod
+      args:
+        UID: "${UID:-1000}"
+        GID: "${GID:-1000}"
     volumes:
       - frontend-vol:/vol
     depends_on:
