@@ -139,3 +139,15 @@ stopped), use:
 ``` sh
 docker volume rm bird-ringing_database-vol
 ```
+
+## Docker build setup (for developers)
+
+### Frontend
+
+- `node:24-alpine`
+  - `base`
+    - `prod-build`
+    - `dev`
+- `busybox:stable-musl`
+  - `prod`
+    - Copies static site from `prod-build` stage
