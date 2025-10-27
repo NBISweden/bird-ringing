@@ -34,6 +34,7 @@ services:
   frontend:
     build:
       context: ./frontend
+      dockerfile: ../Dockerfile.frontend
       target: prod
       args:
         UID: "${UID:-1000}"
