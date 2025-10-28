@@ -1,60 +1,83 @@
-# Multi-stage Dockerfile for Node.js application with development and
-# production stages.
-
-## Base stage
 FROM node:24-alpine AS base
+
+ARG UID=1000
+ARG GID=1000
+
+RUN --mount=type=cache,id=apk-cache,target=/var/cache/apk \
+	apk --cache-dir=/var/cache/apk add \
+		dumb-init
+
+ENV HOME=/app
+ENV XDG_CACHE_HOME="$HOME/.cache"
+
+RUN install -d -o "$UID" -g "$GID" "$HOME"
+
+USER "$UID:$GID"
+
+WORKDIR "$HOME"
+
+ENV npm_config_cache="$XDG_CACHE_HOME/npm" \
+    npm_config_loglevel=info
+ENV NEXT_TELEMETRY_DISABLED=1
+
+ENTRYPOINT ["/usr/bin/dumb-init", "--"]
 
 # ----
 
 ## Production build stage
 FROM base AS prod-build
 
-ARG UID=1000
-ARG GID=1000
-
-USER "$UID:$GID"
-
-ENV NODE_ENV=production \
-    NEXT_TELEMETRY_DISABLED=1 \
-    NEXT_CACHE=/var/cache/next
-
-WORKDIR /app
+ENV NODE_ENV=production
 
 COPY --chown="$UID:$GID" package*.json .
-RUN --mount=type=cache,id=npm-cache,uid="$UID",target=/var/cache/npm \
-	npm --cache=/var/cache/npm ci
+RUN --mount=type=cache,id=npm-cache,uid="$UID",target="$npm_config_cache" \
+	npm ci --omit=dev
 
-COPY --chown="$UID:$GID" ./tsconfig.json next*.ts .
+COPY --chown="$UID:$GID" ./tsconfig.json .
+COPY --chown="$UID:$GID" ./next*.ts .
 COPY --chown="$UID:$GID" ./src ./src
 
+RUN mkdir .next
 ### Export static site into /app/out
-RUN --mount=type=cache,id=npm-cache,uid="$UID",target=/var/cache/npm \
-    --mount=type=cache,id=next-cache,uid="$UID",target=/var/cache/next \
-	npm --cache=/var/cache/npm run build
+RUN --mount=type=cache,id=npm-cache,uid="$UID",target="$npm_config_cache" \
+    --mount=type=cache,id=next-cache,uid="$UID",target=.next/cache \
+	npm run build
 
 # ----
 
 ## Production stage
 FROM busybox:stable-musl AS prod
 
-COPY --from=prod-build /app/out /vol
+ARG UID=1000
+ARG GID=1000
+
+ENV HOME=/app
+
+RUN install -d -o "$UID" -g "$GID" "$HOME"
+
+USER "$UID:$GID"
+
+ENV SERVICE_MODE=production
+
+WORKDIR "$HOME"
+
+VOLUME /vol
+
+COPY --from=prod-build --chown="$UID:$GID" "$HOME/out" /vol
 
 CMD ["test", "-d", "/vol/_next"]
+
+# The frontend container will not hang around to serve static files.
+# This is done by the proxy container.  The static files are in the
+# persistent volume "frontend-vol" mounted at /vol.
 
 # ----
 
 ## Development stage
 FROM base AS dev
 
-ARG UID=1000
-ARG GID=1000
+ENV SERVICE_MODE=development
 
-USER "$UID:$GID"
+ENV NODE_ENV=development
 
-ENV NODE_ENV=development \
-    NEXT_TELEMETRY_DISABLED=1 \
-    HOME=/app
-
-WORKDIR /app
-
-CMD ["sh", "-x", "-c", "npm ci --loglevel=info && npm run dev"]
+CMD ["./docker-entrypoint.sh"]
