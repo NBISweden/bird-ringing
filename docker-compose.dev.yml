@@ -22,3 +22,10 @@ services:
     depends_on:
       frontend:
         condition: service_healthy
+
+  backend:
+    build:
+      target: dev
+    container_name: backend-dev
+    volumes:
+      - ./backend/bird_ringing:/app/bird_ringing
