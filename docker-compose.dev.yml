@@ -28,4 +28,4 @@ services:
       target: dev
     container_name: backend-dev
     volumes:
-      - ./backend/bird_ringing:/app/bird_ringing
+      - ./backend:/app

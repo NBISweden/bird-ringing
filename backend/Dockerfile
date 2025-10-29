@@ -28,21 +28,20 @@ ENV PATH="/app/.local/bin:$PATH"
 ## Development stage
 FROM base AS dev
 
+USER root
+
+ENV UV_PROJECT_ENVIRONMENT="/opt/app/.venv/"
+
 RUN --mount=type=cache,uid="$UID",target=/app/.cache/uv \
     --mount=type=bind,source=uv.lock,target=uv.lock \
     --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
     uv sync --locked --no-install-project --group dev
 
-COPY --chown="${UID}:${GID}" . .
+USER "$UID:$GID"
 
-RUN --mount=type=cache,uid="$UID",target=/app/.cache/uv \
-    uv sync --locked --group dev
+ENV PATH="/opt/app/.venv/bin:$PATH"
 
-ENV PATH="/app/.venv/bin:$PATH"
-
-COPY --chown="${UID}:${GID}" --chmod=755 entrypoint.sh .
-
-ENTRYPOINT ["./entrypoint.sh", "dev"]
+CMD ["./entrypoint.sh", "dev"]
 
 ## Production build stage
 FROM base AS prod-build
