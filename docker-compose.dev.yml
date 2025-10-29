@@ -12,6 +12,12 @@ services:
       retries: 5
       start_period: 10s
 
+  backend:
+    build:
+      target: dev
+    volumes:
+      - ./backend:/app
+
   proxy:
     environment:
       SERVICE_MODE: development
@@ -19,9 +25,3 @@ services:
       frontend:
         condition: service_healthy
 
-  backend:
-    build:
-      target: dev
-    container_name: backend-dev
-    volumes:
-      - ./backend/bird_ringing:/app/bird_ringing

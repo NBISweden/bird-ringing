@@ -45,6 +45,37 @@ services:
       database:
         condition: service_healthy
 
+  backend-init:
+    build:
+      context: ./backend
+      dockerfile: ../Dockerfile.backend
+      target: prod
+      args:
+        UID: "${UID:-1000}"
+        GID: "${GID:-1000}"
+    environment:
+      SERVICE_MODE: init
+      POSTGRES_PASSWORD_FILE: /run/secrets/db-admin-pass
+    depends_on:
+      database:
+        condition: service_healthy
+    secrets:
+      - db-admin-pass
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: ../Dockerfile.backend
+      target: prod
+      args:
+        UID: "${UID:-1000}"
+        GID: "${GID:-1000}"
+    environment:
+      DB_USER_PASSWORD_FILE: /run/secrets/db-user-pass
+    depends_on:
+      backend-init:
+        condition: service_completed_successfully
+
   proxy:
     image: caddy:2-alpine
     ports:
@@ -62,30 +93,6 @@ services:
     depends_on:
       frontend:
         condition: service_completed_successfully
-
-  backend:
-    build:
-      context: ./backend
-      target: prod
-    container_name: backend
-    environment:
-      POSTGRES_DB: ringdb
-      POSTGRES_PASSWORD_FILE: /run/secrets/db-admin-pass
-      POSTGRES_HOST: database
-      POSTGRES_PORT: "5432"
-    depends_on:
-      database:
-        condition: service_healthy
-    ports:
-      - 8080:8000
-    secrets:
-      - db-admin-pass
-    healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://backend:8000/system/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
 
 volumes:
   database-vol:
