@@ -83,6 +83,8 @@ WORKDIR "$HOME"
 
 COPY --from=prod-build --chown="$UID:$GID" "$HOME" .
 
+RUN find . -depth ! -type l -exec chmod a-w,go= {} +
+
 ENV PATH="$HOME/.venv/bin:$PATH"
 
 ENTRYPOINT ["/usr/bin/dumb-init", "--"]
