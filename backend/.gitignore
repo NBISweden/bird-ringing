@@ -1,1 +1,11 @@
-.venv
+# Ignore any shell's interactive history files.
+.*_history
+
+# Ignore the top-level directories that might get created by running the
+# code in development.
+/.cache
+/.venv
+/.local
+
+# Ignore all __pycache__ directories
+__pycache__
