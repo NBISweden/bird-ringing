@@ -77,13 +77,15 @@ WSGI_APPLICATION = 'bird_ringing.wsgi.application'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': getenv('POSTGRES_DB', 'ringdb'),
-        'USER': getenv('POSTGRES_USER', 'postgres'),
-        'PASSWORD': get_secret_from_file('POSTGRES_PASSWORD_FILE', default='postgres'),
-        'HOST': getenv('POSTGRES_HOST', 'localhost'),
-        'PORT': getenv('POSTGRES_PORT', '5432'),
+    "default": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": getenv("POSTGRES_DB", "ringdb"),
+        "USER": getenv("POSTGRES_USER", "db_user"),
+        "PASSWORD": get_secret_from_file(
+            "POSTGRES_PASSWORD_FILE", default=""
+        ),
+        "HOST": getenv("POSTGRES_HOST", "database"),
+        "PORT": getenv("POSTGRES_PORT", "5432"),
     }
 }
 
