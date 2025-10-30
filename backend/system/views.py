@@ -10,6 +10,8 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 
+from bird_ringing import __version__
+
 SERVER_START_TIME = time.time()
 
 
@@ -21,7 +23,7 @@ class SystemInfoView(APIView):
         info = {
             "application": {
                 "name": "bird_ringing",
-                "version": "0.0.0",
+                "version": __version__,
                 "uptime_seconds": uptime,
                 "uptime": str(timedelta(seconds = uptime)),
                 "django_version": get_version(),
