@@ -25,47 +25,48 @@ if "${err:-false}"; then
 	exit 1
 fi
 
-dbuser=dbuser
-dbadmin=dbadmin
+# This is where these names are defined for use in the application.
+dbuser_name=db_user
+dbadmin_name=db_admin
 
 psql -v ON_ERROR_STOP=1 \
         --username "$POSTGRES_USER" \
         --dbname "$POSTGRES_DB" \
         -v db="$POSTGRES_DB" \
-        -v dbadmin="$dbadmin" \
+        -v dbadmin_name="$dbadmin_name" \
         -v dbadmin_pass="$dbadmin_pass" \
-        -v dbuser="$dbuser" \
+        -v dbuser_name="$dbuser_name" \
         -v dbuser_pass="$dbuser_pass" <<-'SQL'
 
         -- Create dbadmin user (for migrations)
-        CREATE USER :dbadmin WITH PASSWORD :'dbadmin_pass';
+        CREATE USER :dbadmin_name WITH PASSWORD :'dbadmin_pass';
 
         -- Create dbuser (for application use)
-        CREATE USER :dbuser WITH PASSWORD :'dbuser_pass';
+        CREATE USER :dbuser_name WITH PASSWORD :'dbuser_pass';
 
         -- Grant connection privileges
-        GRANT CONNECT ON DATABASE :db TO :dbadmin;
-        GRANT CONNECT ON DATABASE :db TO :dbuser;
+        GRANT CONNECT ON DATABASE :db TO :dbadmin_name;
+        GRANT CONNECT ON DATABASE :db TO :dbuser_name;
 
         -- dbadmin: Full schema management privileges
-        GRANT USAGE, CREATE ON SCHEMA public TO :dbadmin;
-        GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO :dbadmin;
-        GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO :dbadmin;
+        GRANT USAGE, CREATE ON SCHEMA public TO :dbadmin_name;
+        GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO :dbadmin_name;
+        GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO :dbadmin_name;
 
         -- Allow dbadmin to manage objects created by itself
-        ALTER DEFAULT PRIVILEGES FOR ROLE :dbadmin IN SCHEMA public
-                GRANT ALL PRIVILEGES ON TABLES TO :dbadmin;
-        ALTER DEFAULT PRIVILEGES FOR ROLE :dbadmin IN SCHEMA public
-                GRANT ALL PRIVILEGES ON SEQUENCES TO :dbadmin;
+        ALTER DEFAULT PRIVILEGES FOR ROLE :dbadmin_name IN SCHEMA public
+                GRANT ALL PRIVILEGES ON TABLES TO :dbadmin_name;
+        ALTER DEFAULT PRIVILEGES FOR ROLE :dbadmin_name IN SCHEMA public
+                GRANT ALL PRIVILEGES ON SEQUENCES TO :dbadmin_name;
 
         -- Allow dbadmin to grant privileges to dbuser on objects it creates
-        ALTER DEFAULT PRIVILEGES FOR ROLE :dbadmin IN SCHEMA public
-                GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO :dbuser;
-        ALTER DEFAULT PRIVILEGES FOR ROLE :dbadmin IN SCHEMA public
-                GRANT USAGE, SELECT ON SEQUENCES TO :dbuser;
+        ALTER DEFAULT PRIVILEGES FOR ROLE :dbadmin_name IN SCHEMA public
+                GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO :dbuser_name;
+        ALTER DEFAULT PRIVILEGES FOR ROLE :dbadmin_name IN SCHEMA public
+                GRANT USAGE, SELECT ON SEQUENCES TO :dbuser_name;
 
         -- dbuser: Data manipulation only (no schema changes)
-        GRANT USAGE ON SCHEMA public TO :dbuser;
-        GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO :dbuser;
-        GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO :dbuser;
+        GRANT USAGE ON SCHEMA public TO :dbuser_name;
+        GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO :dbuser_name;
+        GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO :dbuser_name;
 SQL
