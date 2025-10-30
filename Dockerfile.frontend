@@ -29,10 +29,12 @@ FROM base AS prod-build
 
 ENV NODE_ENV=production
 
-COPY --chown="$UID:$GID" package*.json .
-RUN --mount=type=cache,id=npm-cache,uid="$UID",target="$npm_config_cache" \
+RUN --mount=type=bind,source=package.json,target=./package.json,readonly \
+    --mount=type=bind,source=package-lock.json,target=./package-lock.json,readonly \
+    --mount=type=cache,id=npm-cache,uid="$UID",target="$npm_config_cache" \
 	npm ci --omit=dev
 
+COPY --chown="$UID:$GID" package*.json .
 COPY --chown="$UID:$GID" ./tsconfig.json .
 COPY --chown="$UID:$GID" ./next*.ts .
 COPY --chown="$UID:$GID" ./src ./src

@@ -42,7 +42,7 @@ services:
         UID: "${UID:-1000}"
         GID: "${GID:-1000}"
     volumes:
-      - frontend-vol:/vol
+      - frontend-vol:/vol:ro
     depends_on:
       database:
         condition: service_healthy
