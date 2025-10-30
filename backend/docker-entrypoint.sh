@@ -1,20 +1,29 @@
 #!/bin/sh -
 
+# The "backend-init" service will apply any pending migrations and then
+# terminate.
 case $SERVICE_MODE in (*-init)
+	export POSTGRES_USER=db_admin
+	export POSTGRES_PASSWORD_FILE=/run/secrets/db-admin-pass
+
 	case $SERVICE_MODE in (dev*)
-		env POSTGRES_USER=dbadmin \
-			python manage.py makemigrations
+		python manage.py makemigrations || exit
 	esac
 
-	env POSTGRES_USER=dbadmin \
-		python manage.py migrate
+	python manage.py migrate
 	exit
 esac
 
+# The main "backend" service runs here.
+
+export POSTGRES_USER=db_user
+export POSTGRES_PASSWORD_FILE=/run/secrets/db-user-pass
+
+# In development mode, run the Django development server.
 case $SERVICE_MODE in (dev*)
-	exec env POSTGRES_USER=dbuser \
-		python manage.py runserver
+	uv sync --frozen
+	exec python manage.py runserver
 esac
 
-exec env POSTGRES_USER=dbuser \
-	gunicorn bird_ringing.wsgi
+# In production mode, run Gunicorn.
+exec gunicorn bird_ringing.wsgi
