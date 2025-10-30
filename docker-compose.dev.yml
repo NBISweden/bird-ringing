@@ -12,9 +12,19 @@ services:
       retries: 5
       start_period: 10s
 
+  backend-init:
+    build:
+      target: dev
+    environment:
+      SERVICE_MODE: dev-init
+    volumes:
+      - ./backend:/app
+
   backend:
     build:
       target: dev
+    environment:
+      SERVICE_MODE: dev
     volumes:
       - ./backend:/app
 

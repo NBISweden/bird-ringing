@@ -80,7 +80,8 @@ The main differences between the two environments are:
 The database used by this project is a PostgreSQL database running in a
 Docker container called `database`. The name of the database in the
 container is `ringdb`. Apart from the database superuser, `postgres`,
-there is the application user, `appuser`.
+there are the two application users `dbadmin` (only used for applying
+schema migrations) and `dbuser`.
 
 Direct access to the database can be obtained by exposing the database
 port for the `database` container in the `docker-compose.yml` file and
@@ -88,7 +89,7 @@ connecting to it directly from the host, or by using the `psql` command
 in the `database` container:
 
 ``` sh
-./compose-prod.sh exec database psql -U appuser -d ringdb
+./compose-prod.sh exec database psql -U dbuser -d ringdb
 ```
 
 ### Database passwords
@@ -100,16 +101,25 @@ initial database.
 
 The files should only contain the secret values themselves.
 
+- `secrets/postgres-pass.txt` - The password for the PostgreSQL
+  superuser, `postgres`. This user has full administrative access to the
+  database server, and is only used for initial database setup.
+
 - `secrets/db-admin-pass.txt` - The password for the PostgreSQL
-  superuser `postgres`.
+  application admin user, `dbadmin`. This is the user that has the
+  ability to apply migrations to the database. It is only used by the
+  `backend-init` service when applying migrations during service
+  startup.
 
 - `secrets/db-user-pass.txt` - The password for the PostgreSQL
-  application user `appuser`.
+  application user `dbuser`. This is the user that the application
+  connects to the database with.
 
 ### Database initialisation
 
 If the `database-vol` Docker volume does not exist, the database is
-initialised when the services are started with `docker compose up`.
+initialised when the services are started with either
+`./compose-prod.sh up` or `./compose-dev.sh up`.
 
 ### Database backup
 

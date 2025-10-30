@@ -6,12 +6,14 @@ services:
     image: postgres:18-alpine
     environment:
       POSTGRES_DB: ringdb
-      POSTGRES_PASSWORD_FILE: /run/secrets/db-admin-pass
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres-pass
+      DB_ADMIN_PASSWORD_FILE: /run/secrets/db-admin-pass
       DB_USER_PASSWORD_FILE: /run/secrets/db-user-pass
     volumes:
       - database-vol:/var/lib/postgresql
       - ./initdb.d:/docker-entrypoint-initdb.d:ro
     secrets:
+      - postgres-pass
       - db-admin-pass
       - db-user-pass
     command: ["docker-ensure-initdb.sh"]
@@ -46,6 +48,7 @@ services:
         condition: service_healthy
 
   backend-init:
+    image: bird-ringing-backend:local
     build:
       context: ./backend
       dockerfile: ../Dockerfile.backend
@@ -54,7 +57,7 @@ services:
         UID: "${UID:-1000}"
         GID: "${GID:-1000}"
     environment:
-      SERVICE_MODE: init
+      SERVICE_MODE: prod-init
       POSTGRES_PASSWORD_FILE: /run/secrets/db-admin-pass
     depends_on:
       database:
@@ -63,6 +66,7 @@ services:
       - db-admin-pass
 
   backend:
+    image: bird-ringing-backend:local
     build:
       context: ./backend
       dockerfile: ../Dockerfile.backend
@@ -71,10 +75,13 @@ services:
         UID: "${UID:-1000}"
         GID: "${GID:-1000}"
     environment:
-      DB_USER_PASSWORD_FILE: /run/secrets/db-user-pass
+      SERVICE_MODE: prod
+      POSTGRES_PASSWORD_FILE: /run/secrets/db-user-pass
     depends_on:
       backend-init:
         condition: service_completed_successfully
+    secrets:
+      - db-user-pass
 
   proxy:
     image: caddy:2-alpine
@@ -93,6 +100,8 @@ services:
     depends_on:
       frontend:
         condition: service_completed_successfully
+      backend:
+        condition: service_started
 
 volumes:
   database-vol:
@@ -100,6 +109,8 @@ volumes:
   proxy-vol:
 
 secrets:
+  postgres-pass:
+    file: ./secrets/postgres-pass.txt
   db-admin-pass:
     file: ./secrets/db-admin-pass.txt
   db-user-pass:
