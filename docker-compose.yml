@@ -76,6 +76,12 @@ services:
       - 8080:8000
     secrets:
       - db-admin-pass
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://backend:8000/system/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
 volumes:
   database-vol:
