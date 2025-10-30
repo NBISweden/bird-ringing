@@ -19,13 +19,6 @@ dependencies = [
     { name = "django" },
     { name = "djangorestframework" },
     { name = "gunicorn" },
-]
-
-[package.dev-dependencies]
-dev = [
-    { name = "psycopg" },
-]
-prod = [
     { name = "psycopg", extra = ["c"] },
 ]
 
@@ -34,11 +27,8 @@ requires-dist = [
     { name = "django", specifier = ">=5.2.7" },
     { name = "djangorestframework", specifier = ">=3.16.1" },
     { name = "gunicorn", specifier = ">=23.0.0" },
+    { name = "psycopg", extras = ["c"], specifier = ">=3.2.11" },
 ]
-
-[package.metadata.requires-dev]
-dev = [{ name = "psycopg", specifier = ">=3.2.11" }]
-prod = [{ name = "psycopg", extras = ["c"], specifier = ">=3.2.11" }]
 
 [[package]]
 name = "django"
