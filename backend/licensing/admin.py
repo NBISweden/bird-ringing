@@ -1,5 +1,15 @@
 from django.contrib import admin
-from .models import Actor, License, LicenseRelation
+from .models import (
+    Actor,
+    License,
+    LicenseRelation,
+    LicenseDocument,
+    LicensePermissionType,
+    LicensePermissionProperty,
+    Species,
+    LicensePermission,
+)
+import datetime
 
 
 COMMON_EXCLUDES = [
@@ -11,29 +21,73 @@ COMMON_EXCLUDES = [
 
 
 class LicenseRelationAdmin(admin.TabularInline):
+    exclude = COMMON_EXCLUDES
     model = LicenseRelation
 
 
-@admin.register(Actor)
-class ActorAdmin(admin.ModelAdmin):
+class LicenseDocumentAdmin(admin.TabularInline):
     exclude = COMMON_EXCLUDES
+    model = LicenseDocument
 
+
+class LicensePermissionAdmin(admin.TabularInline):
+    exclude = COMMON_EXCLUDES
+    model = LicensePermission
+
+
+class LicensePermissionProperty(admin.TabularInline):
+    exclude = COMMON_EXCLUDES
+    model = LicensePermissionProperty
+
+
+class ModelAdminWithChangeTracking(admin.ModelAdmin):
     def save_model(self, request, obj, form, change):
         if not hasattr(obj, "created_by"):
             obj.created_by = request.user
 
         obj.updated_by = request.user
         obj.save()
+    
+    def save_formset(self, request, obj, formset, change):
+        instances = formset.save(commit=False)
+        for instance in instances:
+            if not hasattr(instance, "created_by"):
+                instance.created_by = request.user
+            
+            instance.updated_by = request.user
+            instance.updated_at = datetime.datetime.now()
+            instance.save()
+            formset.save()
+
+
+@admin.register(Actor)
+class ActorAdmin(ModelAdminWithChangeTracking):
+    exclude = COMMON_EXCLUDES
 
 
 @admin.register(License)
-class LicenseAdmin(admin.ModelAdmin):
+class LicenseAdmin(ModelAdminWithChangeTracking):
     exclude = COMMON_EXCLUDES
-    inlines = [LicenseRelationAdmin]
+    inlines = [
+        LicensePermissionAdmin,
+        LicenseRelationAdmin,
+        LicenseDocumentAdmin
+    ]
 
-    def save_model(self, request, obj, form, change):
-        if not hasattr(obj, "created_by"):
-            obj.created_by = request.user
 
-        obj.updated_by = request.user
-        obj.save()
+@admin.register(Species)
+class SpeciesAdmin(ModelAdminWithChangeTracking):
+    exclude = COMMON_EXCLUDES
+
+
+@admin.register(LicensePermissionType)
+class LicensePermissionTypeAdmin(ModelAdminWithChangeTracking):
+    exclude = COMMON_EXCLUDES
+    inlines = [
+        LicensePermissionProperty
+    ]
+
+
+@admin.register(LicenseDocument)
+class LicenseDocumentAdmin(ModelAdminWithChangeTracking):
+    exclude = COMMON_EXCLUDES
