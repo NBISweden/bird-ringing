@@ -8,6 +8,7 @@ from .models import (
     LicensePermissionProperty,
     Species,
     LicensePermission,
+    LicenseCommunication,
 )
 import datetime
 
@@ -40,6 +41,11 @@ class LicensePermissionProperty(admin.TabularInline):
     model = LicensePermissionProperty
 
 
+class LicenseCommunicationAdmin(admin.TabularInline):
+    exclude = COMMON_EXCLUDES
+    model = LicenseCommunication
+
+
 class ModelAdminWithChangeTracking(admin.ModelAdmin):
     def save_model(self, request, obj, form, change):
         if not hasattr(obj, "created_by"):
@@ -63,6 +69,9 @@ class ModelAdminWithChangeTracking(admin.ModelAdmin):
 @admin.register(Actor)
 class ActorAdmin(ModelAdminWithChangeTracking):
     exclude = COMMON_EXCLUDES
+    inlines = [
+        LicenseCommunicationAdmin
+    ]
 
 
 @admin.register(License)
@@ -71,7 +80,8 @@ class LicenseAdmin(ModelAdminWithChangeTracking):
     inlines = [
         LicensePermissionAdmin,
         LicenseRelationAdmin,
-        LicenseDocumentAdmin
+        LicenseDocumentAdmin,
+        LicenseCommunicationAdmin
     ]
 
 

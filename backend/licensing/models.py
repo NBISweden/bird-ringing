@@ -52,6 +52,17 @@ class DocumentTypeChoices(models.IntegerChoices):
     LICENSE = (2, "license")
 
 
+class CommunicationType(models.IntegerChoices):
+    LICENSE_DELIVERY = (1, "license-delivery")
+    LICENSE_UPDATE = (2, "license-update")
+
+
+class CommunicationStatus(models.IntegerChoices):
+    SENT = (1, "sent")
+    RECEIVED = (2, "received")
+    BOUNCED = (3, "bounced")
+
+
 class Actor(ChangeTracking):
     """
     An Actor contains information needed to identify and communicate with an 
@@ -137,6 +148,19 @@ class LicenseRelation(ChangeTracking):
     mednr = models.CharField(max_length=4, validators=[MinLengthValidator(limit_value=4)], blank=True, default='')
     role = models.PositiveIntegerField(choices=LicenseRoleChoices)
     status = models.PositiveIntegerField(choices=RelationStatusChoices)
+
+
+class LicenseCommunication(ChangeTracking):
+    """
+    A License Communication keeps track of communication related to licenses
+    made by the system or triggered by users of the system.
+    """
+
+    actor = models.ForeignKey(Actor, on_delete=models.PROTECT, related_name="communication")
+    license = models.ForeignKey(License, on_delete=models.PROTECT, related_name="communication")
+    type = models.PositiveIntegerField(choices=CommunicationType)
+    status = models.PositiveIntegerField(choices=CommunicationStatus)
+    note = models.CharField(max_length=512, blank=True, default='')
 
 
 class LicenseDocument(ChangeTracking):
