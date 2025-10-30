@@ -58,7 +58,6 @@ services:
         GID: "${GID:-1000}"
     environment:
       SERVICE_MODE: prod-init
-      POSTGRES_PASSWORD_FILE: /run/secrets/db-admin-pass
     depends_on:
       database:
         condition: service_healthy
@@ -76,7 +75,6 @@ services:
         GID: "${GID:-1000}"
     environment:
       SERVICE_MODE: prod
-      POSTGRES_PASSWORD_FILE: /run/secrets/db-user-pass
     depends_on:
       backend-init:
         condition: service_completed_successfully
