@@ -29,31 +29,16 @@ class SystemInfoView(APIView):
                 "django_version": get_version(),
                 "python_version": platform.python_version(),
             },
+            "status": {
+                "database": self.db_check(),
+                "cache": self.cache_check(),
+            },
             "config": {
                 "debug": settings.DEBUG,
             }
         }
 
         return Response(info)
-
-class HealthCheckView(APIView):
-
-    def get(self, request):
-        health_status = {
-            "database": self.db_check(),
-            "cache": self.cache_check(),
-        }
-
-        # this is True if all checks returned ok
-        is_ready = set(health_status.values()) == {'ok'}
-
-        return Response(
-            {
-                "status": "ok" if is_ready else "not ok",
-                "checks": health_status
-            },
-            status=status.HTTP_200_OK if is_ready else status.HTTP_503_SERVICE_UNAVAILABLE
-        )
 
     def db_check(self):
         try:
@@ -68,3 +53,15 @@ class HealthCheckView(APIView):
             return "ok" if cache.get("readiness_check") == "ok" else "fail"
         except Exception:
             return "fail"
+
+class HealthCheckView(APIView):
+
+    def get(self, request):
+
+        return Response(
+            {
+                "status": "ok"
+            },
+            status=status.HTTP_200_OK
+        )
+
