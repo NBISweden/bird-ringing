@@ -48,7 +48,6 @@ services:
         condition: service_healthy
 
   backend-init:
-    image: bird-ringing-backend:local
     build:
       context: ./backend
       dockerfile: ../Dockerfile.backend
@@ -65,7 +64,6 @@ services:
       - db-admin-pass
 
   backend:
-    image: bird-ringing-backend:local
     build:
       context: ./backend
       dockerfile: ../Dockerfile.backend
@@ -75,6 +73,8 @@ services:
         GID: "${GID:-1000}"
     environment:
       SERVICE_MODE: prod
+    volumes:
+      - backend-vol:/vol:ro
     healthcheck:
       test: ["CMD", "wget", "--spider", "--timeout=5", "http://backend:8000/system/health"]
       interval: 10s
@@ -93,10 +93,11 @@ services:
       - 127.0.0.1:3210:80
     volumes:
       - ./caddy:/etc/caddy:ro
-      - frontend-vol:/vol:ro
+      - frontend-vol:/frontend:ro
+      - backend-vol:/backend:ro
       - proxy-vol:/data
     healthcheck:
-      test: ["CMD", "wget", "--spider", "--timeout=5", "http://proxy/api/health"]
+      test: ["CMD", "wget", "--spider", "--timeout=5", "http://proxy/health"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -105,11 +106,12 @@ services:
       frontend:
         condition: service_completed_successfully
       backend:
-        condition: service_started
+        condition: service_healthy
 
 volumes:
   database-vol:
   frontend-vol:
+  backend-vol:
   proxy-vol:
 
 secrets:
