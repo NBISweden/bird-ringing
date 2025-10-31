@@ -55,7 +55,7 @@ ARG GID=1000
 
 ENV HOME=/app
 
-RUN install -d -o "$UID" -g "$GID" "$HOME"
+RUN install -d -o "$UID" -g "$GID" "$HOME" /vol
 
 USER "$UID:$GID"
 
@@ -71,7 +71,7 @@ CMD ["test", "-d", "/vol/_next"]
 
 # The frontend container will not hang around to serve static files.
 # This is done by the proxy container.  The static files are in the
-# persistent volume "frontend-vol" mounted at /vol.
+# persistent volume "frontend-vol".
 
 # ----
 
