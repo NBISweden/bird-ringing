@@ -22,8 +22,8 @@ export POSTGRES_PASSWORD_FILE=/run/secrets/db-user-pass
 # In development mode, run the Django development server.
 case $SERVICE_MODE in (dev*)
 	uv sync --frozen
-	exec python manage.py runserver
+	exec python manage.py runserver 0.0.0.0:8000
 esac
 
 # In production mode, run Gunicorn.
-exec gunicorn bird_ringing.wsgi
+exec gunicorn --bind 0.0.0.0:8000 bird_ringing.wsgi
