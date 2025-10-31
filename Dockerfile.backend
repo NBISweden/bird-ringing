@@ -76,7 +76,7 @@ RUN --mount=type=cache,id=apk-cache,target=/var/cache/apk \
 
 ENV HOME=/app
 
-RUN install -d -o "$UID" -g "$GID" "$HOME"
+RUN install -d -o "$UID" -g "$GID" "$HOME" /vol
 
 USER "$UID:$GID"
 
@@ -84,9 +84,16 @@ WORKDIR "$HOME"
 
 COPY --from=prod-build --chown="$UID:$GID" "$HOME" .
 
-RUN find . -depth ! -type l -exec chmod a-w,go= {} +
-
 ENV PATH="$HOME/.venv/bin:$PATH"
+
+VOLUME /vol
+
+# Generate static files into the volume.
+RUN ln -s /vol static
+RUN python manage.py collectstatic
+
+# Make the application read-only except for symlinks.
+RUN find . -depth ! -type l -exec chmod a-w,go= {} +
 
 ENTRYPOINT ["/usr/bin/dumb-init", "--"]
 
