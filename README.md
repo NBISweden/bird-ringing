@@ -80,8 +80,8 @@ The main differences between the two environments are:
 The database used by this project is a PostgreSQL database running in a
 Docker container called `database`. The name of the database in the
 container is `ringdb`. Apart from the database superuser, `postgres`,
-there are the two application users `dbadmin` (only used for applying
-schema migrations) and `dbuser`.
+there are the two application users `db_admin` (only used for applying
+schema migrations) and `db_user`.
 
 Direct access to the database can be obtained by exposing the database
 port for the `database` container in the `docker-compose.yml` file and
@@ -89,7 +89,7 @@ connecting to it directly from the host, or by using the `psql` command
 in the `database` container:
 
 ``` sh
-./compose-prod.sh exec database psql -U dbuser -d ringdb
+./compose-prod.sh exec database psql -U db_user -d ringdb
 ```
 
 ### Database passwords
