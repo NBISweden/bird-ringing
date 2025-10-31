@@ -144,7 +144,7 @@ class LicenseRelation(ChangeTracking):
     """
 
     actor = models.ForeignKey(Actor, on_delete=models.PROTECT, related_name="licenses")
-    license = models.ForeignKey(License, on_delete=models.PROTECT, related_name="actors")
+    license = models.ForeignKey(License, on_delete=models.CASCADE, related_name="actors")
     mednr = models.CharField(max_length=4, validators=[MinLengthValidator(limit_value=4)], blank=True, default='')
     role = models.PositiveIntegerField(choices=LicenseRoleChoices)
     status = models.PositiveIntegerField(choices=RelationStatusChoices)
@@ -157,7 +157,7 @@ class LicenseCommunication(ChangeTracking):
     """
 
     actor = models.ForeignKey(Actor, on_delete=models.PROTECT, related_name="communication")
-    license = models.ForeignKey(License, on_delete=models.PROTECT, related_name="communication")
+    license = models.ForeignKey(License, on_delete=models.CASCADE, related_name="communication")
     type = models.PositiveIntegerField(choices=CommunicationType)
     status = models.PositiveIntegerField(choices=CommunicationStatus)
     note = models.CharField(max_length=512, blank=True, default='')
@@ -172,7 +172,7 @@ class LicenseDocument(ChangeTracking):
     """
 
     actor = models.ForeignKey(Actor, on_delete=models.PROTECT, related_name="documents", null=True)
-    license = models.ForeignKey(License, on_delete=models.PROTECT, related_name="documents")
+    license = models.ForeignKey(License, on_delete=models.CASCADE, related_name="documents")
     type = models.PositiveIntegerField(choices=DocumentTypeChoices)
     data = models.BinaryField() # TODO: This might not be the best solution but let's try for now
     reference = models.CharField(max_length=2048, blank=True, default='')
@@ -209,7 +209,7 @@ class LicensePermissionProperty(ChangeTracking):
     means that the property applies to the current permission.
     """
 
-    related_type = models.ForeignKey(LicensePermissionType, on_delete=models.PROTECT)
+    related_type = models.ForeignKey(LicensePermissionType, on_delete=models.CASCADE)
     name = models.CharField(max_length=512)
     description = models.TextField(blank=True, default='')
 
@@ -233,7 +233,7 @@ class LicensePermission(ChangeTracking):
     """
 
     type = models.ForeignKey(LicensePermissionType, on_delete=models.PROTECT)
-    license = models.ForeignKey(License, on_delete=models.PROTECT, related_name="permissions")
+    license = models.ForeignKey(License, on_delete=models.CASCADE, related_name="permissions")
     location = models.TextField()
     description = models.TextField()
     species_list = models.ManyToManyField(Species)

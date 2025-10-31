@@ -57,13 +57,13 @@ class ModelAdminWithChangeTracking(admin.ModelAdmin):
     def save_formset(self, request, obj, formset, change):
         instances = formset.save(commit=False)
         for instance in instances:
-            if not hasattr(instance, "created_by"):
+            if not hasattr(instance, "created_by") or not instance.created_by:
                 instance.created_by = request.user
             
             instance.updated_by = request.user
             instance.updated_at = datetime.datetime.now()
             instance.save()
-            formset.save()
+        formset.save()
 
 
 @admin.register(Actor)
