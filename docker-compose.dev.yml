@@ -16,7 +16,7 @@ services:
     build:
       target: dev
     environment:
-      SERVICE_MODE: dev-init
+      SERVICE_MODE: development-init
     volumes:
       - ./backend:/app
 
@@ -24,7 +24,7 @@ services:
     build:
       target: dev
     environment:
-      SERVICE_MODE: dev
+      SERVICE_MODE: development
     volumes:
       - ./backend:/app
 

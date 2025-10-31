@@ -136,7 +136,7 @@ A database dump file called `initdb.d/database.dump` will be restored
 automatically when the services are started with `docker compose up` if
 the `database-vol` Docker volume does not exist.
 
-All Docker volumes asseciated with the project can be removed with the
+All Docker volumes associated with the project can be removed with the
 following command:
 
 ``` sh
