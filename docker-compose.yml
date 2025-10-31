@@ -75,6 +75,12 @@ services:
         GID: "${GID:-1000}"
     environment:
       SERVICE_MODE: prod
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "--timeout=5", "http://backend:8000/system/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     depends_on:
       backend-init:
         condition: service_completed_successfully
