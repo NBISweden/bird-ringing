@@ -65,6 +65,11 @@ The main differences between the two environments are:
   environment, the source code is copied into the container at build
   time.
 
+- The `backend` directory is bind-mounted into the "backend" service
+  container in the development environment, while in the production
+  environment, the source code is copied into the container at build
+  time.
+
 - The "frontend" service in the development environment runs the
   development server with hot reloading, while in the production
   environment, it does nothing apart from checking to make sure the
@@ -161,3 +166,13 @@ docker volume rm bird-ringing_database-vol
 - `busybox:stable-musl`
   - `prod`
     - Copies static site from `prod-build` stage
+
+### Backend
+
+- `python:3.12-alpine`
+  - `base`
+    - `prod-build`
+    - `dev`
+- `python:3.12-alpine`
+  - `prod`
+    - Copies application from `prod-build` stage
