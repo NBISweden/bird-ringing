@@ -6,6 +6,8 @@ case $SERVICE_MODE in (*-init)
 	export POSTGRES_USER=db_admin
 
 	case $SERVICE_MODE in (development*)
+		pip install uv &&
+		uv sync --frozen &&
 		python manage.py makemigrations || exit
 	esac
 
@@ -19,7 +21,6 @@ export POSTGRES_USER=db_user
 
 # In development mode, run the Django development server.
 case $SERVICE_MODE in (development*)
-	uv sync --frozen
 	exec python manage.py runserver 0.0.0.0:8000
 esac
 
