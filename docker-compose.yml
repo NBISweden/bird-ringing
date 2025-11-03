@@ -78,7 +78,7 @@ services:
     volumes:
       - backend-vol:/vol:ro
     healthcheck:
-      test: ["CMD", "wget", "--spider", "--timeout=5", "http://backend:8000/system/health"]
+      test: ["CMD", "wget", "--spider", "--timeout=5", "http://backend:8000/system/health/"]
       interval: 10s
       timeout: 5s
       retries: 5
