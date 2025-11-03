@@ -4,7 +4,6 @@
 # terminate.
 case $SERVICE_MODE in (*-init)
 	export POSTGRES_USER=db_admin
-	export POSTGRES_PASSWORD_FILE=/run/secrets/db-admin-pass
 
 	case $SERVICE_MODE in (development*)
 		python manage.py makemigrations || exit
@@ -17,7 +16,6 @@ esac
 # The main "backend" service runs here.
 
 export POSTGRES_USER=db_user
-export POSTGRES_PASSWORD_FILE=/run/secrets/db-user-pass
 
 # In development mode, run the Django development server.
 case $SERVICE_MODE in (development*)
