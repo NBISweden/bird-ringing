@@ -25,6 +25,7 @@ services:
       target: dev
     environment:
       SERVICE_MODE: development
+      DJANGO_DEBUG_MODE: True
     volumes:
       - ./backend:/app
 
