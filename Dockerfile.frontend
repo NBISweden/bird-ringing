@@ -1,0 +1,85 @@
+FROM node:24-alpine AS base
+
+ARG UID=1000
+ARG GID=1000
+
+RUN --mount=type=cache,id=apk-cache,target=/var/cache/apk \
+	apk --cache-dir=/var/cache/apk add \
+		dumb-init
+
+ENV HOME=/app
+ENV XDG_CACHE_HOME="$HOME/.cache"
+
+RUN install -d -o "$UID" -g "$GID" "$HOME"
+
+USER "$UID:$GID"
+
+WORKDIR "$HOME"
+
+ENV npm_config_cache="$XDG_CACHE_HOME/npm" \
+    npm_config_loglevel=info
+ENV NEXT_TELEMETRY_DISABLED=1
+
+ENTRYPOINT ["/usr/bin/dumb-init", "--"]
+
+# ----
+
+## Production build stage
+FROM base AS prod-build
+
+ENV NODE_ENV=production
+
+RUN --mount=type=bind,source=package.json,target=./package.json,readonly \
+    --mount=type=bind,source=package-lock.json,target=./package-lock.json,readonly \
+    --mount=type=cache,id=npm-cache,uid="$UID",target="$npm_config_cache" \
+	npm ci --omit=dev
+
+COPY --chown="$UID:$GID" package*.json .
+COPY --chown="$UID:$GID" ./tsconfig.json .
+COPY --chown="$UID:$GID" ./next*.ts .
+COPY --chown="$UID:$GID" ./src ./src
+
+RUN mkdir .next
+### Export static site into /app/out
+RUN --mount=type=cache,id=npm-cache,uid="$UID",target="$npm_config_cache" \
+    --mount=type=cache,id=next-cache,uid="$UID",target=.next/cache \
+	npm run build
+
+# ----
+
+## Production stage
+FROM busybox:stable-musl AS prod
+
+ARG UID=1000
+ARG GID=1000
+
+ENV HOME=/app
+
+RUN install -d -o "$UID" -g "$GID" "$HOME" /vol
+
+USER "$UID:$GID"
+
+ENV SERVICE_MODE=production
+
+WORKDIR "$HOME"
+
+VOLUME /vol
+
+COPY --from=prod-build --chown="$UID:$GID" "$HOME/out" /vol
+
+CMD ["test", "-d", "/vol/_next"]
+
+# The frontend container will not hang around to serve static files.
+# This is done by the proxy container.  The static files are in the
+# persistent volume "frontend-vol".
+
+# ----
+
+## Development stage
+FROM base AS dev
+
+ENV SERVICE_MODE=development
+
+ENV NODE_ENV=development
+
+CMD ["./docker-entrypoint.sh"]

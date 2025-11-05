@@ -4,7 +4,7 @@
 :80
 
 # Health endpoint
-handle /api/health {
+handle /health {
 	respond "{\"status\":\"ok\"}" 200
 }
 
@@ -12,11 +12,31 @@ handle /api/health {
 	expression {env.SERVICE_MODE} == "development"
 }
 
+# Backend path matching exprossions.
+@backend path /admin/* /system/*
+@backend-dev path /admin/* /system/* /static/*
+
+# In development, proxy backend requests to the backend Django
+# development server, and proxy frontend requests to the React
+# development server.
 handle @dev {
+	handle @backend-dev {
+		reverse_proxy backend:8000
+	}
 	reverse_proxy frontend:3000
 }
 
+# In production, serve static files for both backend and frontend,
+# proxying only Django admin requests to the Django backend.
+handle @backend {
+	reverse_proxy backend:8000
+}
+handle_path /static/* {
+	root * /backend
+	file_server
+}
+
 handle {
-	root * /vol
+	root * /frontend
 	file_server
 }

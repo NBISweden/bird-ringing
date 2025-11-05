@@ -6,12 +6,14 @@ services:
     image: postgres:18-alpine
     environment:
       POSTGRES_DB: ringdb
-      POSTGRES_PASSWORD_FILE: /run/secrets/db-admin-pass
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres-pass
+      DB_ADMIN_PASSWORD_FILE: /run/secrets/db-admin-pass
       DB_USER_PASSWORD_FILE: /run/secrets/db-user-pass
     volumes:
       - database-vol:/var/lib/postgresql
       - ./initdb.d:/docker-entrypoint-initdb.d:ro
     secrets:
+      - postgres-pass
       - db-admin-pass
       - db-user-pass
     command: ["docker-ensure-initdb.sh"]
@@ -34,12 +36,58 @@ services:
   frontend:
     build:
       context: ./frontend
+      dockerfile: ../Dockerfile.frontend
       target: prod
+      args:
+        UID: "${UID:-1000}"
+        GID: "${GID:-1000}"
     volumes:
-      - frontend-vol:/vol
+      - frontend-vol:/vol:ro
     depends_on:
       database:
         condition: service_healthy
+
+  backend-init:
+    build:
+      context: ./backend
+      dockerfile: ../Dockerfile.backend
+      target: prod
+      args:
+        UID: "${UID:-1000}"
+        GID: "${GID:-1000}"
+    environment:
+      SERVICE_MODE: production-init
+      POSTGRES_PASSWORD_FILE: /run/secrets/db-admin-pass
+    depends_on:
+      database:
+        condition: service_healthy
+    secrets:
+      - db-admin-pass
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: ../Dockerfile.backend
+      target: prod
+      args:
+        UID: "${UID:-1000}"
+        GID: "${GID:-1000}"
+    environment:
+      SERVICE_MODE: production
+      POSTGRES_PASSWORD_FILE: /run/secrets/db-user-pass
+    volumes:
+      - backend-vol:/vol:ro
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "--timeout=5", "http://backend:8000/system/health/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    depends_on:
+      backend-init:
+        condition: service_completed_successfully
+    secrets:
+      - db-user-pass
 
   proxy:
     image: caddy:2-alpine
@@ -47,10 +95,11 @@ services:
       - 127.0.0.1:3210:80
     volumes:
       - ./caddy:/etc/caddy:ro
-      - frontend-vol:/vol:ro
+      - frontend-vol:/frontend:ro
+      - backend-vol:/backend:ro
       - proxy-vol:/data
     healthcheck:
-      test: ["CMD", "wget", "--spider", "--timeout=5", "http://proxy/api/health"]
+      test: ["CMD", "wget", "--spider", "--timeout=5", "http://proxy/health"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -58,37 +107,18 @@ services:
     depends_on:
       frontend:
         condition: service_completed_successfully
-
-  backend:
-    build:
-      context: ./backend
-      target: prod
-    container_name: backend
-    environment:
-      POSTGRES_DB: ringdb
-      POSTGRES_PASSWORD_FILE: /run/secrets/db-admin-pass
-      POSTGRES_HOST: database
-      POSTGRES_PORT: "5432"
-    depends_on:
-      database:
+      backend:
         condition: service_healthy
-    ports:
-      - 8080:8000
-    secrets:
-      - db-admin-pass
-    healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://backend:8000/system/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
 
 volumes:
   database-vol:
   frontend-vol:
+  backend-vol:
   proxy-vol:
 
 secrets:
+  postgres-pass:
+    file: ./secrets/postgres-pass.txt
   db-admin-pass:
     file: ./secrets/db-admin-pass.txt
   db-user-pass:

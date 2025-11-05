@@ -2,11 +2,7 @@ services:
 
   frontend:
     build:
-      context: ./frontend
       target: dev
-      args:
-        UID: "${UID:-1000}"
-        GID: "${GID:-1000}"
     volumes:
       - ./frontend:/app
     healthcheck:
@@ -16,16 +12,28 @@ services:
       retries: 5
       start_period: 10s
 
+  backend-init:
+    build:
+      target: dev
+    environment:
+      SERVICE_MODE: development-init
+    volumes:
+      - ./backend:/app
+
+  backend:
+    build:
+      target: dev
+    environment:
+      SERVICE_MODE: development
+    volumes:
+      - ./backend:/app
+
   proxy:
     environment:
       SERVICE_MODE: development
     depends_on:
       frontend:
         condition: service_healthy
+      backend:
+        condition: service_healthy
 
-  backend:
-    build:
-      target: dev
-    container_name: backend-dev
-    volumes:
-      - ./backend/bird_ringing:/app/bird_ringing
