@@ -14,6 +14,7 @@ from pathlib import Path
 from os import getenv
 from bird_ringing.helpers import get_secret_from_file
 from bird_ringing.helpers import strtobool
+from django.core.management.utils import get_random_secret_key
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -24,7 +25,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = ( get_secret_from_file(
-            "DJANGO_SECRET_FILE", default=""
+            "DJANGO_SECRET_FILE", default=get_random_secret_key
         )
 )
 if not SECRET_KEY:
