@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     'licensing',
     "rest_framework",
     "system",
+    "access_control",
 ]
 
 MIDDLEWARE = [
