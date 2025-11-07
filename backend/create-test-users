@@ -1,0 +1,13 @@
+#!/bin/sh -
+
+# Helper script to generate admin and user accounts for development ONLY
+
+docker exec -e DJANGO_SUPERUSER_USERNAME=admin \
+            -e DJANGO_SUPERUSER_EMAIL=admin@example.com \
+            -e DJANGO_SUPERUSER_PASSWORD=test \
+            "$(docker ps --format '{{.Names}}' | grep backend)" \
+            python manage.py createsuperuser --no-input
+
+
+docker exec "$(docker ps --format '{{.Names}}' | grep backend)" \
+            python manage.py createroles
