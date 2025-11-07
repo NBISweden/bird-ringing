@@ -1,6 +1,7 @@
 from django.contrib import admin
 from .models import (
     Actor,
+    LicenseSequence,
     License,
     LicenseRelation,
     LicenseDocument,
@@ -46,6 +47,11 @@ class LicenseCommunicationAdmin(admin.TabularInline):
     model = LicenseCommunication
 
 
+class TabularLicenseAdmin(admin.TabularInline):
+    exclude = COMMON_EXCLUDES
+    model = License
+
+
 class ModelAdminWithChangeTracking(admin.ModelAdmin):
     def save_model(self, request, obj, form, change):
         if not hasattr(obj, "created_by"):
@@ -72,6 +78,12 @@ class ActorAdmin(ModelAdminWithChangeTracking):
     inlines = [
         LicenseCommunicationAdmin
     ]
+
+
+@admin.register(LicenseSequence)
+class LicenseSequenceAdmin(ModelAdminWithChangeTracking):
+    exclude = COMMON_EXCLUDES
+    inlines = [TabularLicenseAdmin]
 
 
 @admin.register(License)

@@ -93,6 +93,20 @@ class Actor(ChangeTracking):
         return self.full_name
 
 
+class LicenseSequence(ChangeTracking):
+    """
+    A LicenseSequence is the main element that groups a number of license
+    instances together. It carries the the global license identifier MNR
+    and the current status of the license sequence so that one can
+    see which state it is currently in.
+    """
+    mnr = models.CharField(max_length=4, validators=[MinLengthValidator(limit_value=4)], unique=True)
+    status = models.PositiveIntegerField(choices=LicenseStatus)
+
+    def __str__(self):
+        return self.mnr
+
+
 class License(ChangeTracking):
     """
     A License groups all the information related to activities performed by 
@@ -105,18 +119,22 @@ class License(ChangeTracking):
     current state but when a new period begins a new license entry should
     be created in order to keep track of what happened during the last period.
     """
-
-    mnr = models.CharField(max_length=4, validators=[MinLengthValidator(limit_value=4)])
+    version = models.PositiveIntegerField() # Value zero is the current editable version
+    sequence = models.ForeignKey(LicenseSequence, on_delete=models.PROTECT, related_name="instances")
     location = models.TextField()
     description = models.TextField()
-    reportStatus = models.PositiveIntegerField(choices=ReportStatusChoices)
-    status = models.PositiveIntegerField(choices=LicenseStatus)
+    report_status = models.PositiveIntegerField(choices=ReportStatusChoices)
 
     starts_at = models.DateField()
     ends_at = models.DateField()
 
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["version", "sequence"], name="version-sequence-unique")
+        ]
+
     def __str__(self):
-        return self.mnr
+        return f"{self.sequence.mnr}:{self.version}"
 
 
 class Species(ChangeTracking):
@@ -125,8 +143,8 @@ class Species(ChangeTracking):
     """
 
     name = models.CharField(max_length=512)
-    scientificName = models.CharField(max_length=512, blank=True, default='')
-    scientificCode = models.CharField(max_length=128, blank=True, default='')
+    scientific_name = models.CharField(max_length=512, blank=True, default='')
+    scientific_node = models.CharField(max_length=128, blank=True, default='')
 
     def __str__(self):
         return self.name
