@@ -41,7 +41,7 @@ class LicenseRoleChoices(models.IntegerChoices):
     ASSOCIATE = (3, "associate")
 
 
-class RelationStatusChoices(models.IntegerChoices):
+class LicenseStatus(models.IntegerChoices):
     ACTIVE = (1, "active")
     INACTIVE = (2, "inactive")
     TERMINATED = (3, "terminated")
@@ -70,7 +70,8 @@ class Actor(ChangeTracking):
     """
 
     full_name = models.CharField(max_length=2048)
-    given_name = models.CharField(max_length=128, blank=True, default='')
+    first_name = models.CharField(max_length=1024, blank=True, default='')
+    last_name = models.CharField(max_length=1024, blank=True, default='')
     type = models.PositiveIntegerField(choices=ActorTypeChoices)
     sex = models.PositiveIntegerField(choices=SexChoices)
     birth_date = models.DateField()
@@ -109,6 +110,7 @@ class License(ChangeTracking):
     location = models.TextField()
     description = models.TextField()
     reportStatus = models.PositiveIntegerField(choices=ReportStatusChoices)
+    status = models.PositiveIntegerField(choices=LicenseStatus)
 
     starts_at = models.DateField()
     ends_at = models.DateField()
@@ -147,7 +149,6 @@ class LicenseRelation(ChangeTracking):
     license = models.ForeignKey(License, on_delete=models.CASCADE, related_name="actors")
     mednr = models.CharField(max_length=4, validators=[MinLengthValidator(limit_value=4)], blank=True, default='')
     role = models.PositiveIntegerField(choices=LicenseRoleChoices)
-    status = models.PositiveIntegerField(choices=RelationStatusChoices)
 
 
 class LicenseCommunication(ChangeTracking):
