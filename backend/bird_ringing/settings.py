@@ -117,6 +117,9 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+GROUP_NAMES = {
+"EXPERTS": "Bird ringing experts",
+}
 
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
