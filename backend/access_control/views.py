@@ -9,4 +9,4 @@ class LoginView(APIView):
 
     def get(self, request):
 
-        return Response({"message": f"Hello, {request.user.username}!"})
+        return Response({"username": request.user.username})
