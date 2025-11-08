@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
-const API_URL = 'http://backend:8000/auth/login/';
+const API_URL = 'http://localhost:3210/auth/login/';
 
 export default function LoginPage() {
     const router = useRouter();
