@@ -193,7 +193,8 @@ class LicenseDocument(ChangeTracking):
     A License Document describes and references documents related to a
     license. This can be general documents or system generated license files.
 
-    A license document should generally not be updated but references may be.
+    A license document should generally not be updated but references may be
+    as long as they belong to the active license instance.
     """
 
     actor = models.ForeignKey(Actor, on_delete=models.PROTECT, related_name="documents", null=True)
@@ -232,9 +233,12 @@ class LicensePermissionProperty(ChangeTracking):
     The idea is to use this for properties that can be enumerated or
     be treated as boolean properties where and assigned property 
     means that the property applies to the current permission.
+
+    A LicensePermissionProperty without a related_type is considered
+    a general property and may be assigned to any permission.
     """
 
-    related_type = models.ForeignKey(LicensePermissionType, on_delete=models.CASCADE)
+    related_type = models.ForeignKey(LicensePermissionType, on_delete=models.CASCADE, blank=True, null=True)
     name = models.CharField(max_length=512)
     description = models.TextField(blank=True, default='')
 
