@@ -74,7 +74,7 @@ class Actor(ChangeTracking):
     last_name = models.CharField(max_length=1024, blank=True, default='')
     type = models.PositiveIntegerField(choices=ActorTypeChoices)
     sex = models.PositiveIntegerField(choices=SexChoices)
-    birth_date = models.DateField()
+    birth_date = models.DateField(blank=True, null=True)
     language = models.PositiveIntegerField(choices=LanguageChoices)
 
     phone_number1 = models.CharField(max_length=128, blank=True, default='')
@@ -168,6 +168,12 @@ class LicenseRelation(ChangeTracking):
     mednr = models.CharField(max_length=4, validators=[MinLengthValidator(limit_value=4)], blank=True, default='')
     role = models.PositiveIntegerField(choices=LicenseRoleChoices)
 
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["actor", "license"], name="unique-actors-for-license"),
+            models.UniqueConstraint(fields=["mednr", "license"], name="unique-mednr-for-license"),
+        ]
+
 
 class LicenseCommunication(ChangeTracking):
     """
@@ -253,10 +259,10 @@ class LicensePermission(ChangeTracking):
 
     type = models.ForeignKey(LicensePermissionType, on_delete=models.PROTECT)
     license = models.ForeignKey(License, on_delete=models.CASCADE, related_name="permissions")
-    location = models.TextField()
-    description = models.TextField()
-    species_list = models.ManyToManyField(Species)
-    properties = models.ManyToManyField(LicensePermissionProperty)
+    location = models.TextField(blank=True, default='')
+    description = models.TextField(blank=True, default='')
+    species_list = models.ManyToManyField(Species, blank=True)
+    properties = models.ManyToManyField(LicensePermissionProperty, blank=True)
 
-    starts_at = models.DateField()
-    ends_at = models.DateField()
+    starts_at = models.DateField(blank=True, null=True)
+    ends_at = models.DateField(blank=True, null=True)
