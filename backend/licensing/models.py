@@ -144,7 +144,7 @@ class Species(ChangeTracking):
 
     name = models.CharField(max_length=512)
     scientific_name = models.CharField(max_length=512, blank=True, default='')
-    scientific_node = models.CharField(max_length=128, blank=True, default='')
+    scientific_code = models.CharField(max_length=128, blank=True, default='')
 
     def __str__(self):
         return self.name
