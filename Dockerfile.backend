@@ -57,6 +57,7 @@ COPY --chown="$UID:$GID" uv.lock .
 COPY --chown="$UID:$GID" manage.py .
 COPY --chown="$UID:$GID" system ./system
 COPY --chown="$UID:$GID" bird_ringing ./bird_ringing
+COPY --chown="$UID:$GID" licensing ./licensing
 
 RUN --mount=type=cache,id=uv-cache,uid="$UID",target="$UV_CACHE_DIR" \
 	uv sync --frozen
