@@ -34,7 +34,7 @@ class Command(BaseCommand):
                 "A general permission type describing things not yet modeled in the system."
             )
         ]
-        current_user = User.objects.get()
+        current_user = self.get_current_user()
 
         for name, description in permission_types:
             models.LicensePermissionType.objects.create(
@@ -46,7 +46,7 @@ class Command(BaseCommand):
     
     def load_licenses(self, path: str):
         licenses = self._load_json(path)
-        current_user = User.objects.get()
+        current_user = self.get_current_user()
         general_permission_type = models.LicensePermissionType.objects.get(name="General")
         for (key, license) in licenses.items():
             ls = models.LicenseSequence.objects.create(
@@ -84,7 +84,7 @@ class Command(BaseCommand):
 
     def load_actors(self, path: str):
         actors = self._load_json(path)
-        current_user = User.objects.get()
+        current_user = self.get_current_user()
         for (key, actor) in actors.items():
             type_mapping = {
                 "Person": 0,
@@ -109,7 +109,7 @@ class Command(BaseCommand):
     
     def load_species(self, path: str):
         species = self._load_json(path)
-        current_user = User.objects.get()
+        current_user = self.get_current_user()
         for (key, s) in species.items():
             models.Species.objects.create(
                 created_by=current_user,
@@ -118,6 +118,9 @@ class Command(BaseCommand):
                 scientific_code=s["scientificCode"],
                 scientific_name=s["scientificName"],
             )
+    
+    def get_current_user(self):
+        return User.objects.first()
 
     def _parse_date(self, date_str):
         return datetime.datetime.strptime(date_str, "%Y-%m-%dT%H:%M:%S.%fZ")
