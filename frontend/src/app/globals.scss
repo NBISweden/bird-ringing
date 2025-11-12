@@ -72,13 +72,13 @@ body {
 
 
 .sidebar .nav-link {
-  color: $stone; // eller en neutral färg
-  border-radius: 0.375rem; // samma som btn-radius
+  color: $stone;
+  border-radius: 0.375rem;
   padding: 0.5rem 0.75rem;
   transition: background-color 0.2s, color 0.2s;
 
   &:hover {
-    background-color: rgba($primary, 0.15); // lätt tonad bakgrund
+    background-color: rgba($primary, 0.15);
     color: $primary;
   }
 

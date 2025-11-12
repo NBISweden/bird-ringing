@@ -2,7 +2,6 @@ import "./globals.scss";
 import "bootstrap-icons/font/bootstrap-icons.css";
 import Header from "@/components/Header";
 import Sidebar from "@/components/Sidebar";
-import Footer from "@/components/Footer";
 
 export default function RootLayout({
   children,
@@ -20,7 +19,6 @@ export default function RootLayout({
                   {children}
               </main>
           </div>
-          <Footer/>
       </div>
       </body>
       </html>
