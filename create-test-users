@@ -1,0 +1,16 @@
+#!/bin/sh -
+
+# Helper script to generate admin and user accounts for development ONLY
+
+./compose-dev.sh exec \
+    -e DJANGO_SUPERUSER_USERNAME=admin \
+    -e DJANGO_SUPERUSER_EMAIL=admin@example.com \
+    -e DJANGO_SUPERUSER_PASSWORD=test \
+    --interactive=false \
+    backend \
+    python manage.py createsuperuser --no-input
+
+
+./compose-dev.sh exec \
+    backend \
+    python manage.py createroles
