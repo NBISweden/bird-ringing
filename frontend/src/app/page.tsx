@@ -2,7 +2,7 @@ import "./page.scss";
 
 export default function Home() {
     return (
-        <main>
+        <>
             <div>
                 <h1>Welcome to Birdy!</h1>
                 <p>The most fantastic place to manage your licenses.</p>
@@ -56,6 +56,7 @@ export default function Home() {
                     A simple warning alert—check it out!
                 </div>
             </div>
-        </main>
+        </>
+
     );
 }
