@@ -30,9 +30,9 @@ def strtobool (val: str):
         return val
 
     val = val.lower()
-    if val in ('true'):
-        return bool(1)
-    elif val in ('false'):
-        return bool(0)
+    if val  == "true":
+        return True
+    elif val == "false":
+        return False
     else:
         raise ValueError("invalid truth value %r" % (val,))
