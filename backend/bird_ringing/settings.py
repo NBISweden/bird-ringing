@@ -9,10 +9,12 @@ https://docs.djangoproject.com/en/5.2/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
-
+from django.core.exceptions import ImproperlyConfigured
 from pathlib import Path
 from os import getenv
 from bird_ringing.helpers import get_secret_from_file
+from bird_ringing.helpers import strtobool
+from django.core.management.utils import get_random_secret_key
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -22,12 +24,15 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = (
-    "django-insecure-)4xm9(z!=(%d@zwbz#7o0j%!z)@-aje+lbwn(0w106p45y#j0_"
+SECRET_KEY = ( get_secret_from_file(
+            "DJANGO_SECRET_FILE", default=get_random_secret_key
+        )
 )
+if not SECRET_KEY:
+    raise ImproperlyConfigured("The SECRET_KEY setting must not be empty.")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = strtobool(getenv("DJANGO_DEBUG_MODE", False))
 
 ALLOWED_HOSTS = ["localhost", "backend"]
 

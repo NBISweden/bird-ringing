@@ -17,3 +17,22 @@ def get_secret_from_file(env_var_name: str, default: str = None) -> str:
         except FileNotFoundError:
             pass
     return default
+
+def strtobool (val: str):
+    """Convert a string representation of truth to boolean.
+
+    True values are case insensitive 'true'.
+    false values are case insensitive 'false'.
+    Raises ValueError if 'val' is anything else.
+    """
+
+    if type(val) is bool:
+        return val
+
+    val = val.lower()
+    if val  == "true":
+        return True
+    elif val == "false":
+        return False
+    else:
+        raise ValueError("invalid truth value %r" % (val,))

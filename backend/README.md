@@ -25,7 +25,7 @@ The above will also create the environment folder `.venv` when run for the first
 To deploy a minimal development stack for backend only, from the repository root folder run:
 
 ```sh
-./docker-compose.sh up backend
+./compose-dev.sh up backend
 ```
 
 The Django development server should be now accessible at [http://localhost:8080](http://localhost:8080) and any Python code changes made to the local Django project should be hot re-loaded on the running server.
@@ -33,10 +33,18 @@ The Django development server should be now accessible at [http://localhost:8080
 To bring down the containers after work is finished:
 
 ```sh
-./docker-compose.sh down --remove-orphans
+./compose-dev.sh down --remove-orphans
 ```
 
 Add `-v` in the above to clean up any created docker volume as well.
+
+**Note:** A file named `django-secret-key.txt` containing Django's secret key is required for the server application to start properly. This needs to be created in the `secrets` folder of the repository's root folder.
+
+For example, run the following command to create such a key file:
+
+```sh
+uv run python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())" > ../secrets/django-secret-key.txt
+```
 
 ### More on running local development stacks
 

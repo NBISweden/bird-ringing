@@ -58,11 +58,13 @@ services:
     environment:
       SERVICE_MODE: production-init
       POSTGRES_PASSWORD_FILE: /run/secrets/db-admin-pass
+      DJANGO_SECRET_FILE: /run/secrets/django-secret-key
     depends_on:
       database:
         condition: service_healthy
     secrets:
       - db-admin-pass
+      - django-secret-key
 
   backend:
     build:
@@ -75,6 +77,7 @@ services:
     environment:
       SERVICE_MODE: production
       POSTGRES_PASSWORD_FILE: /run/secrets/db-user-pass
+      DJANGO_SECRET_FILE: /run/secrets/django-secret-key
     volumes:
       - backend-vol:/vol:ro
     healthcheck:
@@ -88,6 +91,7 @@ services:
         condition: service_completed_successfully
     secrets:
       - db-user-pass
+      - django-secret-key
 
   proxy:
     image: caddy:2-alpine
@@ -123,3 +127,5 @@ secrets:
     file: ./secrets/db-admin-pass.txt
   db-user-pass:
     file: ./secrets/db-user-pass.txt
+  django-secret-key:
+    file: ./secrets/django-secret-key.txt

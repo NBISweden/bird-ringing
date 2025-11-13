@@ -4,6 +4,7 @@ import tempfile
 import os
 
 from bird_ringing.helpers import get_secret_from_file
+from bird_ringing.helpers import strtobool
 
 class GetSecretFromFileTests(SimpleTestCase):
     def test_reads_file_successfully(self):
@@ -22,3 +23,14 @@ class GetSecretFromFileTests(SimpleTestCase):
     def test_returns_none_if_file_missing(self):
         with patch.dict(os.environ, {'SECRET_FILE': '/bad/path'}):
             self.assertIsNone(get_secret_from_file('SECRET_FILE'))
+
+class StrtoboolTests(SimpleTestCase):
+    def test_strtobool(self):
+        self.assertTrue(strtobool("true"))
+        self.assertTrue(strtobool("True"))
+        self.assertFalse(strtobool("false"))
+        self.assertFalse(strtobool("False"))
+        self.assertTrue(strtobool(True))
+        self.assertFalse(strtobool(False))
+        with self.assertRaises(ValueError):
+            strtobool('abc')
