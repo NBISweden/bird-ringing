@@ -1,0 +1,94 @@
+---
+title: User Workflow
+---
+
+flowchart LR
+    admin@{ shape: circle, label: "Admin" }
+    intent@{ shape: diamond, label: "Intent" }
+
+    subgraph descriptions["Descriptions"]
+        direction TB
+        actor_desc@{ shape: brace-r, label: "An actor is either a 'Ringer', a 'Helper' or an 'Associate'"}
+        admin_desc@{ shape: brace-r, label: "Admin is the ringer license administrator working with managing commincation regarding active licenses"}
+        list_filtering@{ shape: brace-r, label: "Selections are assumed to involve some filtering or search for items but the details on which filters are necessary are left out to simplify the workflow"}
+        sysops_desc@{ shape: brace-r, label: "System operations are operations performed by the system which generally generate some output"}
+        sysops_detail@{ shape: brace-r, label: "When operations are performed on licenses it is generally assumed that they are performed on all actors assigned to the selected licenses, that are relevant for the selected operation"}
+    end
+
+    subgraph license_list_view["License list view"]
+        llist[License list]
+        lselection[License selection]
+    end
+
+    subgraph system_operations["System operations"]
+        lgenerate@{ shape: lin-rect , label: "Generate license(s)"}
+        lsend@{ shape: lin-rect , label: "Send license(s)"}
+        ldownload@{ shape: lin-rect , label: "Downoad license(s)"}
+        listemails@{ shape: lin-rect , label: "Get list of email addresses"}
+    end
+
+    subgraph actor_list_view["Actor list view"]
+        alist[Actor list]
+        aselection[Actor selection]
+    end
+
+    subgraph actor_view["Actor view"]
+        actor[Actor]
+        allist[Actor license list]
+        adetails[Actor Details]
+        acomstatus[Actor communication status]
+        adlist[Actor document list]
+    end
+
+    subgraph license_view["License view"]
+        license[License]
+        lalist[License actor list]
+        lplist[License permission list]
+        ldetails[License Details]
+    end
+
+    actor_desc -.- actor
+    admin_desc -.- admin
+    sysops_desc -.- system_operations
+    sysops_detail -.- system_operations
+    list_filtering -.- lselection
+    list_filtering -.- aselection
+
+    admin --> intent
+    intent -- "License has changed" --> llist
+    intent -- "License summary needed" --> llist
+    llist -- "Select licenses" --> lselection
+    llist -- "View license" --> license
+
+    intent -- "Actor details needed" --> alist
+    intent -- "Actor license communication needed" --> alist
+    alist -- "Select actors" --> aselection
+    alist -- "View actor" --> actor
+
+    license -- "View actors" --> lalist
+    lalist -- "View actor" --> actor
+    license -- "View permissions" --> lplist
+    license -- "View details" --> ldetails
+
+    license -. "Generate license" .-> lgenerate
+    license -. "Send license" .-> lsend
+    license -. "Download license" .-> ldownload
+    
+
+    lselection -. "Generate licenses" .-> lgenerate
+    lselection -. "Send licenses" .-> lsend
+    lselection -. "Download licenses" .-> ldownload
+
+    actor -. "Generate licenses" .-> lgenerate
+    actor -. "Send licenses" .-> lsend
+    actor -. "Download licenses" .-> ldownload
+    actor -- "View licenses" --> allist
+    actor -- "View details" --> adetails
+    actor -- "View communication status" --> acomstatus
+    actor -- "View document list" --> adlist
+    allist -- "View license" --> license
+
+    aselection -. "Generate licenses" .-> lgenerate
+    aselection -. "Send licenses" .-> lsend
+    aselection -. "Download licenses" .-> ldownload
+    aselection -. "Get list of emails addresses" .-> listemails
