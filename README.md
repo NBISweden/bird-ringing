@@ -80,6 +80,14 @@ The main differences between the two environments are:
     by a Caddy web server. The exported site is stored in the
     `frontend-vol` Docker volume.
 
+### Application Secrets
+
+The following file is required and must be created before attempting to deploy the backend server.
+
+The file should only contain the secret value itself.
+
+- `secrets/django-secret-key.txt` - This is used to provide cryptographic signing, and should be set to a unique, unpredictable value.
+
 ## Database management
 
 The database used by this project is a PostgreSQL database running in a
