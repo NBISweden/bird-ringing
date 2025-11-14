@@ -103,6 +103,10 @@ class LicenseSequence(ChangeTracking):
     mnr = models.CharField(max_length=4, validators=[MinLengthValidator(limit_value=4)], unique=True)
     status = models.PositiveIntegerField(choices=LicenseStatus)
 
+    @property
+    def current(self):
+        return License.objects.filter(sequence=self, version=0).first()
+
     def __str__(self):
         return self.mnr
 

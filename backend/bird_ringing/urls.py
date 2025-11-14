@@ -16,9 +16,11 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from licensing.rest import router as licensing_router
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/system/', include('system.urls')),
     path('api/auth/', include('access_control.urls')),
+    path('api/', include(licensing_router.urls)),
 ]
