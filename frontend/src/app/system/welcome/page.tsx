@@ -1,19 +1,39 @@
 'use client';
 
-import "../page.scss";
+import SystemLayout from '@/components/systemLayout';
+import LoginLayout from '@/components/loginLayout';
+
+import "@/app/page.scss";
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function WelcomePage() {
     const [username, setUsername] = useState<string | null>(null);
+    const router = useRouter();
 
     useEffect(() => {
-        const user = sessionStorage.getItem('username');
-    setUsername(user);
+        if (typeof window !== 'undefined') {
+            const user = sessionStorage.getItem('username');
+            setUsername(user);
+            if (!user) {
+                router.push('/login');
+            }
+        }
     }, []);
 
+    // Avoid rendering if username is not set yet
+    if (!username) {
+        return (
+            <LoginLayout>
+                <div></div>
+            </LoginLayout>
+        );
+
+    }
+
     return (
+        <SystemLayout>
         <main className="container mt-5 text-center">
-            {username ? (
             <>
             <div className="d-flex flex-column gap-2 mb-3" style={{textAlign: "left"}}>
                 <h1>Welcome, {username} 🐦</h1>
@@ -69,12 +89,8 @@ export default function WelcomePage() {
                 </div>
             </div>
             </>
-            ) : (
-            <div>
-                <h1>Welcome!</h1>
-                <p className="lead">Please log in first.</p>
-            </div>
-            )}
         </main>
+        </SystemLayout>
     );
 }
+

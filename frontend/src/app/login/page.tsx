@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
-const API_URL = 'http://localhost:3210/auth/login/';
+const API_URL = 'http://localhost:3210/api/auth/login/';
 
 export default function LoginPage() {
     const router = useRouter();
@@ -30,7 +30,7 @@ export default function LoginPage() {
           if (res.ok) {
             const data = await res.json();
             sessionStorage.setItem('username', data.username);
-            router.push('/welcome');
+            router.push('/system/welcome');
           } else {
             const result = await res.json();
             setError(result?.detail || 'Invalid credentials');
