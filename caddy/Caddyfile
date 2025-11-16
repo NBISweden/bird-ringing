@@ -12,9 +12,9 @@ handle /health {
 	expression {env.SERVICE_MODE} == "development"
 }
 
-# Backend path matching exprossions.
-@backend path /admin/* /system/* /auth/*
-@backend-dev path /admin/* /system/* /auth/* /static/*
+# Backend path matching expressions.
+@backend path /admin/* /api/*
+@backend-dev path /admin/* /api/* /static/*
 
 # In development, proxy backend requests to the backend Django
 # development server, and proxy frontend requests to the React
