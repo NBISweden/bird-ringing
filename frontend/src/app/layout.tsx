@@ -14,10 +14,7 @@ export default function RootLayout({
       <div className="d-flex flex-column min-vh-100">
           <Header/>
           <div className="flex-grow-1 d-flex">
-              <Sidebar/>
-              <main className="flex-grow-1 p-3">
-                  {children}
-              </main>
+            {children}
           </div>
       </div>
       </body>
