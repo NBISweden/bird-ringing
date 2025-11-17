@@ -1,6 +1,9 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.core.validators import MinLengthValidator
+from django.template.defaultfilters import slugify
+import hashlib
+import json
 
 
 class ChangeTracking(models.Model):
@@ -274,3 +277,75 @@ class LicensePermission(ChangeTracking):
 
     starts_at = models.DateField(blank=True, null=True)
     ends_at = models.DateField(blank=True, null=True)
+
+
+class ImportModelManager(models.Manager):
+    def get_or_create_item(self, **kwargs):
+        key = self.model.get_key(**kwargs)
+        fingerprint = hashlib.sha1()
+        fingerprint.update(json.dumps(kwargs).encode(encoding="utf8"))
+        item_model = self.get_item_model()
+        try:
+            item_import = self.get(key=key)
+            item = item_import.item
+            if item_import.fingerprint != fingerprint.hexdigest():
+                for field, value in kwargs.items():
+                    setattr(item, field, value)
+            return (item_import, False)
+
+        except self.model.DoesNotExist:
+            item = item_model.objects.create(**kwargs)
+            item_import = self.create(
+                key=key,
+                item=item,
+                fingerprint=fingerprint.hexdigest()
+            )
+            return (item_import, True)
+    
+    def get_item_model(self):
+        item_field = self.model._meta.get_field("item")
+        return item_field.remote_field.model
+
+
+
+class ImportTracking(models.Model):
+    key = models.CharField(max_length=1024, unique=True, blank=False, null=False)
+    fingerprint = models.CharField(max_length=40, null=True)
+    objects = ImportModelManager()
+
+    class Meta:
+        abstract = True
+    
+    def __str__(self):
+        return self.key
+
+
+class ActorImport(ImportTracking):
+    item = models.ForeignKey(Actor, on_delete=models.CASCADE)
+
+    @staticmethod
+    def get_key(**actor):
+        birth_date = actor.get("birth_date")
+        type = actor["type"]
+        full_name = actor["full_name"]
+        year = birth_date.year if birth_date else None
+        return slugify(f"{type} {full_name} {year}")
+
+
+class SpeciesImport(ImportTracking):
+    item = models.ForeignKey(Species, on_delete=models.CASCADE)
+
+    @staticmethod
+    def get_key(**species):
+        scientific_code = species["scientific_code"]
+        scientific_name = species["scientific_name"]
+        return slugify(f"{scientific_code} {scientific_name}")
+
+
+class LicenseSequenceImport(ImportTracking):
+    item = models.ForeignKey(LicenseSequence, on_delete=models.CASCADE)
+
+    @staticmethod
+    def get_key(**license):
+        mnr = license["mnr"]
+        return slugify(mnr)
