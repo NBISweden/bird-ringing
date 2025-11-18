@@ -4,6 +4,8 @@ from django.core.validators import MinLengthValidator
 from django.template.defaultfilters import slugify
 import hashlib
 import json
+import datetime
+import decimal
 
 
 class ChangeTracking(models.Model):
@@ -38,13 +40,18 @@ class ReportStatusChoices(models.IntegerChoices):
     INCOMPLETE = (3, "incomplete")
 
 
+class ReportTypeChoices(models.IntegerChoices):
+    FINAL = (1, "final")
+    PARTIAL = (2, "partial")
+
+
 class LicenseRoleChoices(models.IntegerChoices):
     RINGER = (1, "ringer")
     HELPER = (2, "helper")
     ASSOCIATE = (3, "associate")
 
 
-class LicenseStatus(models.IntegerChoices):
+class LicenseStatusChoices(models.IntegerChoices):
     ACTIVE = (1, "active")
     INACTIVE = (2, "inactive")
     TERMINATED = (3, "terminated")
@@ -55,12 +62,12 @@ class DocumentTypeChoices(models.IntegerChoices):
     LICENSE = (2, "license")
 
 
-class CommunicationType(models.IntegerChoices):
+class CommunicationTypeChoices(models.IntegerChoices):
     LICENSE_DELIVERY = (1, "license-delivery")
     LICENSE_UPDATE = (2, "license-update")
 
 
-class CommunicationStatus(models.IntegerChoices):
+class CommunicationStatusChoices(models.IntegerChoices):
     SENT = (1, "sent")
     RECEIVED = (2, "received")
     BOUNCED = (3, "bounced")
@@ -104,7 +111,7 @@ class LicenseSequence(ChangeTracking):
     see which state it is currently in.
     """
     mnr = models.CharField(max_length=4, validators=[MinLengthValidator(limit_value=4)], unique=True)
-    status = models.PositiveIntegerField(choices=LicenseStatus)
+    status = models.PositiveIntegerField(choices=LicenseStatusChoices)
 
     @property
     def current(self):
@@ -190,8 +197,8 @@ class LicenseCommunication(ChangeTracking):
 
     actor = models.ForeignKey(Actor, on_delete=models.PROTECT, related_name="communication")
     license = models.ForeignKey(License, on_delete=models.CASCADE, related_name="communication")
-    type = models.PositiveIntegerField(choices=CommunicationType)
-    status = models.PositiveIntegerField(choices=CommunicationStatus)
+    type = models.PositiveIntegerField(choices=CommunicationTypeChoices)
+    status = models.PositiveIntegerField(choices=CommunicationStatusChoices)
     note = models.CharField(max_length=512, blank=True, default='')
 
 
@@ -279,11 +286,31 @@ class LicensePermission(ChangeTracking):
     ends_at = models.DateField(blank=True, null=True)
 
 
+def json_serialize_defaults(value):
+    value_type = type(value)
+    if value_type == datetime.date:
+        return value.isoformat()
+    elif value_type == datetime.datetime:
+        return value.isoformat()
+    elif value_type == decimal.Decimal:
+        return float(value)
+    elif value_type == set:
+        return list(value)
+    elif isinstance(value, models.Model):
+        return str(value)
+    else:
+        raise TypeError(f"No default serializer for {value_type.__name__}")
+
+
+def json_serialize(data):
+    return json.dumps(data, indent=4, default=json_serialize_defaults)
+
+
 class ImportModelManager(models.Manager):
     def get_or_create_item(self, **kwargs):
         key = self.model.get_key(**kwargs)
         fingerprint = hashlib.sha1()
-        fingerprint.update(json.dumps(kwargs).encode(encoding="utf8"))
+        fingerprint.update(json_serialize(kwargs).encode(encoding="utf8"))
         item_model = self.get_item_model()
         try:
             item_import = self.get(key=key)
@@ -305,7 +332,6 @@ class ImportModelManager(models.Manager):
     def get_item_model(self):
         item_field = self.model._meta.get_field("item")
         return item_field.remote_field.model
-
 
 
 class ImportTracking(models.Model):
@@ -349,3 +375,12 @@ class LicenseSequenceImport(ImportTracking):
     def get_key(**license):
         mnr = license["mnr"]
         return slugify(mnr)
+
+
+class LicenseImport(ImportTracking):
+    item = models.ForeignKey(License, on_delete=models.CASCADE)
+
+    @staticmethod
+    def get_key(**license):
+        sequence = license["sequence"]
+        return slugify(sequence.mnr)

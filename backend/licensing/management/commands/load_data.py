@@ -41,12 +41,8 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         loader = CSVLoader(options.get("path_format"))
         user = self.get_current_user()
-        #models.License.objects.filter(created_by=user).delete()
-        #models.LicenseSequence.objects.filter(created_by=user).delete()
-        #models.LicensePermissionType.objects.filter(created_by=user).delete()
-        #models.Actor.objects.filter(created_by=user).delete()
         with transaction.atomic():
-            #self.load_permission_types()
+            self.load_permission_types()
             self.load_species(loader.get_dict_list("Artlista"))
             self.load_ringers_and_licenses(loader.get_dict_list("Maerkare"))
 
@@ -54,7 +50,7 @@ class Command(BaseCommand):
     def load_permission_types(self):
         permission_types = [
             (
-                "Nät",
+                "Mistnet",
                 "Licensen tillåter användande av nät."
             ),
             (
@@ -62,14 +58,14 @@ class Command(BaseCommand):
                 "Licensen tillåter användande av ljud."
             ),
             (
-                "Fällor",
-                "Licensen tillåter använande av fällor."
+                "Trap",
+                "Licensen tillåter användande av fällor."
             )
         ]
         current_user = self.get_current_user()
 
         for name, description in permission_types:
-            models.LicensePermissionType.objects.create(
+            models.LicensePermissionType.objects.get_or_create(
                 created_by=current_user,
                 updated_by=current_user,
                 name=name,
@@ -96,8 +92,8 @@ class Command(BaseCommand):
             first_name=ringer.get("Fnamn", "")
             last_name=ringer.get("Enamn", "")
             (actor, _created) = models.ActorImport.objects.get_or_create_item(
-                created_by_id=current_user.id,
-                updated_by_id=current_user.id,
+                created_by=current_user,
+                updated_by=current_user,
                 full_name=" ".join([v for v in (first_name, last_name) if v]),
                 first_name=first_name,
                 last_name=last_name,
@@ -119,32 +115,66 @@ class Command(BaseCommand):
                 country="",
             )
 
-        for license in ringers:
+        for license_data in ringers:
             status = {
-                "Aktiv": models.LicenseStatus.ACTIVE,
-                "Ej aktiv": models.LicenseStatus.INACTIVE,
-                "Avslutad": models.LicenseStatus.TERMINATED,
-            }
-            seq = models.LicenseSequence(
-                mnr=license["Mnr"],
+                "Aktiv": models.LicenseStatusChoices.ACTIVE,
+                "Ej aktiv": models.LicenseStatusChoices.INACTIVE,
+                "Avslutad": models.LicenseStatusChoices.TERMINATED,
+            }[license_data.get("Status", "Ej aktiv")]
+            (seq, _s_created) = models.LicenseSequenceImport.objects.get_or_create_item(
+                created_by=current_user,
+                updated_by=current_user,
+                mnr=license_data["Mnr"],
                 status=status,
             )
-            models.License(
-                version=0,
-                sequence=seq,
-                location="",
-                description=""
-                report_status="",
-                starts_at=""
-                ends_at=""
+            current_year = int(license_data.get("Startyr", datetime.date.today().year))
+            starts_at = datetime.date(year=current_year, month=1, day=1)
+            ends_at = datetime.date(year=current_year, month=12, day=31)
+            description = license_data.get("Noteringar", "")
+            report_status = (
+                models.ReportStatusChoices.YES
+                if "Slutredov" in license_data
+                else (
+                    models.ReportStatusChoices.INCOMPLETE
+                    if "Lastredov" in license_data
+                    else models.ReportStatusChoices.NO
+                )
             )
+            location = license_data.get("Greenwich", "")
+            (license, _l_created) = models.LicenseImport.objects.get_or_create_item(
+                created_by=current_user,
+                updated_by=current_user,
+                version=0,
+                sequence=seq.item,
+                location=location,
+                description=description,
+                report_status=report_status,
+                starts_at=starts_at,
+                ends_at=ends_at
+            )
+
+            permission_types = [
+                models.LicensePermissionType.objects.get(name=permission_type_name)
+                for permission_type_name in ["Mistnet", "Ljud", "Trap"]
+                if license_data.get(permission_type_name, "N") == "J"
+            ]
+            for permission_type in permission_types:
+                if not license.item.permissions.filter(type=permission_type).exists():
+                    models.LicensePermission.objects.create(
+                        license=license.item,
+                        created_by=current_user,
+                        updated_by=current_user,
+                        type=permission_type,
+                        description="",
+                        location="",
+                    )
 
     def load_species(self, species: list[dict]):
         current_user = self.get_current_user()
         for s in species:
             models.SpeciesImport.objects.get_or_create_item(
-                created_by_id=current_user.id,
-                updated_by_id=current_user.id,
+                created_by=current_user,
+                updated_by=current_user,
                 name=s["SVnamn"],
                 scientific_code=s["VetKod"],
                 scientific_name=s["VetNamn"],

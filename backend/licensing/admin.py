@@ -10,6 +10,8 @@ from .models import (
     Species,
     LicensePermission,
     LicenseCommunication,
+    ActorImport,
+    LicenseSequenceImport,
 )
 import datetime
 
@@ -113,3 +115,13 @@ class LicensePermissionTypeAdmin(ModelAdminWithChangeTracking):
 @admin.register(LicenseDocument)
 class LicenseDocumentAdmin(ModelAdminWithChangeTracking):
     exclude = COMMON_EXCLUDES
+
+
+@admin.register(ActorImport)
+class ActorImportAdmin(admin.ModelAdmin):
+    pass
+
+
+@admin.register(LicenseSequenceImport)
+class LicenseSequenceImportAdmin(admin.ModelAdmin):
+    pass
