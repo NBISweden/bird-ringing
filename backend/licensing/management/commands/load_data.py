@@ -4,6 +4,7 @@ from django.contrib.auth.models import User
 from django.core.management.base import BaseCommand
 import json
 import datetime
+from django.utils.timezone import make_aware
 import csv
 
 
@@ -45,7 +46,7 @@ class Command(BaseCommand):
             self.load_permission_types()
             self.load_species(loader.get_dict_list("Artlista"))
             self.load_ringers_and_licenses(loader.get_dict_list("Maerkare"))
-
+            self.load_helpers(loader.get_dict_list("MarkAss"), loader.get_dict_list("MarkAssYr"))
 
     def load_permission_types(self):
         permission_types = [
@@ -76,9 +77,8 @@ class Command(BaseCommand):
         for ringer_license_data in ringers:
             ringer_actor = self.load_ringer(ringer_license_data)
             license = self.load_license(ringer_license_data, ringer_actor)
-            
 
-    def load_ringer(self, ringer_data):
+    def load_ringer(self, ringer_data: dict):
         current_user = self.get_current_user()
         type = {
             "S": models.ActorTypeChoices.STATION,
@@ -89,14 +89,10 @@ class Command(BaseCommand):
             if type == models.ActorTypeChoices.STATION
             else models.SexChoices.UNDISCLOSED
         )
-        birth_date = (
-            datetime.date(year=int(ringer_data["Fyr"]))
-            if "Fyr" in ringer_data
-            else None
-        )
+        birth_date = self._parse_birth_date(ringer_data.get("Fyr"))
         first_name=ringer_data.get("Fnamn", "")
         last_name=ringer_data.get("Enamn", "")
-        (actor, _created) = models.ActorImport.objects.get_or_create_item(
+        (actor, _created) = models.ActorImport.objects.get_updated_or_create_item(
             created_by=current_user,
             updated_by=current_user,
             full_name=" ".join([v for v in (first_name, last_name) if v]),
@@ -120,17 +116,21 @@ class Command(BaseCommand):
             country="",
         )
         return actor.item
-            
-    
-    def load_license(self, license_data, ringer_actor):
+
+    def load_license(self, license_data: dict, ringer_actor: models.Actor):
         current_user = self.get_current_user()
+        created_at = (
+            self._parse_date(license_data["LicDatum"])
+            if "LicDatum" in license_data
+            else make_aware(datetime.datetime.now())
+        )
         status = {
             "Aktiv": models.LicenseStatusChoices.ACTIVE,
             "Ej aktiv": models.LicenseStatusChoices.INACTIVE,
             "Avslutad": models.LicenseStatusChoices.TERMINATED,
         }[license_data.get("Status", "Ej aktiv")]
         mnr = license_data["Mnr"]
-        (seq, _s_created) = models.LicenseSequenceImport.objects.get_or_create_item(
+        (seq, _s_created) = models.LicenseSequenceImport.objects.get_updated_or_create_item(
             created_by=current_user,
             updated_by=current_user,
             mnr=mnr,
@@ -150,7 +150,9 @@ class Command(BaseCommand):
             )
         )
         location = license_data.get("Greenwich", "")
-        (license, _l_created) = models.LicenseImport.objects.get_or_create_item(
+        (license, _l_created) = models.LicenseImport.objects.get_updated_or_create_item(
+            created_at=created_at,
+            updated_at=created_at,
             created_by=current_user,
             updated_by=current_user,
             version=0,
@@ -171,6 +173,8 @@ class Command(BaseCommand):
             if not license.item.permissions.filter(type=permission_type).exists():
                 models.LicensePermission.objects.create(
                     license=license.item,
+                    created_at=created_at,
+                    updated_at=created_at,
                     created_by=current_user,
                     updated_by=current_user,
                     type=permission_type,
@@ -184,12 +188,25 @@ class Command(BaseCommand):
             actor=ringer_actor,
             role=models.LicenseRoleChoices.RINGER
         )
+
+        document_reference = license_data.get("Mappnamn")
+        if document_reference:
+            models.LicenseDocument.objects.get_or_create(
+                created_by=current_user,
+                updated_by=current_user,
+                actor=None,
+                license=license.item,
+                type=models.DocumentTypeChoices.DOCUMENT,
+                data=None,
+                reference=document_reference,
+            )
+
         return license.item
 
     def load_species(self, species: list[dict]):
         current_user = self.get_current_user()
         for s in species:
-            models.SpeciesImport.objects.get_or_create_item(
+            models.SpeciesImport.objects.get_updated_or_create_item(
                 created_by=current_user,
                 updated_by=current_user,
                 name=s["SVnamn"],
@@ -197,10 +214,57 @@ class Command(BaseCommand):
                 scientific_name=s["VetNamn"],
             )
     
+    def load_helpers(self, helper_entries: list[dict], helper_year_entries: list[dict]):
+        for helper_data in helper_entries:
+            self.load_helper(helper_data)
+
+    def load_helper(self, helper_data: dict):
+        current_user = self.get_current_user()
+        birth_date = self._parse_birth_date(helper_data.get("Fyr"))
+        first_name = helper_data["FNamn"]
+        last_name = helper_data["ENamn"]
+        data = {
+            "type": models.ActorTypeChoices.PERSON,
+            "birth_date": birth_date,
+            "full_name": " ".join([first_name, last_name])
+        }
+        sex = {
+            "F": models.SexChoices.FEMALE,
+            "M": models.SexChoices.MALE,
+        }.get(helper_data.get("Sex"), models.SexChoices.UNDISCLOSED)
+        (actor, _created) = models.ActorImport.objects.get_or_create_item(
+            created_by=current_user,
+            updated_by=current_user,
+            **data,
+            first_name=first_name,
+            last_name=last_name,
+            sex=sex,
+            language=models.LanguageChoices.SV,
+            description=helper_data.get("Fritext", "")
+        )
+        helper_actor = actor.item
+        license = models.License.objects.get(sequence__mnr=helper_data["Mnr"], version=0)
+        if not license.actors.filter(actor=helper_actor).exists():
+            models.LicenseRelation.objects.get_or_create(
+                created_by=current_user,
+                updated_by=current_user,
+                license=license,
+                actor=helper_actor,
+                mednr=helper_data["Mednr"],
+                role=models.LicenseRoleChoices.HELPER
+            )
+
     def get_current_user(self):
         user, _created = User.objects.get_or_create(username="legacy_importer")
         return user
 
-    def _parse_date(self, date_str):
-        # 1999-03-15 00:00:00.000
-        return datetime.datetime.strptime(date_str, "%Y-%m-%d %H:%M:%S.%f")
+    def _parse_birth_date(self, value: str | None):
+        return (
+            datetime.date(year=int(value), day=1, month=1)
+            if value
+            else None
+        )
+
+    def _parse_date(self, date_str: str):
+        # Ex. 1999-03-15 00:00:00.000
+        return make_aware(datetime.datetime.strptime(date_str, "%Y-%m-%d %H:%M:%S.%f"))

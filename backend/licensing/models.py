@@ -99,6 +99,8 @@ class Actor(ChangeTracking):
     city = models.CharField(max_length=256, blank=True, default='')
     country = models.CharField(max_length=256, blank=True, default='')
 
+    description = models.TextField(blank=True, default='')
+
     def __str__(self):
         return self.full_name
 
@@ -214,15 +216,15 @@ class LicenseDocument(ChangeTracking):
     actor = models.ForeignKey(Actor, on_delete=models.PROTECT, related_name="documents", null=True)
     license = models.ForeignKey(License, on_delete=models.CASCADE, related_name="documents")
     type = models.PositiveIntegerField(choices=DocumentTypeChoices)
-    data = models.BinaryField() # TODO: This might not be the best solution but let's try for now
+    data = models.BinaryField(null=True) # TODO: This might not be the best solution but let's try for now
     reference = models.CharField(max_length=2048, blank=True, default='')
 
     def __str__(self):
         type_str = DocumentTypeChoices(self.type).label
         return (
-            f"{self.license.mnr} ({self.actor}) {type_str}"
+            f"{self.license} ({self.actor}) {type_str}"
             if self.actor
-            else f"{self.license.mnr} {type_str}"
+            else f"{self.license} {type_str}"
         )
 
 
@@ -307,15 +309,14 @@ def json_serialize(data):
 
 
 class ImportModelManager(models.Manager):
-    def get_or_create_item(self, **kwargs):
+    def get_updated_or_create_item(self, **kwargs):
         key = self.model.get_key(**kwargs)
-        fingerprint = hashlib.sha1()
-        fingerprint.update(json_serialize(kwargs).encode(encoding="utf8"))
+        fingerprint = self.get_fingerprint(kwargs)
         item_model = self.get_item_model()
         try:
             item_import = self.get(key=key)
             item = item_import.item
-            if item_import.fingerprint != fingerprint.hexdigest():
+            if item_import.fingerprint != fingerprint:
                 for field, value in kwargs.items():
                     setattr(item, field, value)
             return (item_import, False)
@@ -325,9 +326,31 @@ class ImportModelManager(models.Manager):
             item_import = self.create(
                 key=key,
                 item=item,
-                fingerprint=fingerprint.hexdigest()
+                fingerprint=fingerprint
             )
             return (item_import, True)
+    
+
+    def get_or_create_item(self, **kwargs):
+        key = self.model.get_key(**kwargs)
+        item_model = self.get_item_model()
+        try:
+            item_import = self.get(key=key)
+            return (item_import, False)
+
+        except self.model.DoesNotExist:
+            item = item_model.objects.create(**kwargs)
+            item_import = self.create(
+                key=key,
+                item=item,
+                fingerprint=self.get_fingerprint(kwargs)
+            )
+            return (item_import, True)
+    
+    def get_fingerprint(self, data):
+        fingerprint = hashlib.sha1()
+        fingerprint.update(json_serialize(data).encode(encoding="utf8"))
+        return fingerprint.hexdigest()
     
     def get_item_model(self):
         item_field = self.model._meta.get_field("item")
