@@ -1,5 +1,5 @@
 import Sidebar from "@/components/Sidebar";
-import UserProvider from "../../components/UserProvider";
+import { UserProvider, ReuqireAuth } from "../../components/UserProvider";
 
 export default function SystemLayout({
   children,
@@ -8,11 +8,13 @@ export default function SystemLayout({
 }>) {
   return (
     <div className="flex-grow-1 d-flex">
-      <UserProvider requireAuth={true}>
-        <Sidebar/>
-        <main className="flex-grow-1 p-3">
-          {children}
-        </main>
+      <UserProvider>
+        <ReuqireAuth>
+          <Sidebar/>
+          <main className="flex-grow-1 p-3">
+            {children}
+          </main>
+        </ReuqireAuth>
       </UserProvider>
     </div>
   );
