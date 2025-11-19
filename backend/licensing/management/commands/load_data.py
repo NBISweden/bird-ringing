@@ -289,12 +289,12 @@ class Command(BaseCommand):
                 else base_license
             )
             if license is None:
-                base_license.pk = None
-                base_license.version = last_version + 1
                 base_license.starts_at = datetime.date(year=year, month=1, day=1)
                 base_license.ends_at = datetime.date(year=year, month=12, day=31)
-                base_license.save()
-                license = base_license
+                license = base_license.copy_to_new_version(
+                    last_version + 1,
+                    include_actors=False
+                )
             if not license.actors.filter(actor=helper).exists():
                 models.LicenseRelation.objects.get_or_create(
                     created_by=current_user,

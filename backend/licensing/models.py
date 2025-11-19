@@ -149,6 +149,41 @@ class License(ChangeTracking):
         constraints = [
             models.UniqueConstraint(fields=["version", "sequence"], name="version-sequence-unique")
         ]
+    
+    @property
+    def editable(self):
+        return self.version == 0
+    
+    def copy_to_new_version(
+        self,
+        version: int,
+        include_actors: bool = True,
+        include_documents: bool = True,
+        include_permissions: bool = True,
+    ):
+        actor_relations = [
+            actor_relation
+            for actor_relation in self.actors.all()
+        ] if include_actors else []
+
+        documents = [
+            document
+            for document in self.documents.all()
+        ] if include_documents else []
+
+        permissions = [
+            permission
+            for permission in self.permissions.all()
+        ]
+
+        self.pk = None
+        self.version = version
+        self.save()
+
+        for item in [*actor_relations, *documents, *permissions]:
+            item.copy_to(license=self)
+        
+        return self
 
     def __str__(self):
         return f"{self.sequence.mnr}:{self.version}"
@@ -185,6 +220,12 @@ class LicenseRelation(ChangeTracking):
     mednr = models.CharField(max_length=4, validators=[MinLengthValidator(limit_value=4)], blank=True, default='')
     role = models.PositiveIntegerField(choices=LicenseRoleChoices)
 
+    def copy_to(self, license: License):
+        self.pk = None
+        self.license = license
+        self.save()
+        return self
+
     class Meta:
         constraints = [
             models.UniqueConstraint(fields=["actor", "role", "license"], name="unique-actors-for-role-and-license"),
@@ -219,6 +260,12 @@ class LicenseDocument(ChangeTracking):
     type = models.PositiveIntegerField(choices=DocumentTypeChoices)
     data = models.BinaryField(null=True) # TODO: This might not be the best solution but let's try for now
     reference = models.CharField(max_length=2048, blank=True, default='')
+
+    def copy_to(self, license: License):
+        self.pk = None
+        self.license = license
+        self.save()
+        return self
 
     def __str__(self):
         type_str = DocumentTypeChoices(self.type).label
@@ -287,6 +334,16 @@ class LicensePermission(ChangeTracking):
 
     starts_at = models.DateField(blank=True, null=True)
     ends_at = models.DateField(blank=True, null=True)
+
+    def copy_to(self, license: License):
+        properties = list(self.properties.all())
+        species_list = list(self.species_list.all())
+        self.pk = None
+        self.license = license
+        self.save()
+        self.properties.set(properties)
+        self.species_list.set(species_list)
+        return self
 
 
 def json_serialize_defaults(value):
