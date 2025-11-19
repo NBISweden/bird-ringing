@@ -264,11 +264,57 @@ class Command(BaseCommand):
             year_list.append(int(year_str))
             year_dict[key] = year_list
 
-        for helper_data in helper_entries:
-            key = self._get_helper_key(helper_data)
-            self.load_helper(helper_data, year_dict.get(key, [None]))
+        helper_map = {
+            self._get_helper_key(helper_data): self.load_helper(helper_data)
+            for helper_data in helper_entries
+        }
+        
+        helper_relations = sorted(
+            list(self.get_helper_relations(helper_year_entries)),
+            key=lambda e: e[1]
+        )
 
-    def load_helper(self, helper_data: dict, years: list[int]):
+        current_user = self.get_current_user()
+        for (helper_key, year) in helper_relations:
+            (mnr, mednr) = helper_key
+            helper = helper_map[helper_key]
+    
+            base_license = models.License.objects.get(sequence__mnr=mnr, version=0)
+            last_version = models.License.objects.filter(sequence__mnr=mnr).aggregate(
+                last_version=Max("version", default=0)
+            )["last_version"]
+            license = (
+                models.License.objects.filter(sequence__mnr=mnr, starts_at__year=year).first()
+                if year is not None
+                else base_license
+            )
+            if license is None:
+                base_license.pk = None
+                base_license.version = last_version + 1
+                base_license.starts_at = datetime.date(year=year, month=1, day=1)
+                base_license.ends_at = datetime.date(year=year, month=12, day=31)
+                base_license.save()
+                license = base_license
+            if not license.actors.filter(actor=helper).exists():
+                models.LicenseRelation.objects.get_or_create(
+                    created_by=current_user,
+                    updated_by=current_user,
+                    license=license,
+                    actor=helper,
+                    mednr=mednr,
+                    role=models.LicenseRoleChoices.HELPER
+                )
+    
+    def get_helper_relations(self, helper_year_entries: list[dict]):
+        for helper_year in helper_year_entries:
+            year_str = helper_year["Ar"]
+            year_str = "1996" if year_str == "<97" else year_str
+            yield (
+                self._get_helper_key(helper_year),
+                int(year_str)
+            )
+
+    def load_helper(self, helper_data: dict):
         current_user = self.get_current_user()
         birth_date = self._parse_birth_date(helper_data.get("Fyr"))
         first_name = helper_data["FNamn"]
@@ -289,34 +335,7 @@ class Command(BaseCommand):
             language=models.LanguageChoices.SV,
             description=helper_data.get("Fritext", "")
         )
-        helper_actor = actor.item
-        mnr = helper_data["Mnr"]
-        for year in sorted(years):
-            base_license = models.License.objects.get(sequence__mnr=mnr, version=0)
-            last_version = models.License.objects.filter(sequence__mnr=mnr).aggregate(
-                last_version=Max("version", default=0)
-            )["last_version"]
-            license = (
-                models.License.objects.filter(sequence__mnr=mnr, starts_at__year=year).first()
-                if year is not None
-                else base_license
-            )
-            if license is None:
-                base_license.pk = None
-                base_license.version = last_version + 1
-                base_license.starts_at = datetime.date(year=year, month=1, day=1)
-                base_license.ends_at = datetime.date(year=year, month=12, day=31)
-                base_license.save()
-                license = base_license
-            if not license.actors.filter(actor=helper_actor).exists():
-                models.LicenseRelation.objects.get_or_create(
-                    created_by=current_user,
-                    updated_by=current_user,
-                    license=license,
-                    actor=helper_actor,
-                    mednr=helper_data["Mednr"],
-                    role=models.LicenseRoleChoices.HELPER
-                )
+        return actor.item
 
     def get_current_user(self):
         user, _created = User.objects.get_or_create(username="legacy_importer")
@@ -328,7 +347,7 @@ class Command(BaseCommand):
             if value
             else None
         )
-    
+
     def _get_helper_key(self, helper_data: dict):
         return (helper_data["Mnr"], helper_data["Mednr"])
 
