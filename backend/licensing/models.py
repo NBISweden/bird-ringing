@@ -1,6 +1,11 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.core.validators import MinLengthValidator
+from django.template.defaultfilters import slugify
+import hashlib
+import json
+import datetime
+import decimal
 
 
 class ChangeTracking(models.Model):
@@ -35,13 +40,19 @@ class ReportStatusChoices(models.IntegerChoices):
     INCOMPLETE = (3, "incomplete")
 
 
+class ReportTypeChoices(models.IntegerChoices):
+    FINAL = (1, "final")
+    PARTIAL = (2, "partial")
+
+
 class LicenseRoleChoices(models.IntegerChoices):
     RINGER = (1, "ringer")
     HELPER = (2, "helper")
     ASSOCIATE = (3, "associate")
+    COMMUNICATION = (4, "communication")
 
 
-class LicenseStatus(models.IntegerChoices):
+class LicenseStatusChoices(models.IntegerChoices):
     ACTIVE = (1, "active")
     INACTIVE = (2, "inactive")
     TERMINATED = (3, "terminated")
@@ -52,12 +63,12 @@ class DocumentTypeChoices(models.IntegerChoices):
     LICENSE = (2, "license")
 
 
-class CommunicationType(models.IntegerChoices):
+class CommunicationTypeChoices(models.IntegerChoices):
     LICENSE_DELIVERY = (1, "license-delivery")
     LICENSE_UPDATE = (2, "license-update")
 
 
-class CommunicationStatus(models.IntegerChoices):
+class CommunicationStatusChoices(models.IntegerChoices):
     SENT = (1, "sent")
     RECEIVED = (2, "received")
     BOUNCED = (3, "bounced")
@@ -89,6 +100,8 @@ class Actor(ChangeTracking):
     city = models.CharField(max_length=256, blank=True, default='')
     country = models.CharField(max_length=256, blank=True, default='')
 
+    description = models.TextField(blank=True, default='')
+
     def __str__(self):
         return self.full_name
 
@@ -101,7 +114,11 @@ class LicenseSequence(ChangeTracking):
     see which state it is currently in.
     """
     mnr = models.CharField(max_length=4, validators=[MinLengthValidator(limit_value=4)], unique=True)
-    status = models.PositiveIntegerField(choices=LicenseStatus)
+    status = models.PositiveIntegerField(choices=LicenseStatusChoices)
+
+    @property
+    def current(self):
+        return License.objects.filter(sequence=self, version=0).first()
 
     def __str__(self):
         return self.mnr
@@ -170,7 +187,7 @@ class LicenseRelation(ChangeTracking):
 
     class Meta:
         constraints = [
-            models.UniqueConstraint(fields=["actor", "license"], name="unique-actors-for-license"),
+            models.UniqueConstraint(fields=["actor", "role", "license"], name="unique-actors-for-role-and-license"),
             models.UniqueConstraint(fields=["mednr", "license"], name="unique-mednr-for-license"),
         ]
 
@@ -183,8 +200,8 @@ class LicenseCommunication(ChangeTracking):
 
     actor = models.ForeignKey(Actor, on_delete=models.PROTECT, related_name="communication")
     license = models.ForeignKey(License, on_delete=models.CASCADE, related_name="communication")
-    type = models.PositiveIntegerField(choices=CommunicationType)
-    status = models.PositiveIntegerField(choices=CommunicationStatus)
+    type = models.PositiveIntegerField(choices=CommunicationTypeChoices)
+    status = models.PositiveIntegerField(choices=CommunicationStatusChoices)
     note = models.CharField(max_length=512, blank=True, default='')
 
 
@@ -200,15 +217,15 @@ class LicenseDocument(ChangeTracking):
     actor = models.ForeignKey(Actor, on_delete=models.PROTECT, related_name="documents", null=True)
     license = models.ForeignKey(License, on_delete=models.CASCADE, related_name="documents")
     type = models.PositiveIntegerField(choices=DocumentTypeChoices)
-    data = models.BinaryField() # TODO: This might not be the best solution but let's try for now
+    data = models.BinaryField(null=True) # TODO: This might not be the best solution but let's try for now
     reference = models.CharField(max_length=2048, blank=True, default='')
 
     def __str__(self):
         type_str = DocumentTypeChoices(self.type).label
         return (
-            f"{self.license.mnr} ({self.actor}) {type_str}"
+            f"{self.license} ({self.actor}) {type_str}"
             if self.actor
-            else f"{self.license.mnr} {type_str}"
+            else f"{self.license} {type_str}"
         )
 
 
@@ -270,3 +287,124 @@ class LicensePermission(ChangeTracking):
 
     starts_at = models.DateField(blank=True, null=True)
     ends_at = models.DateField(blank=True, null=True)
+
+
+def json_serialize_defaults(value):
+    value_type = type(value)
+    if value_type == datetime.date:
+        return value.isoformat()
+    elif value_type == datetime.datetime:
+        return value.isoformat()
+    elif value_type == decimal.Decimal:
+        return float(value)
+    elif value_type == set:
+        return list(value)
+    elif isinstance(value, models.Model):
+        return str(value)
+    else:
+        raise TypeError(f"No default serializer for {value_type.__name__}")
+
+
+def json_serialize(data):
+    return json.dumps(data, indent=4, default=json_serialize_defaults)
+
+
+class ImportModelManager(models.Manager):
+    def get_updated_or_create_item(self, **kwargs):
+        key = self.model.get_key(**kwargs)
+        fingerprint = self.get_fingerprint(kwargs)
+        item_model = self.get_item_model()
+        try:
+            item_import = self.get(key=key)
+            item = item_import.item
+            if item_import.fingerprint != fingerprint:
+                for field, value in kwargs.items():
+                    setattr(item, field, value)
+            return (item_import, False)
+
+        except self.model.DoesNotExist:
+            item = item_model.objects.create(**kwargs)
+            item_import = self.create(
+                key=key,
+                item=item,
+                fingerprint=fingerprint
+            )
+            return (item_import, True)
+    
+
+    def get_or_create_item(self, **kwargs):
+        key = self.model.get_key(**kwargs)
+        item_model = self.get_item_model()
+        try:
+            item_import = self.get(key=key)
+            return (item_import, False)
+
+        except self.model.DoesNotExist:
+            item = item_model.objects.create(**kwargs)
+            item_import = self.create(
+                key=key,
+                item=item,
+                fingerprint=self.get_fingerprint(kwargs)
+            )
+            return (item_import, True)
+    
+    def get_fingerprint(self, data):
+        fingerprint = hashlib.sha1()
+        fingerprint.update(json_serialize(data).encode(encoding="utf8"))
+        return fingerprint.hexdigest()
+    
+    def get_item_model(self):
+        item_field = self.model._meta.get_field("item")
+        return item_field.remote_field.model
+
+
+class ImportTracking(models.Model):
+    key = models.CharField(max_length=1024, unique=True, blank=False, null=False)
+    fingerprint = models.CharField(max_length=40, null=True)
+    objects = ImportModelManager()
+
+    class Meta:
+        abstract = True
+    
+    def __str__(self):
+        return self.key
+
+
+class ActorImport(ImportTracking):
+    item = models.ForeignKey(Actor, on_delete=models.CASCADE)
+
+    @staticmethod
+    def get_key(**actor):
+        birth_date = actor.get("birth_date")
+        type = actor["type"]
+        full_name = actor["full_name"]
+        year = birth_date.year if birth_date else None
+        return slugify(f"{type} {full_name} {year}")
+
+
+class SpeciesImport(ImportTracking):
+    item = models.ForeignKey(Species, on_delete=models.CASCADE)
+
+    @staticmethod
+    def get_key(**species):
+        scientific_code = species["scientific_code"]
+        scientific_name = species["scientific_name"]
+        return slugify(f"{scientific_code} {scientific_name}")
+
+
+class LicenseSequenceImport(ImportTracking):
+    item = models.ForeignKey(LicenseSequence, on_delete=models.CASCADE)
+
+    @staticmethod
+    def get_key(**license):
+        mnr = license["mnr"]
+        return slugify(mnr)
+
+
+class LicenseImport(ImportTracking):
+    item = models.ForeignKey(License, on_delete=models.CASCADE)
+
+    @staticmethod
+    def get_key(**license):
+        sequence = license["sequence"]
+        return slugify(sequence.mnr)
