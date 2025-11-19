@@ -38,5 +38,6 @@ handle_path /static/* {
 
 handle {
 	root * /frontend
+	try_files {path}.html
 	file_server
 }
