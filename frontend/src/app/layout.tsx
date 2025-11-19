@@ -1,7 +1,7 @@
 import "./globals.scss";
 import "bootstrap-icons/font/bootstrap-icons.css";
 import Header from "@/components/Header";
-import Sidebar from "@/components/Sidebar";
+import { UserProvider } from "../components/UserProvider";
 
 export default function RootLayout({
   children,
@@ -9,15 +9,17 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-      <html lang="sv">
+    <html lang="sv">
       <body>
-      <div className="d-flex flex-column min-vh-100">
-          <Header/>
-          <div className="flex-grow-1 d-flex">
-            {children}
+        <UserProvider>
+          <div className="d-flex flex-column min-vh-100">
+            <Header/>
+            <div className="flex-grow-1 d-flex">
+              {children}
+            </div>
           </div>
-      </div>
+        </UserProvider>
       </body>
-      </html>
+    </html>
   );
 }

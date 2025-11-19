@@ -31,6 +31,7 @@ export default function LoginPage() {
             const data = await res.json();
             sessionStorage.setItem('username', data.username);
             router.push('/system/welcome');
+            router.refresh(); // Force root to recheck auth
           } else {
             const result = await res.json();
             setError(result?.detail || 'Invalid credentials');
