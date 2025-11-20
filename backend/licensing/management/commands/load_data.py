@@ -306,7 +306,6 @@ class Command(BaseCommand):
                 base_license.ends_at = datetime.date(year=year, month=12, day=31)
                 license = base_license.copy_to_new_version(
                     last_version + 1,
-                    include_actors=False,
                     include_documents=False,
                 )
             if not license.actors.filter(actor=helper).exists():
