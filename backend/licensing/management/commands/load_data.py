@@ -14,6 +14,14 @@ logger = logging.getLogger(__name__)
 
 
 class CSVLoader:
+    """
+    The purpose of the CSVLoader is to abstract the use of loaded data so that
+    the system can focus on the naming of the data rather than on where it is
+    or which format it is provided in.
+
+    The loader will read csv files using a path_format, provided by the user,
+    to find the correct file to read for a given name.
+    """
     def __init__(self, path_format: str):
         self._path_format = path_format
 
@@ -35,7 +43,7 @@ class CSVLoader:
 
 
 class Command(BaseCommand):
-    help = 'Load data from CSV'
+    help = "Load data from CSV"
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -129,14 +137,19 @@ class Command(BaseCommand):
             "P": models.ActorTypeChoices.PERSON
         }[ringer_data["PriSta"]]
 
+        sex_choice = {
+            "M": models.SexChoices.MALE,
+            "F": models.SexChoices.FEMALE
+        }.get(ringer_data.get("Sex"), models.SexChoices.UNDISCLOSED)
         sex = (
             models.SexChoices.NOT_APPLICABLE
             if type == models.ActorTypeChoices.STATION
-            else models.SexChoices.UNDISCLOSED
+            else sex_choice
         )
         birth_date = self._parse_birth_date(ringer_data.get("Fyr"))
-        first_name=ringer_data.get("Fnamn", "")
-        last_name=ringer_data.get("Enamn", "")
+        first_name = ringer_data.get("Fnamn", "")
+        last_name = ringer_data.get("Enamn", "")
+        language = self._parse_language(ringer_data.get("Spr"))
         (actor, _created) = models.ActorImport.objects.get_updated_or_create_item(
             created_by=current_user,
             updated_by=current_user,
@@ -333,7 +346,6 @@ class Command(BaseCommand):
             first_name=first_name,
             last_name=last_name,
             sex=sex,
-            language=models.LanguageChoices.SV,
             description=helper_data.get("Fritext", "")
         )
         return actor.item
@@ -341,6 +353,12 @@ class Command(BaseCommand):
     def get_current_user(self):
         user, _created = User.objects.get_or_create(username="legacy_importer")
         return user
+    
+    def _parse_language(self, value: str | None):
+        return {
+            "SV": models.LanguageChoices.SV,
+            "EN": models.LanguageChoices.EN
+        }.get(value, models.LanguageChoices.UNKNOWN)
 
     def _parse_birth_date(self, value: str | None):
         return (

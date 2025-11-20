@@ -31,7 +31,9 @@ class SexChoices(models.IntegerChoices):
     NOT_APPLICABLE = (4, "n/a")
 
 class LanguageChoices(models.IntegerChoices):
+    UNKNOWN = (0, "unknown")
     SV = (1, "sv")
+    EN = (2, "en")
 
 
 class ReportStatusChoices(models.IntegerChoices):
@@ -86,7 +88,7 @@ class Actor(ChangeTracking):
     type = models.PositiveIntegerField(choices=ActorTypeChoices)
     sex = models.PositiveIntegerField(choices=SexChoices)
     birth_date = models.DateField(blank=True, null=True)
-    language = models.PositiveIntegerField(choices=LanguageChoices)
+    language = models.PositiveIntegerField(choices=LanguageChoices, default=LanguageChoices.UNKNOWN)
 
     phone_number1 = models.CharField(max_length=128, blank=True, default='')
     phone_number2 = models.CharField(max_length=128, blank=True, default='')
