@@ -3,8 +3,8 @@
 set -u
 
 if [ "$SERVICE_MODE" = production ]; then
-        # In production, just copy over the static files from "/static"
-        # into our persistent volume at "/vol", then exit.
+	# In production, just copy over the static files from "/static"
+	# into our persistent volume at "/vol", then exit.
 	find /vol ! -path /vol -delete &&
 	tar -c -f - -C /static . | tar -xv -f - -C /vol
 	exit
