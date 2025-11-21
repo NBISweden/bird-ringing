@@ -27,5 +27,5 @@ esac
 # In production mode, copy static content from "$HOME/static" to
 # the persistent volume at "/vol", then run Gunicorn.
 find /vol ! -path /vol -delete &&
-tar -c -f - -C "$HOME/static" . | tar -xv -f - -C /vol &&
+tar -c -f - -C "$HOME/static" . | tar -x -f - -C /vol &&
 exec gunicorn --bind 0.0.0.0:8000 bird_ringing.wsgi
