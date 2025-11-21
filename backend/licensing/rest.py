@@ -80,6 +80,7 @@ class LicenseSequenceSerializer(serializers.HyperlinkedModelSerializer):
 
 class LicenseSequenceViewSet(viewsets.ModelViewSet):
     # TODO: override get_object in order to select instances using date insteade of primary key
+    lookup_field = "mnr"
     queryset = LicenseSequence.objects.all()
     serializer_class = LicenseSequenceSerializer
     pagination_class = StandardResultsSetPagination
