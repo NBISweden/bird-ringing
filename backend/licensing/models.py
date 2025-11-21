@@ -379,6 +379,7 @@ class ImportModelManager(models.Manager):
             if item_import.fingerprint != fingerprint:
                 for field, value in kwargs.items():
                     setattr(item, field, value)
+                item.save()
             return (item_import, False)
 
         except self.model.DoesNotExist:
