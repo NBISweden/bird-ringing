@@ -91,9 +91,6 @@ ENV PATH="$HOME/.venv/bin:$PATH"
 # This creates the static files in "$HOME/static".
 RUN python manage.py collectstatic
 
-# Make the application read-only except for symlinks.
-RUN find . -depth ! -type l -exec chmod a-w,go= {} +
-
 ENTRYPOINT ["/usr/bin/dumb-init", "--"]
 
 CMD ["./docker-entrypoint.sh"]
