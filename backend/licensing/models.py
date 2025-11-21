@@ -122,6 +122,10 @@ class LicenseSequence(ChangeTracking):
     def current(self):
         return License.objects.filter(sequence=self, version=0).first()
 
+    @property
+    def current(self):
+        return License.objects.filter(sequence=self, version=0).first()
+
     def __str__(self):
         return self.mnr
 
