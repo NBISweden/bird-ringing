@@ -51,10 +51,17 @@ class Command(BaseCommand):
             type=str,
             default="./mock_data/example/br-ex-{id}.csv"
         )
+        parser.add_argument(
+            "--current_year",
+            type=int,
+            default=datetime.date.today().year
+        )
 
     def handle(self, *args, **options):
         loader = CSVLoader(options.get("path_format"))
         user = self.get_current_user()
+        self.current_year = options.get("current_year")
+
         with transaction.atomic():
             self.load_permission_types()
             self.load_species(loader.get_dict_list("Artlista"))
@@ -196,9 +203,13 @@ class Command(BaseCommand):
             mnr=mnr,
             status=status,
         )
-        current_year = int(license_data.get("Startyr", datetime.date.today().year))
-        starts_at = datetime.date(year=current_year, month=1, day=1)
-        ends_at = datetime.date(year=current_year, month=12, day=31)
+        current_year = (
+            self.current_year
+            if status == models.LicenseStatusChoices.ACTIVE
+            else int(license_data.get("Startyr", datetime.date.today().year))
+        )
+        starts_at = datetime.date(year=current_year, month=2, day=1)
+        ends_at = datetime.date(year=current_year + 1, month=1, day=31)
         description = license_data.get("Noteringar", "")
         report_status = (
             models.ReportStatusChoices.YES
@@ -352,7 +363,7 @@ class Command(BaseCommand):
     def get_current_user(self):
         user, _created = User.objects.get_or_create(username="legacy_importer")
         return user
-    
+
     def _parse_language(self, value: str | None):
         return {
             "SV": models.LanguageChoices.SV,
