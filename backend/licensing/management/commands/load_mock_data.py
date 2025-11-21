@@ -19,13 +19,15 @@ class Command(BaseCommand):
         with transaction.atomic():
             if options["cleardata"]:
                 models.License.objects.all().delete()
+                models.Species.objects.all().delete()
+                models.LicenseRelation.objects.all().delete()
                 models.LicenseSequence.objects.all().delete()
                 models.LicensePermissionType.objects.all().delete()
                 models.Actor.objects.all().delete()
-            self.load_actors("./mock_data/actors.json")
+            actor_map = self.load_actors("./mock_data/actors.json")
             self.load_species("./mock_data/species.json")
             self.load_permission_types()
-            self.load_licenses("./mock_data/licenses.json")
+            self.load_licenses("./mock_data/licenses.json", actor_map)
     
     def load_permission_types(self):
         permission_types = [
@@ -37,26 +39,26 @@ class Command(BaseCommand):
         current_user = self.get_current_user()
 
         for name, description in permission_types:
-            models.LicensePermissionType.objects.create(
+            models.LicensePermissionType.objects.get_or_create(
                 created_by=current_user,
                 updated_by=current_user,
                 name=name,
                 description=description
             )
     
-    def load_licenses(self, path: str):
+    def load_licenses(self, path: str, actor_map: dict[str, models.Actor]):
         licenses = self._load_json(path)
         current_user = self.get_current_user()
         general_permission_type = models.LicensePermissionType.objects.get(name="General")
         for (key, license) in licenses.items():
-            ls = models.LicenseSequence.objects.create(
+            (ls, _ls_created) = models.LicenseSequence.objects.get_or_create(
                 created_by=current_user,
                 updated_by=current_user,
                 mnr=license["mnr"],
                 status=1
             )
 
-            license_obj = models.License.objects.create(
+            (license_obj, _lo_created) = models.License.objects.get_or_create(
                 created_by=current_user,
                 updated_by=current_user,
                 version=0,
@@ -68,12 +70,27 @@ class Command(BaseCommand):
                 ends_at=self._parse_date(license["expiresAt"]).date(),
             )
 
+            for (index, relation) in enumerate(license["actors"]):
+                actor = actor_map[relation["actor"]["id"]]
+                models.LicenseRelation.objects.get_or_create(
+                    created_by=current_user,
+                    updated_by=current_user,
+                    license=license_obj,
+                    actor=actor,
+                    role=(
+                        models.LicenseRoleChoices.HELPER
+                        if relation["role"] == "Helper"
+                        else models.LicenseRoleChoices.RINGER
+                    ),
+                    mednr=str(index).zfill(4)
+                )
+
             permission_description = "\n".join([
                 f"- {p}"
                 for p in license.get("permissions", [])
             ])
 
-            models.LicensePermission.objects.create(
+            models.LicensePermission.objects.get_or_create(
                 created_by=current_user,
                 updated_by=current_user,
                 license=license_obj,
@@ -85,6 +102,7 @@ class Command(BaseCommand):
     def load_actors(self, path: str):
         actors = self._load_json(path)
         current_user = self.get_current_user()
+        actor_map = dict()
         for (key, actor) in actors.items():
             type_mapping = {
                 "Person": 0,
@@ -97,7 +115,7 @@ class Command(BaseCommand):
                 "N/A": 4
             }
             type = type_mapping[actor["type"]]
-            models.Actor.objects.create(
+            (actor_obj, _actor_created) = models.Actor.objects.get_or_create(
                 created_by=current_user,
                 updated_by=current_user,
                 full_name=actor["name"],
@@ -106,12 +124,14 @@ class Command(BaseCommand):
                 birth_date=datetime.datetime.now() if type == 0 else None,
                 language=1,
             )
+            actor_map[actor["id"]] = actor_obj
+        return actor_map
     
     def load_species(self, path: str):
         species = self._load_json(path)
         current_user = self.get_current_user()
         for (key, s) in species.items():
-            models.Species.objects.create(
+            models.Species.objects.get_or_create(
                 created_by=current_user,
                 updated_by=current_user,
                 name=s["name"],
