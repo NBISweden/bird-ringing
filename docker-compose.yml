@@ -42,7 +42,7 @@ services:
         UID: "${UID:-1000}"
         GID: "${GID:-1000}"
     volumes:
-      - frontend-vol:/vol:ro
+      - frontend-vol:/vol
     depends_on:
       database:
         condition: service_healthy
@@ -79,7 +79,7 @@ services:
       POSTGRES_PASSWORD_FILE: /run/secrets/db-user-pass
       DJANGO_SECRET_FILE: /run/secrets/django-secret-key
     volumes:
-      - backend-vol:/vol:ro
+      - backend-vol:/vol
     healthcheck:
       test: ["CMD", "wget", "--spider", "--timeout=5", "http://backend:8000/api/system/health/"]
       interval: 10s
