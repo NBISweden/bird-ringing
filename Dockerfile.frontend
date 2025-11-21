@@ -22,6 +22,8 @@ ENV NEXT_TELEMETRY_DISABLED=1
 
 ENTRYPOINT ["/usr/bin/dumb-init", "--"]
 
+CMD ["./docker-entrypoint.sh"]
+
 # ----
 
 ## Production build stage
@@ -63,11 +65,10 @@ ENV SERVICE_MODE=production
 
 WORKDIR "$HOME"
 
-VOLUME /vol
+COPY --from=prod-build --chown="$UID:$GID" "$HOME/out" /static
+COPY --chown="$UID:$GID" docker-entrypoint.sh .
 
-COPY --from=prod-build --chown="$UID:$GID" "$HOME/out" /vol
-
-CMD ["test", "-d", "/vol/_next"]
+CMD ["./docker-entrypoint.sh"]
 
 # The frontend container will not hang around to serve static files.
 # This is done by the proxy container.  The static files are in the
@@ -81,5 +82,3 @@ FROM base AS dev
 ENV SERVICE_MODE=development
 
 ENV NODE_ENV=development
-
-CMD ["./docker-entrypoint.sh"]

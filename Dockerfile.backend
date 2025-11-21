@@ -88,10 +88,7 @@ COPY --from=prod-build --chown="$UID:$GID" "$HOME" .
 
 ENV PATH="$HOME/.venv/bin:$PATH"
 
-VOLUME /vol
-
-# Generate static files into the volume.
-RUN ln -s /vol static
+# This creates the static files in "$HOME/static".
 RUN python manage.py collectstatic
 
 # Make the application read-only except for symlinks.
