@@ -24,10 +24,14 @@ services:
     build:
       target: dev
     environment:
+      POSTGRES_USER: db_admin
       SERVICE_MODE: development
       DJANGO_DEBUG_MODE: True
+      POSTGRES_PASSWORD_FILE: /run/secrets/db-admin-pass
     volumes:
       - ./backend:/app
+    secrets:
+      - db-admin-pass
 
   proxy:
     environment:
