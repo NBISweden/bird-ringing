@@ -59,7 +59,6 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         loader = CSVLoader(options.get("path_format"))
-        user = self.get_current_user()
         self.current_year = options.get("current_year")
 
         with transaction.atomic():
