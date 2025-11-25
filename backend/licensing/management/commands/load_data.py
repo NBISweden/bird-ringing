@@ -166,7 +166,7 @@ class Command(BaseCommand):
             type=type,
             sex=sex,
             birth_date=birth_date,
-            language=models.LanguageChoices.SV,
+            language=language,
 
             phone_number1=ringer_data.get("Telhem", ""),
             phone_number2=ringer_data.get("Telarb", ""),
