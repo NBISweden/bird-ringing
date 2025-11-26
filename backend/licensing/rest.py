@@ -21,13 +21,51 @@ class StandardResultsSetPagination(pagination.PageNumberPagination):
         ]))
 
 
+class ActorLicenseRelationSerializer(serializers.ModelSerializer):
+    role = serializers.ChoiceField(choices=LicenseRoleChoices, source="get_role_display")
+    class Meta:
+        model = LicenseRelation
+        fields = ["license_id", "role", "mnr", "mednr"]
+
+
 class ActorSerializer(serializers.ModelSerializer):
+    type = serializers.ChoiceField(choices=ActorTypeChoices, source="get_type_display")
+    sex = serializers.ChoiceField(choices=SexChoices, source="get_sex_display")
+    language = serializers.ChoiceField(choices=LanguageChoices, source="get_language_display")
+    licenses = ActorLicenseRelationSerializer(many=True, read_only=True)
+    class Meta:
+        model = Actor
+        fields = [
+            "id",
+            "full_name",
+            "first_name",
+            "last_name",
+            "type",
+            "sex",
+            "birth_date",
+            "language",
+            "phone_number1",
+            "phone_number2",
+            "email",
+            "alternative_email",
+            "address",
+            "co_address",
+            "postal_code",
+            "city",
+            "country",
+            "licenses",
+            "updated_at",
+        ]
+
+
+class LicenseActorSerializer(serializers.ModelSerializer):
     type = serializers.ChoiceField(choices=ActorTypeChoices, source="get_type_display")
     sex = serializers.ChoiceField(choices=SexChoices, source="get_sex_display")
     language = serializers.ChoiceField(choices=LanguageChoices, source="get_language_display")
     class Meta:
         model = Actor
         fields = [
+            "id",
             "full_name",
             "first_name",
             "last_name",
@@ -47,8 +85,8 @@ class ActorSerializer(serializers.ModelSerializer):
         ]
 
 
-class LicenseRelationSerializer(serializers.ModelSerializer):
-    actor = ActorSerializer()
+class LicenseActorRelationSerializer(serializers.ModelSerializer):
+    actor = LicenseActorSerializer()
     role = serializers.ChoiceField(choices=LicenseRoleChoices, source="get_role_display")
     class Meta:
         model = LicenseRelation
@@ -56,7 +94,7 @@ class LicenseRelationSerializer(serializers.ModelSerializer):
 
 
 class LicenseSerializer(serializers.ModelSerializer):
-    actors = LicenseRelationSerializer(many=True, read_only=True)
+    actors = LicenseActorRelationSerializer(many=True, read_only=True)
     class Meta:
         model = License
         fields = ["actors", "version", "location", "description", "report_status"]

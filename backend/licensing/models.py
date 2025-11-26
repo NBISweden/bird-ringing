@@ -226,6 +226,10 @@ class LicenseRelation(ChangeTracking):
     mednr = models.CharField(max_length=4, validators=[MinLengthValidator(limit_value=4)], blank=True, default='')
     role = models.PositiveIntegerField(choices=LicenseRoleChoices)
 
+    @property
+    def mnr(self):
+        return self.license.sequence.mnr
+
     def copy_to(self, license: License):
         self.pk = None
         self.license = license
