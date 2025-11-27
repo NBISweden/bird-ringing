@@ -59,9 +59,11 @@ function hrefWithPage(pathname: string, params: ReadonlyURLSearchParams, pageNum
   return `${pathname}?${updatedParams.toString()}`
 }
 
-async function fetchActorPage([actorHref, pageNumber]: [string, number | string]): Promise<PaginatedResult<Actor>> {
+async function fetchActorPage([actorHref, pageNumber]: [string, number | string | null]): Promise<PaginatedResult<Actor>> {
   const url = new URL(actorHref);
-  url.searchParams.set("page", String(pageNumber))
+  if (pageNumber) {
+    url.searchParams.set("page", String(pageNumber))
+  }
   const pageData: PaginatedResult<Actor> = await (await fetch(`${url.href}`)).json();
   return pageData;
 }
@@ -113,7 +115,7 @@ function ConnectedListView() {
   const {data: actorPage, error, isLoading} = useSWR(["http://localhost:3210/api/actor/", params.get("page")], fetchActorPage, {fallbackData: emptyActorPage});
   const pathname = usePathname();
   const pages = getPages(pathname, params, actorPage);
-  const currentPage = hrefWithPage(pathname, params, params.get("page") || "0")
+  const currentPage = hrefWithPage(pathname, params, params.get("page") || "1")
   return (
     <BaseListView actors={actorPage.results} count={actorPage.count} pages={pages} currentPage={currentPage} pageCount={actorPage.num_pages} />
   )
