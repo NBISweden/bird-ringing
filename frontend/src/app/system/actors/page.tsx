@@ -1,5 +1,5 @@
 "use client"
-import { useState, CSSProperties, Suspense } from "react";
+import { useState, CSSProperties, Suspense, useMemo } from "react";
 import Link from "next/link";
 import { Fragment } from "react";
 import { useItemSelections, SearchableItem } from "../hooks";
@@ -59,15 +59,6 @@ function hrefWithPage(pathname: string, params: ReadonlyURLSearchParams, pageNum
   return `${pathname}?${updatedParams.toString()}`
 }
 
-async function fetchActorPage([actorHref, pageNumber]: [string, number | string | null]): Promise<PaginatedResult<Actor>> {
-  const url = new URL(actorHref);
-  if (pageNumber) {
-    url.searchParams.set("page", String(pageNumber))
-  }
-  const pageData: PaginatedResult<Actor> = await (await fetch(`${url.href}`)).json();
-  return pageData;
-}
-
 function getPageNumber(href: string): number {
   const url = new URL(href);
   const page = url.searchParams.get("page");
@@ -102,6 +93,43 @@ function getPages(pathname: string, params: ReadonlyURLSearchParams, pageData: P
   return pages;
 }
 
+class Client {
+  apiRoot: string = "http://localhost:3210/api/";
+
+  async fetchActorPage(page: number): Promise<PaginatedResult<Actor>> {
+    return await this._fetchPage("actor", page)
+  }
+
+  async fetchLicensePage(page: number): Promise<PaginatedResult<unknown>> {
+    return await this._fetchPage("license", page)
+  }
+
+  async _fetchPage<T>(type: string, page: number): Promise<PaginatedResult<T>> {
+    const url = new URL(this.apiRoot + type + "/");
+    url.searchParams.set("page", String(page))
+    const response = await fetch(`${url.href}`);
+    if (response.ok) {
+      const pageData: PaginatedResult<T> = await response.json();
+      return pageData;
+    } else {
+      throw new Error(`Failed to get actor page: '${page}'`)
+    }
+  }
+}
+
+async function useClientAction(
+  [client, ...action]: (
+    [Client, "fetchActorPage", number] |
+    [Client, "fetchLicensePage", number]
+)) {
+  switch(action[0]) {
+    case "fetchActorPage":
+      return await client.fetchActorPage(action[1])
+    case "fetchLicensePage":
+      return await client.fetchActorPage(action[1])
+  }
+}
+
 const emptyActorPage: PaginatedResult<Actor> = {
   results: [],
   next: null,
@@ -112,7 +140,12 @@ const emptyActorPage: PaginatedResult<Actor> = {
 
 function ConnectedListView() {
   const params = useSearchParams();
-  const {data: actorPage, error, isLoading} = useSWR(["http://localhost:3210/api/actor/", params.get("page")], fetchActorPage, {fallbackData: emptyActorPage});
+  const client = useMemo(() => new Client(), []);
+  const {data: actorPage} = useSWR(
+    [client, "fetchActorPage", params.get("page") || 1],
+    useClientAction,
+    {fallbackData: emptyActorPage, keepPreviousData: true}
+  );
   const pathname = usePathname();
   const pages = getPages(pathname, params, actorPage);
   const currentPage = hrefWithPage(pathname, params, params.get("page") || "1")
