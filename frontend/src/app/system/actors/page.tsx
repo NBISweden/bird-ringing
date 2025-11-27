@@ -1,5 +1,5 @@
 "use client"
-import { useState, CSSProperties, Suspense, useMemo } from "react";
+import { useState, CSSProperties, Suspense, useMemo, useEffect, useRef } from "react";
 import Link from "next/link";
 import { Fragment } from "react";
 import { useItemSelections, SearchableItem } from "../hooks";
@@ -7,6 +7,7 @@ import { Page, Pagination } from "../../../components/Pagination";
 import useSWR from "swr";
 import { ReadonlyURLSearchParams, usePathname, useSearchParams } from 'next/navigation'
 import Spinner from "@/components/Spinner";
+import { useRouter } from 'next/navigation';
 
 const dropdownOpenStyle: CSSProperties = {
   position: "absolute",
@@ -54,9 +55,12 @@ type PaginatedResult<T> = {
   results: T[]
 }
 
-function hrefWithPage(pathname: string, params: ReadonlyURLSearchParams, pageNumber: number | string) {
+function hrefWithParams(pathname: string, params: ReadonlyURLSearchParams, page: number | string, search?: string) {
   const updatedParams = new URLSearchParams(params)
-  updatedParams.set("page", String(pageNumber))
+  updatedParams.set("page", String(page))
+  if (search) {
+    updatedParams.set("search", search)
+  }
   return `${pathname}?${updatedParams.toString()}`
 }
 
@@ -70,25 +74,25 @@ function getPages(pathname: string, params: ReadonlyURLSearchParams, pageData: P
   const pages: Page[] = [
     {
       rel: "First",
-      href: hrefWithPage(pathname, params, 1),
+      href: hrefWithParams(pathname, params, 1),
     },
     {
       rel: "Previous",
-      href: pageData.previous ? hrefWithPage(pathname, params, getPageNumber(pageData.previous)) : null,
+      href: pageData.previous ? hrefWithParams(pathname, params, getPageNumber(pageData.previous)) : null,
     },
     ...Array.from({length: pageData.num_pages}).map<Page>((_, index) => {
       return {
         rel: String(index + 1),
-        href: hrefWithPage(pathname, params, index + 1)
+        href: hrefWithParams(pathname, params, index + 1)
       }
     }),
     {
       rel: "Next",
-      href: pageData.next ? hrefWithPage(pathname, params, getPageNumber(pageData.next)) : null,
+      href: pageData.next ? hrefWithParams(pathname, params, getPageNumber(pageData.next)) : null,
     },
     {
       rel: "Last",
-      href: hrefWithPage(pathname, params, pageData.num_pages),
+      href: hrefWithParams(pathname, params, pageData.num_pages),
     }
   ];
   return pages;
@@ -97,17 +101,20 @@ function getPages(pathname: string, params: ReadonlyURLSearchParams, pageData: P
 class Client {
   apiRoot: string = "http://localhost:3210/api/";
 
-  async fetchActorPage(page: number): Promise<PaginatedResult<Actor>> {
-    return await this._fetchPage("actor", page)
+  async fetchActorPage(page: number, search?: string): Promise<PaginatedResult<Actor>> {
+    return await this._fetchPage("actor", page, search)
   }
 
   async fetchLicensePage(page: number): Promise<PaginatedResult<unknown>> {
     return await this._fetchPage("license", page)
   }
 
-  async _fetchPage<T>(type: string, page: number): Promise<PaginatedResult<T>> {
+  async _fetchPage<T>(type: string, page: number, search?: string): Promise<PaginatedResult<T>> {
     const url = new URL(this.apiRoot + type + "/");
     url.searchParams.set("page", String(page))
+    if (search) {
+      url.searchParams.set("search", search)
+    }
     const response = await fetch(`${url.href}`);
     if (response.ok) {
       const pageData: PaginatedResult<T> = await response.json();
@@ -120,12 +127,12 @@ class Client {
 
 async function useClientAction(
   [client, ...action]: (
-    [Client, "fetchActorPage", number] |
+    [Client, "fetchActorPage", number, string] |
     [Client, "fetchLicensePage", number]
 )) {
   switch(action[0]) {
     case "fetchActorPage":
-      return await client.fetchActorPage(action[1])
+      return await client.fetchActorPage(action[1], action[2])
     case "fetchLicensePage":
       return await client.fetchActorPage(action[1])
   }
@@ -139,29 +146,66 @@ const emptyActorPage: PaginatedResult<Actor> = {
   count: 0,
 }
 
+function useDebouncedValue<T>(value: T, timeout: number = 5000) {
+  const [activeValue, setActiveValue] = useState<T>(value);
+  const timerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (timerRef.current !== null) {
+      window.clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+    timerRef.current = window.setTimeout(() => {
+      setActiveValue(value);
+      console.log("Set active:", value);
+    }, timeout);
+  }, [value, setActiveValue, timeout, timerRef]);
+  return activeValue;
+}
+
 function ConnectedListView() {
   const params = useSearchParams();
+  const page = params.get("page") || 1;
+  const search = params.get("search") || "";
+  const [query, setQuery] = useState<string>(search);
+  const activeQuery = useDebouncedValue(query, 1000);
+  const router = useRouter()
+  
+  useEffect(() => {
+    router.push(`/system/actors/?search=${activeQuery}`);
+  }, [activeQuery])
+
   const client = useMemo(() => new Client(), []);
   const {data: actorPage, isLoading} = useSWR(
-    [client, "fetchActorPage", params.get("page") || 1],
+    [client, "fetchActorPage", page, search],
     useClientAction,
     {fallbackData: emptyActorPage, keepPreviousData: true}
   );
   const pathname = usePathname();
   const pages = getPages(pathname, params, actorPage);
-  const currentPage = hrefWithPage(pathname, params, params.get("page") || "1")
+  const currentPage = hrefWithParams(pathname, params, page, search)
   return (
-    <BaseListView isLoading={isLoading} actors={actorPage.results} count={actorPage.count} pages={pages} currentPage={currentPage} pageCount={actorPage.num_pages} />
+    <BaseListView
+      isLoading={isLoading}
+      actors={actorPage.results}
+      count={actorPage.count}
+      pages={pages}
+      query={query}
+      setQuery={setQuery}
+      currentPage={currentPage} pageCount={actorPage.num_pages}
+    />
   )
 }
 
 function BaseListView(
-  {actors, count, pages, currentPage, pageCount, isLoading}: {
+  {actors, count, pages, currentPage, pageCount, query, setQuery, isLoading}: {
     actors: Actor[],
     count: number,
     pages: Page[],
     currentPage: string,
     pageCount: number,
+    query: string,
+    setQuery: (q: string) => void; 
     isLoading?: boolean,
   }
 ) {
@@ -236,8 +280,8 @@ function BaseListView(
         <span className="input-group-text">Filter</span>
         <input
           type="text"
-          value={""}
-          onChange={(event) => {}}
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
           className="form-control"
           placeholder={columns.join(", ")}
           aria-label="Filter for actor table"
@@ -287,7 +331,7 @@ function BaseListView(
 
 export default function ListView() {
   return (
-    <Suspense fallback={<BaseListView actors={[]} count={0} pages={[]} currentPage="" pageCount={0}/>}>
+    <Suspense fallback={<BaseListView query="" setQuery={() => {}} actors={[]} count={0} pages={[]} currentPage="" pageCount={0}/>}>
       <ConnectedListView />
     </Suspense>
   )
