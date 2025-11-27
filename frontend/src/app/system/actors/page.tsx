@@ -6,6 +6,7 @@ import { useItemSelections, SearchableItem } from "../hooks";
 import { Page, Pagination } from "../../../components/Pagination";
 import useSWR from "swr";
 import { ReadonlyURLSearchParams, usePathname, useSearchParams } from 'next/navigation'
+import Spinner from "@/components/Spinner";
 
 const dropdownOpenStyle: CSSProperties = {
   position: "absolute",
@@ -141,7 +142,7 @@ const emptyActorPage: PaginatedResult<Actor> = {
 function ConnectedListView() {
   const params = useSearchParams();
   const client = useMemo(() => new Client(), []);
-  const {data: actorPage} = useSWR(
+  const {data: actorPage, isLoading} = useSWR(
     [client, "fetchActorPage", params.get("page") || 1],
     useClientAction,
     {fallbackData: emptyActorPage, keepPreviousData: true}
@@ -150,17 +151,18 @@ function ConnectedListView() {
   const pages = getPages(pathname, params, actorPage);
   const currentPage = hrefWithPage(pathname, params, params.get("page") || "1")
   return (
-    <BaseListView actors={actorPage.results} count={actorPage.count} pages={pages} currentPage={currentPage} pageCount={actorPage.num_pages} />
+    <BaseListView isLoading={isLoading} actors={actorPage.results} count={actorPage.count} pages={pages} currentPage={currentPage} pageCount={actorPage.num_pages} />
   )
 }
 
 function BaseListView(
-  {actors, count, pages, currentPage, pageCount}: {
+  {actors, count, pages, currentPage, pageCount, isLoading}: {
     actors: Actor[],
     count: number,
     pages: Page[],
     currentPage: string,
     pageCount: number,
+    isLoading?: boolean,
   }
 ) {
   const [actionIsOpen, setActionIsOpen] = useState(false);
@@ -255,7 +257,10 @@ function BaseListView(
         <li><a className="dropdown-item" href="#">Disable</a></li>
         <li><a className="dropdown-item" href="#">Enable</a></li>
       </ul>
-      <Pagination pages={pages} currentPage={currentPage} pageCount={pageCount} />
+      <div className="d-flex flex-row align-items-center gap-3">
+        <Pagination pages={pages} currentPage={currentPage} pageCount={pageCount} />
+        {isLoading ? <Spinner className="mb-3"/> : <></>}
+      </div>
       <table className="table">
         <thead>
           <tr>
