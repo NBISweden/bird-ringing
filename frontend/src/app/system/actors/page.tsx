@@ -292,15 +292,15 @@ function BaseListView(
         <button className="btn btn-outline-secondary" type="button" onClick={toggleItems}>{allSelected ? "Select None" : "Select All"}</button>
         <span className="input-group-text flex-grow-1" >{selectedItems.size} of {count} selected</span>
         <button className="btn btn-outline-secondary dropdown-toggle" onClick={() => setActionIsOpen(!actionIsOpen)} type="button" aria-expanded={actionIsOpen}>Batch action</button>
+        <ul className={`dropdown-menu ${actionIsOpen ? "show" : ""}`} style={actionIsOpen ? dropdownOpenStyle : {}} onClick={() => setActionIsOpen(false)}>
+          <li><a className="dropdown-item" href="#">Send license</a></li>
+          <li><a className="dropdown-item" href="#">Generate new license</a></li>
+          <li><a className="dropdown-item" href="#">Download licenses</a></li>
+          <li><hr className="dropdown-divider" /></li>
+          <li><a className="dropdown-item" href="#">Disable</a></li>
+          <li><a className="dropdown-item" href="#">Enable</a></li>
+        </ul>
       </div>
-      <ul className={`dropdown-menu ${actionIsOpen ? "show" : ""}`} style={actionIsOpen ? dropdownOpenStyle : {}} onClick={() => setActionIsOpen(false)}>
-        <li><a className="dropdown-item" href="#">Send license</a></li>
-        <li><a className="dropdown-item" href="#">Generate new license</a></li>
-        <li><a className="dropdown-item" href="#">Download licenses</a></li>
-        <li><hr className="dropdown-divider" /></li>
-        <li><a className="dropdown-item" href="#">Disable</a></li>
-        <li><a className="dropdown-item" href="#">Enable</a></li>
-      </ul>
       <div className="d-flex flex-row align-items-center gap-3">
         <Pagination pages={pages} currentPage={currentPage} pageCount={pageCount} />
         {isLoading ? <Spinner className="mb-3"/> : <></>}
