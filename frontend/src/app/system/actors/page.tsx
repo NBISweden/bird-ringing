@@ -275,6 +275,7 @@ function BaseListView(
     "City",
     "Updated At",
   ]
+  const selectionInfo = isLoading ? "Loading data" : `${selectedItems.size} of ${count} selected`;
   return (
     <div className="container">
       <h2>Actor List View</h2>
@@ -291,9 +292,9 @@ function BaseListView(
         />
       </div>
       <div className="input-group mb-3">
-        <button className="btn btn-outline-secondary" type="button" onClick={toggleItems}>{allSelected ? "Select None" : "Select All"}</button>
-        <span className="input-group-text flex-grow-1" >{selectedItems.size} of {count} selected</span>
-        <button className="btn btn-outline-secondary dropdown-toggle" onClick={() => setActionIsOpen(!actionIsOpen)} type="button" aria-expanded={actionIsOpen}>Batch action</button>
+        <button className={`btn btn-outline-secondary ${isLoading ? "disabled" : ""}`} type="button" onClick={toggleItems}>{allSelected ? "Select None" : "Select All"}</button>
+        <span className="input-group-text flex-grow-1" >{selectionInfo}</span>
+        <button className={`btn btn-outline-secondary dropdown-toggle  ${isLoading ? "disabled" : ""}`} onClick={() => setActionIsOpen(!actionIsOpen)} type="button" aria-expanded={actionIsOpen}>Batch action</button>
         <ul className={`dropdown-menu ${actionIsOpen ? "show" : ""}`} style={actionIsOpen ? dropdownOpenStyle : {}} onClick={() => setActionIsOpen(false)}>
           <li><a className="dropdown-item" href="#">Send license</a></li>
           <li><a className="dropdown-item" href="#">Generate new license</a></li>
