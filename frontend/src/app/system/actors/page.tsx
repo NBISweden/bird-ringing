@@ -197,6 +197,54 @@ function ConnectedListView() {
   )
 }
 
+function toActorTable(item: Actor) {
+  const licenses: License[] = item.licenses;
+  const roles = new Set<Role>(licenses.map(l => l.role));
+  return {
+    id: String(item.id),
+    properties: {
+      "Name": {
+        term: item.full_name,
+        component: <Link href={`/actors/entry/?entryId=${item.id}`}>{item.full_name}</Link>
+      },
+      "Type": {
+        term: item.type,
+        component: item.type,
+      },
+      "Roles": {
+        term: Array.from(roles).join(" "),
+        component: Array.from(roles).join(", ")
+      },
+      "Licenses": {
+        term: licenses.map((l) => {
+          return (
+            l.mednr ? `${l.mnr}:${l.mednr}` : l.mnr
+          );
+        }).join(" "),
+        component: (
+          <>{licenses.map((l, index, list) => {
+            return (
+              <Fragment key={index}><Link href={`/licenses/entry/?entryId=${l.license_id}`}>{l.mednr ? `${l.mnr}:${l.mednr}` : l.mnr}</Link>{index < list.length - 1 ? ", " : <></>}</Fragment>
+            );
+          })}</>
+        )
+      },
+      "E-mail": {
+        term: item.email ? item.email : "-",
+        component: item.email ? item.email : "-",
+      },
+      "City": {
+        term: item.city,
+        component: item.city
+      },
+      "Updated At": {
+        term: item.updated_at,
+        component: item.updated_at
+      },
+    }
+  }
+}
+
 function BaseListView(
   {actors, count, pages, currentPage, pageCount, query, setQuery, isLoading}: {
     actors: Actor[],
@@ -211,53 +259,7 @@ function BaseListView(
 ) {
   const [actionIsOpen, setActionIsOpen] = useState(false);
 
-  const items = actors.map<SearchableItem>(item => {
-    const licenses: License[] = item.licenses;
-    const roles = new Set<Role>([]);
-    return {
-      id: String(item.id),
-      properties: {
-        "Name": {
-          term: item.full_name,
-          component: <Link href={`/bird-ringing/actor-view/?entryId=${item.id}`}>{item.full_name}</Link>
-        },
-        "Type": {
-          term: item.type,
-          component: item.type,
-        },
-        "Roles": {
-          term: Array.from(roles).join(" "),
-          component: Array.from(roles).join(", ")
-        },
-        "Licenses": {
-          term: licenses.map((l) => {
-            return (
-              l.mednr ? `${l.mnr}:${l.mednr}` : l.mnr
-            );
-          }).join(" "),
-          component: (
-            <>{licenses.map((l, index, list) => {
-              return (
-                <Fragment key={index}><Link href={`/bird-ringing/license-view/?entryId=${l.license_id}`}>{l.mednr ? `${l.mnr}:${l.mednr}` : l.mnr}</Link>{index < list.length - 1 ? ", " : <></>}</Fragment>
-              );
-            })}</>
-          )
-        },
-        "E-mail": {
-          term: item.email ? item.email : "-",
-          component: item.email ? item.email : "-",
-        },
-        "Sex": {
-          term: item.sex,
-          component: item.sex
-        },
-        "Updated At": {
-          term: item.updated_at,
-          component: item.updated_at
-        },
-      }
-    }
-  })
+  const items = useMemo(() => actors.map<SearchableItem>(toActorTable), [actors])
   const {
     selectedItems,
     toggleItems,
@@ -270,7 +272,7 @@ function BaseListView(
     "Roles",
     "Licenses",
     "E-mail",
-    "Sex",
+    "City",
     "Updated At",
   ]
   return (
@@ -283,7 +285,7 @@ function BaseListView(
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           className="form-control"
-          placeholder={columns.join(", ")}
+          placeholder={"Name, E-mail, City"}
           aria-label="Filter for actor table"
           aria-describedby="basic-addon1"
         />
