@@ -157,7 +157,6 @@ function useDebouncedValue<T>(value: T, timeout: number = 5000) {
     }
     timerRef.current = window.setTimeout(() => {
       setActiveValue(value);
-      console.log("Set active:", value);
     }, timeout);
   }, [value, setActiveValue, timeout, timerRef]);
   return activeValue;
