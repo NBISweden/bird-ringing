@@ -51,3 +51,22 @@ export function useDebouncedValue<T>(value: T, timeout: number = 5000) {
   }, [value, setActiveValue, timeout, timerRef]);
   return activeValue;
 }
+export function useFilter(items: SearchableItem[]) {
+  const [filter, setFilter] = useState<string>("");
+  const filterItems = filter.split(/\s+/).map(i => i.toLowerCase())
+  const filteredItems = items
+    .filter(r => Object.values(r.properties).some(value => filterItems.some(fi => value.term.toLowerCase().includes(fi))));
+  return {
+    filteredItems,
+    setFilter,
+    filter,
+  }
+}
+
+export type SearchableItem = {
+  id: string;
+  properties: Record<string, {
+    term: React.ReactNode
+    component: React.ReactNode;
+  }>
+}
