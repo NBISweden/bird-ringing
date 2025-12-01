@@ -1,144 +1,33 @@
 "use client"
-import { useState, CSSProperties, Suspense, useMemo, useEffect, useRef } from "react";
+import { useState, CSSProperties, Suspense, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { Fragment } from "react";
-import { useItemSelections, SearchableItem } from "../hooks";
-import { Page, Pagination } from "../../../components/Pagination";
+import { useItemSelections, useDebouncedValue } from "../hooks";
+import { Pagination } from "../../../components/Pagination";
 import useSWR from "swr";
-import { ReadonlyURLSearchParams, usePathname, useSearchParams } from 'next/navigation'
+import { usePathname, useSearchParams } from 'next/navigation'
 import Spinner from "@/components/Spinner";
 import { useRouter } from 'next/navigation';
+import {
+  ActorLicenseRelation,
+  PagedResponse,
+  Role,
+  getPages,
+  hrefWithParams,
+  Page,
+  ActorListItem,
+  TableItem,
+} from "../common"
+import { Client } from "../client";
+import { useClient } from "../contexts";
 
-const dropdownOpenStyle: CSSProperties = {
-  position: "absolute",
-  inset: "0px 0px auto auto",
-  margin: "0px",
-  transform: "translate(0px, 40px)",
+async function fetchActorPage(
+  [client, page, search]: [Client, number, string]
+): Promise<PagedResponse<ActorListItem>> {
+  return client.fetchActorPage(page, search)
 }
 
-type Actor = {
-  id: number,
-  full_name: string,
-  first_name: string,
-  last_name: string,
-  type: string,
-  sex: string,
-  birth_date: string,
-  language: string,
-  phone_number1: string,
-  phone_number2: string,
-  email: string,
-  alternative_email: string,
-  address: string,
-  co_address: string,
-  postal_code: string,
-  city: string,
-  country: string,
-  updated_at: string,
-  licenses: License[],
-}
-
-type License = {
-  license_id: number;
-  mnr: string;
-  role: string;
-  mednr: string;
-}
-
-type Role = string;
-
-type PaginatedResult<T> = {
-  count: number;
-  num_pages: number,
-  next: string | null;
-  previous: string | null;
-  results: T[]
-}
-
-function hrefWithParams(pathname: string, params: ReadonlyURLSearchParams, page: number | string, search?: string) {
-  const updatedParams = new URLSearchParams(params)
-  updatedParams.set("page", String(page))
-  if (search) {
-    updatedParams.set("search", search)
-  }
-  return `${pathname}?${updatedParams.toString()}`
-}
-
-function getPageNumber(href: string): number {
-  const url = new URL(href);
-  const page = url.searchParams.get("page");
-  return page ? parseInt(page) : 1
-}
-
-function getPages(pathname: string, params: ReadonlyURLSearchParams, pageData: PaginatedResult<Actor>): Page[] {
-  const pages: Page[] = [
-    {
-      rel: "First",
-      href: hrefWithParams(pathname, params, 1),
-    },
-    {
-      rel: "Previous",
-      href: pageData.previous ? hrefWithParams(pathname, params, getPageNumber(pageData.previous)) : null,
-    },
-    ...Array.from({length: pageData.num_pages}).map<Page>((_, index) => {
-      return {
-        rel: String(index + 1),
-        href: hrefWithParams(pathname, params, index + 1)
-      }
-    }),
-    {
-      rel: "Next",
-      href: pageData.next ? hrefWithParams(pathname, params, getPageNumber(pageData.next)) : null,
-    },
-    {
-      rel: "Last",
-      href: hrefWithParams(pathname, params, pageData.num_pages),
-    }
-  ];
-  return pages;
-}
-
-class Client {
-  apiRoot: string = "http://localhost:3210/api/";
-
-  async fetchActorPage(page: number, search?: string): Promise<PaginatedResult<Actor>> {
-    return await this._fetchPage("actor", page, search)
-  }
-
-  async fetchLicensePage(page: number): Promise<PaginatedResult<unknown>> {
-    return await this._fetchPage("license", page)
-  }
-
-  async _fetchPage<T>(type: string, page: number, search?: string): Promise<PaginatedResult<T>> {
-    const url = new URL(this.apiRoot + type + "/");
-    url.searchParams.set("page", String(page))
-    if (search) {
-      url.searchParams.set("search", search)
-    }
-    const response = await fetch(`${url.href}`);
-    if (response.ok) {
-      const pageData: PaginatedResult<T> = await response.json();
-      return pageData;
-    } else {
-      throw new Error(`Failed to get actor page: '${page}'`)
-    }
-  }
-}
-
-async function useClientAction(
-  [client, ...action]: (
-    [Client, "fetchActorPage", number, string] |
-    [Client, "fetchLicensePage", number]
-)) {
-  switch(action[0]) {
-    case "fetchActorPage":
-      return await client.fetchActorPage(action[1], action[2])
-    case "fetchLicensePage":
-      return await client.fetchActorPage(action[1])
-  }
-}
-
-const emptyActorPage: PaginatedResult<Actor> = {
+const emptyActorPage: PagedResponse<ActorListItem> = {
   results: [],
   next: null,
   previous: null,
@@ -146,20 +35,41 @@ const emptyActorPage: PaginatedResult<Actor> = {
   count: 0,
 }
 
-function useDebouncedValue<T>(value: T, timeout: number = 5000) {
-  const [activeValue, setActiveValue] = useState<T>(value);
-  const timerRef = useRef<number | null>(null);
-
-  useEffect(() => {
-    if (timerRef.current !== null) {
-      window.clearTimeout(timerRef.current);
-      timerRef.current = null;
+function toActorTable(item: ActorListItem): TableItem {
+  const licenses: ActorLicenseRelation[] = item.licenses;
+  const roles = new Set<Role>(licenses.map(l => l.role));
+  return {
+    id: String(item.id),
+    properties: {
+      "Name": {
+        component: <Link href={`/actors/entry/?entryId=${item.id}`}>{item.full_name}</Link>
+      },
+      "Type": {
+        component: item.type,
+      },
+      "Roles": {
+        component: Array.from(roles).join(", ")
+      },
+      "Licenses": {
+        component: (
+          <>{licenses.map((l, index, list) => {
+            return (
+              <Fragment key={index}><Link href={`/licenses/entry/?entryId=${l.license_id}`}>{l.mednr ? `${l.mnr}:${l.mednr}` : l.mnr}</Link>{index < list.length - 1 ? ", " : <></>}</Fragment>
+            );
+          })}</>
+        )
+      },
+      "E-mail": {
+        component: item.email ? item.email : "-",
+      },
+      "City": {
+        component: item.city
+      },
+      "Updated At": {
+        component: item.updated_at
+      },
     }
-    timerRef.current = window.setTimeout(() => {
-      setActiveValue(value);
-    }, timeout);
-  }, [value, setActiveValue, timeout, timerRef]);
-  return activeValue;
+  }
 }
 
 function ConnectedListView() {
@@ -168,16 +78,16 @@ function ConnectedListView() {
   const search = params.get("search") || "";
   const [query, setQuery] = useState<string>(search);
   const activeQuery = useDebouncedValue(query, 1000);
-  const router = useRouter()
+  const router = useRouter();
+  const client = useClient();
   
   useEffect(() => {
     router.push(`/system/actors/?search=${activeQuery}`);
   }, [activeQuery])
-
-  const client = useMemo(() => new Client(), []);
+  
   const {data: actorPage, isLoading} = useSWR(
-    [client, "fetchActorPage", page, search],
-    useClientAction,
+    [client, page, search],
+    fetchActorPage,
     {fallbackData: emptyActorPage, keepPreviousData: true}
   );
   const pathname = usePathname();
@@ -196,69 +106,21 @@ function ConnectedListView() {
   )
 }
 
-function toActorTable(item: Actor) {
-  const licenses: License[] = item.licenses;
-  const roles = new Set<Role>(licenses.map(l => l.role));
-  return {
-    id: String(item.id),
-    properties: {
-      "Name": {
-        term: item.full_name,
-        component: <Link href={`/actors/entry/?entryId=${item.id}`}>{item.full_name}</Link>
-      },
-      "Type": {
-        term: item.type,
-        component: item.type,
-      },
-      "Roles": {
-        term: Array.from(roles).join(" "),
-        component: Array.from(roles).join(", ")
-      },
-      "Licenses": {
-        term: licenses.map((l) => {
-          return (
-            l.mednr ? `${l.mnr}:${l.mednr}` : l.mnr
-          );
-        }).join(" "),
-        component: (
-          <>{licenses.map((l, index, list) => {
-            return (
-              <Fragment key={index}><Link href={`/licenses/entry/?entryId=${l.license_id}`}>{l.mednr ? `${l.mnr}:${l.mednr}` : l.mnr}</Link>{index < list.length - 1 ? ", " : <></>}</Fragment>
-            );
-          })}</>
-        )
-      },
-      "E-mail": {
-        term: item.email ? item.email : "-",
-        component: item.email ? item.email : "-",
-      },
-      "City": {
-        term: item.city,
-        component: item.city
-      },
-      "Updated At": {
-        term: item.updated_at,
-        component: item.updated_at
-      },
-    }
-  }
-}
-
 function BaseListView(
   {actors, count, pages, currentPage, pageCount, query, setQuery, isLoading}: {
-    actors: Actor[],
-    count: number,
-    pages: Page[],
-    currentPage: string,
-    pageCount: number,
-    query: string,
-    setQuery: (q: string) => void; 
-    isLoading?: boolean,
+    actors: ActorListItem[];
+    count: number;
+    pages: Page[];
+    currentPage: string;
+    pageCount: number;
+    query: string;
+    setQuery: (q: string) => void;
+    isLoading?: boolean;
   }
 ) {
   const [actionIsOpen, setActionIsOpen] = useState(false);
 
-  const items = useMemo(() => actors.map<SearchableItem>(toActorTable), [actors])
+  const items = useMemo(() => actors.map<TableItem>(toActorTable), [actors])
   const {
     selectedItems,
     toggleItems,
@@ -294,7 +156,7 @@ function BaseListView(
         <button className={`btn btn-outline-secondary ${isLoading ? "disabled" : ""}`} type="button" onClick={toggleItems}>{allSelected ? "Select None" : "Select All"}</button>
         <span className="input-group-text flex-grow-1" >{selectionInfo}</span>
         <button className={`btn btn-outline-secondary dropdown-toggle  ${isLoading ? "disabled" : ""}`} onClick={() => setActionIsOpen(!actionIsOpen)} type="button" aria-expanded={actionIsOpen}>Batch action</button>
-        <ul className={`dropdown-menu ${actionIsOpen ? "show" : ""}`} style={actionIsOpen ? dropdownOpenStyle : {}} onClick={() => setActionIsOpen(false)}>
+        <ul className={`dropdown-menu batch-action-menu ${actionIsOpen ? "show" : ""}`} data-open={actionIsOpen} onClick={() => setActionIsOpen(false)}>
           <li><a className="dropdown-item" href="#">Send license</a></li>
           <li><a className="dropdown-item" href="#">Generate new license</a></li>
           <li><a className="dropdown-item" href="#">Download licenses</a></li>

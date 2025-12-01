@@ -1,5 +1,6 @@
 import Sidebar, { NavItem } from "@/components/Sidebar";
-import { UserProvider, ReuqireAuth } from "../../components/UserProvider";
+import { UserProvider, RequireAuth } from "../../components/UserProvider";
+import { ClientProvider } from "@/components/ClientProvider";
 
 export default function SystemLayout({
   children,
@@ -32,12 +33,14 @@ export default function SystemLayout({
   return (
     <div className="flex-grow-1 d-flex">
       <UserProvider>
-        <ReuqireAuth>
+        <RequireAuth>
           <Sidebar items={navItems}/>
-          <main className="flex-grow-1 p-3">
-            {children}
-          </main>
-        </ReuqireAuth>
+            <ClientProvider>
+              <main className="flex-grow-1 p-3">
+                {children}
+              </main>
+            </ClientProvider>
+        </RequireAuth>
       </UserProvider>
     </div>
   );

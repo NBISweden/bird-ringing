@@ -1,4 +1,5 @@
-import { createContext, useContext } from "react";
+import { createContext, useContext, Context } from "react";
+import { Client } from "./client";
 
 export type User = {
     username: string;
@@ -15,4 +16,16 @@ export const useUser = () => {
     }
 
     return user;
+}
+
+export const ClientContext = createContext<Client | null>(null);
+
+export const useClient = () => {
+    const client = useContext(ClientContext);
+
+    if (!client) {
+        throw new Error("No client object available");
+    }
+
+    return client;
 }

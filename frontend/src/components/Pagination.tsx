@@ -1,9 +1,5 @@
 import Link from "next/link";
-
-export type Page = {
-  href: string | null;
-  rel: string;
-}
+import { Page } from "@/app/system/common";
 
 export const Pagination = (
   {pages, currentPage, label, pageCount}: {
