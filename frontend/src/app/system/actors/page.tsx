@@ -82,8 +82,10 @@ function ConnectedListView() {
   const client = useClient();
   
   useEffect(() => {
-    router.push(`/system/actors/?search=${activeQuery}`);
-  }, [activeQuery])
+    if (search !== activeQuery) {
+      router.push(`/system/actors/?search=${activeQuery}`);
+    }
+  }, [activeQuery, search]);
   
   const {data: actorPage, isLoading} = useSWR(
     [client, page, search],
