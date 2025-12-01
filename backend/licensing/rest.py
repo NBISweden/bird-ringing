@@ -32,7 +32,7 @@ class ActorSerializer(serializers.ModelSerializer):
     type = serializers.ChoiceField(choices=ActorTypeChoices, source="get_type_display")
     sex = serializers.ChoiceField(choices=SexChoices, source="get_sex_display")
     language = serializers.ChoiceField(choices=LanguageChoices, source="get_language_display")
-    licenses = ActorLicenseRelationSerializer(many=True, read_only=True)
+    current_license_relations = ActorLicenseRelationSerializer(many=True, read_only=True)
     class Meta:
         model = Actor
         fields = [
@@ -53,7 +53,7 @@ class ActorSerializer(serializers.ModelSerializer):
             "postal_code",
             "city",
             "country",
-            "licenses",
+            "current_license_relations",
             "updated_at",
         ]
 

@@ -36,7 +36,7 @@ const emptyActorPage: PagedResponse<ActorListItem> = {
 }
 
 function toActorTable(item: ActorListItem): TableItem {
-  const licenses: ActorLicenseRelation[] = item.licenses;
+  const licenses: ActorLicenseRelation[] = item.current_license_relations;
   const roles = new Set<Role>(licenses.map(l => l.role));
   return {
     id: String(item.id),

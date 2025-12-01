@@ -23,7 +23,7 @@ export type ActorBase = {
 }
 
 export type ActorListItem = ActorBase & {
-  licenses: ActorLicenseRelation[],
+  current_license_relations: ActorLicenseRelation[],
 }
 
 export type ActorLicenseRelation = {

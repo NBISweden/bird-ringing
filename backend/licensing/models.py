@@ -104,6 +104,10 @@ class Actor(ChangeTracking):
 
     description = models.TextField(blank=True, default='')
 
+    @property
+    def current_license_relations(self):
+        return LicenseRelation.objects.filter(actor=self, license__version=0)
+
     def __str__(self):
         return self.full_name
 
