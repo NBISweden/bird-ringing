@@ -1,5 +1,5 @@
 "use client"
-import { useState, CSSProperties, Suspense, useMemo, useEffect } from "react";
+import { useState, Suspense, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { Fragment } from "react";
 import { useItemSelections, useDebouncedValue } from "../hooks";
