@@ -24,7 +24,7 @@ export function UserProvider({children, requireAuth}: {children: React.ReactNode
   );
 }
 
-export function ReuqireAuth({children}: {children: React.ReactNode}) {
+export function RequireAuth({children}: {children: React.ReactNode}) {
   const user = useContext(UserContext);
   const router = useRouter();
   useEffect(() => {

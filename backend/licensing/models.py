@@ -104,6 +104,10 @@ class Actor(ChangeTracking):
 
     description = models.TextField(blank=True, default='')
 
+    @property
+    def current_license_relations(self):
+        return LicenseRelation.objects.filter(actor=self, license__version=0)
+
     def __str__(self):
         return self.full_name
 
@@ -117,6 +121,10 @@ class LicenseSequence(ChangeTracking):
     """
     mnr = models.CharField(max_length=4, validators=[MinLengthValidator(limit_value=4)], unique=True)
     status = models.PositiveIntegerField(choices=LicenseStatusChoices)
+
+    @property
+    def current(self):
+        return License.objects.filter(sequence=self, version=0).first()
 
     @property
     def current(self):
@@ -221,6 +229,10 @@ class LicenseRelation(ChangeTracking):
     license = models.ForeignKey(License, on_delete=models.CASCADE, related_name="actors")
     mednr = models.CharField(max_length=4, validators=[MinLengthValidator(limit_value=4)], blank=True, default='')
     role = models.PositiveIntegerField(choices=LicenseRoleChoices)
+
+    @property
+    def mnr(self):
+        return self.license.sequence.mnr
 
     def copy_to(self, license: License):
         self.pk = None
