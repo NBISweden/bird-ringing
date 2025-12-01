@@ -128,9 +128,10 @@ class ActorViewSet(viewsets.ModelViewSet):
     # TODO: override get_object in order to select instances using date insteade of primary key
     queryset = Actor.objects.all()
     serializer_class = ActorSerializer
-    filter_backends = [filters.SearchFilter]
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     search_fields = ["email", "alternative_email", "full_name", "first_name", "last_name", "city"]
     pagination_class = StandardResultsSetPagination
+    ordering = ["full_name", "city", "country"]
 
 
 
