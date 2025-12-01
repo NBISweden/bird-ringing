@@ -71,11 +71,11 @@ export function getPageNumber(href: string): number {
 export function getPages<T>(pathname: string, params: ReadonlyURLSearchParams, pageData: PagedResponse<T>): Page[] {
   const pages: Page[] = [
     {
-      rel: "First",
+      rel: "Första",
       href: hrefWithParams(pathname, params, 1),
     },
     {
-      rel: "Previous",
+      rel: "Föregående",
       href: pageData.previous ? hrefWithParams(pathname, params, getPageNumber(pageData.previous)) : null,
     },
     ...Array.from({length: pageData.num_pages}).map<Page>((_, index) => {
@@ -85,11 +85,11 @@ export function getPages<T>(pathname: string, params: ReadonlyURLSearchParams, p
       }
     }),
     {
-      rel: "Next",
+      rel: "Nästa",
       href: pageData.next ? hrefWithParams(pathname, params, getPageNumber(pageData.next)) : null,
     },
     {
-      rel: "Last",
+      rel: "Sista",
       href: hrefWithParams(pathname, params, pageData.num_pages),
     }
   ];

@@ -41,16 +41,16 @@ function toActorTable(item: ActorListItem): TableItem {
   return {
     id: String(item.id),
     properties: {
-      "Name": {
+      "Namn": {
         component: <Link href={`/actors/entry/?entryId=${item.id}`}>{item.full_name}</Link>
       },
-      "Type": {
+      "Typ": {
         component: item.type,
       },
-      "Roles": {
+      "Roller": {
         component: Array.from(roles).join(", ")
       },
-      "Licenses": {
+      "Licenser": {
         component: (
           <>{licenses.map((l, index, list) => {
             return (
@@ -59,13 +59,13 @@ function toActorTable(item: ActorListItem): TableItem {
           })}</>
         )
       },
-      "E-mail": {
+      "E-post": {
         component: item.email ? item.email : "-",
       },
-      "City": {
+      "Ort": {
         component: item.city
       },
-      "Updated At": {
+      "Senast uppdaterad": {
         component: item.updated_at
       },
     }
@@ -128,15 +128,15 @@ function BaseListView(
     allSelected
   } = useItemSelections(new Set(items.map(r => r.id)));
   const columns = [
-    "Name",
-    "Type",
-    "Roles",
-    "Licenses",
-    "E-mail",
-    "City",
-    "Updated At",
+    "Namn",
+    "Typ",
+    "Roller",
+    "Licenser",
+    "E-post",
+    "Ort",
+    "Senast uppdaterad",
   ]
-  const selectionInfo = isLoading ? "Loading data" : `${selectedItems.size} of ${count} selected`;
+  const selectionInfo = isLoading ? "Laddar data" : `${selectedItems.size} valda av ${count}`;
   return (
     <div className="container">
       <h2>Actor List View</h2>
@@ -147,22 +147,22 @@ function BaseListView(
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           className="form-control"
-          placeholder={"Name, E-mail, City"}
-          aria-label="Filter for actor table"
-          aria-describedby="basic-addon1"
+          placeholder={"Namn, E-post, Ort"}
+          aria-label="Filtrera tabellen"
+          aria-describedby="Tabellfilter"
         />
       </div>
       <div className="input-group mb-3">
-        <button className={`btn btn-outline-secondary ${isLoading ? "disabled" : ""}`} type="button" onClick={toggleItems}>{allSelected ? "Select None" : "Select All"}</button>
+        <button className={`btn btn-outline-secondary ${isLoading ? "disabled" : ""}`} type="button" onClick={toggleItems}>{allSelected ? "Välj inga" : "Välj alla"}</button>
         <span className="input-group-text flex-grow-1" >{selectionInfo}</span>
-        <button className={`btn btn-outline-secondary dropdown-toggle  ${isLoading ? "disabled" : ""}`} onClick={() => setActionIsOpen(!actionIsOpen)} type="button" aria-expanded={actionIsOpen}>Batch action</button>
+        <button className={`btn btn-outline-secondary dropdown-toggle  ${isLoading ? "disabled" : ""}`} onClick={() => setActionIsOpen(!actionIsOpen)} type="button" aria-expanded={actionIsOpen}>Batch-funktioner</button>
         <ul className={`dropdown-menu batch-action-menu ${actionIsOpen ? "show" : ""}`} data-open={actionIsOpen} onClick={() => setActionIsOpen(false)}>
-          <li><a className="dropdown-item" href="#">Send license</a></li>
-          <li><a className="dropdown-item" href="#">Generate new license</a></li>
-          <li><a className="dropdown-item" href="#">Download licenses</a></li>
+          <li><a className="dropdown-item" href="#">Skicka licens</a></li>
+          <li><a className="dropdown-item" href="#">Skapa ny licens</a></li>
+          <li><a className="dropdown-item" href="#">Ladda ned licenser</a></li>
           <li><hr className="dropdown-divider" /></li>
-          <li><a className="dropdown-item" href="#">Disable</a></li>
-          <li><a className="dropdown-item" href="#">Enable</a></li>
+          <li><a className="dropdown-item" href="#">Avaktivera</a></li>
+          <li><a className="dropdown-item" href="#">Aktivera</a></li>
         </ul>
       </div>
       <div className="d-flex flex-row align-items-center gap-3">
