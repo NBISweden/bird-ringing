@@ -31,17 +31,15 @@ export default function SystemLayout({
     }
   ]
   return (
-    <div className="flex-grow-1 d-flex">
-      <UserProvider>
-        <RequireAuth>
-          <Sidebar items={navItems}/>
-            <ClientProvider>
-              <main className="flex-grow-1 p-3">
-                {children}
-              </main>
-            </ClientProvider>
-        </RequireAuth>
-      </UserProvider>
-    </div>
+    <UserProvider>
+      <RequireAuth>
+        <Sidebar items={navItems}/>
+        <ClientProvider>
+          <main className="flex-grow-1 p-3 h-100 overflow-auto">
+            {children}
+          </main>
+        </ClientProvider>
+      </RequireAuth>
+    </UserProvider>
   );
 }

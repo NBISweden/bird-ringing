@@ -12,9 +12,9 @@ export default function RootLayout({
     <html lang="sv">
       <body>
         <UserProvider>
-          <div className="d-flex flex-column min-vh-100">
+          <div className="d-flex flex-column vh-100">
             <Header/>
-            <div className="flex-grow-1 d-flex">
+            <div className="flex-grow-1 flex-shrink-1 d-flex overflow-hidden">
               {children}
             </div>
           </div>

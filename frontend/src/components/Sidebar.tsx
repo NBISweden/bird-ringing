@@ -14,7 +14,7 @@ export default function Sidebar({items}: {items: NavItem[]}) {
 
     return (
         <nav
-            className={`bg-primary bg-opacity-25 border-end sidebar d-md-flex flex-column ${
+            className={`bg-primary bg-opacity-25 border-end sidebar d-md-flex flex-column h-100 overflow-auto ${
                 collapsed ? "sidebar-collapsed" : ""
             }`}
         >
