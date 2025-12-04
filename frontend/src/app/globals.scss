@@ -85,6 +85,11 @@ body {
   overflow: hidden;
 }
 
+.sidebar .nav-label > .nav-label-content {
+  display: inline-block;
+  min-width: 9.5rem;
+}
+
 .batch-action-menu {
   position: absolute;
   inset: 0px 0px auto auto;

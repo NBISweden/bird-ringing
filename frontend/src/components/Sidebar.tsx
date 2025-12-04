@@ -33,7 +33,7 @@ export default function Sidebar({items}: {items: NavItem[]}) {
                             <li key={index} className="nav-item">
                                 <Link href={ni.href} className="nav-link d-flex align-items-center">
                                     <i className={`bi ${ni.icon} fs-5 text-secondary me-2`}></i>
-                                    <span className="nav-label">{ni.label}</span>
+                                    <span className="nav-label"><span className="nav-label-content">{ni.label}</span></span>
                                 </Link>
                             </li>
                         )
