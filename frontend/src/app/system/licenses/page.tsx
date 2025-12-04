@@ -1,7 +1,6 @@
 "use client"
 import { useState, Suspense, useMemo, useEffect } from "react";
 import Link from "next/link";
-import { Fragment } from "react";
 import { useItemSelections, useDebouncedValue } from "../hooks";
 import { Pagination } from "../../../components/Pagination";
 import useSWR from "swr";
@@ -9,25 +8,23 @@ import { usePathname, useSearchParams } from 'next/navigation'
 import Spinner from "@/components/Spinner";
 import { useRouter } from 'next/navigation';
 import {
-  ActorLicenseRelation,
   PagedResponse,
-  Role,
   getPages,
   hrefWithParams,
   Page,
-  ActorListItem,
+  LicenseListItem,
   TableItem,
 } from "../common"
 import { Client } from "../client";
 import { useClient } from "../contexts";
 
-async function fetchActorPage(
-  [client, _ctx, page, search]: [Client, "actors", number, string]
-): Promise<PagedResponse<ActorListItem>> {
-  return client.fetchActorPage(page, search)
+async function fetchLicensePage(
+  [client, _ctx, page, search]: [Client, "licenses", number, string]
+): Promise<PagedResponse<LicenseListItem>> {
+  return client.fetchLicensePage(page, search)
 }
 
-const emptyActorPage: PagedResponse<ActorListItem> = {
+const emptyLicensePage: PagedResponse<LicenseListItem> = {
   results: [],
   next: null,
   previous: null,
@@ -35,40 +32,31 @@ const emptyActorPage: PagedResponse<ActorListItem> = {
   count: 0,
 }
 
-function toActorTable(item: ActorListItem): TableItem {
-  const licenses: ActorLicenseRelation[] = item.current_license_relations;
-  const roles = new Set<Role>(licenses.map(l => l.role));
+function toLicenseTable(item: LicenseListItem): TableItem {
+  const licenseHolderInfo = item.current.actors.find(r => r.role === "ringer");
+  const licenseHolder = licenseHolderInfo ? licenseHolderInfo.actor : undefined;
   return {
-    id: String(item.id),
-    properties: {
-      "Namn": {
-        component: <Link href={`/actors/entry/?entryId=${item.id}`}>{item.full_name}</Link>
-      },
-      "Typ": {
-        component: item.type,
-      },
-      "Roller": {
-        component: Array.from(roles).join(", ")
-      },
-      "Licenser": {
-        component: (
-          <>{licenses.map((l, index, list) => {
-            return (
-              <Fragment key={index}><Link href={`/licenses/entry/?entryId=${l.license_id}`}>{l.mednr ? `${l.mnr}:${l.mednr}` : l.mnr}</Link>{index < list.length - 1 ? ", " : <></>}</Fragment>
-            );
-          })}</>
-        )
-      },
-      "E-post": {
-        component: item.email ? item.email : "-",
-      },
-      "Ort": {
-        component: item.city
-      },
-      "Senast uppdaterad": {
-        component: item.updated_at
-      },
-    }
+    id: item.mnr,
+      properties: {
+        "Mnr": {
+          component: <Link href={`license-view/?entryId=${item.mnr}`}>{item.mnr}</Link>
+        },
+        "Type": {
+          component: licenseHolder?.type,
+        },
+        "License holder": {
+          component: licenseHolder?.full_name,
+        },
+        "Number of helpers": {
+          component: String(item.current.actors.length)
+        },
+        "License version": {
+          component: String(item.current.version),
+        },
+        "Final Report Status": {
+          component: String(item.current.report_status),
+        },
+      }
   }
 }
 
@@ -83,34 +71,34 @@ function ConnectedListView() {
   
   useEffect(() => {
     if (search !== activeQuery) {
-      router.push(`/system/actors/?search=${activeQuery}`);
+      router.push(`/system/licenses/?search=${activeQuery}`);
     }
   }, [activeQuery, search]);
   
-  const {data: actorPage, isLoading} = useSWR(
-    [client, "actors", page, search],
-    fetchActorPage,
-    {fallbackData: emptyActorPage, keepPreviousData: true}
+  const {data: LicensePage, isLoading} = useSWR(
+    [client, "licenses", page, search],
+    fetchLicensePage,
+    {fallbackData: emptyLicensePage, keepPreviousData: true}
   );
   const pathname = usePathname();
-  const pages = getPages(pathname, params, actorPage);
+  const pages = getPages(pathname, params, LicensePage);
   const currentPage = hrefWithParams(pathname, params, page, search)
   return (
     <BaseListView
       isLoading={isLoading}
-      actors={actorPage.results}
-      count={actorPage.count}
+      licenses={LicensePage.results}
+      count={LicensePage.count}
       pages={pages}
       query={query}
       setQuery={setQuery}
-      currentPage={currentPage} pageCount={actorPage.num_pages}
+      currentPage={currentPage} pageCount={LicensePage.num_pages}
     />
   )
 }
 
 function BaseListView(
-  {actors, count, pages, currentPage, pageCount, query, setQuery, isLoading}: {
-    actors: ActorListItem[];
+  {licenses, count, pages, currentPage, pageCount, query, setQuery, isLoading}: {
+    licenses: LicenseListItem[];
     count: number;
     pages: Page[];
     currentPage: string;
@@ -122,7 +110,7 @@ function BaseListView(
 ) {
   const [actionIsOpen, setActionIsOpen] = useState(false);
 
-  const items = useMemo(() => actors.map<TableItem>(toActorTable), [actors])
+  const items = useMemo(() => licenses.map<TableItem>(toLicenseTable), [licenses])
   const {
     selectedItems,
     toggleItems,
@@ -130,18 +118,17 @@ function BaseListView(
     allSelected
   } = useItemSelections(new Set(items.map(r => r.id)));
   const columns = [
-    "Namn",
-    "Typ",
-    "Roller",
-    "Licenser",
-    "E-post",
-    "Ort",
-    "Senast uppdaterad",
+    "Mnr",
+    "Type",
+    "License holder",
+    "Number of helpers",
+    "License version",
+    "Final Report Status",
   ]
   const selectionInfo = isLoading ? "Laddar data" : `${selectedItems.size} valda av ${count}`;
   return (
     <div className="container">
-      <h2>Actor List View</h2>
+      <h2>License List View</h2>
       <div className="input-group mb-3">
         <span className="input-group-text">Filter</span>
         <input
@@ -149,7 +136,7 @@ function BaseListView(
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           className="form-control"
-          placeholder={"Namn, E-post, Ort"}
+          placeholder={"Mnr"}
           aria-label="Filtrera tabellen"
           aria-describedby="Tabellfilter"
         />
@@ -197,7 +184,7 @@ function BaseListView(
 
 export default function ListView() {
   return (
-    <Suspense fallback={<BaseListView query="" setQuery={() => {}} actors={[]} count={0} pages={[]} currentPage="" pageCount={0}/>}>
+    <Suspense fallback={<BaseListView query="" setQuery={() => {}} licenses={[]} count={0} pages={[]} currentPage="" pageCount={0}/>}>
       <ConnectedListView />
     </Suspense>
   )

@@ -204,6 +204,9 @@ class Species(ChangeTracking):
     A Species describes a species that is available for licensed activities.
     """
 
+    class Meta:
+        verbose_name_plural = "Species"
+
     name = models.CharField(max_length=512)
     scientific_name = models.CharField(max_length=512, blank=True, default='')
     scientific_code = models.CharField(max_length=128, blank=True, default='')

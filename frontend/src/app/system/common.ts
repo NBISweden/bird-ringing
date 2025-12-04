@@ -95,3 +95,24 @@ export function getPages<T>(pathname: string, params: ReadonlyURLSearchParams, p
   ];
   return pages;
 }
+
+export type LicenseListItem = {
+    mnr: string;
+    current: LicenseCurrent;
+    status: number;
+}
+
+export type LicenseCurrent = {
+    actors: LicenseActorRelation[];
+    version: number;
+    location: string;
+    description: string;
+    report_status: number;
+}
+
+export type LicenseActorRelation = {
+    actor: ActorBase;
+    role: string;
+    mednr?: string;
+}
+

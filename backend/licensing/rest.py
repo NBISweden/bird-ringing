@@ -119,8 +119,10 @@ class LicenseSequenceSerializer(serializers.HyperlinkedModelSerializer):
 class LicenseSequenceViewSet(viewsets.ModelViewSet):
     # TODO: override get_object in order to select instances using date insteade of primary key
     lookup_field = "mnr"
-    queryset = LicenseSequence.objects.all()
+    queryset = LicenseSequence.objects.all().order_by('mnr')
     serializer_class = LicenseSequenceSerializer
+    filter_backends = [filters.SearchFilter]
+    search_fields = ["mnr"]
     pagination_class = StandardResultsSetPagination
 
 
@@ -132,7 +134,6 @@ class ActorViewSet(viewsets.ModelViewSet):
     search_fields = ["email", "alternative_email", "full_name", "first_name", "last_name", "city"]
     pagination_class = StandardResultsSetPagination
     ordering = ["full_name", "city", "country"]
-
 
 
 router = routers.DefaultRouter()
