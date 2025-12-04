@@ -17,13 +17,6 @@ export default function SystemLayout({
     },
     {
       type: "item",
-      label: "Licenses-test",
-      href: "/system/license-test/",
-      id: "licenses",
-      icon: "bi-journal-check"
-    },
-    {
-      type: "item",
       label: "Licenses",
       href: "/system/licenses/",
       id: "licenses",

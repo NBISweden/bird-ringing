@@ -1,89 +1,122 @@
 "use client"
-import { useState, CSSProperties, useMemo } from "react";
+import { useState, Suspense, useMemo, useEffect } from "react";
 import Link from "next/link";
-import { useItemSelections, useFilter, SearchableItem } from "@/app/system/hooks";
+import { useItemSelections, useDebouncedValue } from "../hooks";
+import { Pagination } from "../../../components/Pagination";
+import useSWR from "swr";
+import { usePathname, useSearchParams } from 'next/navigation'
+import Spinner from "@/components/Spinner";
+import { useRouter } from 'next/navigation';
+import {
+  PagedResponse,
+  getPages,
+  hrefWithParams,
+  Page,
+  LicenseListItem,
+  TableItem,
+} from "../common"
+import { Client } from "../client";
+import { useClient } from "../contexts";
 
-import useSWR from 'swr';
-import { PagedResponse } from '../common'
-
-const fetcher = async (url: string): Promise<PagedResponse> => {
-  const res = await fetch(url);
-
-  if (!res.ok) {
-    throw new Error('Error response status');
-  }
-
-  return res.json();
+async function fetchLicensePage(
+  [client, _ctx, page, search]: [Client, "licenses", number, string]
+): Promise<PagedResponse<LicenseListItem>> {
+  return client.fetchLicensePage(page, search)
 }
 
-const getPagedLicenses = (page: number) => {
-  const { data, error } = useSWR(`http://localhost:3210/api/license_sequence/?page=${page}`, fetcher);
+const emptyLicensePage: PagedResponse<LicenseListItem> = {
+  results: [],
+  next: null,
+  previous: null,
+  num_pages: 0,
+  count: 0,
+}
 
+function toLicenseTable(item: LicenseListItem): TableItem {
+  const licenseHolderInfo = item.current.actors.find(r => r.role === "ringer");
+  const licenseHolder = licenseHolderInfo ? licenseHolderInfo.actor : undefined;
   return {
-    data: data?.results,
-    count: data?.count,
-    numPages: data?.num_pages,
-    nextPage: data?.next,
-    previousPage: data?.previous,
-    isLoading: !error && !data,
-    isError: error,
-  }
-}
-
-const dropdownOpenStyle: CSSProperties = {
-  position: "absolute",
-  inset: "0px 0px auto auto",
-  margin: "0px",
-  transform: "translate(0px, 40px)",
-}
-
-export default function ListView() {
-  const [actionIsOpen, setActionIsOpen] = useState(false);
-
-  const { data: licenses, isLoading, isError } = getPagedLicenses(1)
-  const loadingElement = <div>Loading...</div>
-  const errorElement = <div>Error loading licenses</div>
-
-  const items = (licenses || []).map<SearchableItem>(item => {
-    const licenseHolderInfo = item.current.actors.find(r => r.role === "ringer");
-    const licenseHolder = licenseHolderInfo ? licenseHolderInfo.actor : undefined;
-    return {
-      id: item.mnr,
+    id: item.mnr,
       properties: {
         "Mnr": {
-          term: item.mnr,
-          component: <Link href={`/bird-ringing/license-view/?entryId=${item.mnr}`}>{item.mnr}</Link>
+          component: <Link href={`license-view/?entryId=${item.mnr}`}>{item.mnr}</Link>
         },
         "Type": {
-          term: licenseHolder?.type,
           component: licenseHolder?.type,
         },
         "License holder": {
-          term: licenseHolder?.full_name,
           component: licenseHolder?.full_name,
         },
         "Number of helpers": {
-          term: String(item.current.actors?.length),
-          component: String(item.current.actors?.length)
+          component: String(item.current.actors.length)
         },
         "License version": {
-          term: String(item.current?.version),
-          component: String(item.current?.version),
+          component: String(item.current.version),
         },
         "Final Report Status": {
-          term: String(item.current?.report_status),
-          component: String(item.current?.report_status),
+          component: String(item.current.report_status),
         },
       }
+  }
+}
+
+function ConnectedListView() {
+  const params = useSearchParams();
+  const page = params.get("page") || 1;
+  const search = params.get("search") || "";
+  const [query, setQuery] = useState<string>(search);
+  const activeQuery = useDebouncedValue(query, 1000);
+  const router = useRouter();
+  const client = useClient();
+  
+  useEffect(() => {
+    if (search !== activeQuery) {
+      router.push(`/system/licenses/?search=${activeQuery}`);
     }
-  })
-  const {filter, setFilter, filteredItems} = useFilter(items)
+  }, [activeQuery, search]);
+  
+  const {data: LicensePage, isLoading} = useSWR(
+    [client, "licenses", page, search],
+    fetchLicensePage,
+    {fallbackData: emptyLicensePage, keepPreviousData: true}
+  );
+  const pathname = usePathname();
+  const pages = getPages(pathname, params, LicensePage);
+  const currentPage = hrefWithParams(pathname, params, page, search)
+  return (
+    <BaseListView
+      isLoading={isLoading}
+      licenses={LicensePage.results}
+      count={LicensePage.count}
+      pages={pages}
+      query={query}
+      setQuery={setQuery}
+      currentPage={currentPage} pageCount={LicensePage.num_pages}
+    />
+  )
+}
+
+function BaseListView(
+  {licenses, count, pages, currentPage, pageCount, query, setQuery, isLoading}: {
+    licenses: LicenseListItem[];
+    count: number;
+    pages: Page[];
+    currentPage: string;
+    pageCount: number;
+    query: string;
+    setQuery: (q: string) => void;
+    isLoading?: boolean;
+  }
+) {
+  const [actionIsOpen, setActionIsOpen] = useState(false);
+
+  const items = useMemo(() => licenses.map<TableItem>(toLicenseTable), [licenses])
   const {
     selectedItems,
     toggleItems,
     handleItemSelection,
     allSelected
-  } = useItemSelections(new Set(filteredItems.map(r => r.id)));
+  } = useItemSelections(new Set(items.map(r => r.id)));
   const columns = [
     "Mnr",
     "Type",
@@ -92,11 +125,7 @@ export default function ListView() {
     "License version",
     "Final Report Status",
   ]
-
-  // moved these two lines here so that hooks are rendered first
-  if(isLoading) return loadingElement;
-  if(isError) return errorElement;
-
+  const selectionInfo = isLoading ? "Laddar data" : `${selectedItems.size} valda av ${count}`;
   return (
     <div className="container">
       <h2>License List View</h2>
@@ -104,26 +133,30 @@ export default function ListView() {
         <span className="input-group-text">Filter</span>
         <input
           type="text"
-          value={filter}
-          onChange={(event) => setFilter(event.target.value)}
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
           className="form-control"
-          placeholder={columns.join(", ")}
-          aria-label="Filter for license table"
-          aria-describedby="basic-addon1"
+          placeholder={"Mnr, Type, License holder"}
+          aria-label="Filtrera tabellen"
+          aria-describedby="Tabellfilter"
         />
       </div>
       <div className="input-group mb-3">
-        <button className="btn btn-outline-secondary" type="button" onClick={toggleItems}>{allSelected ? "Select None" : "Select All"}</button>
-        <span className="input-group-text flex-grow-1" >{selectedItems.size} of {items.length} selected</span>
-        <button className="btn btn-outline-secondary dropdown-toggle" onClick={() => setActionIsOpen(!actionIsOpen)} type="button" aria-expanded={actionIsOpen}>Batch action</button>
-        <ul className={`dropdown-menu ${actionIsOpen ? "show" : ""}`} style={actionIsOpen ? dropdownOpenStyle : {}} onClick={() => setActionIsOpen(false)}>
-          <li><a className="dropdown-item" href="#">Send license</a></li>
-          <li><a className="dropdown-item" href="#">Generate new license</a></li>
-          <li><a className="dropdown-item" href="#">Download licenses</a></li>
+        <button className={`btn btn-outline-secondary ${isLoading ? "disabled" : ""}`} type="button" onClick={toggleItems}>{allSelected ? "Välj inga" : "Välj alla"}</button>
+        <span className="input-group-text flex-grow-1" >{selectionInfo}</span>
+        <button className={`btn btn-outline-secondary dropdown-toggle  ${isLoading ? "disabled" : ""}`} onClick={() => setActionIsOpen(!actionIsOpen)} type="button" aria-expanded={actionIsOpen}>Batch-funktioner</button>
+        <ul className={`dropdown-menu batch-action-menu ${actionIsOpen ? "show" : ""}`} data-open={actionIsOpen} onClick={() => setActionIsOpen(false)}>
+          <li><a className="dropdown-item" href="#">Skicka licens</a></li>
+          <li><a className="dropdown-item" href="#">Skapa ny licens</a></li>
+          <li><a className="dropdown-item" href="#">Ladda ned licenser</a></li>
           <li><hr className="dropdown-divider" /></li>
-          <li><a className="dropdown-item" href="#">Disable</a></li>
-          <li><a className="dropdown-item" href="#">Enable</a></li>
+          <li><a className="dropdown-item" href="#">Avaktivera</a></li>
+          <li><a className="dropdown-item" href="#">Aktivera</a></li>
         </ul>
+      </div>
+      <div className="d-flex flex-row align-items-center gap-3">
+        <Pagination pages={pages} currentPage={currentPage} pageCount={pageCount} />
+        {isLoading ? <Spinner className="mb-3"/> : <></>}
       </div>
       <table className="table">
         <thead>
@@ -133,8 +166,7 @@ export default function ListView() {
           </tr>
         </thead>
         <tbody>
-          {filteredItems.map(item => {
-            console.log(item)
+          {items.map(item => {
             return (
               <tr key={item.id}>
                 <th><input type="checkbox" onChange={handleItemSelection} checked={selectedItems.has(item.id)} data-actor-id={item.id}/></th>
@@ -144,6 +176,16 @@ export default function ListView() {
           })}
         </tbody>
       </table>
+      <Pagination pages={pages} currentPage={currentPage} pageCount={pageCount} />
     </div>
+  )
+}
+
+
+export default function ListView() {
+  return (
+    <Suspense fallback={<BaseListView query="" setQuery={() => {}} licenses={[]} count={0} pages={[]} currentPage="" pageCount={0}/>}>
+      <ConnectedListView />
+    </Suspense>
   )
 }
