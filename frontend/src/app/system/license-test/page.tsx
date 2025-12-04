@@ -19,7 +19,7 @@ import { Client } from "../client";
 import { useClient } from "../contexts";
 
 async function fetchLicensePage(
-  [client, page, search]: [Client, number, string]
+  [client, _ctx, page, search]: [Client, "licenses", number, string]
 ): Promise<PagedResponse<LicenseListItem>> {
   return client.fetchLicensePage(page, search)
 }
@@ -76,7 +76,7 @@ function ConnectedListView() {
   }, [activeQuery, search]);
   
   const {data: LicensePage, isLoading} = useSWR(
-    [client, page, search],
+    [client, "licenses", page, search],
     fetchLicensePage,
     {fallbackData: emptyLicensePage, keepPreviousData: true}
   );

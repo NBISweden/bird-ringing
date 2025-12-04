@@ -22,7 +22,7 @@ import { Client } from "../client";
 import { useClient } from "../contexts";
 
 async function fetchActorPage(
-  [client, page, search]: [Client, number, string]
+  [client, _ctx, page, search]: [Client, "actors", number, string]
 ): Promise<PagedResponse<ActorListItem>> {
   return client.fetchActorPage(page, search)
 }
@@ -88,7 +88,7 @@ function ConnectedListView() {
   }, [activeQuery, search]);
   
   const {data: actorPage, isLoading} = useSWR(
-    [client, page, search],
+    [client, "actors", page, search],
     fetchActorPage,
     {fallbackData: emptyActorPage, keepPreviousData: true}
   );
