@@ -1,4 +1,4 @@
-import { ActorListItem, PagedResponse } from "./common";
+import { ActorListItem, LicenseListItem, PagedResponse } from "./common";
 
 export class Client {
   private _apiRoot: string;
@@ -11,8 +11,8 @@ export class Client {
     return await this._fetchPage("actor", page, search)
   }
 
-  async fetchLicensePage(page: number, search?: string): Promise<PagedResponse<unknown>> {
-    return await this._fetchPage("license", page, search)
+  async fetchLicensePage(page: number, search?: string): Promise<PagedResponse<LicenseListItem>> {
+    return await this._fetchPage("license_sequence", page, search)
   }
 
   async _fetchPage<T>(type: string, page: number, search?: string): Promise<PagedResponse<T>> {

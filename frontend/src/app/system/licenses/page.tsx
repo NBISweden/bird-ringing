@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useItemSelections, useFilter, SearchableItem } from "@/app/system/hooks";
 
 import useSWR from 'swr';
-import { License, PagedResponse } from '../common'
+import { PagedResponse } from '../common'
 
 const fetcher = async (url: string): Promise<PagedResponse> => {
   const res = await fetch(url);
@@ -134,7 +134,7 @@ export default function ListView() {
         </thead>
         <tbody>
           {filteredItems.map(item => {
-            console.log(item.id)
+            console.log(item)
             return (
               <tr key={item.id}>
                 <th><input type="checkbox" onChange={handleItemSelection} checked={selectedItems.has(item.id)} data-actor-id={item.id}/></th>

@@ -95,48 +95,24 @@ export function getPages<T>(pathname: string, params: ReadonlyURLSearchParams, p
   ];
   return pages;
 }
-export type License = {
+
+export type LicenseListItem = {
     mnr: string;
-    current: Current;
+    current: LicenseCurrent;
     status: number;
 }
 
-export type Current = {
-    actors: LicenseRelation[];
+export type LicenseCurrent = {
+    actors: LicenseActorRelation[];
     version: number;
     location: string;
     description: string;
     report_status: number;
 }
 
-export type LicenseRelation = {
-    actor: Actor;
-    role: LicenseRole;
+export type LicenseActorRelation = {
+    actor: ActorBase;
+    role: string;
     mednr?: string;
 }
-
-export type LicenseRole = "ringer" | "helper";
-
-export type Actor = {
-    full_name: string;
-    first_name: string;
-    last_name: string;
-    type: ActorType;
-    sex: Sex;
-    birth_date: string;
-    language: string;
-    phone_number1: string;
-    phone_number2: string;
-    email: string;
-    alternative_email: string;
-    address: string;
-    co_address: string;
-    postal_code: string;
-    city: string;
-    country: string;
-}
-
-export type ActorType = "station" | "person";
-
-export type Sex = "Male" | "Female" | "Undisclosed" | "N/A"
 
