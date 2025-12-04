@@ -119,7 +119,7 @@ class LicenseSequenceSerializer(serializers.HyperlinkedModelSerializer):
 class LicenseSequenceViewSet(viewsets.ModelViewSet):
     # TODO: override get_object in order to select instances using date insteade of primary key
     lookup_field = "mnr"
-    queryset = LicenseSequence.objects.all()
+    queryset = LicenseSequence.objects.all().order_by('mnr')
     serializer_class = LicenseSequenceSerializer
     filter_backends = [filters.SearchFilter]
     search_fields = ["mnr"]
