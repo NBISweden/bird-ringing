@@ -136,7 +136,7 @@ function BaseListView(
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           className="form-control"
-          placeholder={"Mnr, Type, License holder"}
+          placeholder={"Mnr"}
           aria-label="Filtrera tabellen"
           aria-describedby="Tabellfilter"
         />

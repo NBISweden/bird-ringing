@@ -121,6 +121,8 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
     lookup_field = "mnr"
     queryset = LicenseSequence.objects.all()
     serializer_class = LicenseSequenceSerializer
+    filter_backends = [filters.SearchFilter]
+    search_fields = ["mnr"]
     pagination_class = StandardResultsSetPagination
 
 
