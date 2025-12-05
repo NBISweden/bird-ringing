@@ -57,18 +57,6 @@ body {
   overflow: hidden;
 }
 
-.sidebar-collapsed .nav-link {
-  justify-content: center;
-}
-
-.sidebar-collapsed .nav-link i {
-  margin-right: 0;
-}
-
-.sidebar-collapsed .btn {
-  align-self: center !important;
-  margin-right: 0 !important;
-}
 
 
 .sidebar .nav-link {
@@ -88,9 +76,18 @@ body {
   }
 }
 
+.sidebar .nav-item {
+  max-width: 100%;
+}
 
-.sidebar-collapsed .nav-label {
-  display: none;
+.sidebar .nav-label {
+  flex-shrink: 1;
+  overflow: hidden;
+}
+
+.sidebar .nav-label > .nav-label-content {
+  display: inline-block;
+  min-width: 9.5rem;
 }
 
 .batch-action-menu {
