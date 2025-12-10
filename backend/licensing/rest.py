@@ -6,6 +6,10 @@ import datetime
 from collections import OrderedDict
 
 
+def parse_csv_string(csv_str: str):
+    return [v.strip() for v in csv_str.split(",")]
+
+
 class StandardResultsSetPagination(pagination.PageNumberPagination):
     page_size = 100
     page_size_query_param = "page_size"
@@ -127,14 +131,24 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
 
 
 class ActorViewSet(viewsets.ModelViewSet):
-    # TODO: override get_object in order to select instances using date insteade of primary key
     queryset = Actor.objects.all()
     serializer_class = ActorSerializer
-    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    filter_backends = [filters.SearchFilter]
     search_fields = ["email", "alternative_email", "full_name", "first_name", "last_name", "city"]
     pagination_class = StandardResultsSetPagination
-    ordering = ["full_name", "city", "country"]
+    allowed_ordering = ["full_name", "city", "country", "email", "alternative_email", "first_name", "last_name", "type", "updated_at"]
+    default_ordering = ["full_name", "city", "country"]
 
+    def get_queryset(self):
+        allowed_ordering = set([f"{d}{o}" for o in self.allowed_ordering for d in ["", "-"]])
+        order_by = [
+            o
+            for o in parse_csv_string(self.request.GET.get("ordering", ""))
+            if o in allowed_ordering
+        ]
+        order_by = order_by if len(order_by) > 0 else self.default_ordering
+        queryset = self.queryset.order_by(*order_by)
+        return queryset
 
 router = routers.DefaultRouter()
 router.register(r"license_sequence", LicenseSequenceViewSet)
