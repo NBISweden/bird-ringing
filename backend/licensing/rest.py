@@ -6,8 +6,29 @@ import datetime
 from collections import OrderedDict
 
 
-def parse_csv_string(csv_str: str):
-    return [v.strip() for v in csv_str.split(",")]
+class DynamicOrderingFilter(filters.BaseFilterBackend):
+    """
+    Filter that allows dynamic user controlled filtering
+    """
+    def filter_queryset(self, request, queryset, view):
+        default_ordering = getattr(view, "default_ordering", [])
+        base_allowed_ordering = getattr(view, "allowed_ordering", [])
+        allowed_ordering = set(base_allowed_ordering)
+        order_by = [
+            o
+            for o in self._parse_csv_string(request.GET.get("ordering", ""))
+            if o in allowed_ordering
+        ]
+        print(order_by)
+        order_by = order_by if len(order_by) > 0 else default_ordering
+        return queryset.order_by(*order_by)
+
+    def _parse_csv_string(self, csv_str: str):
+        return [v.strip() for v in csv_str.split(",")]
+    
+    @staticmethod
+    def include_reverse(items: list[str]):
+        return [f"{d}{o}" for o in items for d in ["", "-"]]
 
 
 class StandardResultsSetPagination(pagination.PageNumberPagination):
@@ -133,22 +154,15 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
 class ActorViewSet(viewsets.ModelViewSet):
     queryset = Actor.objects.all()
     serializer_class = ActorSerializer
-    filter_backends = [filters.SearchFilter]
+    filter_backends = [filters.SearchFilter, DynamicOrderingFilter]
     search_fields = ["email", "alternative_email", "full_name", "first_name", "last_name", "city"]
     pagination_class = StandardResultsSetPagination
-    allowed_ordering = ["full_name", "city", "country", "email", "alternative_email", "first_name", "last_name", "type", "updated_at"]
+
+    allowed_ordering = DynamicOrderingFilter.include_reverse(
+        ["full_name", "city", "country", "email", "alternative_email", "first_name", "last_name", "type", "updated_at"]
+    )
     default_ordering = ["full_name", "city", "country"]
 
-    def get_queryset(self):
-        allowed_ordering = set([f"{d}{o}" for o in self.allowed_ordering for d in ["", "-"]])
-        order_by = [
-            o
-            for o in parse_csv_string(self.request.GET.get("ordering", ""))
-            if o in allowed_ordering
-        ]
-        order_by = order_by if len(order_by) > 0 else self.default_ordering
-        queryset = self.queryset.order_by(*order_by)
-        return queryset
 
 router = routers.DefaultRouter()
 router.register(r"license_sequence", LicenseSequenceViewSet)
