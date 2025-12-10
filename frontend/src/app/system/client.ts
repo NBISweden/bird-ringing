@@ -7,19 +7,22 @@ export class Client {
     this._apiRoot = apiRoot;
   }
 
-  async fetchActorPage(page: number, search?: string): Promise<PagedResponse<ActorListItem>> {
-    return await this._fetchPage("actor", page, search)
+  async fetchActorPage(page: number, search?: string, ordering?: string): Promise<PagedResponse<ActorListItem>> {
+    return await this._fetchPage("actor", page, search, ordering)
   }
 
   async fetchLicensePage(page: number, search?: string): Promise<PagedResponse<LicenseListItem>> {
     return await this._fetchPage("license_sequence", page, search)
   }
 
-  async _fetchPage<T>(type: string, page: number, search?: string): Promise<PagedResponse<T>> {
+  async _fetchPage<T>(type: string, page: number, search?: string, ordering?: string): Promise<PagedResponse<T>> {
     const url = new URL(this._apiRoot + type + "/");
     url.searchParams.set("page", String(page))
     if (search) {
       url.searchParams.set("search", search)
+    }
+    if (ordering) {
+      url.searchParams.set("ordering", ordering)
     }
     const response = await fetch(`${url.href}`);
     if (response.ok) {

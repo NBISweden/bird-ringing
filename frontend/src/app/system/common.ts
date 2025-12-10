@@ -48,16 +48,21 @@ export type Page = {
   rel: string;
 }
 
-export type TableItem = {
+export type TableItem<P extends string = string> = {
   id: string,
-  properties: Record<string, {component: React.ReactNode}>
+  properties: Record<P, {component: React.ReactNode}>
 }
 
-export function hrefWithParams(pathname: string, params: ReadonlyURLSearchParams, page: number | string, search?: string) {
+export function hrefWithParams(pathname: string, params?: ReadonlyURLSearchParams, page?: number | string, search?: string, ordering?: string) {
   const updatedParams = new URLSearchParams(params)
-  updatedParams.set("page", String(page))
+  if (page) {
+    updatedParams.set("page", String(page))
+  }
   if (search) {
     updatedParams.set("search", search)
+  }
+  if (ordering) {
+    updatedParams.set("ordering", ordering)
   }
   return `${pathname}?${updatedParams.toString()}`
 }

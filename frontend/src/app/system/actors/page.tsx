@@ -20,11 +20,21 @@ import {
 } from "../common"
 import { Client } from "../client";
 import { useClient } from "../contexts";
+import Icon from "@/components/Icon"
+
+type ActorPropertyIds = "name" | "type" | "roles" | "licenses" | "email" | "city" | "updated_at";
+type ColumnProperties = {
+  ordering?: {
+    forward: string,
+    reverse: string,
+  },
+  label: string,
+}
 
 async function fetchActorPage(
-  [client, _ctx, page, search]: [Client, "actors", number, string]
+  [client, _ctx, page, search, ordering]: [Client, "actors", number, string, string]
 ): Promise<PagedResponse<ActorListItem>> {
-  return client.fetchActorPage(page, search)
+  return client.fetchActorPage(page, search, ordering)
 }
 
 const emptyActorPage: PagedResponse<ActorListItem> = {
@@ -35,22 +45,22 @@ const emptyActorPage: PagedResponse<ActorListItem> = {
   count: 0,
 }
 
-function toActorTable(item: ActorListItem): TableItem {
+function toActorTable(item: ActorListItem): TableItem<ActorPropertyIds> {
   const licenses: ActorLicenseRelation[] = item.current_license_relations;
   const roles = new Set<Role>(licenses.map(l => l.role));
   return {
     id: String(item.id),
     properties: {
-      "Namn": {
+      name: {
         component: <Link href={`/actors/entry/?entryId=${item.id}`}>{item.full_name}</Link>
       },
-      "Typ": {
+      type: {
         component: item.type,
       },
-      "Roller": {
+      roles: {
         component: Array.from(roles).join(", ")
       },
-      "Licenser": {
+      licenses: {
         component: (
           <>{licenses.map((l, index, list) => {
             return (
@@ -59,13 +69,13 @@ function toActorTable(item: ActorListItem): TableItem {
           })}</>
         )
       },
-      "E-post": {
+      email: {
         component: item.email ? item.email : "-",
       },
-      "Ort": {
+      city: {
         component: item.city
       },
-      "Senast uppdaterad": {
+      updated_at: {
         component: item.updated_at
       },
     }
@@ -74,8 +84,10 @@ function toActorTable(item: ActorListItem): TableItem {
 
 function ConnectedListView() {
   const params = useSearchParams();
+  const pathname = usePathname();
   const page = params.get("page") || 1;
   const search = params.get("search") || "";
+  const ordering = params.get("ordering") || "";
   const [query, setQuery] = useState<string>(search);
   const activeQuery = useDebouncedValue(query, 1000);
   const router = useRouter();
@@ -83,16 +95,17 @@ function ConnectedListView() {
   
   useEffect(() => {
     if (search !== activeQuery) {
-      router.push(`/system/actors/?search=${activeQuery}`);
+      router.push(
+        hrefWithParams(pathname, undefined, undefined, activeQuery, ordering)
+      );
     }
-  }, [activeQuery, search]);
+  }, [pathname, activeQuery, search, ordering]);
   
   const {data: actorPage, isLoading} = useSWR(
-    [client, "actors", page, search],
+    [client, "actors", page, search, ordering],
     fetchActorPage,
     {fallbackData: emptyActorPage, keepPreviousData: true}
   );
-  const pathname = usePathname();
   const pages = getPages(pathname, params, actorPage);
   const currentPage = hrefWithParams(pathname, params, page, search)
   return (
@@ -103,13 +116,14 @@ function ConnectedListView() {
       pages={pages}
       query={query}
       setQuery={setQuery}
+      params={params}
       currentPage={currentPage} pageCount={actorPage.num_pages}
     />
   )
 }
 
 function BaseListView(
-  {actors, count, pages, currentPage, pageCount, query, setQuery, isLoading}: {
+  {actors, count, pages, currentPage, pageCount, query, setQuery, isLoading, params}: {
     actors: ActorListItem[];
     count: number;
     pages: Page[];
@@ -118,6 +132,7 @@ function BaseListView(
     query: string;
     setQuery: (q: string) => void;
     isLoading?: boolean;
+    params: URLSearchParams;
   }
 ) {
   const [actionIsOpen, setActionIsOpen] = useState(false);
@@ -129,15 +144,50 @@ function BaseListView(
     handleItemSelection,
     allSelected
   } = useItemSelections(new Set(items.map(r => r.id)));
-  const columns = [
-    "Namn",
-    "Typ",
-    "Roller",
-    "Licenser",
-    "E-post",
-    "Ort",
-    "Senast uppdaterad",
-  ]
+  const ordering = params.get("ordering")
+  const columns: Record<ActorPropertyIds, ColumnProperties> = {
+    name: {
+      label: "Namn",
+      ordering: {
+        forward: "full_name",
+        reverse: "-full_name"
+      }
+    },
+    type: {
+      label: "Type",
+      ordering: {
+        forward: "type,full_name",
+        reverse: "-type,full_name"
+      }
+    },
+    roles: {
+      label: "Roller",
+    },
+    licenses: {
+      label: "Licenser"
+    },
+    email: {
+      label: "E-post",
+      ordering: {
+        forward: "email,alternative_email",
+        reverse: "-email,-alternative_email"
+      }
+    },
+    city: {
+      label: "Ort",
+      ordering: {
+        forward: "city,full_name",
+        reverse: "-city,full_name"
+      }
+    },
+    updated_at: {
+      label: "Senast uppdaterad",
+      ordering: {
+        forward: "updated_at,full_name",
+        reverse: "-updated_at,full_name"
+      }
+    }
+  }
   const selectionInfo = isLoading ? "Laddar data" : `${selectedItems.size} valda av ${count}`;
   return (
     <div className="container">
@@ -175,7 +225,29 @@ function BaseListView(
         <thead>
           <tr>
             <th scope="col"></th>
-            {columns.map(c => <th key={c} scope="col">{c}</th>)}
+            {Object.entries(columns).map(([key, c]) => {
+              const direction = c.ordering?.forward === ordering ? "+" : (
+                c.ordering?.reverse === ordering ? "-" : null
+              );
+              const updatedParams = new URLSearchParams(params);
+              if (c.ordering) {
+                updatedParams.set("ordering", direction === "+" ? c.ordering.reverse : c.ordering.forward)
+              }
+              const href = "?" + updatedParams.toString();
+              return (
+                <th key={key} scope="col">{
+                  c.ordering ? (
+                    <Link className="text-nowrap" href={href}>{c.label} {direction ? (
+                      direction === "+" ? <Icon icon="caret-down-fill"/> : <Icon icon="caret-up-fill"/>
+                    ) : (
+                      <></>
+                    )}</Link>
+                  ) : (
+                    c.label
+                  )
+                }</th>
+              );
+            })}
           </tr>
         </thead>
         <tbody>
@@ -183,7 +255,7 @@ function BaseListView(
             return (
               <tr key={item.id}>
                 <th><input type="checkbox" onChange={handleItemSelection} checked={selectedItems.has(item.id)} data-actor-id={item.id}/></th>
-                {columns.map(c => <td key={c}>{item.properties[c].component}</td>)}
+                {Object.entries(columns).map(([key, _c]) => <td key={key}>{item.properties[key].component}</td>)}
               </tr>
             )
           })}
@@ -197,7 +269,7 @@ function BaseListView(
 
 export default function ListView() {
   return (
-    <Suspense fallback={<BaseListView query="" setQuery={() => {}} actors={[]} count={0} pages={[]} currentPage="" pageCount={0}/>}>
+    <Suspense fallback={<BaseListView query="" setQuery={() => {}} actors={[]} count={0} pages={[]} currentPage="" pageCount={0} params={new URLSearchParams()}/>}>
       <ConnectedListView />
     </Suspense>
   )
