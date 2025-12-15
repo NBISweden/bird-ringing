@@ -115,16 +115,12 @@ class Actor(ChangeTracking):
 class LicenseSequence(ChangeTracking):
     """
     A LicenseSequence is the main element that groups a number of license
-    instances together. It carries the the global license identifier MNR
+    instances together. It carries the global license identifier MNR
     and the current status of the license sequence so that one can
     see which state it is currently in.
     """
     mnr = models.CharField(max_length=4, validators=[MinLengthValidator(limit_value=4)], unique=True)
     status = models.PositiveIntegerField(choices=LicenseStatusChoices)
-
-    @property
-    def current(self):
-        return License.objects.filter(sequence=self, version=0).first()
 
     @property
     def current(self):
@@ -217,7 +213,7 @@ class Species(ChangeTracking):
 
 class LicenseRelation(ChangeTracking):
     """
-    A License Relation described the connection between an actor and a license.
+    A License Relation describes the connection between an actor and a license.
 
     Only license relations related to a currently active license may be
     updated.
@@ -312,7 +308,7 @@ class LicensePermissionProperty(ChangeTracking):
     to a license permission in order to further specify the intent.
 
     The idea is to use this for properties that can be enumerated or
-    be treated as boolean properties where and assigned property 
+    be treated as boolean properties where an assigned property
     means that the property applies to the current permission.
 
     A LicensePermissionProperty without a related_type is considered
@@ -338,7 +334,7 @@ class LicensePermission(ChangeTracking):
     When creating a new license for a new period the license permission should
     remain connected to the license of the previous period in order to keep
     a complete record of the activity history. If the same permission or
-    activity is needed for the new period then new license permission should be
+    activity is needed for the new period then a new license permission should be
     created.
     """
 
