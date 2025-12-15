@@ -116,3 +116,13 @@ export type LicenseActorRelation = {
     mednr?: string;
 }
 
+export type ButtonType = (
+  "primary" |
+  "secondary" |
+  "success" |
+  "warning" |
+  "danger" |
+  "info" |
+  "light" |
+  "dark"
+)
