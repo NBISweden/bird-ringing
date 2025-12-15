@@ -6,6 +6,16 @@ import datetime
 from collections import OrderedDict
 
 
+from django_filters import FilterSet, NumberFilter
+from django_filters.rest_framework import DjangoFilterBackend
+import re
+
+class LicenseSequenceFilter(FilterSet):
+    role = NumberFilter(field_name="instances__actors__role")
+    class Meta:
+        model = LicenseSequence
+        fields = ['role']
+
 class StandardResultsSetPagination(pagination.PageNumberPagination):
     page_size = 100
     page_size_query_param = "page_size"
@@ -119,12 +129,28 @@ class LicenseSequenceSerializer(serializers.HyperlinkedModelSerializer):
 class LicenseSequenceViewSet(viewsets.ModelViewSet):
     # TODO: override get_object in order to select instances using date insteade of primary key
     lookup_field = "mnr"
-    queryset = LicenseSequence.objects.all().order_by('mnr')
+    queryset = LicenseSequence.objects.all().distinct().order_by('mnr')
     serializer_class = LicenseSequenceSerializer
-    filter_backends = [filters.SearchFilter]
-    search_fields = ["mnr"]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter]
+    filterset_class = LicenseSequenceFilter
+    search_fields = ['mnr', 'instances__actors__actor__full_name']
     pagination_class = StandardResultsSetPagination
 
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        role = self.request.query_params.get('role', None)
+        search = self.request.query_params.get('search', None)
+
+        if search is not None and role is not None:
+            mnr_matches = re.search(r'\b\d{1,4}\b', search)
+
+            if not mnr_matches:
+                queryset = queryset.filter(
+                    instances__actors__actor__full_name__icontains=search,
+                    instances__actors__role=role
+                )
+
+        return queryset
 
 class ActorViewSet(viewsets.ModelViewSet):
     # TODO: override get_object in order to select instances using date insteade of primary key
