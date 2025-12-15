@@ -1,6 +1,7 @@
 from licensing.models import LicenseSequence, License, Actor, ActorTypeChoices, SexChoices, LanguageChoices, LicenseRoleChoices, LicenseRelation
 
 from rest_framework import routers, serializers, viewsets, filters, pagination, response
+from django.contrib.postgres.aggregates import StringAgg
 from django.db import models
 import datetime
 from collections import OrderedDict
@@ -151,11 +152,38 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
     pagination_class = StandardResultsSetPagination
 
 
+actor_type_label = models.Case(
+    *[
+        models.When(type=value, then=models.Value(label))
+        for value, label in ActorTypeChoices.choices
+    ],
+    output_field=models.CharField(),
+    default=models.Value("")
+)
+
+
+license_role_label = models.Case(
+    *[
+        models.When(models.Q(licenses__role=value, licenses__license__version=0), then=models.Value(label))
+        for value, label in LicenseRoleChoices.choices
+    ],
+    output_field=models.CharField(),
+    default=models.Value("")
+)
+
+
 class ActorViewSet(viewsets.ModelViewSet):
-    queryset = Actor.objects.all()
+    queryset = Actor.objects.annotate(
+        type_label=actor_type_label,
+        license_role_label=StringAgg(
+            license_role_label,
+            delimiter=", ",
+            distinct=True,
+        )
+    ).all()
     serializer_class = ActorSerializer
     filter_backends = [filters.SearchFilter, DynamicOrderingFilter]
-    search_fields = ["email", "alternative_email", "full_name", "first_name", "last_name", "city"]
+    search_fields = ["email", "alternative_email", "full_name", "first_name", "last_name", "city", "licenses__license__sequence__mnr", "type_label", "license_role_label"]
     pagination_class = StandardResultsSetPagination
 
     allowed_ordering = DynamicOrderingFilter.include_reverse(
