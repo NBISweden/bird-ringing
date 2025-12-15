@@ -199,7 +199,7 @@ function BaseListView(
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           className="form-control"
-          placeholder={"Namn, E-post, Ort"}
+          placeholder={"Namn, E-post, Ort, Mnr, Roll, Typ"}
           aria-label="Filtrera tabellen"
           aria-describedby="Tabellfilter"
         />
