@@ -35,6 +35,9 @@ const emptyLicensePage: PagedResponse<LicenseListItem> = {
 function toLicenseTable(item: LicenseListItem): TableItem {
   const licenseHolderInfo = item.current.actors.find(r => r.role === "ringer");
   const licenseHolder = licenseHolderInfo ? licenseHolderInfo.actor : undefined;
+
+  const licenseHelperInfo = item.current.actors.filter(r => r.role === "helper");
+
   return {
     id: item.mnr,
       properties: {
@@ -48,7 +51,7 @@ function toLicenseTable(item: LicenseListItem): TableItem {
           component: licenseHolder?.full_name,
         },
         "Number of helpers": {
-          component: String(item.current.actors.length)
+          component: String(licenseHelperInfo.length)
         },
         "License version": {
           component: String(item.current.version),
