@@ -21,6 +21,7 @@ import {
 import { Client } from "../client";
 import { useClient } from "../contexts";
 import Icon from "@/components/Icon"
+import { useFetchEmailAddressesAction } from "./actions";
 
 type ActorPropertyIds = "name" | "type" | "roles" | "licenses" | "email" | "city" | "updated_at";
 type ColumnProperties = {
@@ -29,6 +30,11 @@ type ColumnProperties = {
     reverse: string,
   },
   label: string,
+}
+type BatchAction = {
+  label: string;
+  action: (itemIds: Set<string>) => void;
+  disabled?: boolean;
 }
 
 async function fetchActorPage(
@@ -92,6 +98,7 @@ function ConnectedListView() {
   const activeQuery = useDebouncedValue(query, 1000);
   const router = useRouter();
   const client = useClient();
+  const fetchEmailAddressesAction = useFetchEmailAddressesAction()
   
   useEffect(() => {
     if (search !== activeQuery) {
@@ -108,6 +115,18 @@ function ConnectedListView() {
   );
   const pages = getPages(pathname, params, actorPage);
   const currentPage = hrefWithParams(pathname, params, page, search)
+  const batchActions: ListViewProps["batchActions"] = [
+    {
+      label: "Hämta e-postadresser",
+      action: fetchEmailAddressesAction
+    },
+    {type: "divider"},
+    {
+      label: "Avaktivera",
+      action: () => {},
+      disabled: true,
+    }
+  ]
   return (
     <BaseListView
       isLoading={isLoading}
@@ -118,22 +137,26 @@ function ConnectedListView() {
       setQuery={setQuery}
       params={params}
       currentPage={currentPage} pageCount={actorPage.num_pages}
+      batchActions={batchActions}
     />
   )
 }
 
+type ListViewProps = {
+  actors: ActorListItem[];
+  count: number;
+  pages: Page[];
+  currentPage: string;
+  pageCount: number;
+  query: string;
+  setQuery: (q: string) => void;
+  isLoading?: boolean;
+  params: URLSearchParams;
+  batchActions: (BatchAction | {type: "divider"})[];
+}
+
 function BaseListView(
-  {actors, count, pages, currentPage, pageCount, query, setQuery, isLoading, params}: {
-    actors: ActorListItem[];
-    count: number;
-    pages: Page[];
-    currentPage: string;
-    pageCount: number;
-    query: string;
-    setQuery: (q: string) => void;
-    isLoading?: boolean;
-    params: URLSearchParams;
-  }
+  {actors, count, pages, currentPage, pageCount, query, setQuery, isLoading, params, batchActions}: ListViewProps
 ) {
   const [actionIsOpen, setActionIsOpen] = useState(false);
 
@@ -209,12 +232,13 @@ function BaseListView(
         <span className="input-group-text flex-grow-1" >{selectionInfo}</span>
         <button className={`btn btn-outline-secondary dropdown-toggle  ${isLoading ? "disabled" : ""}`} onClick={() => setActionIsOpen(!actionIsOpen)} type="button" aria-expanded={actionIsOpen}>Batch-funktioner</button>
         <ul className={`dropdown-menu batch-action-menu ${actionIsOpen ? "show" : ""}`} data-open={actionIsOpen} onClick={() => setActionIsOpen(false)}>
-          <li><a className="dropdown-item" href="#">Skicka licens</a></li>
-          <li><a className="dropdown-item" href="#">Skapa ny licens</a></li>
-          <li><a className="dropdown-item" href="#">Ladda ned licenser</a></li>
-          <li><hr className="dropdown-divider" /></li>
-          <li><a className="dropdown-item" href="#">Avaktivera</a></li>
-          <li><a className="dropdown-item" href="#">Aktivera</a></li>
+          {batchActions.map((action, index) => (
+            "type" in action ? (
+              <li key={index}><hr className="dropdown-divider" /></li>
+            ) : (
+              <li key={index}><span className={`dropdown-item ${action.disabled ? "disabled" : ""}`} onClick={() => action.action(selectedItems)}>{action.label}</span></li>
+            )
+          ))}
         </ul>
       </div>
       <div className="d-flex flex-row align-items-center gap-3">
@@ -269,7 +293,7 @@ function BaseListView(
 
 export default function ListView() {
   return (
-    <Suspense fallback={<BaseListView query="" setQuery={() => {}} actors={[]} count={0} pages={[]} currentPage="" pageCount={0} params={new URLSearchParams()}/>}>
+    <Suspense fallback={<BaseListView query="" setQuery={() => {}} actors={[]} count={0} pages={[]} currentPage="" pageCount={0} params={new URLSearchParams()} batchActions={[]}/>}>
       <ConnectedListView />
     </Suspense>
   )
