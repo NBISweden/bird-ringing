@@ -21,7 +21,7 @@ import { useClient } from "../contexts";
 async function fetchLicensePage(
   [client, _ctx, page, search]: [Client, "licenses", number, string]
 ): Promise<PagedResponse<LicenseListItem>> {
-  return client.fetchLicensePage(page, search)
+  return client.fetchLicensePage(page, search, 1)
 }
 
 const emptyLicensePage: PagedResponse<LicenseListItem> = {
@@ -136,7 +136,7 @@ function BaseListView(
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           className="form-control"
-          placeholder={"Mnr"}
+          placeholder={"Mnr, License holder"}
           aria-label="Filtrera tabellen"
           aria-describedby="Tabellfilter"
         />
