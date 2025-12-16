@@ -56,8 +56,8 @@ function toLicenseTable(item: LicenseListItem): TableItem {
         "License version": {
           component: String(item.current.version),
         },
-        "Final Report Status": {
-          component: String(item.current.report_status),
+        "Final report status": {
+          component: item.current.report_status,
         },
       }
   }
@@ -126,7 +126,7 @@ function BaseListView(
     "License holder",
     "Number of helpers",
     "License version",
-    "Final Report Status",
+    "Final report status",
   ]
   const selectionInfo = isLoading ? "Laddar data" : `${selectedItems.size} valda av ${count}`;
   return (

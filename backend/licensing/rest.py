@@ -1,4 +1,4 @@
-from licensing.models import LicenseSequence, License, Actor, ActorTypeChoices, SexChoices, LanguageChoices, LicenseRoleChoices, LicenseRelation
+from licensing.models import LicenseSequence, License, Actor, ActorTypeChoices, SexChoices, LanguageChoices, LicenseRoleChoices, LicenseRelation, ReportStatusChoices
 
 from rest_framework import routers, serializers, viewsets, filters, pagination, response
 from django.db import models
@@ -105,6 +105,8 @@ class LicenseActorRelationSerializer(serializers.ModelSerializer):
 
 class LicenseSerializer(serializers.ModelSerializer):
     actors = LicenseActorRelationSerializer(many=True, read_only=True)
+    report_status = serializers.ChoiceField(choices=ReportStatusChoices, source="get_report_status_display")
+
     class Meta:
         model = License
         fields = ["actors", "version", "location", "description", "report_status"]
@@ -160,7 +162,6 @@ class ActorViewSet(viewsets.ModelViewSet):
     search_fields = ["email", "alternative_email", "full_name", "first_name", "last_name", "city"]
     pagination_class = StandardResultsSetPagination
     ordering = ["full_name", "city", "country"]
-
 
 router = routers.DefaultRouter()
 router.register(r"license_sequence", LicenseSequenceViewSet)
