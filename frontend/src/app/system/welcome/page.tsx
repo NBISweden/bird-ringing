@@ -1,9 +1,29 @@
 'use client';
 
-import { useUser } from "../contexts";
+import { useModalsContext, useUser } from "../contexts";
 
 export default function WelcomePage() {
   const user = useUser();
+  const modals = useModalsContext();
+
+  const handleButtonPress = () => {
+    modals.add({
+      title: "This is a demo modal",
+      content: "This is the content of the demo modal",
+      closeAction: () => console.log("close action"),
+      actions: [
+        {
+          label: "Accept",
+          action: () => console.log("accept action"),
+          type: "success",
+        },
+        {
+          label: "Reject",
+          action: () => console.log("reject action"),
+        }
+      ]
+    })
+  }
 
   return (
     <>
@@ -12,14 +32,14 @@ export default function WelcomePage() {
         <p>You’re successfully logged in as an expert.</p>
       </div>
       <div className="d-flex flex-wrap gap-2 mb-3">
-        <button type="button" className="btn btn-primary">Primary</button>
-        <button type="button" className="btn btn-secondary">Secondary</button>
-        <button type="button" className="btn btn-success">Success</button>
-        <button type="button" className="btn btn-danger">Danger</button>
-        <button type="button" className="btn btn-warning">Warning</button>
-        <button type="button" className="btn btn-info">Info</button>
-        <button type="button" className="btn btn-light">Light</button>
-        <button type="button" className="btn btn-dark">Dark</button>
+        <button type="button" className="btn btn-primary" onClick={handleButtonPress}>Primary</button>
+        <button type="button" className="btn btn-secondary" onClick={handleButtonPress}>Secondary</button>
+        <button type="button" className="btn btn-success" onClick={handleButtonPress}>Success</button>
+        <button type="button" className="btn btn-danger" onClick={handleButtonPress}>Danger</button>
+        <button type="button" className="btn btn-warning" onClick={handleButtonPress}>Warning</button>
+        <button type="button" className="btn btn-info" onClick={handleButtonPress}>Info</button>
+        <button type="button" className="btn btn-light" onClick={handleButtonPress}>Light</button>
+        <button type="button" className="btn btn-dark" onClick={handleButtonPress}>Dark</button>
       </div>
       <div className="table-responsive w-75">
         <table className="table table-striped table-bordered align-middle">
