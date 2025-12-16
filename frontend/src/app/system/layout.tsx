@@ -11,7 +11,7 @@ export default function SystemLayout({
     {
       type: "item",
       label: "Dashboard",
-      href: "/system/dashboard/",
+      href: "/system/welcome/",
       id: "dashboard",
       icon: "bi-speedometer"
     },
