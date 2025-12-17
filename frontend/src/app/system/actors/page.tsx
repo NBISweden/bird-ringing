@@ -219,7 +219,7 @@ function BaseListView(
   const selectionInfo = isLoading ? "Laddar data" : `${selectedItems.size} valda av ${count}`;
   return (
     <div className="container">
-      <h2>Actor List View</h2>
+      <h2>Ringare</h2>
       <div className="input-group mb-3">
         <span className="input-group-text">Filter</span>
         <input
