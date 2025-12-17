@@ -58,7 +58,7 @@ function toActorTable(item: ActorListItem): TableItem<ActorPropertyIds> {
     id: String(item.id),
     properties: {
       name: {
-        component: <Link href={`/actors/entry/?entryId=${item.id}`}>{item.full_name}</Link>
+        component: item.full_name
       },
       type: {
         component: item.type,
@@ -70,7 +70,7 @@ function toActorTable(item: ActorListItem): TableItem<ActorPropertyIds> {
         component: (
           <>{licenses.map((l, index, list) => {
             return (
-              <Fragment key={index}><Link href={`/licenses/entry/?entryId=${l.license_id}`}>{l.mednr ? `${l.mnr}:${l.mednr}` : l.mnr}</Link>{index < list.length - 1 ? ", " : <></>}</Fragment>
+              <Fragment key={index}>{l.mednr ? `${l.mnr}:${l.mednr}` : l.mnr}{index < list.length - 1 ? ", " : <></>}</Fragment>
             );
           })}</>
         )
