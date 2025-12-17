@@ -171,6 +171,15 @@ license_role_label = models.Case(
     default=models.Value("")
 )
 
+license_mnr = models.Case(
+    models.When(
+        models.Q(licenses__license__version=0),
+        then=models.F("licenses__license__sequence__mnr"),
+    ),
+    output_field=models.CharField(),
+    default=models.Value("")
+)
+
 
 class ActorViewSet(viewsets.ModelViewSet):
     queryset = Actor.objects.annotate(
@@ -179,11 +188,26 @@ class ActorViewSet(viewsets.ModelViewSet):
             license_role_label,
             delimiter=", ",
             distinct=True,
-        )
+        ),
+        license_mnr=StringAgg(
+            license_mnr,
+            delimiter=", ",
+            distinct=True,
+        ),
     ).all()
     serializer_class = ActorSerializer
     filter_backends = [filters.SearchFilter, DynamicOrderingFilter]
-    search_fields = ["email", "alternative_email", "full_name", "first_name", "last_name", "city", "licenses__license__sequence__mnr", "type_label", "license_role_label"]
+    search_fields = [
+        "email",
+        "alternative_email",
+        "full_name",
+        "first_name",
+        "last_name",
+        "city",
+        "type_label",
+        "license_role_label",
+        "license_mnr",
+    ]
     pagination_class = StandardResultsSetPagination
 
     allowed_ordering = DynamicOrderingFilter.include_reverse(
