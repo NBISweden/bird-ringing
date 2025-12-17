@@ -98,7 +98,7 @@ function ConnectedListView() {
   const activeQuery = useDebouncedValue(query, 1000);
   const router = useRouter();
   const client = useClient();
-  const fetchEmailAddressesAction = useFetchEmailAddressesAction()
+  const fetchEmailAddressesAction = useFetchEmailAddressesAction(client);
   
   useEffect(() => {
     if (search !== activeQuery) {

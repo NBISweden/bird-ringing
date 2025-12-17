@@ -181,6 +181,51 @@ license_mnr = models.Case(
 )
 
 
+email_listing = models.Case(
+    models.When(
+        ~(models.Q(email="") | models.Q(email__isnull=True)),
+        then=models.functions.Concat(models.F("full_name"), models.Value(" <"), models.F("email"), models.Value(">"), output_field=models.CharField()),
+    ),
+    output_field=models.CharField(),
+    default=None
+)
+
+
+class ActorPropertyViewSet(viewsets.ViewSet):
+    allowed_properties = {
+        "email",
+        "alternative_email",
+        "full_name",
+        "email_listing",
+    }
+
+    def list(self, request):
+        property = request.GET.get("property")
+
+        if property is None or property not in self.allowed_properties:
+            raise serializers.ValidationError({"property": "Include a valid property"})
+
+        ids = set(
+            [
+                id.strip()
+                for id in request.GET.get("ids").split(",")
+            ]
+            if "ids" in request.GET
+            else []
+        )
+
+        if len(ids) == 0:
+            raise serializers.ValidationError({"ids": "Include atleast 1 id"})
+
+        items = Actor.objects.annotate(email_listing=email_listing).filter(id__in=ids).values_list(property, flat=True)
+
+        return response.Response([
+            item
+            for item in items
+            if item is not None
+        ])
+
+
 class ActorViewSet(viewsets.ModelViewSet):
     queryset = Actor.objects.annotate(
         type_label=actor_type_label,
@@ -219,3 +264,4 @@ class ActorViewSet(viewsets.ModelViewSet):
 router = routers.DefaultRouter()
 router.register(r"license_sequence", LicenseSequenceViewSet)
 router.register(r"actor", ActorViewSet)
+router.register(r"actor_property", ActorPropertyViewSet, basename="actor_property")
