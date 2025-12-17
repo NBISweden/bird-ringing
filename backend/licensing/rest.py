@@ -7,9 +7,38 @@ import datetime
 from collections import OrderedDict
 
 
+def parse_csv_string(csv_str: str):
+    return [v.strip() for v in csv_str.split(",")]
+
+
+class IdSelectionFilter(filters.BaseFilterBackend):
+    """
+    Filter that allows filtering on object ids
+    """
+
+    def filter_queryset(self, request, queryset, view):
+        id_filter_target = getattr(view, "id_filter_target", "id")
+        id_filter_max = getattr(view, "id_filter_max", 100)
+        
+        filter_ids = set([
+            id
+            for id in parse_csv_string(request.GET.get("ids", ""))
+            if id
+        ])
+
+        if len(filter_ids) > id_filter_max:
+            raise serializers.ValidationError({"ids": f"Too many ids in list {len(filter_ids)}. Maximum limit is {id_filter_max}"})
+
+        if len(filter_ids) > 0:
+            filter = {f"{id_filter_target}__in": filter_ids}
+            return queryset.filter(**filter)
+        else:
+            return queryset
+
+
 class DynamicOrderingFilter(filters.BaseFilterBackend):
     """
-    Filter that allows dynamic user controlled filtering
+    Filter that allows dynamic user controlled ordering
     """
     def filter_queryset(self, request, queryset, view):
         default_ordering = getattr(view, "default_ordering", [])
@@ -17,16 +46,12 @@ class DynamicOrderingFilter(filters.BaseFilterBackend):
         allowed_ordering = set(base_allowed_ordering)
         order_by = [
             o
-            for o in self._parse_csv_string(request.GET.get("ordering", ""))
+            for o in parse_csv_string(request.GET.get("ordering", ""))
             if o in allowed_ordering
         ]
-        print(order_by)
         order_by = order_by if len(order_by) > 0 else default_ordering
         return queryset.order_by(*order_by)
 
-    def _parse_csv_string(self, csv_str: str):
-        return [v.strip() for v in csv_str.split(",")]
-    
     @staticmethod
     def include_reverse(items: list[str]):
         return [f"{d}{o}" for o in items for d in ["", "-"]]
@@ -181,51 +206,6 @@ license_mnr = models.Case(
 )
 
 
-email_listing = models.Case(
-    models.When(
-        ~(models.Q(email="") | models.Q(email__isnull=True)),
-        then=models.functions.Concat(models.F("full_name"), models.Value(" <"), models.F("email"), models.Value(">"), output_field=models.CharField()),
-    ),
-    output_field=models.CharField(),
-    default=None
-)
-
-
-class ActorPropertyViewSet(viewsets.ViewSet):
-    allowed_properties = {
-        "email",
-        "alternative_email",
-        "full_name",
-        "email_listing",
-    }
-
-    def list(self, request):
-        property = request.GET.get("property")
-
-        if property is None or property not in self.allowed_properties:
-            raise serializers.ValidationError({"property": "Include a valid property"})
-
-        ids = set(
-            [
-                id.strip()
-                for id in request.GET.get("ids").split(",")
-            ]
-            if "ids" in request.GET
-            else []
-        )
-
-        if len(ids) == 0:
-            raise serializers.ValidationError({"ids": "Include atleast 1 id"})
-
-        items = Actor.objects.annotate(email_listing=email_listing).filter(id__in=ids).values_list(property, flat=True)
-
-        return response.Response([
-            item
-            for item in items
-            if item is not None
-        ])
-
-
 class ActorViewSet(viewsets.ModelViewSet):
     queryset = Actor.objects.annotate(
         type_label=actor_type_label,
@@ -241,7 +221,7 @@ class ActorViewSet(viewsets.ModelViewSet):
         ),
     ).all()
     serializer_class = ActorSerializer
-    filter_backends = [filters.SearchFilter, DynamicOrderingFilter]
+    filter_backends = [filters.SearchFilter, DynamicOrderingFilter, IdSelectionFilter]
     search_fields = [
         "email",
         "alternative_email",
@@ -264,4 +244,3 @@ class ActorViewSet(viewsets.ModelViewSet):
 router = routers.DefaultRouter()
 router.register(r"license_sequence", LicenseSequenceViewSet)
 router.register(r"actor", ActorViewSet)
-router.register(r"actor_property", ActorPropertyViewSet, basename="actor_property")

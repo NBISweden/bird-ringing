@@ -28,23 +28,23 @@ export function useFetchEmailAddressesAction(client: Client) {
   return action;
 }
 
-async function fetchActorProperty([client, ids, property]: [Client, string[], string]): Promise<string[]> {
-  return client.fetchActorProperty(ids, property)
+async function fetchActorEmail([client, ids]: [Client, string[], string]): Promise<string[]> {
+  const actors = await Client.fetchAll(client.fetchActorPage(1, undefined, undefined, ids));
+  return actors.filter(a => a.email).map(a => `${a.full_name} <${a.email}>`)
 }
 
 function ActorEmailList({ids}: {ids: string[]}) {
   const client = useClient();
 
   const {data, isLoading, error} = useSWR(
-    [client, ids, "email_listing"],
-    fetchActorProperty,
+    [client, ids],
+    fetchActorEmail,
     {fallbackData: []}
   );
 
   return isLoading ? (
     <>
-      Loading email listings
-      <Spinner />
+      <Spinner /><span className="ms-3">Loading email listings</span>
     </>
   ) : (
     error ? (
