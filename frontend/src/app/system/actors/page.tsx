@@ -21,7 +21,7 @@ import {
 import { Client } from "../client";
 import { useClient } from "../contexts";
 import Icon from "@/components/Icon"
-import { useFetchEmailAddressesAction } from "./actions";
+import { useFetchEmailAddressesAction, useSendLicenseEmailAction } from "./actions";
 
 type ActorPropertyIds = "name" | "type" | "roles" | "licenses" | "email" | "city" | "updated_at";
 type ColumnProperties = {
@@ -99,6 +99,7 @@ function ConnectedListView() {
   const router = useRouter();
   const client = useClient();
   const fetchEmailAddressesAction = useFetchEmailAddressesAction(client);
+  const sendLicenseEmailAction = useSendLicenseEmailAction();
   
   useEffect(() => {
     if (search !== activeQuery) {
@@ -119,6 +120,10 @@ function ConnectedListView() {
     {
       label: "Hämta e-postadresser",
       action: fetchEmailAddressesAction
+    },
+    {
+      label: "Skicka licenser",
+      action: sendLicenseEmailAction
     },
     {type: "divider"},
     {
