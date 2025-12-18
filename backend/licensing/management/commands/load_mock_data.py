@@ -123,7 +123,8 @@ class Command(BaseCommand):
                 sex=sex_mapping[actor["sex"]],
                 birth_date=datetime.datetime.now() if type == 0 else None,
                 language=1,
-                email=actor["email"]
+                email=actor["email"],
+                city=actor["city"],
             )
             actor_map[actor["id"]] = actor_obj
         return actor_map
