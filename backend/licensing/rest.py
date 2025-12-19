@@ -220,6 +220,23 @@ class LicenseSequenceSerializer(serializers.HyperlinkedModelSerializer):
         # TODO: Implement real function
         raise RuntimeError(f"update: {validated_data}")
 
+license_status_label = Case(
+    *[
+        When(status=value, then=Value(label))
+        for value, label in LicenseStatusChoices.choices
+    ],
+    output_field=CharField(),
+    default=Value("")
+)
+
+license_report_status_label = Case(
+    *[
+        When(instances__report_status=value, then=Value(label))
+        for value, label in ReportStatusChoices.choices
+    ],
+    output_field=CharField(),
+    default=Value("")
+)
 
 class LicenseSequenceViewSet(viewsets.ModelViewSet):
     # TODO: override get_object in order to select instances using date insteade of primary key
@@ -245,6 +262,8 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
                 default=Value(None),
                 output_field=DateField()
             )),
+            status_label=license_status_label,
+            report_status_label=license_report_status_label
         )
 
         if search is not None:
@@ -252,12 +271,11 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
             for term in search_terms:
                 queryset = queryset.filter(
                 Q(license_holder__icontains=term)
-                |
-                Q(mnr__icontains=term)
-                |
-                Q(methods__icontains=term)
-                |
-                Q(last_email_sent_at__icontains=term)
+                | Q(mnr__icontains=term)
+                | Q(methods__icontains=term)
+                | Q(last_email_sent_at__icontains=term)
+                | Q(status_label__icontains=term)
+                | Q(report_status_label__icontains=term)
                 )
 
         return queryset
