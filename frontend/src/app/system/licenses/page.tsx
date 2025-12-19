@@ -151,7 +151,7 @@ function BaseListView(
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           className="form-control"
-          placeholder={"Mnr, License holder, Trapping methods"}
+          placeholder={"Mnr, License holder, Trapping methods, Last email sent at"}
           aria-label="Filtrera tabellen"
           aria-describedby="Tabellfilter"
         />
