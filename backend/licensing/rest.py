@@ -18,7 +18,7 @@ from django.contrib.postgres.aggregates import StringAgg
 from django.db import models
 from django.db.models import Q, Case, When, Value, CharField, DateField, Max
 from collections import OrderedDict
-
+from datetime import datetime, timezone, timedelta
 
 def parse_csv_string(csv_str: str):
     return [v.strip() for v in csv_str.split(",")]
@@ -206,7 +206,7 @@ class LicenseSequenceSerializer(serializers.HyperlinkedModelSerializer):
     license_holder = serializers.CharField()
     status = serializers.ChoiceField(choices=LicenseStatusChoices, source="get_status_display")
     methods = serializers.CharField()
-    last_email_sent_at = serializers.DateTimeField()
+    last_email_sent_at = serializers.DateTimeField(read_only=True)
 
     class Meta:
         model = LicenseSequence
@@ -219,6 +219,17 @@ class LicenseSequenceSerializer(serializers.HyperlinkedModelSerializer):
     def update(self, instance, validated_data):
         # TODO: Implement real function
         raise RuntimeError(f"update: {validated_data}")
+
+    def to_representation(self, instance):
+        ret = super().to_representation(instance)
+
+        if ret['last_email_sent_at']:
+            dt = datetime.fromisoformat(ret['last_email_sent_at'])
+            cet = timezone(timedelta(hours=1))  # this needs to be fixed properly at the seriealization level
+            dt = dt.astimezone(cet)
+            ret['last_email_sent_at'] = dt.strftime("%Y-%m-%d %H:%M")
+        return ret
+
 
 license_status_label = Case(
     *[
