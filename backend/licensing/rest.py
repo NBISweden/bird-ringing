@@ -10,6 +10,7 @@ from licensing.models import (
     ReportStatusChoices,
     LicensePermission,
     LicensePermissionType,
+    LicenseStatusChoices,
 )
 
 from rest_framework import routers, serializers, viewsets, filters, pagination, response
@@ -203,6 +204,7 @@ class LicenseSerializer(serializers.ModelSerializer):
 class LicenseSequenceSerializer(serializers.HyperlinkedModelSerializer):
     current = LicenseSerializer(read_only=True)
     license_holder = serializers.CharField()
+    status = serializers.ChoiceField(choices=LicenseStatusChoices, source="get_status_display")
     methods = serializers.CharField()
 
     class Meta:

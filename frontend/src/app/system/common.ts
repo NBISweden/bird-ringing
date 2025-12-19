@@ -104,7 +104,7 @@ export function getPages<T>(pathname: string, params: ReadonlyURLSearchParams, p
 export type LicenseListItem = {
     mnr: string;
     current: LicenseCurrent;
-    status: number;
+    status: string;
     license_holder: string;
     methods: string;
 }
