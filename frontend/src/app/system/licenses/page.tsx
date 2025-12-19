@@ -48,7 +48,7 @@ function toLicenseTable(item: LicenseListItem): TableItem {
           component: licenseHolder?.type,
         },
         "License holder": {
-          component: licenseHolder?.full_name,
+          component: item.license_holder,
         },
         "Number of helpers": {
           component: String(licenseHelperInfo.length)
@@ -139,7 +139,7 @@ function BaseListView(
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           className="form-control"
-          placeholder={"Mnr"}
+          placeholder={"Mnr, License holder"}
           aria-label="Filtrera tabellen"
           aria-describedby="Tabellfilter"
         />

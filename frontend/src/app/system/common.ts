@@ -105,6 +105,7 @@ export type LicenseListItem = {
     mnr: string;
     current: LicenseCurrent;
     status: number;
+    license_holder: string;
 }
 
 export type LicenseCurrent = {

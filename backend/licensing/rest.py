@@ -13,6 +13,7 @@ from licensing.models import (
 from rest_framework import routers, serializers, viewsets, filters, pagination, response
 from django.contrib.postgres.aggregates import StringAgg
 from django.db import models
+from django.db.models import Q, Case, When, Value, CharField, DateField, Max
 from collections import OrderedDict
 
 
@@ -188,10 +189,11 @@ class LicenseSerializer(serializers.ModelSerializer):
 
 class LicenseSequenceSerializer(serializers.HyperlinkedModelSerializer):
     current = LicenseSerializer(read_only=True)
+    license_holder = serializers.CharField()
 
     class Meta:
         model = LicenseSequence
-        fields = ["mnr", "current", "status"]
+        fields = ["mnr", "current", "status", "license_holder"]
 
     def create(self, validated_data):
         # TODO: Implement real function
@@ -205,12 +207,33 @@ class LicenseSequenceSerializer(serializers.HyperlinkedModelSerializer):
 class LicenseSequenceViewSet(viewsets.ModelViewSet):
     # TODO: override get_object in order to select instances using date insteade of primary key
     lookup_field = "mnr"
-    queryset = LicenseSequence.objects.all().order_by("mnr")
+    queryset = LicenseSequence.objects.all().distinct().order_by("mnr")
     serializer_class = LicenseSequenceSerializer
-    filter_backends = [filters.SearchFilter]
-    search_fields = ["mnr"]
     pagination_class = StandardResultsSetPagination
 
+    def get_queryset(self):
+        queryset = super().get_queryset()
+
+        search = self.request.query_params.get('search', None)
+
+        queryset = queryset.annotate(
+            license_holder=StringAgg(Case(
+                When(instances__actors__role=Value(1), then='instances__actors__actor__full_name'),
+                default=Value(None),
+                output_field=CharField()
+            ), delimiter=', ', distinct=True)
+        )
+
+        if search is not None:
+            search_terms = search.split()
+            for term in search_terms:
+                queryset = queryset.filter(
+                Q(license_holder__icontains=term)
+                |
+                Q(mnr__icontains=term)
+                )
+
+        return queryset
 
 actor_type_label = models.Case(
     *[
