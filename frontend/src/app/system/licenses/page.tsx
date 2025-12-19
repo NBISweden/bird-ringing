@@ -59,6 +59,9 @@ function toLicenseTable(item: LicenseListItem): TableItem {
         "Final report status": {
           component: item.current.report_status,
         },
+        "Trapping methods": {
+          component: item.methods,
+        },
       }
   }
 }
@@ -127,6 +130,7 @@ function BaseListView(
     "Number of helpers",
     "License version",
     "Final report status",
+    "Trapping methods",
   ]
   const selectionInfo = isLoading ? "Laddar data" : `${selectedItems.size} valda av ${count}`;
   return (
@@ -139,7 +143,7 @@ function BaseListView(
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           className="form-control"
-          placeholder={"Mnr, License holder"}
+          placeholder={"Mnr, License holder, Trapping methods"}
           aria-label="Filtrera tabellen"
           aria-describedby="Tabellfilter"
         />

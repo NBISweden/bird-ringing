@@ -8,6 +8,8 @@ from licensing.models import (
     LicenseRoleChoices,
     LicenseRelation,
     ReportStatusChoices,
+    LicensePermission,
+    LicensePermissionType,
 )
 
 from rest_framework import routers, serializers, viewsets, filters, pagination, response
@@ -177,6 +179,17 @@ class LicenseActorRelationSerializer(serializers.ModelSerializer):
         model = LicenseRelation
         fields = ["actor", "role", "mednr"]
 
+class LicensePermissionTypeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = LicensePermissionType
+        fields = ['name']
+
+class LicenseLicensePermissionSerializer(serializers.ModelSerializer):
+    type = LicensePermissionTypeSerializer(read_only=True)
+
+    class Meta:
+        model = LicensePermission
+        fields = ["type"]
 
 class LicenseSerializer(serializers.ModelSerializer):
     actors = LicenseActorRelationSerializer(many=True, read_only=True)
@@ -190,10 +203,11 @@ class LicenseSerializer(serializers.ModelSerializer):
 class LicenseSequenceSerializer(serializers.HyperlinkedModelSerializer):
     current = LicenseSerializer(read_only=True)
     license_holder = serializers.CharField()
+    methods = serializers.CharField()
 
     class Meta:
         model = LicenseSequence
-        fields = ["mnr", "current", "status", "license_holder"]
+        fields = ["mnr", "current", "status", "license_holder", "methods"]
 
     def create(self, validated_data):
         # TODO: Implement real function
@@ -221,7 +235,8 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
                 When(instances__actors__role=Value(1), then='instances__actors__actor__full_name'),
                 default=Value(None),
                 output_field=CharField()
-            ), delimiter=', ', distinct=True)
+            ), delimiter=', ', distinct=True),
+            methods=StringAgg('instances__permissions__type__name', delimiter=', ', distinct=True)
         )
 
         if search is not None:
@@ -231,6 +246,8 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
                 Q(license_holder__icontains=term)
                 |
                 Q(mnr__icontains=term)
+                |
+                Q(methods__icontains=term)
                 )
 
         return queryset
