@@ -206,10 +206,11 @@ class LicenseSequenceSerializer(serializers.HyperlinkedModelSerializer):
     license_holder = serializers.CharField()
     status = serializers.ChoiceField(choices=LicenseStatusChoices, source="get_status_display")
     methods = serializers.CharField()
+    last_email_sent_at = serializers.DateTimeField()
 
     class Meta:
         model = LicenseSequence
-        fields = ["mnr", "current", "status", "license_holder", "methods"]
+        fields = ["mnr", "current", "status", "license_holder", "methods", "last_email_sent_at"]
 
     def create(self, validated_data):
         # TODO: Implement real function
@@ -238,7 +239,12 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
                 default=Value(None),
                 output_field=CharField()
             ), delimiter=', ', distinct=True),
-            methods=StringAgg('instances__permissions__type__name', delimiter=', ', distinct=True)
+            methods=StringAgg('instances__permissions__type__name', delimiter=', ', distinct=True),
+            last_email_sent_at=Max(Case(
+                When(instances__communication__status=Value(1), then='instances__communication__updated_at'),
+                default=Value(None),
+                output_field=DateField()
+            )),
         )
 
         if search is not None:
@@ -250,6 +256,8 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
                 Q(mnr__icontains=term)
                 |
                 Q(methods__icontains=term)
+                |
+                Q(last_email_sent_at__icontains=term)
                 )
 
         return queryset

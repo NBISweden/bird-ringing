@@ -53,14 +53,20 @@ function toLicenseTable(item: LicenseListItem): TableItem {
         "Number of helpers": {
           component: String(licenseHelperInfo.length)
         },
+        "Trapping methods": {
+          component: item.methods,
+        },
         "License version": {
           component: String(item.current.version),
         },
         "Final report status": {
           component: item.current.report_status,
         },
-        "Trapping methods": {
-          component: item.methods,
+        "License status": {
+          component: item.status,
+        },
+        "Last email sent at": {
+          component: item.last_email_sent_at,
         },
       }
   }
@@ -128,9 +134,11 @@ function BaseListView(
     "Type",
     "License holder",
     "Number of helpers",
+    "Trapping methods",
     "License version",
     "Final report status",
-    "Trapping methods",
+    "License status",
+    "Last email sent at"
   ]
   const selectionInfo = isLoading ? "Laddar data" : `${selectedItems.size} valda av ${count}`;
   return (

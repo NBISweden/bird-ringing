@@ -107,6 +107,7 @@ export type LicenseListItem = {
     status: string;
     license_holder: string;
     methods: string;
+    last_email_sent_at: string;
 }
 
 export type LicenseCurrent = {
