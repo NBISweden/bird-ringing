@@ -20,11 +20,27 @@ import {
 } from "../common"
 import { Client } from "../client";
 import { useClient } from "../contexts";
+import Icon from "@/components/Icon"
+import { useFetchEmailAddressesAction, useSendLicenseEmailAction } from "./actions";
+
+type ActorPropertyIds = "name" | "type" | "roles" | "licenses" | "email" | "city" | "updated_at";
+type ColumnProperties = {
+  ordering?: {
+    forward: string,
+    reverse: string,
+  },
+  label: string,
+}
+type BatchAction = {
+  label: string;
+  action: (itemIds: Set<string>) => void;
+  disabled?: boolean;
+}
 
 async function fetchActorPage(
-  [client, _ctx, page, search]: [Client, "actors", number, string]
+  [client, _ctx, page, search, ordering]: [Client, "actors", number, string, string]
 ): Promise<PagedResponse<ActorListItem>> {
-  return client.fetchActorPage(page, search)
+  return client.fetchActorPage(page, search, ordering)
 }
 
 const emptyActorPage: PagedResponse<ActorListItem> = {
@@ -35,37 +51,37 @@ const emptyActorPage: PagedResponse<ActorListItem> = {
   count: 0,
 }
 
-function toActorTable(item: ActorListItem): TableItem {
+function toActorTable(item: ActorListItem): TableItem<ActorPropertyIds> {
   const licenses: ActorLicenseRelation[] = item.current_license_relations;
   const roles = new Set<Role>(licenses.map(l => l.role));
   return {
     id: String(item.id),
     properties: {
-      "Namn": {
-        component: <Link href={`/actors/entry/?entryId=${item.id}`}>{item.full_name}</Link>
+      name: {
+        component: item.full_name
       },
-      "Typ": {
+      type: {
         component: item.type,
       },
-      "Roller": {
+      roles: {
         component: Array.from(roles).join(", ")
       },
-      "Licenser": {
+      licenses: {
         component: (
           <>{licenses.map((l, index, list) => {
             return (
-              <Fragment key={index}><Link href={`/licenses/entry/?entryId=${l.license_id}`}>{l.mednr ? `${l.mnr}:${l.mednr}` : l.mnr}</Link>{index < list.length - 1 ? ", " : <></>}</Fragment>
+              <Fragment key={index}>{l.mednr ? `${l.mnr}:${l.mednr}` : l.mnr}{index < list.length - 1 ? ", " : <></>}</Fragment>
             );
           })}</>
         )
       },
-      "E-post": {
+      email: {
         component: item.email ? item.email : "-",
       },
-      "Ort": {
+      city: {
         component: item.city
       },
-      "Senast uppdaterad": {
+      updated_at: {
         component: item.updated_at
       },
     }
@@ -74,27 +90,48 @@ function toActorTable(item: ActorListItem): TableItem {
 
 function ConnectedListView() {
   const params = useSearchParams();
+  const pathname = usePathname();
   const page = params.get("page") || 1;
   const search = params.get("search") || "";
+  const ordering = params.get("ordering") || "";
   const [query, setQuery] = useState<string>(search);
   const activeQuery = useDebouncedValue(query, 1000);
   const router = useRouter();
   const client = useClient();
+  const fetchEmailAddressesAction = useFetchEmailAddressesAction(client);
+  const sendLicenseEmailAction = useSendLicenseEmailAction();
   
   useEffect(() => {
     if (search !== activeQuery) {
-      router.push(`/system/actors/?search=${activeQuery}`);
+      router.push(
+        hrefWithParams(pathname, undefined, undefined, activeQuery, ordering)
+      );
     }
-  }, [activeQuery, search]);
+  }, [pathname, activeQuery, search, ordering]);
   
   const {data: actorPage, isLoading} = useSWR(
-    [client, "actors", page, search],
+    [client, "actors", page, search, ordering],
     fetchActorPage,
     {fallbackData: emptyActorPage, keepPreviousData: true}
   );
-  const pathname = usePathname();
   const pages = getPages(pathname, params, actorPage);
   const currentPage = hrefWithParams(pathname, params, page, search)
+  const batchActions: ListViewProps["batchActions"] = [
+    {
+      label: "Hämta e-postadresser",
+      action: fetchEmailAddressesAction
+    },
+    {
+      label: "Skicka licenser",
+      action: sendLicenseEmailAction
+    },
+    {type: "divider"},
+    {
+      label: "Avaktivera",
+      action: () => {},
+      disabled: true,
+    }
+  ]
   return (
     <BaseListView
       isLoading={isLoading}
@@ -103,22 +140,28 @@ function ConnectedListView() {
       pages={pages}
       query={query}
       setQuery={setQuery}
+      params={params}
       currentPage={currentPage} pageCount={actorPage.num_pages}
+      batchActions={batchActions}
     />
   )
 }
 
+type ListViewProps = {
+  actors: ActorListItem[];
+  count: number;
+  pages: Page[];
+  currentPage: string;
+  pageCount: number;
+  query: string;
+  setQuery: (q: string) => void;
+  isLoading?: boolean;
+  params: URLSearchParams;
+  batchActions: (BatchAction | {type: "divider"})[];
+}
+
 function BaseListView(
-  {actors, count, pages, currentPage, pageCount, query, setQuery, isLoading}: {
-    actors: ActorListItem[];
-    count: number;
-    pages: Page[];
-    currentPage: string;
-    pageCount: number;
-    query: string;
-    setQuery: (q: string) => void;
-    isLoading?: boolean;
-  }
+  {actors, count, pages, currentPage, pageCount, query, setQuery, isLoading, params, batchActions}: ListViewProps
 ) {
   const [actionIsOpen, setActionIsOpen] = useState(false);
 
@@ -129,19 +172,54 @@ function BaseListView(
     handleItemSelection,
     allSelected
   } = useItemSelections(new Set(items.map(r => r.id)));
-  const columns = [
-    "Namn",
-    "Typ",
-    "Roller",
-    "Licenser",
-    "E-post",
-    "Ort",
-    "Senast uppdaterad",
-  ]
+  const ordering = params.get("ordering")
+  const columns: Record<ActorPropertyIds, ColumnProperties> = {
+    name: {
+      label: "Namn",
+      ordering: {
+        forward: "full_name",
+        reverse: "-full_name"
+      }
+    },
+    type: {
+      label: "Type",
+      ordering: {
+        forward: "type,full_name",
+        reverse: "-type,full_name"
+      }
+    },
+    roles: {
+      label: "Roller",
+    },
+    licenses: {
+      label: "Licenser"
+    },
+    email: {
+      label: "E-post",
+      ordering: {
+        forward: "email,alternative_email",
+        reverse: "-email,-alternative_email"
+      }
+    },
+    city: {
+      label: "Ort",
+      ordering: {
+        forward: "city,full_name",
+        reverse: "-city,full_name"
+      }
+    },
+    updated_at: {
+      label: "Senast uppdaterad",
+      ordering: {
+        forward: "updated_at,full_name",
+        reverse: "-updated_at,full_name"
+      }
+    }
+  }
   const selectionInfo = isLoading ? "Laddar data" : `${selectedItems.size} valda av ${count}`;
   return (
     <div className="container">
-      <h2>Actor List View</h2>
+      <h2>Ringare</h2>
       <div className="input-group mb-3">
         <span className="input-group-text">Filter</span>
         <input
@@ -149,7 +227,7 @@ function BaseListView(
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           className="form-control"
-          placeholder={"Namn, E-post, Ort"}
+          placeholder={"Namn, E-post, Ort, Mnr, Roll, Typ"}
           aria-label="Filtrera tabellen"
           aria-describedby="Tabellfilter"
         />
@@ -159,12 +237,13 @@ function BaseListView(
         <span className="input-group-text flex-grow-1" >{selectionInfo}</span>
         <button className={`btn btn-outline-secondary dropdown-toggle  ${isLoading ? "disabled" : ""}`} onClick={() => setActionIsOpen(!actionIsOpen)} type="button" aria-expanded={actionIsOpen}>Batch-funktioner</button>
         <ul className={`dropdown-menu batch-action-menu ${actionIsOpen ? "show" : ""}`} data-open={actionIsOpen} onClick={() => setActionIsOpen(false)}>
-          <li><a className="dropdown-item" href="#">Skicka licens</a></li>
-          <li><a className="dropdown-item" href="#">Skapa ny licens</a></li>
-          <li><a className="dropdown-item" href="#">Ladda ned licenser</a></li>
-          <li><hr className="dropdown-divider" /></li>
-          <li><a className="dropdown-item" href="#">Avaktivera</a></li>
-          <li><a className="dropdown-item" href="#">Aktivera</a></li>
+          {batchActions.map((action, index) => (
+            "type" in action ? (
+              <li key={index}><hr className="dropdown-divider" /></li>
+            ) : (
+              <li key={index}><span className={`dropdown-item ${action.disabled ? "disabled" : ""}`} onClick={() => action.action(selectedItems)}>{action.label}</span></li>
+            )
+          ))}
         </ul>
       </div>
       <div className="d-flex flex-row align-items-center gap-3">
@@ -175,7 +254,29 @@ function BaseListView(
         <thead>
           <tr>
             <th scope="col"></th>
-            {columns.map(c => <th key={c} scope="col">{c}</th>)}
+            {Object.entries(columns).map(([key, c]) => {
+              const direction = c.ordering?.forward === ordering ? "+" : (
+                c.ordering?.reverse === ordering ? "-" : null
+              );
+              const updatedParams = new URLSearchParams(params);
+              if (c.ordering) {
+                updatedParams.set("ordering", direction === "+" ? c.ordering.reverse : c.ordering.forward)
+              }
+              const href = "?" + updatedParams.toString();
+              return (
+                <th key={key} scope="col">{
+                  c.ordering ? (
+                    <Link className="text-nowrap" href={href}>{c.label} {direction ? (
+                      direction === "+" ? <Icon icon="caret-down-fill"/> : <Icon icon="caret-up-fill"/>
+                    ) : (
+                      <></>
+                    )}</Link>
+                  ) : (
+                    c.label
+                  )
+                }</th>
+              );
+            })}
           </tr>
         </thead>
         <tbody>
@@ -183,7 +284,7 @@ function BaseListView(
             return (
               <tr key={item.id}>
                 <th><input type="checkbox" onChange={handleItemSelection} checked={selectedItems.has(item.id)} data-actor-id={item.id}/></th>
-                {columns.map(c => <td key={c}>{item.properties[c].component}</td>)}
+                {Object.entries(columns).map(([key, _c]) => <td key={key}>{item.properties[key].component}</td>)}
               </tr>
             )
           })}
@@ -197,7 +298,7 @@ function BaseListView(
 
 export default function ListView() {
   return (
-    <Suspense fallback={<BaseListView query="" setQuery={() => {}} actors={[]} count={0} pages={[]} currentPage="" pageCount={0}/>}>
+    <Suspense fallback={<BaseListView query="" setQuery={() => {}} actors={[]} count={0} pages={[]} currentPage="" pageCount={0} params={new URLSearchParams()} batchActions={[]}/>}>
       <ConnectedListView />
     </Suspense>
   )

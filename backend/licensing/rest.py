@@ -1,9 +1,60 @@
 from licensing.models import LicenseSequence, License, Actor, ActorTypeChoices, SexChoices, LanguageChoices, LicenseRoleChoices, LicenseRelation
 
 from rest_framework import routers, serializers, viewsets, filters, pagination, response
+from django.contrib.postgres.aggregates import StringAgg
 from django.db import models
 import datetime
 from collections import OrderedDict
+
+
+def parse_csv_string(csv_str: str):
+    return [v.strip() for v in csv_str.split(",")]
+
+
+class IdSelectionFilter(filters.BaseFilterBackend):
+    """
+    Filter that allows filtering on object ids
+    """
+
+    def filter_queryset(self, request, queryset, view):
+        id_filter_target = getattr(view, "id_filter_target", "id")
+        id_filter_max = getattr(view, "id_filter_max", 100)
+        
+        filter_ids = set([
+            id
+            for id in parse_csv_string(request.GET.get("ids", ""))
+            if id
+        ])
+
+        if len(filter_ids) > id_filter_max:
+            raise serializers.ValidationError({"ids": f"Too many ids in list {len(filter_ids)}. Maximum limit is {id_filter_max}"})
+
+        if len(filter_ids) > 0:
+            filter = {f"{id_filter_target}__in": filter_ids}
+            return queryset.filter(**filter)
+        else:
+            return queryset
+
+
+class DynamicOrderingFilter(filters.BaseFilterBackend):
+    """
+    Filter that allows dynamic user controlled ordering
+    """
+    def filter_queryset(self, request, queryset, view):
+        default_ordering = getattr(view, "default_ordering", [])
+        base_allowed_ordering = getattr(view, "allowed_ordering", [])
+        allowed_ordering = set(base_allowed_ordering)
+        order_by = [
+            o
+            for o in parse_csv_string(request.GET.get("ordering", ""))
+            if o in allowed_ordering
+        ]
+        order_by = order_by if len(order_by) > 0 else default_ordering
+        return queryset.order_by(*order_by)
+
+    @staticmethod
+    def include_reverse(items: list[str]):
+        return [f"{d}{o}" for o in items for d in ["", "-"]]
 
 
 class StandardResultsSetPagination(pagination.PageNumberPagination):
@@ -126,14 +177,68 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
     pagination_class = StandardResultsSetPagination
 
 
+actor_type_label = models.Case(
+    *[
+        models.When(type=value, then=models.Value(label))
+        for value, label in ActorTypeChoices.choices
+    ],
+    output_field=models.CharField(),
+    default=models.Value("")
+)
+
+
+license_role_label = models.Case(
+    *[
+        models.When(models.Q(licenses__role=value, licenses__license__version=0), then=models.Value(label))
+        for value, label in LicenseRoleChoices.choices
+    ],
+    output_field=models.CharField(),
+    default=models.Value("")
+)
+
+license_mnr = models.Case(
+    models.When(
+        models.Q(licenses__license__version=0),
+        then=models.F("licenses__license__sequence__mnr"),
+    ),
+    output_field=models.CharField(),
+    default=models.Value("")
+)
+
+
 class ActorViewSet(viewsets.ModelViewSet):
-    # TODO: override get_object in order to select instances using date insteade of primary key
-    queryset = Actor.objects.all()
+    queryset = Actor.objects.annotate(
+        type_label=actor_type_label,
+        license_role_label=StringAgg(
+            license_role_label,
+            delimiter=", ",
+            distinct=True,
+        ),
+        license_mnr=StringAgg(
+            license_mnr,
+            delimiter=", ",
+            distinct=True,
+        ),
+    ).all()
     serializer_class = ActorSerializer
-    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
-    search_fields = ["email", "alternative_email", "full_name", "first_name", "last_name", "city"]
+    filter_backends = [filters.SearchFilter, DynamicOrderingFilter, IdSelectionFilter]
+    search_fields = [
+        "email",
+        "alternative_email",
+        "full_name",
+        "first_name",
+        "last_name",
+        "city",
+        "type_label",
+        "license_role_label",
+        "license_mnr",
+    ]
     pagination_class = StandardResultsSetPagination
-    ordering = ["full_name", "city", "country"]
+
+    allowed_ordering = DynamicOrderingFilter.include_reverse(
+        ["full_name", "city", "country", "email", "alternative_email", "first_name", "last_name", "type", "updated_at"]
+    )
+    default_ordering = ["full_name", "city", "country"]
 
 
 router = routers.DefaultRouter()
