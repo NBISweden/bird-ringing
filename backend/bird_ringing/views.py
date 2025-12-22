@@ -9,6 +9,8 @@ from django.db import connection
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.authentication import BasicAuthentication, SessionAuthentication
 
 from bird_ringing import __version__
 
@@ -57,3 +59,22 @@ class SystemInfoView(APIView):
 class HealthCheckView(APIView):
     def get(self, request):
         return Response({"status": "ok"}, status=status.HTTP_200_OK)
+
+
+class LoginView(APIView):
+    authentication_classes = [SessionAuthentication, BasicAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user_permissions = {
+            perm.codename for perm in request.user.user_permissions.all()
+        }
+        for group in request.user.groups.all():
+            user_permissions.update({perm.codename for perm in group.permissions.all()})
+
+        return Response(
+            {
+                "username": request.user.username,
+                "permissions": user_permissions,
+            }
+        )
