@@ -1,5 +1,6 @@
 import { ReadonlyURLSearchParams } from 'next/navigation';
 import React from "react";
+import { LanguageDict } from '../language';
 
 export type ActorBase = {
   id: number,
@@ -73,14 +74,14 @@ export function getPageNumber(href: string): number {
   return page ? parseInt(page) : 1
 }
 
-export function getPages<T>(pathname: string, params: ReadonlyURLSearchParams, pageData: PagedResponse<T>): Page[] {
+export function getPages<T>(pathname: string, params: ReadonlyURLSearchParams, pageData: PagedResponse<T>, dict: LanguageDict): Page[] {
   const pages: Page[] = [
     {
-      rel: "Första",
+      rel: dict.terms.first,
       href: hrefWithParams(pathname, params, 1),
     },
     {
-      rel: "Föregående",
+      rel: dict.terms.previous,
       href: pageData.previous ? hrefWithParams(pathname, params, getPageNumber(pageData.previous)) : null,
     },
     ...Array.from({length: pageData.num_pages}).map<Page>((_, index) => {
@@ -90,11 +91,11 @@ export function getPages<T>(pathname: string, params: ReadonlyURLSearchParams, p
       }
     }),
     {
-      rel: "Nästa",
+      rel: dict.terms.next,
       href: pageData.next ? hrefWithParams(pathname, params, getPageNumber(pageData.next)) : null,
     },
     {
-      rel: "Sista",
+      rel: dict.terms.last,
       href: hrefWithParams(pathname, params, pageData.num_pages),
     }
   ];

@@ -1,3 +1,4 @@
+
 import Sidebar, { NavItem } from "@/components/Sidebar";
 import { UserProvider, RequireAuth } from "../../components/UserProvider";
 import { ClientProvider } from "@/components/ClientProvider";
@@ -10,23 +11,20 @@ export default function SystemLayout({
   const navItems: NavItem[] = [
     {
       type: "item",
-      label: "Dashboard",
       href: "/system/welcome/",
       id: "dashboard",
       icon: "bi-speedometer"
     },
     {
       type: "item",
-      label: "Licenses",
       href: "/system/licenses/",
-      id: "licenses",
+      id: "licenseListView",
       icon: "bi-journal-check"
     },
     {
       type: "item",
-      label: "Ringare",
       href: "/system/actors/",
-      id: "ringare",
+      id: "ringerListView",
       icon: "bi-person-lines-fill"
     }
   ]

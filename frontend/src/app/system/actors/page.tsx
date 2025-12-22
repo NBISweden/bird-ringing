@@ -22,6 +22,7 @@ import { Client } from "../client";
 import { useClient } from "../contexts";
 import Icon from "@/components/Icon"
 import { useFetchEmailAddressesAction, useSendLicenseEmailAction } from "./actions";
+import { LanguageDict, useCurrentLanguage } from "@/app/language";
 
 type ActorPropertyIds = "name" | "type" | "roles" | "licenses" | "email" | "city" | "updated_at";
 type ColumnProperties = {
@@ -100,6 +101,7 @@ function ConnectedListView() {
   const client = useClient();
   const fetchEmailAddressesAction = useFetchEmailAddressesAction(client);
   const sendLicenseEmailAction = useSendLicenseEmailAction();
+  const {dict} = useCurrentLanguage();
   
   useEffect(() => {
     if (search !== activeQuery) {
@@ -114,20 +116,20 @@ function ConnectedListView() {
     fetchActorPage,
     {fallbackData: emptyActorPage, keepPreviousData: true}
   );
-  const pages = getPages(pathname, params, actorPage);
+  const pages = getPages(pathname, params, actorPage, dict);
   const currentPage = hrefWithParams(pathname, params, page, search)
   const batchActions: ListViewProps["batchActions"] = [
     {
-      label: "Hämta e-postadresser",
+      label: dict.actions.fetchEmailAddresses,
       action: fetchEmailAddressesAction
     },
     {
-      label: "Skicka licenser",
+      label: dict.actions.sendLicenseEmails,
       action: sendLicenseEmailAction
     },
     {type: "divider"},
     {
-      label: "Avaktivera",
+      label: dict.actions.deactivateActor,
       action: () => {},
       disabled: true,
     }
@@ -164,6 +166,7 @@ function BaseListView(
   {actors, count, pages, currentPage, pageCount, query, setQuery, isLoading, params, batchActions}: ListViewProps
 ) {
   const [actionIsOpen, setActionIsOpen] = useState(false);
+  const {dict} = useCurrentLanguage();
 
   const items = useMemo(() => actors.map<TableItem>(toActorTable), [actors])
   const {
@@ -175,41 +178,41 @@ function BaseListView(
   const ordering = params.get("ordering")
   const columns: Record<ActorPropertyIds, ColumnProperties> = {
     name: {
-      label: "Namn",
+      label: dict.terms.name,
       ordering: {
         forward: "full_name",
         reverse: "-full_name"
       }
     },
     type: {
-      label: "Type",
+      label: dict.terms.actorType,
       ordering: {
         forward: "type,full_name",
         reverse: "-type,full_name"
       }
     },
     roles: {
-      label: "Roller",
+      label: dict.terms.roles,
     },
     licenses: {
-      label: "Licenser"
+      label: dict.terms.licenses
     },
     email: {
-      label: "E-post",
+      label: dict.terms.emailAddress,
       ordering: {
         forward: "email,alternative_email",
         reverse: "-email,-alternative_email"
       }
     },
     city: {
-      label: "Ort",
+      label: dict.terms.city,
       ordering: {
         forward: "city,full_name",
         reverse: "-city,full_name"
       }
     },
     updated_at: {
-      label: "Senast uppdaterad",
+      label: dict.terms.updatedAt,
       ordering: {
         forward: "updated_at,full_name",
         reverse: "-updated_at,full_name"
@@ -217,9 +220,10 @@ function BaseListView(
     }
   }
   const selectionInfo = isLoading ? "Laddar data" : `${selectedItems.size} valda av ${count}`;
+  const filterItems: (keyof LanguageDict["terms"])[] = ["name", "emailAddress", "city", "mnr", "role", "actorType"];
   return (
     <div className="container">
-      <h2>Ringare</h2>
+      <h2>{dict.terms.ringerListView}</h2>
       <div className="input-group mb-3">
         <span className="input-group-text">Filter</span>
         <input
@@ -227,15 +231,15 @@ function BaseListView(
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           className="form-control"
-          placeholder={"Namn, E-post, Ort, Mnr, Roll, Typ"}
-          aria-label="Filtrera tabellen"
-          aria-describedby="Tabellfilter"
+          placeholder={filterItems.map(i => dict.terms[i]).join(", ")}
+          aria-label={dict.actions.filterTable}
+          aria-describedby={dict.terms.tableFilter}
         />
       </div>
       <div className="input-group mb-3">
-        <button className={`btn btn-outline-secondary ${isLoading ? "disabled" : ""}`} type="button" onClick={toggleItems}>{allSelected ? "Välj inga" : "Välj alla"}</button>
+        <button className={`btn btn-outline-secondary ${isLoading ? "disabled" : ""}`} type="button" onClick={toggleItems}>{allSelected ? dict.actions.selectNone : dict.actions.selectAll}</button>
         <span className="input-group-text flex-grow-1" >{selectionInfo}</span>
-        <button className={`btn btn-outline-secondary dropdown-toggle  ${isLoading ? "disabled" : ""}`} onClick={() => setActionIsOpen(!actionIsOpen)} type="button" aria-expanded={actionIsOpen}>Batch-funktioner</button>
+        <button className={`btn btn-outline-secondary dropdown-toggle  ${isLoading ? "disabled" : ""}`} onClick={() => setActionIsOpen(!actionIsOpen)} type="button" aria-expanded={actionIsOpen}>{dict.terms.batchActions}</button>
         <ul className={`dropdown-menu batch-action-menu ${actionIsOpen ? "show" : ""}`} data-open={actionIsOpen} onClick={() => setActionIsOpen(false)}>
           {batchActions.map((action, index) => (
             "type" in action ? (

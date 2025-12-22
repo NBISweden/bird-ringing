@@ -17,6 +17,7 @@ import {
 } from "../common"
 import { Client } from "../client";
 import { useClient } from "../contexts";
+import { useCurrentLanguage } from "@/app/language";
 
 async function fetchLicensePage(
   [client, _ctx, page, search]: [Client, "licenses", number, string]
@@ -68,6 +69,7 @@ function ConnectedListView() {
   const activeQuery = useDebouncedValue(query, 1000);
   const router = useRouter();
   const client = useClient();
+  const {dict} = useCurrentLanguage();
   
   useEffect(() => {
     if (search !== activeQuery) {
@@ -81,7 +83,7 @@ function ConnectedListView() {
     {fallbackData: emptyLicensePage, keepPreviousData: true}
   );
   const pathname = usePathname();
-  const pages = getPages(pathname, params, LicensePage);
+  const pages = getPages(pathname, params, LicensePage, dict);
   const currentPage = hrefWithParams(pathname, params, page, search)
   return (
     <BaseListView
