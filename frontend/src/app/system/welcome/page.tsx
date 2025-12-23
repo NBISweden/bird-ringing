@@ -1,9 +1,9 @@
 'use client';
 
-import { useModalsContext, useUser } from "../contexts";
+import { useModalsContext, useAuth } from "../contexts";
 
 export default function WelcomePage() {
-  const user = useUser();
+  const user = useAuth();
   const modals = useModalsContext();
 
   const handleButtonPress = () => {

@@ -2,18 +2,19 @@ import { createContext, useContext, useState, useCallback } from "react";
 import { Client } from "./client";
 import { ButtonType } from "./common";
 
-export type User = {
+export type Auth = {
     username: string;
-    auth: true;
-} | { auth: false }
+    permissions: string[];
+    isAuthenticated: boolean;
+};
 
-export const UserContext = createContext<User | null>(null);
+export const AuthContext = createContext<Auth | null>(null);
 
-export const useUser = () => {
-    const user = useContext(UserContext);
+export const useAuth = () => {
+    const user = useContext(AuthContext);
 
-    if (!user || user.auth === false) {
-        throw new Error("No user object available");
+    if (!user) {
+        throw new Error("No auth object available");
     }
 
     return user;

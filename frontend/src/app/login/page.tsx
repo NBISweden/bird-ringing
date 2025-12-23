@@ -3,7 +3,15 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
-const API_URL = 'http://localhost:3210/api/auth/login/';
+const API_URL = 'http://localhost:3210/api/login/';
+
+function getCookie(name: string) {
+  const entry = document.cookie || ""
+    .split("; ")
+    .map(s => s.trim())
+    .find(row => row.startsWith(name + "="));
+  return entry ? decodeURIComponent(entry.substring(name.length + 1)) : null;
+}
 
 export default function LoginPage() {
     const router = useRouter();
@@ -17,21 +25,24 @@ export default function LoginPage() {
         setLoading(true);
         setError('');
 
-        const authHeader = 'Basic ' + btoa(`${username}:${password}`);
-
+        const csrftoken = getCookie("csrftoken");
         try {
           const res = await fetch(API_URL, {
-            method: 'GET',
+            method: "POST",
             headers: {
-              Authorization: authHeader,
+              "Content-Type": "application/json",
+              "Accept": "application/json",
+              "X-CSRFToken": csrftoken || "",
             },
+            body: JSON.stringify({
+              username,
+              password
+            }),
+            credentials: "same-origin"
           });
 
           if (res.ok) {
-            const data = await res.json();
-            sessionStorage.setItem('username', data.username);
-            router.push('/system/welcome');
-            router.refresh(); // Force root to recheck auth
+            router.push("/system/welcome");
           } else {
             const result = await res.json();
             setError(result?.detail || 'Invalid credentials');
