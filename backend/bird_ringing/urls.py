@@ -25,6 +25,6 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("api/system/info/", SystemInfoView.as_view(), name="system-info"),
     path("api/system/health/", HealthCheckView.as_view(), name="system-health"),
-    path("api/user/", LoginView.as_view(), name="auth-login"),
+    path("api/login/", LoginView.as_view(), name="auth-login"),
     path("api/", include(licensing_router.urls)),
 ]
