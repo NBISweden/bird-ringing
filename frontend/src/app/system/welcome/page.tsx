@@ -45,27 +45,15 @@ export default function WelcomePage() {
         <table className="table table-striped table-bordered align-middle">
           <thead className="table-success">
           <tr>
-            <th scope="col">First name</th>
-            <th scope="col">Last name</th>
-            <th scope="col">Email</th>
+            <th scope="col">Permission</th>
           </tr>
           </thead>
           <tbody>
-          <tr>
-            <td>Anna</td>
-            <td>Svensson</td>
-            <td>anna.svensson@example.com</td>
-          </tr>
-          <tr>
-            <td>Johan</td>
-            <td>Andersson</td>
-            <td>johan.andersson@example.com</td>
-          </tr>
-          <tr>
-            <td>Karin</td>
-            <td>Lindberg</td>
-            <td>karin.lindberg@example.com</td>
-          </tr>
+          {user.permissions.map(p => (
+            <tr key={p}>
+              <td>{p}</td>
+            </tr>
+          ))}
           </tbody>
         </table>
       </div>
