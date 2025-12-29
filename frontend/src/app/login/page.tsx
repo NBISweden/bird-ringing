@@ -1,58 +1,51 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-
-const API_URL = 'http://localhost:3210/api/login/';
-
-function getCookie(name: string) {
-  const entry = document.cookie || ""
-    .split("; ")
-    .map(s => s.trim())
-    .find(row => row.startsWith(name + "="));
-  return entry ? decodeURIComponent(entry.substring(name.length + 1)) : null;
-}
+import { useContext, useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { AuthContext } from '../system/contexts';
 
 export default function LoginPage() {
     const router = useRouter();
+    const params = useSearchParams();
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
-    const [loading, setLoading] = useState(false);
+    const [isAuthenticating, setIsAuthenticating] = useState(false);
+    const auth = useContext(AuthContext);
+    const signIn = auth && auth.signIn;
+
+    const isProtected = auth === null || auth.signIn === undefined || isAuthenticating;
+    let inputMessage = "Log In";
+    if (isAuthenticating) {
+      inputMessage = "Authenticating...";
+    } else if (auth === null) {
+      inputMessage = "Checking status..."
+    } else if (!signIn) {
+      inputMessage = "No authenticating method"
+    }
+    const targetPage = params.get("target") || "/system/welcome";
 
     const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setLoading(true);
-        setError('');
+      e.preventDefault();
+      setIsAuthenticating(true);
+      setError("");
+      if (!signIn) return;
 
-        const csrftoken = getCookie("csrftoken");
-        try {
-          const res = await fetch(API_URL, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "Accept": "application/json",
-              "X-CSRFToken": csrftoken || "",
-            },
-            body: JSON.stringify({
-              username,
-              password
-            }),
-            credentials: "same-origin"
-          });
-
-          if (res.ok) {
-            router.push("/system/welcome");
-          } else {
-            const result = await res.json();
-            setError(result?.detail || 'Invalid credentials');
-          }
-        } catch (err) {
-          setError('Network or server error.');
-        } finally {
-          setLoading(false);
-        }
+      try {
+        await signIn(username, password)
+        window.location.reload(); // Force root to recheck auth
+      } catch (err) {
+        setError(String(err));
+      } finally {
+        setIsAuthenticating(false);
+      }
     };
+
+    useEffect(() => {
+      if (auth !== null && auth.isAuthenticated) {
+        router.push(targetPage);
+      }
+    }, [auth, targetPage])
 
     return (
         <main className="container mt-5" style={{ maxWidth: '480px' }}>
@@ -66,6 +59,7 @@ export default function LoginPage() {
                 value={username}
                 required
                 onChange={(e) => setUsername(e.target.value)}
+                disabled={isProtected}
               />
             </div>
 
@@ -78,11 +72,12 @@ export default function LoginPage() {
                 required
                 autoComplete="current-password"
                 onChange={(e) => setPassword(e.target.value)}
+                disabled={isProtected}
               />
             </div>
 
-            <button className="btn btn-primary w-100" type="submit" disabled={loading}>
-              {loading ? 'Authenticating...' : 'Log In'}
+            <button className="btn btn-primary w-100" type="submit" disabled={isProtected}>
+              {inputMessage}
             </button>
 
             {error && <div className="alert alert-danger mt-3">{error}</div>}

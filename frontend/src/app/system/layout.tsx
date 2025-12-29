@@ -1,5 +1,5 @@
 import Sidebar, { NavItem } from "@/components/Sidebar";
-import { AuthProvider, RequireAuth } from "../../components/AuthProvider";
+import { RequireAuth } from "../../components/AuthProvider";
 import { ClientProvider } from "@/components/ClientProvider";
 
 export default function SystemLayout({
@@ -31,15 +31,13 @@ export default function SystemLayout({
     }
   ]
   return (
-    <AuthProvider>
-      <RequireAuth>
-        <Sidebar items={navItems}/>
-        <ClientProvider>
-          <main className="flex-grow-1 p-3 h-100 overflow-auto">
-            {children}
-          </main>
-        </ClientProvider>
-      </RequireAuth>
-    </AuthProvider>
+    <RequireAuth>
+      <Sidebar items={navItems}/>
+      <ClientProvider>
+        <main className="flex-grow-1 p-3 h-100 overflow-auto">
+          {children}
+        </main>
+      </ClientProvider>
+    </RequireAuth>
   );
 }

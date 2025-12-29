@@ -6,6 +6,8 @@ export type Auth = {
     username: string;
     permissions: string[];
     isAuthenticated: boolean;
+    signIn?: (username: string, password: string) => Promise<Auth>;
+    signOut?: () => Promise<void>;
 };
 
 export const AuthContext = createContext<Auth | null>(null);
