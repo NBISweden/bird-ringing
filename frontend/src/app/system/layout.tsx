@@ -11,21 +11,21 @@ export default function SystemLayout({
     {
       type: "item",
       label: "Dashboard",
-      href: "/system/welcome/",
+      href: "/system/welcome",
       id: "dashboard",
       icon: "bi-speedometer"
     },
     {
       type: "item",
       label: "Licenses",
-      href: "/system/licenses/",
+      href: "/system/licenses",
       id: "licenses",
       icon: "bi-journal-check"
     },
     {
       type: "item",
       label: "Ringare",
-      href: "/system/actors/",
+      href: "/system/actors",
       id: "ringare",
       icon: "bi-person-lines-fill"
     }

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useState } from "react";
 
 export type NavItem = (
@@ -11,6 +12,7 @@ export type NavItem = (
 
 export default function Sidebar({items}: {items: NavItem[]}) {
     const [collapsed, setCollapsed] = useState(false);
+    const pathname = usePathname();
 
     return (
         <nav
@@ -28,11 +30,11 @@ export default function Sidebar({items}: {items: NavItem[]}) {
             <ul className="nav flex-column p-3 flex-grow-1">
                 {items.map((ni, index) => {
                     if (ni.type === "item") {
-                        const isActive = false;
+                        const isActive = pathname === ni.href;
                         return (
                             <li key={index} className="nav-item">
-                                <Link href={ni.href} className="nav-link d-flex align-items-center">
-                                    <i className={`bi ${ni.icon} fs-5 text-secondary me-2`}></i>
+                                <Link href={ni.href} className={`nav-link ${isActive ? "active" : ""} d-flex align-items-center`}>
+                                    <i className={`bi ${ni.icon} fs-5 me-2`}></i>
                                     <span className="nav-label"><span className="nav-label-content">{ni.label}</span></span>
                                 </Link>
                             </li>
