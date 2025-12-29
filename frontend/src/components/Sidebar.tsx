@@ -39,7 +39,9 @@ export default function Sidebar({items}: {items: NavItem[]}) {
                             <li key={index} className="nav-item">
                                 <Link href={ni.href} className={`nav-link ${isActive ? "active" : ""} ${isEnabled ? "" : "disabled"} d-flex align-items-center`}>
                                     <i className={`bi ${ni.icon} fs-5 me-2`}></i>
-                                    <span className="nav-label"><span className="nav-label-content">{ni.label}</span></span>
+                                    <span className="nav-label">
+                                        <span className="nav-label-content">{ni.label}{!isEnabled ? <i className={`bi bi-lock fs-5 ms-2`}></i> : <></>}</span>
+                                    </span>
                                 </Link>
                             </li>
                         )
