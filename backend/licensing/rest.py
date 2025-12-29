@@ -12,6 +12,8 @@ from licensing.models import (
     LicensePermissionType,
     LicenseStatusChoices,
 )
+from rest_framework.authentication import SessionAuthentication
+from rest_framework.permissions import IsAuthenticated, DjangoModelPermissions
 
 from rest_framework import routers, serializers, viewsets, filters, pagination, response
 from django.db import models
@@ -21,6 +23,18 @@ from collections import OrderedDict
 
 def parse_csv_string(csv_str: str):
     return [v.strip() for v in csv_str.split(",")]
+
+
+class DjangoProtectedModelPermissions(DjangoModelPermissions):
+    perms_map = {
+        "GET": ["%(app_label)s.view_%(model_name)s"],
+        "OPTIONS": [],
+        "HEAD": [],
+        "POST": ["%(app_label)s.add_%(model_name)s"],
+        "PUT": ["%(app_label)s.change_%(model_name)s"],
+        "PATCH": ["%(app_label)s.change_%(model_name)s"],
+        "DELETE": ["%(app_label)s.delete_%(model_name)s"],
+    }
 
 
 class IdSelectionFilter(filters.BaseFilterBackend):
@@ -225,14 +239,6 @@ class LicenseSequenceSerializer(serializers.HyperlinkedModelSerializer):
             "last_email_sent_at",
         ]
 
-    def create(self, validated_data):
-        # TODO: Implement real function
-        raise RuntimeError(f"create: {validated_data}")
-
-    def update(self, instance, validated_data):
-        # TODO: Implement real function
-        raise RuntimeError(f"update: {validated_data}")
-
 
 license_status_label = models.Case(
     *[
@@ -254,7 +260,9 @@ license_report_status_label = models.Case(
 
 
 class LicenseSequenceViewSet(viewsets.ModelViewSet):
-    # TODO: override get_object in order to select instances using date insteade of primary key
+    authentication_classes = [SessionAuthentication]
+    permission_classes = [DjangoProtectedModelPermissions]
+
     lookup_field = "mnr"
     queryset = LicenseSequence.objects.all().distinct().order_by("mnr")
     serializer_class = LicenseSequenceSerializer
@@ -343,6 +351,9 @@ license_mnr = models.Case(
 
 
 class ActorViewSet(viewsets.ModelViewSet):
+    authentication_classes = [SessionAuthentication]
+    permission_classes = [DjangoProtectedModelPermissions]
+
     queryset = Actor.objects.annotate(
         type_label=actor_type_label,
         license_role_label=StringAgg(
