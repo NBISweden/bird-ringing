@@ -26,7 +26,7 @@ export default function WelcomePage() {
   }
 
   return (
-    <>
+    <div className="container">
       <div className="d-flex flex-column gap-2 mb-3" style={{textAlign: "left"}}>
         <h1>Welcome, {user.username} 🐦</h1>
         <p>You’re successfully logged in as an expert.</p>
@@ -41,7 +41,7 @@ export default function WelcomePage() {
         <button type="button" className="btn btn-light" onClick={handleButtonPress}>Light</button>
         <button type="button" className="btn btn-dark" onClick={handleButtonPress}>Dark</button>
       </div>
-      <div className="table-responsive w-75">
+      <div className="table-responsive">
         <table className="table table-striped table-bordered align-middle">
           <thead className="table-success">
           <tr>
@@ -57,7 +57,7 @@ export default function WelcomePage() {
           </tbody>
         </table>
       </div>
-      <div className="d-flex flex-column  w-75 gap-2 mb-3">
+      <div className="d-flex flex-column gap-2 mb-3">
         <div className="alert alert-success" role="alert">
           A simple success alert—check it out!
         </div>
@@ -68,7 +68,7 @@ export default function WelcomePage() {
           A simple warning alert—check it out!
         </div>
       </div>
-    </>
+    </div>
   );
 }
 
