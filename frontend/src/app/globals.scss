@@ -60,20 +60,9 @@ body {
 
 
 .sidebar .nav-link {
-  color: $stone;
   border-radius: 0.375rem;
   padding: 0.5rem 0.75rem;
   transition: background-color 0.2s, color 0.2s;
-
-  &:hover {
-    background-color: rgba($primary, 0.15);
-    color: $primary;
-  }
-
-  &.active {
-    background-color: $primary;
-    color: $snow;
-  }
 }
 
 .sidebar .nav-item {

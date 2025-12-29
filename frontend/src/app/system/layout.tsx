@@ -20,14 +20,16 @@ export default function SystemLayout({
       label: "Licenses",
       href: "/system/licenses",
       id: "licenses",
-      icon: "bi-journal-check"
+      icon: "bi-journal-check",
+      permissions: ["view_licensesequence"]
     },
     {
       type: "item",
       label: "Ringare",
       href: "/system/actors",
       id: "ringare",
-      icon: "bi-person-lines-fill"
+      icon: "bi-person-lines-fill",
+      permissions: ["view_actor"]
     }
   ]
   return (
