@@ -4,6 +4,7 @@
 # Ignore the top-level directories that might get created by running the
 # code in development.
 /.cache
+/.ruff_cache
 /.venv
 /.local
 
