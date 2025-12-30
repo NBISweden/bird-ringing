@@ -63,13 +63,13 @@ class ModelAdminWithChangeTracking(admin.ModelAdmin):
 
         obj.updated_by = request.user
         obj.save()
-    
+
     def save_formset(self, request, obj, formset, change):
         instances = formset.save(commit=False)
         for instance in instances:
             if not hasattr(instance, "created_by") or not instance.created_by:
                 instance.created_by = request.user
-            
+
             instance.updated_by = request.user
             instance.updated_at = datetime.datetime.now()
             instance.save()
@@ -79,9 +79,7 @@ class ModelAdminWithChangeTracking(admin.ModelAdmin):
 @admin.register(Actor)
 class ActorAdmin(ModelAdminWithChangeTracking):
     exclude = COMMON_EXCLUDES
-    inlines = [
-        LicenseCommunicationAdmin
-    ]
+    inlines = [LicenseCommunicationAdmin]
 
 
 @admin.register(LicenseSequence)
@@ -97,7 +95,7 @@ class LicenseAdmin(ModelAdminWithChangeTracking):
         LicensePermissionAdmin,
         LicenseRelationAdmin,
         LicenseDocumentAdmin,
-        LicenseCommunicationAdmin
+        LicenseCommunicationAdmin,
     ]
 
 
@@ -109,9 +107,7 @@ class SpeciesAdmin(ModelAdminWithChangeTracking):
 @admin.register(LicensePermissionType)
 class LicensePermissionTypeAdmin(ModelAdminWithChangeTracking):
     exclude = COMMON_EXCLUDES
-    inlines = [
-        LicensePermissionProperty
-    ]
+    inlines = [LicensePermissionProperty]
 
 
 @admin.register(LicenseDocument)

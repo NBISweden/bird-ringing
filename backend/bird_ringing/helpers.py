@@ -5,7 +5,7 @@ import os
 def get_secret_from_file(env_var_name: str, default: str = None) -> str:
     """
     Reads a secret from a file path defined in an environment variable.
-    
+
     :param env_var_name: Name of the environment variable pointing to the file
     :param default: Optional default if variable is unset or file is unreadable
     :return: The file contents (stripped), or default
@@ -18,7 +18,8 @@ def get_secret_from_file(env_var_name: str, default: str = None) -> str:
             pass
     return default
 
-def strtobool (val: str):
+
+def strtobool(val: str):
     """Convert a string representation of truth to boolean.
 
     True values are case insensitive 'true'.
@@ -30,7 +31,7 @@ def strtobool (val: str):
         return val
 
     val = val.lower()
-    if val  == "true":
+    if val == "true":
         return True
     elif val == "false":
         return False

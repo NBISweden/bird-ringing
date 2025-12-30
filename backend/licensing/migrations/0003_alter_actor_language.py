@@ -4,15 +4,16 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('licensing', '0002_actorimport_licenseimport_licensesequenceimport_and_more'),
+        ("licensing", "0002_actorimport_licenseimport_licensesequenceimport_and_more"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='actor',
-            name='language',
-            field=models.PositiveIntegerField(choices=[(0, 'unknown'), (1, 'sv'), (2, 'en')], default=0),
+            model_name="actor",
+            name="language",
+            field=models.PositiveIntegerField(
+                choices=[(0, "unknown"), (1, "sv"), (2, "en")], default=0
+            ),
         ),
     ]

@@ -9,6 +9,7 @@ https://docs.djangoproject.com/en/5.2/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
+
 from django.core.exceptions import ImproperlyConfigured
 from pathlib import Path
 from os import getenv
@@ -24,10 +25,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = ( get_secret_from_file(
-            "DJANGO_SECRET_FILE", default=get_random_secret_key
-        )
-)
+SECRET_KEY = get_secret_from_file("DJANGO_SECRET_FILE", default=get_random_secret_key)
 if not SECRET_KEY:
     raise ImproperlyConfigured("The SECRET_KEY setting must not be empty.")
 
@@ -46,7 +44,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    'licensing',
+    "licensing",
     "rest_framework",
     "system",
     "access_control",
@@ -90,9 +88,7 @@ DATABASES = {
         "ENGINE": "django.db.backends.postgresql",
         "NAME": getenv("POSTGRES_DB", "ringdb"),
         "USER": getenv("POSTGRES_USER", "db_user"),
-        "PASSWORD": get_secret_from_file(
-            "POSTGRES_PASSWORD_FILE", default=""
-        ),
+        "PASSWORD": get_secret_from_file("POSTGRES_PASSWORD_FILE", default=""),
         "HOST": getenv("POSTGRES_HOST", "database"),
         "PORT": getenv("POSTGRES_PORT", "5432"),
     }
@@ -118,7 +114,7 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 GROUP_NAMES = {
-"EXPERTS": "Bird ringing experts",
+    "EXPERTS": "Bird ringing experts",
 }
 
 # Internationalization

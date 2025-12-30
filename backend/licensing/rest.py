@@ -1,9 +1,17 @@
-from licensing.models import LicenseSequence, License, Actor, ActorTypeChoices, SexChoices, LanguageChoices, LicenseRoleChoices, LicenseRelation
+from licensing.models import (
+    LicenseSequence,
+    License,
+    Actor,
+    ActorTypeChoices,
+    SexChoices,
+    LanguageChoices,
+    LicenseRoleChoices,
+    LicenseRelation,
+)
 
 from rest_framework import routers, serializers, viewsets, filters, pagination, response
 from django.contrib.postgres.aggregates import StringAgg
 from django.db import models
-import datetime
 from collections import OrderedDict
 
 
@@ -19,15 +27,17 @@ class IdSelectionFilter(filters.BaseFilterBackend):
     def filter_queryset(self, request, queryset, view):
         id_filter_target = getattr(view, "id_filter_target", "id")
         id_filter_max = getattr(view, "id_filter_max", 100)
-        
-        filter_ids = set([
-            id
-            for id in parse_csv_string(request.GET.get("ids", ""))
-            if id
-        ])
+
+        filter_ids = set(
+            [id for id in parse_csv_string(request.GET.get("ids", "")) if id]
+        )
 
         if len(filter_ids) > id_filter_max:
-            raise serializers.ValidationError({"ids": f"Too many ids in list {len(filter_ids)}. Maximum limit is {id_filter_max}"})
+            raise serializers.ValidationError(
+                {
+                    "ids": f"Too many ids in list {len(filter_ids)}. Maximum limit is {id_filter_max}"
+                }
+            )
 
         if len(filter_ids) > 0:
             filter = {f"{id_filter_target}__in": filter_ids}
@@ -40,6 +50,7 @@ class DynamicOrderingFilter(filters.BaseFilterBackend):
     """
     Filter that allows dynamic user controlled ordering
     """
+
     def filter_queryset(self, request, queryset, view):
         default_ordering = getattr(view, "default_ordering", [])
         base_allowed_ordering = getattr(view, "allowed_ordering", [])
@@ -63,17 +74,27 @@ class StandardResultsSetPagination(pagination.PageNumberPagination):
     max_page_size = 1000
 
     def get_paginated_response(self, data):
-        return response.Response(OrderedDict([
-            ('count', self.page.paginator.count),
-            ('num_pages', self.page.paginator.num_pages),  # Add total number of pages
-            ('next', self.get_next_link()),
-            ('previous', self.get_previous_link()),
-            ('results', data)
-        ]))
+        return response.Response(
+            OrderedDict(
+                [
+                    ("count", self.page.paginator.count),
+                    (
+                        "num_pages",
+                        self.page.paginator.num_pages,
+                    ),  # Add total number of pages
+                    ("next", self.get_next_link()),
+                    ("previous", self.get_previous_link()),
+                    ("results", data),
+                ]
+            )
+        )
 
 
 class ActorLicenseRelationSerializer(serializers.ModelSerializer):
-    role = serializers.ChoiceField(choices=LicenseRoleChoices, source="get_role_display")
+    role = serializers.ChoiceField(
+        choices=LicenseRoleChoices, source="get_role_display"
+    )
+
     class Meta:
         model = LicenseRelation
         fields = ["license_id", "role", "mnr", "mednr"]
@@ -82,8 +103,13 @@ class ActorLicenseRelationSerializer(serializers.ModelSerializer):
 class ActorSerializer(serializers.ModelSerializer):
     type = serializers.ChoiceField(choices=ActorTypeChoices, source="get_type_display")
     sex = serializers.ChoiceField(choices=SexChoices, source="get_sex_display")
-    language = serializers.ChoiceField(choices=LanguageChoices, source="get_language_display")
-    current_license_relations = ActorLicenseRelationSerializer(many=True, read_only=True)
+    language = serializers.ChoiceField(
+        choices=LanguageChoices, source="get_language_display"
+    )
+    current_license_relations = ActorLicenseRelationSerializer(
+        many=True, read_only=True
+    )
+
     class Meta:
         model = Actor
         fields = [
@@ -112,7 +138,10 @@ class ActorSerializer(serializers.ModelSerializer):
 class LicenseActorSerializer(serializers.ModelSerializer):
     type = serializers.ChoiceField(choices=ActorTypeChoices, source="get_type_display")
     sex = serializers.ChoiceField(choices=SexChoices, source="get_sex_display")
-    language = serializers.ChoiceField(choices=LanguageChoices, source="get_language_display")
+    language = serializers.ChoiceField(
+        choices=LanguageChoices, source="get_language_display"
+    )
+
     class Meta:
         model = Actor
         fields = [
@@ -138,7 +167,10 @@ class LicenseActorSerializer(serializers.ModelSerializer):
 
 class LicenseActorRelationSerializer(serializers.ModelSerializer):
     actor = LicenseActorSerializer()
-    role = serializers.ChoiceField(choices=LicenseRoleChoices, source="get_role_display")
+    role = serializers.ChoiceField(
+        choices=LicenseRoleChoices, source="get_role_display"
+    )
+
     class Meta:
         model = LicenseRelation
         fields = ["actor", "role", "mednr"]
@@ -146,6 +178,7 @@ class LicenseActorRelationSerializer(serializers.ModelSerializer):
 
 class LicenseSerializer(serializers.ModelSerializer):
     actors = LicenseActorRelationSerializer(many=True, read_only=True)
+
     class Meta:
         model = License
         fields = ["actors", "version", "location", "description", "report_status"]
@@ -170,7 +203,7 @@ class LicenseSequenceSerializer(serializers.HyperlinkedModelSerializer):
 class LicenseSequenceViewSet(viewsets.ModelViewSet):
     # TODO: override get_object in order to select instances using date insteade of primary key
     lookup_field = "mnr"
-    queryset = LicenseSequence.objects.all().order_by('mnr')
+    queryset = LicenseSequence.objects.all().order_by("mnr")
     serializer_class = LicenseSequenceSerializer
     filter_backends = [filters.SearchFilter]
     search_fields = ["mnr"]
@@ -183,17 +216,20 @@ actor_type_label = models.Case(
         for value, label in ActorTypeChoices.choices
     ],
     output_field=models.CharField(),
-    default=models.Value("")
+    default=models.Value(""),
 )
 
 
 license_role_label = models.Case(
     *[
-        models.When(models.Q(licenses__role=value, licenses__license__version=0), then=models.Value(label))
+        models.When(
+            models.Q(licenses__role=value, licenses__license__version=0),
+            then=models.Value(label),
+        )
         for value, label in LicenseRoleChoices.choices
     ],
     output_field=models.CharField(),
-    default=models.Value("")
+    default=models.Value(""),
 )
 
 license_mnr = models.Case(
@@ -202,7 +238,7 @@ license_mnr = models.Case(
         then=models.F("licenses__license__sequence__mnr"),
     ),
     output_field=models.CharField(),
-    default=models.Value("")
+    default=models.Value(""),
 )
 
 
@@ -236,7 +272,17 @@ class ActorViewSet(viewsets.ModelViewSet):
     pagination_class = StandardResultsSetPagination
 
     allowed_ordering = DynamicOrderingFilter.include_reverse(
-        ["full_name", "city", "country", "email", "alternative_email", "first_name", "last_name", "type", "updated_at"]
+        [
+            "full_name",
+            "city",
+            "country",
+            "email",
+            "alternative_email",
+            "first_name",
+            "last_name",
+            "type",
+            "updated_at",
+        ]
     )
     default_ordering = ["full_name", "city", "country"]
 
