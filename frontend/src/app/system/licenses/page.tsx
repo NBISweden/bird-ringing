@@ -14,6 +14,7 @@ import {
   Page,
   LicenseListItem,
   TableItem,
+  convertDateToLocale,
 } from "../common"
 import { Client } from "../client";
 import { useClient } from "../contexts";
@@ -66,7 +67,7 @@ function toLicenseTable(item: LicenseListItem): TableItem {
           component: item.status,
         },
         "Last email sent at": {
-          component: item.last_email_sent_at,
+          component: convertDateToLocale(item.last_email_sent_at),
         },
       }
   }
