@@ -14,9 +14,8 @@ from licensing.models import (
 )
 
 from rest_framework import routers, serializers, viewsets, filters, pagination, response
-from django.contrib.postgres.aggregates import StringAgg
 from django.db import models
-from django.db.models import Q, Case, When, Value, CharField, DateField, Max
+from django.contrib.postgres.aggregates import StringAgg
 from collections import OrderedDict
 
 def parse_csv_string(csv_str: str):
@@ -219,22 +218,22 @@ class LicenseSequenceSerializer(serializers.HyperlinkedModelSerializer):
         # TODO: Implement real function
         raise RuntimeError(f"update: {validated_data}")
 
-license_status_label = Case(
+license_status_label = models.Case(
     *[
-        When(status=value, then=Value(label))
+        models.When(status=value, then=models.Value(label))
         for value, label in LicenseStatusChoices.choices
     ],
-    output_field=CharField(),
-    default=Value("")
+    output_field=models.CharField(),
+    default=models.Value("")
 )
 
-license_report_status_label = Case(
+license_report_status_label = models.Case(
     *[
-        When(instances__report_status=value, then=Value(label))
+        models.When(instances__report_status=value, then=models.Value(label))
         for value, label in ReportStatusChoices.choices
     ],
-    output_field=CharField(),
-    default=Value("")
+    output_field=models.CharField(),
+    default=models.Value("")
 )
 
 class LicenseSequenceViewSet(viewsets.ModelViewSet):
@@ -250,16 +249,16 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
         search = self.request.query_params.get('search', None)
 
         queryset = queryset.annotate(
-            license_holder=StringAgg(Case(
-                When(instances__actors__role=Value(1), then='instances__actors__actor__full_name'),
-                default=Value(None),
-                output_field=CharField()
+            license_holder=StringAgg(models.Case(
+                models.When(instances__actors__role=models.Value(1), then='instances__actors__actor__full_name'),
+                default=models.Value(None),
+                output_field=models.CharField()
             ), delimiter=', ', distinct=True),
             methods=StringAgg('instances__permissions__type__name', delimiter=', ', distinct=True),
-            last_email_sent_at=Max(Case(
-                When(instances__communication__status=Value(1), then='instances__communication__updated_at'),
-                default=Value(None),
-                output_field=DateField()
+            last_email_sent_at=models.Max(models.Case(
+                models.When(instances__communication__status=models.Value(1), then='instances__communication__updated_at'),
+                default=models.Value(None),
+                output_field=models.DateField()
             )),
             status_label=license_status_label,
             report_status_label=license_report_status_label
@@ -269,12 +268,12 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
             search_terms = search.split()
             for term in search_terms:
                 queryset = queryset.filter(
-                Q(license_holder__icontains=term)
-                | Q(mnr__icontains=term)
-                | Q(methods__icontains=term)
-                | Q(last_email_sent_at__icontains=term)
-                | Q(status_label__icontains=term)
-                | Q(report_status_label__icontains=term)
+                models.Q(license_holder__icontains=term)
+                | models.Q(mnr__icontains=term)
+                | models.Q(methods__icontains=term)
+                | models.Q(last_email_sent_at__icontains=term)
+                | models.Q(status_label__icontains=term)
+                | models.Q(report_status_label__icontains=term)
                 )
 
         return queryset
