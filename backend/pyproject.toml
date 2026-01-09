@@ -10,3 +10,16 @@ dependencies = [
     "gunicorn>=23.0.0",
     "psycopg[c]>=3.2.11",
 ]
+
+[tool.ruff]
+exclude = [
+    ".cache",
+    ".ruff_cache",
+    ".venv",
+    ".local",
+]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.14.10",
+]

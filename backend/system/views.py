@@ -16,7 +16,6 @@ SERVER_START_TIME = time.time()
 
 
 class SystemInfoView(APIView):
-
     def get(self, request):
         uptime = int(time.time() - SERVER_START_TIME)
 
@@ -25,7 +24,7 @@ class SystemInfoView(APIView):
                 "name": "bird_ringing",
                 "version": __version__,
                 "uptime_seconds": uptime,
-                "uptime": str(timedelta(seconds = uptime)),
+                "uptime": str(timedelta(seconds=uptime)),
                 "django_version": get_version(),
                 "python_version": platform.python_version(),
             },
@@ -35,7 +34,7 @@ class SystemInfoView(APIView):
             },
             "config": {
                 "debug": settings.DEBUG,
-            }
+            },
         }
 
         return Response(info)
@@ -54,14 +53,7 @@ class SystemInfoView(APIView):
         except Exception:
             return "fail"
 
+
 class HealthCheckView(APIView):
-
     def get(self, request):
-
-        return Response(
-            {
-                "status": "ok"
-            },
-            status=status.HTTP_200_OK
-        )
-
+        return Response({"status": "ok"}, status=status.HTTP_200_OK)

@@ -30,6 +30,7 @@ class SexChoices(models.IntegerChoices):
     UNDISCLOSED = (3, "undisclosed")
     NOT_APPLICABLE = (4, "n/a")
 
+
 class LanguageChoices(models.IntegerChoices):
     UNKNOWN = (0, "unknown")
     SV = (1, "sv")
@@ -78,31 +79,33 @@ class CommunicationStatusChoices(models.IntegerChoices):
 
 class Actor(ChangeTracking):
     """
-    An Actor contains information needed to identify and communicate with an 
+    An Actor contains information needed to identify and communicate with an
     organization or individual related to any number of licenses.
     """
 
     full_name = models.CharField(max_length=2048)
-    first_name = models.CharField(max_length=1024, blank=True, default='')
-    last_name = models.CharField(max_length=1024, blank=True, default='')
+    first_name = models.CharField(max_length=1024, blank=True, default="")
+    last_name = models.CharField(max_length=1024, blank=True, default="")
     type = models.PositiveIntegerField(choices=ActorTypeChoices)
     sex = models.PositiveIntegerField(choices=SexChoices)
     birth_date = models.DateField(blank=True, null=True)
-    language = models.PositiveIntegerField(choices=LanguageChoices, default=LanguageChoices.UNKNOWN)
+    language = models.PositiveIntegerField(
+        choices=LanguageChoices, default=LanguageChoices.UNKNOWN
+    )
 
-    phone_number1 = models.CharField(max_length=128, blank=True, default='')
-    phone_number2 = models.CharField(max_length=128, blank=True, default='')
+    phone_number1 = models.CharField(max_length=128, blank=True, default="")
+    phone_number2 = models.CharField(max_length=128, blank=True, default="")
 
-    email = models.EmailField(max_length=2048, blank=True, default='')
-    alternative_email = models.EmailField(max_length=2048, blank=True, default='')
+    email = models.EmailField(max_length=2048, blank=True, default="")
+    alternative_email = models.EmailField(max_length=2048, blank=True, default="")
 
-    address = models.CharField(max_length=512, blank=True, default='')
-    co_address = models.CharField(max_length=512, blank=True, default='')
-    postal_code = models.CharField(max_length=64, blank=True, default='')
-    city = models.CharField(max_length=256, blank=True, default='')
-    country = models.CharField(max_length=256, blank=True, default='')
+    address = models.CharField(max_length=512, blank=True, default="")
+    co_address = models.CharField(max_length=512, blank=True, default="")
+    postal_code = models.CharField(max_length=64, blank=True, default="")
+    city = models.CharField(max_length=256, blank=True, default="")
+    country = models.CharField(max_length=256, blank=True, default="")
 
-    description = models.TextField(blank=True, default='')
+    description = models.TextField(blank=True, default="")
 
     @property
     def current_license_relations(self):
@@ -119,12 +122,11 @@ class LicenseSequence(ChangeTracking):
     and the current status of the license sequence so that one can
     see which state it is currently in.
     """
-    mnr = models.CharField(max_length=4, validators=[MinLengthValidator(limit_value=4)], unique=True)
-    status = models.PositiveIntegerField(choices=LicenseStatusChoices)
 
-    @property
-    def current(self):
-        return License.objects.filter(sequence=self, version=0).first()
+    mnr = models.CharField(
+        max_length=4, validators=[MinLengthValidator(limit_value=4)], unique=True
+    )
+    status = models.PositiveIntegerField(choices=LicenseStatusChoices)
 
     @property
     def current(self):
@@ -136,18 +138,23 @@ class LicenseSequence(ChangeTracking):
 
 class License(ChangeTracking):
     """
-    A License groups all the information related to activities performed by 
+    A License groups all the information related to activities performed by
     any number of actors.
 
     Only the currently active license for a given `mnr` may be updated.
 
-    The history of a license is importat to keep so that activity can be 
+    The history of a license is importat to keep so that activity can be
     tracked over time. Changes to a current license may overwrite the
     current state but when a new period begins a new license entry should
     be created in order to keep track of what happened during the last period.
     """
-    version = models.PositiveIntegerField() # Value zero is the current editable version
-    sequence = models.ForeignKey(LicenseSequence, on_delete=models.PROTECT, related_name="instances")
+
+    version = (
+        models.PositiveIntegerField()
+    )  # Value zero is the current editable version
+    sequence = models.ForeignKey(
+        LicenseSequence, on_delete=models.PROTECT, related_name="instances"
+    )
     location = models.TextField()
     description = models.TextField()
     report_status = models.PositiveIntegerField(choices=ReportStatusChoices)
@@ -157,13 +164,15 @@ class License(ChangeTracking):
 
     class Meta:
         constraints = [
-            models.UniqueConstraint(fields=["version", "sequence"], name="version-sequence-unique")
+            models.UniqueConstraint(
+                fields=["version", "sequence"], name="version-sequence-unique"
+            )
         ]
-    
+
     @property
     def editable(self):
         return self.version == 0
-    
+
     def copy_to_new_version(
         self,
         version: int,
@@ -171,20 +180,17 @@ class License(ChangeTracking):
         include_documents: bool = True,
         include_permissions: bool = True,
     ):
-        actor_relations = [
-            actor_relation
-            for actor_relation in self.actors.all()
-        ] if include_actors else []
+        actor_relations = (
+            [actor_relation for actor_relation in self.actors.all()]
+            if include_actors
+            else []
+        )
 
-        documents = [
-            document
-            for document in self.documents.all()
-        ] if include_documents else []
+        documents = (
+            [document for document in self.documents.all()] if include_documents else []
+        )
 
-        permissions = [
-            permission
-            for permission in self.permissions.all()
-        ]
+        permissions = [permission for permission in self.permissions.all()]
 
         self.pk = None
         self.version = version
@@ -192,7 +198,7 @@ class License(ChangeTracking):
 
         for item in [*actor_relations, *documents, *permissions]:
             item.copy_to(license=self)
-        
+
         return self
 
     def __str__(self):
@@ -208,8 +214,8 @@ class Species(ChangeTracking):
         verbose_name_plural = "Species"
 
     name = models.CharField(max_length=512)
-    scientific_name = models.CharField(max_length=512, blank=True, default='')
-    scientific_code = models.CharField(max_length=128, blank=True, default='')
+    scientific_name = models.CharField(max_length=512, blank=True, default="")
+    scientific_code = models.CharField(max_length=128, blank=True, default="")
 
     def __str__(self):
         return self.name
@@ -229,8 +235,15 @@ class LicenseRelation(ChangeTracking):
     """
 
     actor = models.ForeignKey(Actor, on_delete=models.PROTECT, related_name="licenses")
-    license = models.ForeignKey(License, on_delete=models.CASCADE, related_name="actors")
-    mednr = models.CharField(max_length=4, validators=[MinLengthValidator(limit_value=4)], blank=True, default='')
+    license = models.ForeignKey(
+        License, on_delete=models.CASCADE, related_name="actors"
+    )
+    mednr = models.CharField(
+        max_length=4,
+        validators=[MinLengthValidator(limit_value=4)],
+        blank=True,
+        default="",
+    )
     role = models.PositiveIntegerField(choices=LicenseRoleChoices)
 
     @property
@@ -245,8 +258,13 @@ class LicenseRelation(ChangeTracking):
 
     class Meta:
         constraints = [
-            models.UniqueConstraint(fields=["actor", "role", "license"], name="unique-actors-for-role-and-license"),
-            models.UniqueConstraint(fields=["mednr", "license"], name="unique-mednr-for-license"),
+            models.UniqueConstraint(
+                fields=["actor", "role", "license"],
+                name="unique-actors-for-role-and-license",
+            ),
+            models.UniqueConstraint(
+                fields=["mednr", "license"], name="unique-mednr-for-license"
+            ),
         ]
 
 
@@ -256,11 +274,15 @@ class LicenseCommunication(ChangeTracking):
     made by the system or triggered by users of the system.
     """
 
-    actor = models.ForeignKey(Actor, on_delete=models.PROTECT, related_name="communication")
-    license = models.ForeignKey(License, on_delete=models.CASCADE, related_name="communication")
+    actor = models.ForeignKey(
+        Actor, on_delete=models.PROTECT, related_name="communication"
+    )
+    license = models.ForeignKey(
+        License, on_delete=models.CASCADE, related_name="communication"
+    )
     type = models.PositiveIntegerField(choices=CommunicationTypeChoices)
     status = models.PositiveIntegerField(choices=CommunicationStatusChoices)
-    note = models.CharField(max_length=512, blank=True, default='')
+    note = models.CharField(max_length=512, blank=True, default="")
 
 
 class LicenseDocument(ChangeTracking):
@@ -272,11 +294,17 @@ class LicenseDocument(ChangeTracking):
     as long as they belong to the active license instance.
     """
 
-    actor = models.ForeignKey(Actor, on_delete=models.PROTECT, related_name="documents", null=True)
-    license = models.ForeignKey(License, on_delete=models.CASCADE, related_name="documents")
+    actor = models.ForeignKey(
+        Actor, on_delete=models.PROTECT, related_name="documents", null=True
+    )
+    license = models.ForeignKey(
+        License, on_delete=models.CASCADE, related_name="documents"
+    )
     type = models.PositiveIntegerField(choices=DocumentTypeChoices)
-    data = models.BinaryField(null=True) # TODO: This might not be the best solution but let's try for now
-    reference = models.CharField(max_length=2048, blank=True, default='')
+    data = models.BinaryField(
+        null=True
+    )  # TODO: This might not be the best solution but let's try for now
+    reference = models.CharField(max_length=2048, blank=True, default="")
 
     def copy_to(self, license: License):
         self.pk = None
@@ -300,7 +328,7 @@ class LicensePermissionType(ChangeTracking):
     """
 
     name = models.CharField(max_length=512)
-    description = models.TextField(blank=True, default='')
+    description = models.TextField(blank=True, default="")
 
     def __str__(self):
         return self.name
@@ -312,16 +340,18 @@ class LicensePermissionProperty(ChangeTracking):
     to a license permission in order to further specify the intent.
 
     The idea is to use this for properties that can be enumerated or
-    be treated as boolean properties where and assigned property 
+    be treated as boolean properties where and assigned property
     means that the property applies to the current permission.
 
     A LicensePermissionProperty without a related_type is considered
     a general property and may be assigned to any permission.
     """
 
-    related_type = models.ForeignKey(LicensePermissionType, on_delete=models.CASCADE, blank=True, null=True)
+    related_type = models.ForeignKey(
+        LicensePermissionType, on_delete=models.CASCADE, blank=True, null=True
+    )
     name = models.CharField(max_length=512)
-    description = models.TextField(blank=True, default='')
+    description = models.TextField(blank=True, default="")
 
     def __str__(self):
         return self.name
@@ -332,7 +362,7 @@ class LicensePermission(ChangeTracking):
     A License Permission is a permission or activity assigned to a specific
     license including additional details related to the activity and license.
 
-    Only a license permission related to a currently active license may be 
+    Only a license permission related to a currently active license may be
     updated.
 
     When creating a new license for a new period the license permission should
@@ -343,9 +373,11 @@ class LicensePermission(ChangeTracking):
     """
 
     type = models.ForeignKey(LicensePermissionType, on_delete=models.PROTECT)
-    license = models.ForeignKey(License, on_delete=models.CASCADE, related_name="permissions")
-    location = models.TextField(blank=True, default='')
-    description = models.TextField(blank=True, default='')
+    license = models.ForeignKey(
+        License, on_delete=models.CASCADE, related_name="permissions"
+    )
+    location = models.TextField(blank=True, default="")
+    description = models.TextField(blank=True, default="")
     species_list = models.ManyToManyField(Species, blank=True)
     properties = models.ManyToManyField(LicensePermissionProperty, blank=True)
 
@@ -364,19 +396,18 @@ class LicensePermission(ChangeTracking):
 
 
 def json_serialize_defaults(value):
-    value_type = type(value)
-    if value_type == datetime.date:
+    if isinstance(value, datetime.date):
         return value.isoformat()
-    elif value_type == datetime.datetime:
+    elif isinstance(value, datetime.datetime):
         return value.isoformat()
-    elif value_type == decimal.Decimal:
+    elif isinstance(value, decimal.Decimal):
         return float(value)
-    elif value_type == set:
+    elif isinstance(value, set):
         return list(value)
     elif isinstance(value, models.Model):
         return str(value)
     else:
-        raise TypeError(f"No default serializer for {value_type.__name__}")
+        raise TypeError(f"No default serializer for {type(value).__name__}")
 
 
 def json_serialize(data):
@@ -399,13 +430,8 @@ class ImportModelManager(models.Manager):
 
         except self.model.DoesNotExist:
             item = item_model.objects.create(**kwargs)
-            item_import = self.create(
-                key=key,
-                item=item,
-                fingerprint=fingerprint
-            )
+            item_import = self.create(key=key, item=item, fingerprint=fingerprint)
             return (item_import, True)
-    
 
     def get_or_create_item(self, **kwargs):
         key = self.model.get_key(**kwargs)
@@ -417,17 +443,15 @@ class ImportModelManager(models.Manager):
         except self.model.DoesNotExist:
             item = item_model.objects.create(**kwargs)
             item_import = self.create(
-                key=key,
-                item=item,
-                fingerprint=self.get_fingerprint(kwargs)
+                key=key, item=item, fingerprint=self.get_fingerprint(kwargs)
             )
             return (item_import, True)
-    
+
     def get_fingerprint(self, data):
         fingerprint = hashlib.sha1()
         fingerprint.update(json_serialize(data).encode(encoding="utf8"))
         return fingerprint.hexdigest()
-    
+
     def get_item_model(self):
         item_field = self.model._meta.get_field("item")
         return item_field.remote_field.model
@@ -440,7 +464,7 @@ class ImportTracking(models.Model):
 
     class Meta:
         abstract = True
-    
+
     def __str__(self):
         return self.key
 

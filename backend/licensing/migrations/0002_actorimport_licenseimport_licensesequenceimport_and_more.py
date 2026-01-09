@@ -6,98 +6,148 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('licensing', '0001_initial'),
+        ("licensing", "0001_initial"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='ActorImport',
+            name="ActorImport",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('key', models.CharField(max_length=1024, unique=True)),
-                ('fingerprint', models.CharField(max_length=40, null=True)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("key", models.CharField(max_length=1024, unique=True)),
+                ("fingerprint", models.CharField(max_length=40, null=True)),
             ],
             options={
-                'abstract': False,
+                "abstract": False,
             },
         ),
         migrations.CreateModel(
-            name='LicenseImport',
+            name="LicenseImport",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('key', models.CharField(max_length=1024, unique=True)),
-                ('fingerprint', models.CharField(max_length=40, null=True)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("key", models.CharField(max_length=1024, unique=True)),
+                ("fingerprint", models.CharField(max_length=40, null=True)),
             ],
             options={
-                'abstract': False,
+                "abstract": False,
             },
         ),
         migrations.CreateModel(
-            name='LicenseSequenceImport',
+            name="LicenseSequenceImport",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('key', models.CharField(max_length=1024, unique=True)),
-                ('fingerprint', models.CharField(max_length=40, null=True)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("key", models.CharField(max_length=1024, unique=True)),
+                ("fingerprint", models.CharField(max_length=40, null=True)),
             ],
             options={
-                'abstract': False,
+                "abstract": False,
             },
         ),
         migrations.CreateModel(
-            name='SpeciesImport',
+            name="SpeciesImport",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('key', models.CharField(max_length=1024, unique=True)),
-                ('fingerprint', models.CharField(max_length=40, null=True)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("key", models.CharField(max_length=1024, unique=True)),
+                ("fingerprint", models.CharField(max_length=40, null=True)),
             ],
             options={
-                'abstract': False,
+                "abstract": False,
             },
         ),
         migrations.RemoveConstraint(
-            model_name='licenserelation',
-            name='unique-actors-for-license',
+            model_name="licenserelation",
+            name="unique-actors-for-license",
         ),
         migrations.AddField(
-            model_name='actor',
-            name='description',
-            field=models.TextField(blank=True, default=''),
+            model_name="actor",
+            name="description",
+            field=models.TextField(blank=True, default=""),
         ),
         migrations.AlterField(
-            model_name='licensedocument',
-            name='data',
+            model_name="licensedocument",
+            name="data",
             field=models.BinaryField(null=True),
         ),
         migrations.AlterField(
-            model_name='licenserelation',
-            name='role',
-            field=models.PositiveIntegerField(choices=[(1, 'ringer'), (2, 'helper'), (3, 'associate'), (4, 'communication')]),
+            model_name="licenserelation",
+            name="role",
+            field=models.PositiveIntegerField(
+                choices=[
+                    (1, "ringer"),
+                    (2, "helper"),
+                    (3, "associate"),
+                    (4, "communication"),
+                ]
+            ),
         ),
         migrations.AddConstraint(
-            model_name='licenserelation',
-            constraint=models.UniqueConstraint(fields=('actor', 'role', 'license'), name='unique-actors-for-role-and-license'),
+            model_name="licenserelation",
+            constraint=models.UniqueConstraint(
+                fields=("actor", "role", "license"),
+                name="unique-actors-for-role-and-license",
+            ),
         ),
         migrations.AddField(
-            model_name='actorimport',
-            name='item',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='licensing.actor'),
+            model_name="actorimport",
+            name="item",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE, to="licensing.actor"
+            ),
         ),
         migrations.AddField(
-            model_name='licenseimport',
-            name='item',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='licensing.license'),
+            model_name="licenseimport",
+            name="item",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE, to="licensing.license"
+            ),
         ),
         migrations.AddField(
-            model_name='licensesequenceimport',
-            name='item',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='licensing.licensesequence'),
+            model_name="licensesequenceimport",
+            name="item",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                to="licensing.licensesequence",
+            ),
         ),
         migrations.AddField(
-            model_name='speciesimport',
-            name='item',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='licensing.species'),
+            model_name="speciesimport",
+            name="item",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE, to="licensing.species"
+            ),
         ),
     ]
