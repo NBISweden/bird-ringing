@@ -104,7 +104,10 @@ export function getPages<T>(pathname: string, params: ReadonlyURLSearchParams, p
 export type LicenseListItem = {
     mnr: string;
     current: LicenseCurrent;
-    status: number;
+    status: string;
+    license_holder: string;
+    methods: string;
+    last_email_sent_at: string;
 }
 
 export type LicenseCurrent = {
@@ -131,3 +134,18 @@ export type ButtonType = (
   "light" |
   "dark"
 )
+
+export function convertDateToLocale(dateStr: string){
+    if(dateStr){
+        return new Date(dateStr).toLocaleString('sv-SE', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            hourCycle: 'h23'
+        });
+    } else {
+        return "-";
+    }
+}

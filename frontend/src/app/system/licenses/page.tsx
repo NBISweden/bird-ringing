@@ -14,6 +14,7 @@ import {
   Page,
   LicenseListItem,
   TableItem,
+  convertDateToLocale,
 } from "../common"
 import { Client } from "../client";
 import { useClient } from "../contexts";
@@ -35,6 +36,9 @@ const emptyLicensePage: PagedResponse<LicenseListItem> = {
 function toLicenseTable(item: LicenseListItem): TableItem {
   const licenseHolderInfo = item.current.actors.find(r => r.role === "ringer");
   const licenseHolder = licenseHolderInfo ? licenseHolderInfo.actor : undefined;
+
+  const licenseHelperInfo = item.current.actors.filter(r => r.role === "helper");
+
   return {
     id: item.mnr,
       properties: {
@@ -45,16 +49,25 @@ function toLicenseTable(item: LicenseListItem): TableItem {
           component: licenseHolder?.type,
         },
         "License holder": {
-          component: licenseHolder?.full_name,
+          component: item.license_holder,
         },
         "Number of helpers": {
-          component: String(item.current.actors.length)
+          component: String(licenseHelperInfo.length)
+        },
+        "Trapping methods": {
+          component: item.methods,
         },
         "License version": {
           component: String(item.current.version),
         },
-        "Final Report Status": {
-          component: String(item.current.report_status),
+        "Final report status": {
+          component: item.current.report_status,
+        },
+        "License status": {
+          component: item.status,
+        },
+        "Last email sent at": {
+          component: convertDateToLocale(item.last_email_sent_at),
         },
       }
   }
@@ -122,8 +135,11 @@ function BaseListView(
     "Type",
     "License holder",
     "Number of helpers",
+    "Trapping methods",
     "License version",
-    "Final Report Status",
+    "Final report status",
+    "License status",
+    "Last email sent at"
   ]
   const selectionInfo = isLoading ? "Laddar data" : `${selectedItems.size} valda av ${count}`;
   return (
@@ -136,7 +152,7 @@ function BaseListView(
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           className="form-control"
-          placeholder={"Mnr"}
+          placeholder={"Mnr, License holder, Trapping methods, Last email sent at"}
           aria-label="Filtrera tabellen"
           aria-describedby="Tabellfilter"
         />
