@@ -196,7 +196,7 @@ class LicenseSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = License
-        fields = ["actors", "version", "location", "description", "report_status"]
+        fields = ["actors", "version", "location", "description", "report_status", "starts_at", "ends_at", "created_at", "updated_at"]
 
 
 class LicenseSequenceSerializer(serializers.HyperlinkedModelSerializer):
