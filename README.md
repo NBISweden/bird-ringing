@@ -34,7 +34,32 @@ for example:
 Regardless of the environment, once started, the website will be
 available at `http://localhost:3210/`.
 
-### Switching between development and production deployments
+## Getting started
+
+### Creating users
+From the project root (the bird-ringing directory), run:
+`/create-test-users`
+Then open http://localhost:3210/admin/ and log in to the Django admin 
+using the credentials admin:test. 
+Create a new user and add that user to the bird-ringer expert group.
+
+### Load mock data
+Create a directory `backend/mock_data` in the project root and place the following files in it:
+
+- `actors.json`
+- `licenses.json`
+- `species.json`
+
+> **Note:** These files are not included in the repository and must be created separately.
+
+From the project root (`bird-ringing`), run:
+
+``` sh
+./compose-dev.sh exec backend python manage.py load_mock_data
+```
+
+
+## Switching between development and production deployments
 
 When switching between development and production deployments, e.g.,
 when testing, it is important to bring down the currently running
