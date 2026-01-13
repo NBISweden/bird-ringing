@@ -58,7 +58,7 @@ function toActorTable(item: ActorListItem): TableItem<ActorPropertyIds> {
     id: String(item.id),
     properties: {
       name: {
-        component: item.full_name
+        component: <Link href={`/system/actor/?entryId=${item.id}`}>{item.full_name}</Link>
       },
       type: {
         component: item.type,
