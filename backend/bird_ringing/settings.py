@@ -115,6 +115,8 @@ GROUP_NAMES = {
     "EXPERTS": "Bird ringing experts",
 }
 
+LICENSING_CARD_TEMPLATE = getenv("LICENSE_CARD_FILE","")
+
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
 
