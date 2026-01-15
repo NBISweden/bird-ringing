@@ -241,7 +241,7 @@ class LicenseSequenceSerializer(serializers.HyperlinkedModelSerializer):
         fields = ["mnr", "current", "history", "status", "license_holder", "methods", "last_email_sent_at"]
 
     def get_history(self, obj):
-        qs = obj.instances.exclude(version=0).order_by("version")
+        qs = obj.instances.exclude(version=0).order_by("-version")
         return LicenseHistoryItemSerializer(qs, many=True).data
 
     def create(self, validated_data):
