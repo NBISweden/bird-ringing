@@ -65,11 +65,12 @@ class LicenseCardService:
                 "Specified actor is not registered on the current license as ringer/helper."
             )
 
-        # Use the specified actor (not “first ringer”) for the card fields
         holder_name = actor.full_name
-
         valid_to = format_date(lic.ends_at)
-        lines_info = [valid_to, seq.mnr, holder_name]
+        mnr_line = seq.mnr
+        if rel.role == LicenseRoleChoices.HELPER:
+            mnr_line = f"{seq.mnr}: {rel.mednr}"
+        lines_info = [valid_to, mnr_line, holder_name]
 
         additions: list[ValueAddition] = []
         if actor.birth_date:
