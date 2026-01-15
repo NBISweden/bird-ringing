@@ -1,3 +1,16 @@
+from __future__ import annotations
+
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from django.http import HttpResponse
+
+from licensing.license_renderer import (
+    LicenseCardRenderer,
+    RenderRequest,
+    ValueAddition,
+    build_default_template_path,
+)
+
 from licensing.models import (
     LicenseSequence,
     License,
@@ -351,6 +364,43 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
 
         return queryset
 
+    @action(detail=True, methods=["get"], url_path="card-pdf")
+    def card_pdf(self, request, mnr=None):
+        seq: LicenseSequence = self.get_object()
+        lic = seq.current
+        if not lic:
+            return Response({"detail": "No current license found."}, status=404)
+
+        holder_rel = lic.actors.filter(role=LicenseRoleChoices.RINGER).select_related("actor").first()
+        holder_name = holder_rel.actor.full_name if holder_rel else ""
+
+        valid_to = lic.ends_at.strftime("%d %B %Y")
+        lines_info = [
+            valid_to,
+            seq.mnr,
+            holder_name,
+        ]
+
+        additions = []
+        if holder_rel and holder_rel.actor.birth_date:
+            additions.append(ValueAddition(label_id="text5", value=holder_rel.actor.birth_date.isoformat()))
+
+        renderer = LicenseCardRenderer()
+        req = RenderRequest(
+            template_svg_path=build_default_template_path(),
+            additions=additions,
+            lines_info=lines_info,
+        )
+
+        try:
+            pdf_bytes = renderer.render_pdf_bytes(req)
+        except Exception as e:
+            return Response({"detail": str(e)}, status=400)
+
+        filename = f"license-card-{seq.mnr}.pdf"
+        resp = HttpResponse(pdf_bytes, content_type="application/pdf")
+        resp["Content-Disposition"] = f'inline; filename="{filename}"'
+        return resp
 
 actor_type_label = models.Case(
     *[
@@ -431,6 +481,9 @@ class ActorViewSet(viewsets.ModelViewSet):
     )
     default_ordering = ["full_name", "city", "country"]
 
+class LicenseCardRenderSerializer(serializers.Serializer):
+    # Plaaceholder for possible future options that the client may want to pass.
+    pass
 
 router = routers.DefaultRouter()
 router.register(r"license_sequence", LicenseSequenceViewSet)
