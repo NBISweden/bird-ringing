@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional
+from typing import Optional, Iterable
 
 from django.http import HttpResponse
 
-from licensing.models import LicenseSequence, LicenseRoleChoices
+from licensing.models import LicenseSequence, LicenseRoleChoices, Actor
 from licensing.license_renderer import (
     LicenseCardRenderer,
     RenderRequest,
@@ -19,13 +19,14 @@ from django.utils.formats import date_format
 def format_date(d) -> str:
     with translation.override("sv"):
         day_month = date_format(d, format="j F", use_l10n=True)
-
     day, month = day_month.split(" ", 1)
     month = month[:1].upper() + month[1:]
-
     return f"{day} {month} år {d.year}"
 
 class NoCurrentLicense(Exception):
+    pass
+
+class ActorNotOnLicense(Exception):
     pass
 
 @dataclass(frozen=True)
@@ -35,32 +36,45 @@ class RenderedPdf:
 
 class LicenseCardService:
     """
-    Logic for producing a license card PDF from a LicenseSequence.
+    Logic for producing a license card PDF from a LicenseSequence, for a specific Actor.
+    Supports both RINGER and HELPER (and can be extended).
     """
 
     def __init__(self, renderer: Optional[LicenseCardRenderer] = None):
         self.renderer = renderer or LicenseCardRenderer()
 
-    def render_pdf_for_sequence(self, seq: LicenseSequence) -> RenderedPdf:
+    def render_pdf_for_sequence_and_actor(
+        self,
+        *,
+        seq: LicenseSequence,
+        actor: Actor,
+        allowed_roles: Iterable[int] = (LicenseRoleChoices.RINGER, LicenseRoleChoices.HELPER),
+    ) -> RenderedPdf:
         lic = seq.current
         if not lic:
             raise NoCurrentLicense("No current license found.")
 
-        holder_rel = (
+        rel = (
             lic.actors
-            .filter(role=LicenseRoleChoices.RINGER)
+            .filter(actor=actor, role__in=list(allowed_roles))
             .select_related("actor")
             .first()
         )
-        holder_name = holder_rel.actor.full_name if holder_rel else ""
+        if not rel:
+            raise ActorNotOnLicense(
+                "Specified actor is not registered on the current license as ringer/helper."
+            )
+
+        # Use the specified actor (not “first ringer”) for the card fields
+        holder_name = actor.full_name
 
         valid_to = format_date(lic.ends_at)
         lines_info = [valid_to, seq.mnr, holder_name]
 
         additions: list[ValueAddition] = []
-        if holder_rel and holder_rel.actor.birth_date:
+        if actor.birth_date:
             additions.append(
-                ValueAddition(label_id="text5", value=holder_rel.actor.birth_date.isoformat())
+                ValueAddition(label_id="text5", value=actor.birth_date.isoformat())
             )
 
         req = RenderRequest(
@@ -70,7 +84,8 @@ class LicenseCardService:
         )
 
         pdf_bytes = self.renderer.render_pdf_bytes(req)
-        filename = f"license-card-{seq.mnr}.pdf"
+
+        filename = f"license-card-{seq.mnr}-actor-{actor.id}.pdf"
         return RenderedPdf(filename=filename, pdf_bytes=pdf_bytes)
 
     @staticmethod

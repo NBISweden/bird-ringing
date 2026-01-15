@@ -1,7 +1,8 @@
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
-from licensing.license_card_service import LicenseCardService, NoCurrentLicense
+from licensing.models import Actor
+from licensing.license_card_service import LicenseCardService, NoCurrentLicense, ActorNotOnLicense
 
 from licensing.models import (
     LicenseSequence,
@@ -360,11 +361,22 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
     def card_pdf(self, request, mnr=None):
         seq = self.get_object()
 
+        actor_id = request.query_params.get("actor_id")
+        if not actor_id:
+            return Response({"detail": "actor_id is required"}, status=400)
+
+        try:
+            actor = Actor.objects.get(pk=actor_id)
+        except Actor.DoesNotExist:
+            return Response({"detail": "Actor not found"}, status=404)
+
         service = LicenseCardService()
         try:
-            rendered = service.render_pdf_for_sequence(seq)
+            rendered = service.render_pdf_for_sequence_and_actor(seq=seq, actor=actor)
         except NoCurrentLicense as e:
             return Response({"detail": str(e)}, status=404)
+        except ActorNotOnLicense as e:
+            return Response({"detail": str(e)}, status=400)
         except Exception as e:
             return Response({"detail": str(e)}, status=400)
 
