@@ -13,6 +13,18 @@ from licensing.license_renderer import (
     build_default_template_path,
 )
 
+from django.utils import translation
+from django.utils.formats import date_format
+
+def format_date(d) -> str:
+    with translation.override("sv"):
+        day_month = date_format(d, format="j F", use_l10n=True)
+
+    day, month = day_month.split(" ", 1)
+    month = month[:1].upper() + month[1:]
+
+    return f"{day} {month} år {d.year}"
+
 class NoCurrentLicense(Exception):
     pass
 
@@ -42,7 +54,7 @@ class LicenseCardService:
         )
         holder_name = holder_rel.actor.full_name if holder_rel else ""
 
-        valid_to = lic.ends_at.strftime("%d %B %Y")
+        valid_to = format_date(lic.ends_at)
         lines_info = [valid_to, seq.mnr, holder_name]
 
         additions: list[ValueAddition] = []
