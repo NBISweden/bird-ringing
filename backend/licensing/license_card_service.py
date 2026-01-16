@@ -5,7 +5,17 @@ from typing import Optional, Iterable
 
 from django.http import HttpResponse
 
-from licensing.models import LicenseSequence, LicenseRoleChoices, Actor
+import hashlib
+import json
+from django.db import transaction
+
+from licensing.models import (
+    LicenseSequence,
+    LicenseRoleChoices,
+    Actor,
+    LicenseDocument,
+    DocumentTypeChoices)
+
 from licensing.license_renderer import (
     LicenseCardRenderer,
     RenderRequest,
@@ -94,3 +104,97 @@ class LicenseCardService:
         resp = HttpResponse(rendered.pdf_bytes, content_type="application/pdf")
         resp["Content-Disposition"] = f'inline; filename="{rendered.filename}"'
         return resp
+
+    def _build_fingerprint_payload(self, *, seq: LicenseSequence, actor: Actor, rel) -> dict:
+        """
+        Define exactly what counts as “license changed” for card generation.
+        Anything included here triggers a new document when it changes.
+        """
+        lic = seq.current
+        return {
+            "template": str(build_default_template_path()),
+
+            "sequence_mnr": seq.mnr,
+            "license_version": lic.version,
+            "actor_id": actor.id,
+            "actor_full_name": actor.full_name,
+
+            "starts_at": lic.starts_at.isoformat(),
+            "ends_at": lic.ends_at.isoformat(),
+
+            "role": int(rel.role),
+            "mednr": rel.mednr or "",
+        }
+
+    def _fingerprint(self, payload: dict) -> str:
+        raw = json.dumps(payload, sort_keys=True, ensure_ascii=False).encode("utf-8")
+        return hashlib.sha256(raw).hexdigest()
+
+    @transaction.atomic
+    def get_or_create_current_license_card_document(
+        self,
+        *,
+        seq: LicenseSequence,
+        actor: Actor,
+        created_by,
+        updated_by,
+    ) -> LicenseDocument:
+        """
+        Returns the current LicenseDocument for this (current license, actor).
+        Generates and stores a new one only if the fingerprint changed.
+        Archives older ones.
+        """
+        lic = seq.current
+        if not lic:
+            raise NoCurrentLicense("No current license found.")
+
+        rel = (
+            lic.actors
+            .filter(actor=actor, role__in=[LicenseRoleChoices.RINGER, LicenseRoleChoices.HELPER])
+            .select_related("actor")
+            .first()
+        )
+        if not rel:
+            raise ActorNotOnLicense(
+                "Specified actor is not registered on the current license as ringer/helper."
+            )
+
+        payload = self._build_fingerprint_payload(seq=seq, actor=actor, rel=rel)
+        fp = self._fingerprint(payload)
+
+        # If current doc already exists with same fingerprint -> reuse it
+        existing = LicenseDocument.objects.filter(
+            license=lic,
+            actor=actor,
+            type=DocumentTypeChoices.LICENSE,
+            is_current=True,
+            fingerprint=fp,
+        ).order_by("-created_at").first()
+
+        if existing:
+            return existing
+
+        # Otherwise generate new PDF
+        rendered = self.render_pdf_for_sequence_and_actor(seq=seq, actor=actor)
+
+        # Archive previous current docs for this actor+license
+        LicenseDocument.objects.filter(
+            license=lic,
+            actor=actor,
+            type=DocumentTypeChoices.LICENSE,
+            is_current=True,
+        ).update(is_current=False)
+
+        # Store new document (keep old docs for archive)
+        doc = LicenseDocument.objects.create(
+            created_by=created_by,
+            updated_by=updated_by,
+            actor=actor,
+            license=lic,
+            type=DocumentTypeChoices.LICENSE,
+            data=rendered.pdf_bytes,
+            reference=rendered.filename,
+            fingerprint=fp,
+            is_current=True,
+        )
+        return doc

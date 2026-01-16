@@ -1,7 +1,7 @@
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
-from licensing.models import Actor
 from licensing.license_card_service import LicenseCardService, NoCurrentLicense, ActorNotOnLicense
 
 from licensing.models import (
@@ -25,6 +25,7 @@ from rest_framework.permissions import DjangoModelPermissions
 
 from rest_framework import routers, serializers, viewsets, filters, pagination, response
 from django.db import models
+from django.http import HttpResponse
 from django.contrib.postgres.aggregates import StringAgg
 from collections import OrderedDict
 
@@ -357,7 +358,8 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
 
         return queryset
 
-    @action(detail=True, methods=["get"], url_path="card-pdf")
+    # Authentication here is required for fetching the user.
+    @action(detail=True, methods=["get"], url_path="card-pdf", permission_classes=[IsAuthenticated])
     def card_pdf(self, request, mnr=None):
         seq = self.get_object()
 
@@ -372,7 +374,12 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
 
         service = LicenseCardService()
         try:
-            rendered = service.render_pdf_for_sequence_and_actor(seq=seq, actor=actor)
+            doc = service.get_or_create_current_license_card_document(
+                seq=seq,
+                actor=actor,
+                created_by=request.user,
+                updated_by=request.user,
+            )
         except NoCurrentLicense as e:
             return Response({"detail": str(e)}, status=404)
         except ActorNotOnLicense as e:
@@ -380,7 +387,10 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response({"detail": str(e)}, status=400)
 
-        return service.as_inline_pdf_response(rendered)
+        filename = doc.reference or f"license-card-{seq.mnr}-actor-{actor.id}.pdf"
+        resp = HttpResponse(bytes(doc.data), content_type="application/pdf")
+        resp["Content-Disposition"] = f'inline; filename="{filename}"'
+        return resp
 
 actor_type_label = models.Case(
     *[
