@@ -43,6 +43,15 @@ function ActorViewBase() {
 
   const licenses: ActorLicenseRelation[] = data.current_license_relations;
   const roles = new Set<Role>(licenses.map(l => l.role));
+  const get_license_status = (license: ActorLicenseRelation): string => {
+    const today = new Date()
+    const endDate = new Date(license.ends_at)
+    if (endDate >= today) {
+      return "active"
+    } else {
+      return "inactive"
+    }
+  }
   
   return (
     <div className="container">
@@ -52,6 +61,24 @@ function ActorViewBase() {
       <p><strong>E-mail: </strong>{data.email}</p>
       <p><strong>Sex: </strong>{data.sex}</p>
       <p><strong>Latest update: </strong>{convertDateToLocale(data.updated_at)}</p>
+      <h3>Licenser</h3>
+      <ul className="list-group list-group-flush">
+
+      {licenses.map(l => (
+        <li className="list-group-item d-flex flex-row">
+              <div className="py-2 px-4" key={`${l.mnr}-${l.mednr}`}>{l.mnr}</div>
+              <div className="py-2 px-4">{l.mednr}</div>
+              <div className="py-2 px-4">{l.role}</div>
+              <div className="py-2 px-4">{l.version}</div>
+              <div className="py-2 px-4">{l.starts_at}</div>
+              <div className="py-2 px-4">{l.ends_at}</div>
+              <div className="py-2 px-4">{get_license_status(l)}</div>
+              <div className="py-2 px-4">{l.communication_type}</div>
+              <div className="py-2 px-4">{l.communication_status}</div>
+          </li>
+
+      ))}
+      </ul>
     </div>
   )
 }

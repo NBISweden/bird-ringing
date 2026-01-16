@@ -31,6 +31,11 @@ export type ActorLicenseRelation = {
   mnr: string;
   role: string;
   mednr: string;
+  version: number,
+  starts_at: string;
+  ends_at: string;
+  communication_type: string;
+  communication_status: string;
 }
 
 export type Role = string;
