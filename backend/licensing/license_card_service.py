@@ -19,7 +19,6 @@ from licensing.models import (
 from licensing.license_renderer import (
     LicenseCardRenderer,
     RenderRequest,
-    ValueAddition,
     build_default_template_path,
 )
 
@@ -82,15 +81,8 @@ class LicenseCardService:
             mnr_line = f"{seq.mnr}: {rel.mednr}"
         lines_info = [valid_to, mnr_line, holder_name]
 
-        additions: list[ValueAddition] = []
-        if actor.birth_date:
-            additions.append(
-                ValueAddition(label_id="text5", value=actor.birth_date.isoformat())
-            )
-
         req = RenderRequest(
             template_svg_path=build_default_template_path(),
-            additions=additions,
             lines_info=lines_info,
         )
 
