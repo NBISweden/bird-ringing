@@ -4,9 +4,12 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from django.conf import settings
+from django.core.exceptions import ImproperlyConfigured
 from lxml import etree
 import cairosvg
+import logging
 
+logger = logging.getLogger(__name__)
 
 SVG_NS = "http://www.w3.org/2000/svg"
 XML_NS = "http://www.w3.org/XML/1998/namespace"
@@ -83,5 +86,17 @@ class LicenseCardRenderer:
 
 def build_default_template_path() -> Path:
     configured = getattr(settings, "LICENSING_CARD_TEMPLATE", None)
-    if configured:
-        return Path(configured)
+    if not configured:
+        logger.error("LICENSING_CARD_TEMPLATE is not configured")
+        raise ImproperlyConfigured("LICENSING_CARD_TEMPLATE is not configured.")
+
+    p = Path(configured)
+    if not p.exists():
+        logger.error("LICENSING_CARD_TEMPLATE does not exist: %s", p)
+        raise ImproperlyConfigured(f"LICENSING_CARD_TEMPLATE does not exist: {p}")
+
+    if not p.is_file():
+        logger.error("LICENSING_CARD_TEMPLATE is not a file: %s", p)
+        raise ImproperlyConfigured(f"LICENSING_CARD_TEMPLATE is not a file: {p}")
+
+    return p
