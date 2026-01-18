@@ -65,19 +65,19 @@ class LicenseCardRenderer:
         orig_transform = label.get("transform") or ""
         box_text.set("transform", f"{orig_transform} translate(0,-90)".strip())
 
-        x0 = float(ts.get("x") or label.get("x") or "0")
+        x0 = float(ts.get("x") or label.get("x") or "0") + 125.0
         y0 = float(ts.get("y") or label.get("y") or "0")
-        style = ts.get("style")
 
+        style = ts.get("style") or ""
+        style = (style + ";fill:#000000;font-size:12px;text-anchor:middle;text-align:center;").strip(";")
         prefixes = ["Giltig t.o.m ", "Märkare nr. ", ""]
-        line_height = 12.0
+        line_height = 14.0
 
         for i, (prefix, line) in enumerate(zip(prefixes, lines_info, strict=True)):
             t = etree.SubElement(box_text, f"{{{SVG_NS}}}tspan")
             t.set("x", str(x0))
             t.set("y", str(y0 + i * line_height))
-            if style:
-                t.set("style", style)
+            t.set("style", style)
             t.text = prefix + line
 
         parent = label.getparent()
