@@ -116,6 +116,7 @@ GROUP_NAMES = {
 }
 
 LICENSING_CARD_TEMPLATE = getenv("LICENSE_CARD_FILE","")
+LICENSING_CARD_TEMPLATE_BACK = getenv("LICENSE_CARD_FILE_BACK","")
 
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/

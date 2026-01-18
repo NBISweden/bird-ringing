@@ -9,6 +9,9 @@ from lxml import etree
 import cairosvg
 import logging
 
+from io import BytesIO
+import pikepdf
+
 logger = logging.getLogger(__name__)
 
 SVG_NS = "http://www.w3.org/2000/svg"
@@ -27,14 +30,23 @@ class RenderRequest:
 
 class LicenseCardRenderer:
     def render_pdf_bytes(self, req: RenderRequest) -> bytes:
-        svg_bytes = self._render_svg_bytes(req)
-        return cairosvg.svg2pdf(bytestring=svg_bytes)
+        # page 1: front (modified)
+        front_svg_bytes = self._render_svg_bytes(req)
+        front_pdf = cairosvg.svg2pdf(bytestring=front_svg_bytes)
+
+        # page 2: back (static)
+        back_svg_path = build_back_template_path()
+        back_svg = back_svg_path.read_text(encoding="utf-8")
+        back_svg = back_svg.replace("font-family:'Segoe UI'", "font-family:'Noto Sans Light'")
+        back_pdf = cairosvg.svg2pdf(bytestring=back_svg.encode("utf-8"))
+
+        return _merge_two_single_page_pdfs(front_pdf, back_pdf)
 
     def _render_svg_bytes(self, req: RenderRequest) -> bytes:
         if len(req.lines_info) != 3:
             raise ValueError("lines_info must contain exactly 3 strings")
 
-        # This is adedd here to ensure compatibility with linux fonts
+        # This is added here to ensure compatibility with linux fonts
         svg = req.template_svg_path.read_text(encoding="utf-8")
         svg = svg.replace("font-family:'Segoe UI'", "font-family:'Noto Sans Light'")
 
@@ -100,3 +112,29 @@ def build_default_template_path() -> Path:
         raise ImproperlyConfigured(f"LICENSING_CARD_TEMPLATE is not a file: {p}")
 
     return p
+
+def build_back_template_path() -> Path:
+    configured = getattr(settings, "LICENSING_CARD_TEMPLATE_BACK", None)
+    if not configured:
+        logger.error("LICENSING_CARD_TEMPLATE_BACK is not configured")
+        raise ImproperlyConfigured("LICENSING_CARD_TEMPLATE_BACK is not configured.")
+
+    p = Path(configured)
+    if not p.exists():
+        logger.error("LICENSING_CARD_TEMPLATE_BACK does not exist: %s", p)
+        raise ImproperlyConfigured(f"LICENSING_CARD_TEMPLATE_BACK does not exist: {p}")
+
+    if not p.is_file():
+        logger.error("LICENSING_CARD_TEMPLATE_BACK is not a file: %s", p)
+        raise ImproperlyConfigured(f"LICENSING_CARD_TEMPLATE_BACK is not a file: {p}")
+
+    return p
+
+def _merge_two_single_page_pdfs(front_pdf: bytes, back_pdf: bytes) -> bytes:
+    out = BytesIO()
+    with pikepdf.Pdf.open(BytesIO(front_pdf)) as f, pikepdf.Pdf.open(BytesIO(back_pdf)) as b:
+        merged = pikepdf.Pdf.new()
+        merged.pages.append(f.pages[0])
+        merged.pages.append(b.pages[0])
+        merged.save(out)
+    return out.getvalue()

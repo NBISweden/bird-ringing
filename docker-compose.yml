@@ -80,7 +80,8 @@ services:
       SERVICE_MODE: production
       POSTGRES_PASSWORD_FILE: /run/secrets/db-user-pass
       DJANGO_SECRET_FILE: /run/secrets/django-secret-key
-      LICENSE_CARD_FILE: #svg filepath#
+      LICENSE_CARD_FILE: #svg filepath (front)
+      LICENSE_CARD_FILE_BACK: #svg filepath (back)
     volumes:
       - backend-vol:/vol
       - ./secrets/card_templates:/card_templates
