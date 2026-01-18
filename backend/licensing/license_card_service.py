@@ -19,7 +19,7 @@ from licensing.models import (
 from licensing.license_renderer import (
     LicenseCardRenderer,
     RenderRequest,
-    build_default_template_path,
+    get_template_path,
 )
 
 from django.utils import translation
@@ -82,7 +82,7 @@ class LicenseCardService:
         lines_info = [valid_to, mnr_line, holder_name]
 
         req = RenderRequest(
-            template_svg_path=build_default_template_path(),
+            template_svg_path=get_template_path("LICENSING_CARD_TEMPLATE"),
             lines_info=lines_info,
         )
 
@@ -104,7 +104,7 @@ class LicenseCardService:
         """
         lic = seq.current
         return {
-            "template": str(build_default_template_path()),
+            "template": str(get_template_path("LICENSING_CARD_TEMPLATE")),
 
             "sequence_mnr": seq.mnr,
             "license_version": lic.version,

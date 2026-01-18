@@ -35,7 +35,7 @@ class LicenseCardRenderer:
         front_pdf = cairosvg.svg2pdf(bytestring=front_svg_bytes)
 
         # page 2: back (static)
-        back_svg_path = build_back_template_path()
+        back_svg_path = get_template_path("LICENSING_CARD_TEMPLATE_BACK")
         back_svg = back_svg_path.read_text(encoding="utf-8")
         back_svg = back_svg.replace("font-family:'Segoe UI'", "font-family:'Noto Sans Light'")
         back_pdf = cairosvg.svg2pdf(bytestring=back_svg.encode("utf-8"))
@@ -95,38 +95,20 @@ class LicenseCardRenderer:
         parent = label.getparent()
         parent.insert(parent.index(label), box_text)
 
-
-def build_default_template_path() -> Path:
-    configured = getattr(settings, "LICENSING_CARD_TEMPLATE", None)
+def get_template_path(setting_name: str) -> Path:
+    configured = getattr(settings, setting_name, None)
     if not configured:
-        logger.error("LICENSING_CARD_TEMPLATE is not configured")
-        raise ImproperlyConfigured("LICENSING_CARD_TEMPLATE is not configured.")
+        logger.error("%s is not configured", setting_name)
+        raise ImproperlyConfigured(f"{setting_name} is not configured.")
 
     p = Path(configured)
     if not p.exists():
-        logger.error("LICENSING_CARD_TEMPLATE does not exist: %s", p)
-        raise ImproperlyConfigured(f"LICENSING_CARD_TEMPLATE does not exist: {p}")
+        logger.error("%s does not exist: %s", setting_name, p)
+        raise ImproperlyConfigured(f"{setting_name} does not exist: {p}")
 
     if not p.is_file():
-        logger.error("LICENSING_CARD_TEMPLATE is not a file: %s", p)
-        raise ImproperlyConfigured(f"LICENSING_CARD_TEMPLATE is not a file: {p}")
-
-    return p
-
-def build_back_template_path() -> Path:
-    configured = getattr(settings, "LICENSING_CARD_TEMPLATE_BACK", None)
-    if not configured:
-        logger.error("LICENSING_CARD_TEMPLATE_BACK is not configured")
-        raise ImproperlyConfigured("LICENSING_CARD_TEMPLATE_BACK is not configured.")
-
-    p = Path(configured)
-    if not p.exists():
-        logger.error("LICENSING_CARD_TEMPLATE_BACK does not exist: %s", p)
-        raise ImproperlyConfigured(f"LICENSING_CARD_TEMPLATE_BACK does not exist: {p}")
-
-    if not p.is_file():
-        logger.error("LICENSING_CARD_TEMPLATE_BACK is not a file: %s", p)
-        raise ImproperlyConfigured(f"LICENSING_CARD_TEMPLATE_BACK is not a file: {p}")
+        logger.error("%s is not a file: %s", setting_name, p)
+        raise ImproperlyConfigured(f"{setting_name} is not a file: {p}")
 
     return p
 
