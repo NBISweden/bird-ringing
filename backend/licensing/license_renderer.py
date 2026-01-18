@@ -20,6 +20,8 @@ NS = {"svg": SVG_NS}
 
 DEFAULT_INFO_LABEL_ID = "text4"
 
+_BACK_PDF_CACHE: bytes | None = None
+
 
 @dataclass(frozen=True)
 class RenderRequest:
@@ -35,10 +37,7 @@ class LicenseCardRenderer:
         front_pdf = cairosvg.svg2pdf(bytestring=front_svg_bytes)
 
         # page 2: back (static)
-        back_svg_path = get_template_path("LICENSING_CARD_TEMPLATE_BACK")
-        back_svg = back_svg_path.read_text(encoding="utf-8")
-        back_svg = back_svg.replace("font-family:'Segoe UI'", "font-family:'Noto Sans Light'")
-        back_pdf = cairosvg.svg2pdf(bytestring=back_svg.encode("utf-8"))
+        back_pdf = _get_back_pdf_bytes()
 
         return _merge_two_single_page_pdfs(front_pdf, back_pdf)
 
@@ -120,3 +119,18 @@ def _merge_two_single_page_pdfs(front_pdf: bytes, back_pdf: bytes) -> bytes:
         merged.pages.append(b.pages[0])
         merged.save(out)
     return out.getvalue()
+
+def _get_back_pdf_bytes() -> bytes:
+    """
+    Add caching for the back-side of the pdf card. This works per-process.
+    """
+    global _BACK_PDF_CACHE
+    if _BACK_PDF_CACHE is not None:
+        return _BACK_PDF_CACHE
+
+    back_svg_path = get_template_path("LICENSING_CARD_TEMPLATE_BACK")
+    back_svg = back_svg_path.read_text(encoding="utf-8")
+    back_svg = back_svg.replace("font-family:'Segoe UI'", "font-family:'Noto Sans Light'")
+
+    _BACK_PDF_CACHE = cairosvg.svg2pdf(bytestring=back_svg.encode("utf-8"))
+    return _BACK_PDF_CACHE
