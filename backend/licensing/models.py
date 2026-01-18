@@ -309,6 +309,15 @@ class LicenseDocument(ChangeTracking):
     fingerprint = models.CharField(max_length=64, blank=True, default="", db_index=True)
     is_current = models.BooleanField(default=True, db_index=True)
 
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["license", "actor", "type"],
+                condition=models.Q(is_current=True),
+                name="unique_current_doc_per_license_actor_type",
+            )
+        ]
+
     def copy_to(self, license: License):
         self.pk = None
         self.license = license
