@@ -12,14 +12,29 @@ from licensing.models import (
     LicensePermissionType,
     LicenseStatusChoices,
 )
+from rest_framework.authentication import SessionAuthentication
+from rest_framework.permissions import DjangoModelPermissions
 
 from rest_framework import routers, serializers, viewsets, filters, pagination, response
 from django.db import models
 from django.contrib.postgres.aggregates import StringAgg
 from collections import OrderedDict
 
+
 def parse_csv_string(csv_str: str):
     return [v.strip() for v in csv_str.split(",")]
+
+
+class DjangoProtectedModelPermissions(DjangoModelPermissions):
+    perms_map = {
+        "GET": ["%(app_label)s.view_%(model_name)s"],
+        "OPTIONS": [],
+        "HEAD": [],
+        "POST": ["%(app_label)s.add_%(model_name)s"],
+        "PUT": ["%(app_label)s.change_%(model_name)s"],
+        "PATCH": ["%(app_label)s.change_%(model_name)s"],
+        "DELETE": ["%(app_label)s.delete_%(model_name)s"],
+    }
 
 
 class IdSelectionFilter(filters.BaseFilterBackend):
@@ -178,10 +193,12 @@ class LicenseActorRelationSerializer(serializers.ModelSerializer):
         model = LicenseRelation
         fields = ["actor", "role", "mednr"]
 
+
 class LicensePermissionTypeSerializer(serializers.ModelSerializer):
     class Meta:
         model = LicensePermissionType
-        fields = ['name']
+        fields = ["name"]
+
 
 class LicenseLicensePermissionSerializer(serializers.ModelSerializer):
     type = LicensePermissionTypeSerializer(read_only=True)
@@ -190,9 +207,12 @@ class LicenseLicensePermissionSerializer(serializers.ModelSerializer):
         model = LicensePermission
         fields = ["type"]
 
+
 class LicenseSerializer(serializers.ModelSerializer):
     actors = LicenseActorRelationSerializer(many=True, read_only=True)
-    report_status = serializers.ChoiceField(choices=ReportStatusChoices, source="get_report_status_display")
+    report_status = serializers.ChoiceField(
+        choices=ReportStatusChoices, source="get_report_status_display"
+    )
 
     class Meta:
         model = License
@@ -202,21 +222,23 @@ class LicenseSerializer(serializers.ModelSerializer):
 class LicenseSequenceSerializer(serializers.HyperlinkedModelSerializer):
     current = LicenseSerializer(read_only=True)
     license_holder = serializers.CharField()
-    status = serializers.ChoiceField(choices=LicenseStatusChoices, source="get_status_display")
+    status = serializers.ChoiceField(
+        choices=LicenseStatusChoices, source="get_status_display"
+    )
     methods = serializers.CharField()
     last_email_sent_at = serializers.DateTimeField(read_only=True)
 
     class Meta:
         model = LicenseSequence
-        fields = ["mnr", "current", "status", "license_holder", "methods", "last_email_sent_at"]
+        fields = [
+            "mnr",
+            "current",
+            "status",
+            "license_holder",
+            "methods",
+            "last_email_sent_at",
+        ]
 
-    def create(self, validated_data):
-        # TODO: Implement real function
-        raise RuntimeError(f"create: {validated_data}")
-
-    def update(self, instance, validated_data):
-        # TODO: Implement real function
-        raise RuntimeError(f"update: {validated_data}")
 
 license_status_label = models.Case(
     *[
@@ -224,7 +246,7 @@ license_status_label = models.Case(
         for value, label in LicenseStatusChoices.choices
     ],
     output_field=models.CharField(),
-    default=models.Value("")
+    default=models.Value(""),
 )
 
 license_report_status_label = models.Case(
@@ -233,11 +255,14 @@ license_report_status_label = models.Case(
         for value, label in ReportStatusChoices.choices
     ],
     output_field=models.CharField(),
-    default=models.Value("")
+    default=models.Value(""),
 )
 
+
 class LicenseSequenceViewSet(viewsets.ModelViewSet):
-    # TODO: override get_object in order to select instances using date insteade of primary key
+    authentication_classes = [SessionAuthentication]
+    permission_classes = [DjangoProtectedModelPermissions]
+
     lookup_field = "mnr"
     queryset = LicenseSequence.objects.all().distinct().order_by("mnr")
     serializer_class = LicenseSequenceSerializer
@@ -246,37 +271,52 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         queryset = super().get_queryset()
 
-        search = self.request.query_params.get('search', None)
+        search = self.request.query_params.get("search", None)
 
         queryset = queryset.annotate(
-            license_holder=StringAgg(models.Case(
-                models.When(instances__actors__role=models.Value(1), then='instances__actors__actor__full_name'),
-                default=models.Value(None),
-                output_field=models.CharField()
-            ), delimiter=', ', distinct=True),
-            methods=StringAgg('instances__permissions__type__name', delimiter=', ', distinct=True),
-            last_email_sent_at=models.Max(models.Case(
-                models.When(instances__communication__status=models.Value(1), then='instances__communication__updated_at'),
-                default=models.Value(None),
-                output_field=models.DateField()
-            )),
+            license_holder=StringAgg(
+                models.Case(
+                    models.When(
+                        instances__actors__role=models.Value(1),
+                        then="instances__actors__actor__full_name",
+                    ),
+                    default=models.Value(None),
+                    output_field=models.CharField(),
+                ),
+                delimiter=", ",
+                distinct=True,
+            ),
+            methods=StringAgg(
+                "instances__permissions__type__name", delimiter=", ", distinct=True
+            ),
+            last_email_sent_at=models.Max(
+                models.Case(
+                    models.When(
+                        instances__communication__status=models.Value(1),
+                        then="instances__communication__updated_at",
+                    ),
+                    default=models.Value(None),
+                    output_field=models.DateField(),
+                )
+            ),
             status_label=license_status_label,
-            report_status_label=license_report_status_label
+            report_status_label=license_report_status_label,
         )
 
         if search is not None:
             search_terms = search.split()
             for term in search_terms:
                 queryset = queryset.filter(
-                models.Q(license_holder__icontains=term)
-                | models.Q(mnr__icontains=term)
-                | models.Q(methods__icontains=term)
-                | models.Q(last_email_sent_at__icontains=term)
-                | models.Q(status_label__icontains=term)
-                | models.Q(report_status_label__icontains=term)
+                    models.Q(license_holder__icontains=term)
+                    | models.Q(mnr__icontains=term)
+                    | models.Q(methods__icontains=term)
+                    | models.Q(last_email_sent_at__icontains=term)
+                    | models.Q(status_label__icontains=term)
+                    | models.Q(report_status_label__icontains=term)
                 )
 
         return queryset
+
 
 actor_type_label = models.Case(
     *[
@@ -311,6 +351,9 @@ license_mnr = models.Case(
 
 
 class ActorViewSet(viewsets.ModelViewSet):
+    authentication_classes = [SessionAuthentication]
+    permission_classes = [DjangoProtectedModelPermissions]
+
     queryset = Actor.objects.annotate(
         type_label=actor_type_label,
         license_role_label=StringAgg(
@@ -353,6 +396,7 @@ class ActorViewSet(viewsets.ModelViewSet):
         ]
     )
     default_ordering = ["full_name", "city", "country"]
+
 
 router = routers.DefaultRouter()
 router.register(r"license_sequence", LicenseSequenceViewSet)

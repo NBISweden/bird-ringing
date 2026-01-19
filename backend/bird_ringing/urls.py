@@ -18,10 +18,13 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from licensing.rest import router as licensing_router
+from .views import SystemInfoView, HealthCheckView, LoginView
+
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path("api/system/", include("system.urls")),
-    path("api/auth/", include("access_control.urls")),
+    path("api/system/info/", SystemInfoView.as_view(), name="system-info"),
+    path("api/system/health/", HealthCheckView.as_view(), name="system-health"),
+    path("api/login/", LoginView.as_view(), name="auth-login"),
     path("api/", include(licensing_router.urls)),
 ]
