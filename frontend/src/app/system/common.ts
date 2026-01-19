@@ -190,3 +190,15 @@ export function convertDateToLocale(dateStr: string){
         return "-";
     }
 }
+
+export function convertOnlyDateToLocale(dateStr: string){
+    if(dateStr){
+        return new Date(dateStr).toLocaleString('sv-SE', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+        });
+    } else {
+        return "-";
+    }
+}
