@@ -130,26 +130,18 @@ class LicenseCardService:
         actor: Actor,
         created_by,
         updated_by,
+        allowed_roles: Iterable[int] = (LicenseRoleChoices.RINGER, LicenseRoleChoices.HELPER),
     ) -> LicenseDocument:
         """
-        Returns the current LicenseDocument for this (current license, actor).
-        Generates and stores a new one only if the fingerprint changed.
-        Archives older ones.
-        """
-        lic = seq.current
-        if not lic:
-            raise NoCurrentLicense("No current license found.")
-
-        rel = (
-            lic.actors
-            .filter(actor=actor, role__in=[LicenseRoleChoices.RINGER, LicenseRoleChoices.HELPER])
-            .select_related("actor")
-            .first()
+-        Returns the current LicenseDocument for this (current license, actor).
+-        Generates and stores a new one only if the fingerprint changed.
+-        Archives older ones.
+-        """
+        lic, rel = self._get_current_license_and_relation(
+            seq=seq,
+            actor=actor,
+            allowed_roles=allowed_roles,
         )
-        if not rel:
-            raise ActorNotOnLicense(
-                "Specified actor is not registered on the current license as ringer/helper."
-            )
 
         payload = self._build_fingerprint_payload(seq=seq, actor=actor, rel=rel)
         fp = self._fingerprint(payload)
@@ -166,8 +158,7 @@ class LicenseCardService:
         if existing:
             return existing
 
-        # Otherwise generate new PDF
-        rendered = self.render_pdf_for_sequence_and_actor(seq=seq, actor=actor)
+        rendered = self.render_pdf_for_sequence_and_actor(seq=seq, actor=actor, allowed_roles=allowed_roles)
 
         # Archive previous current docs for this actor+license
         LicenseDocument.objects.filter(
@@ -190,3 +181,47 @@ class LicenseCardService:
             is_current=True,
         )
         return doc
+
+    def get_current_license_card_document(
+        self,
+        *,
+        seq: LicenseSequence,
+        actor: Actor,
+        allowed_roles: Iterable[int] = (LicenseRoleChoices.RINGER, LicenseRoleChoices.HELPER),
+    ) -> Optional[LicenseDocument]:
+        lic, _rel = self._get_current_license_and_relation(
+            seq=seq,
+            actor=actor,
+            allowed_roles=allowed_roles,
+        )
+
+        return LicenseDocument.objects.filter(
+            license=lic,
+            actor=actor,
+            type=DocumentTypeChoices.LICENSE,
+            is_current=True,
+        ).order_by("-created_at").first()
+
+    def _get_current_license_and_relation(
+        self,
+        *,
+        seq: LicenseSequence,
+        actor: Actor,
+        allowed_roles: Iterable[int],
+    ):
+        lic = seq.current
+        if not lic:
+            raise NoCurrentLicense("No current license found.")
+
+        rel = (
+            lic.actors
+            .filter(actor=actor, role__in=list(allowed_roles))
+            .select_related("actor")
+            .first()
+        )
+        if not rel:
+            raise ActorNotOnLicense(
+                "Specified actor is not registered on the current license as ringer/helper."
+            )
+
+        return lic, rel

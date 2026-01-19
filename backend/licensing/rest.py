@@ -359,18 +359,16 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
         return queryset
 
     # Authentication here is required for fetching the user.
-    @action(detail=True, methods=["get"], url_path="card-pdf", permission_classes=[IsAuthenticated])
-    def card_pdf(self, request, mnr=None):
+    @action(detail=True, methods=["get"], url_path="card-create", permission_classes=[IsAuthenticated])
+    def card_create(self, request, mnr=None):
         seq = self.get_object()
 
-        actor_id = request.query_params.get("actor_id")
-        if not actor_id:
-            return Response({"detail": "actor_id is required"}, status=400)
-
         try:
-            actor = Actor.objects.get(pk=actor_id)
-        except Actor.DoesNotExist:
-            return Response({"detail": "Actor not found"}, status=404)
+            actor = self._get_actor_from_request(request)
+        except ValueError as e:
+            return Response({"detail": str(e)}, status=400)
+        except LookupError as e:
+            return Response({"detail": str(e)}, status=404)
 
         service = LicenseCardService()
         try:
@@ -387,6 +385,49 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response({"detail": str(e)}, status=400)
 
+        return Response(
+            {
+                "filename": doc.reference,
+            },
+            status=200,
+        )
+
+    @action(detail=True, methods=["get"], url_path="card-pdf", permission_classes=[IsAuthenticated])
+    def card_pdf(self, request, mnr=None):
+        seq = self.get_object()
+
+        try:
+            actor = self._get_actor_from_request(request)
+        except ValueError as e:
+            return Response({"detail": str(e)}, status=400)
+        except LookupError as e:
+            return Response({"detail": str(e)}, status=404)
+
+        service = LicenseCardService()
+        try:
+            doc = service.get_current_license_card_document(seq=seq, actor=actor)
+        except NoCurrentLicense as e:
+            return Response({"detail": str(e)}, status=404)
+        except ActorNotOnLicense as e:
+            return Response({"detail": str(e)}, status=400)
+        except Exception as e:
+            return Response({"detail": str(e)}, status=400)
+
+        if not doc:
+            return Response({"detail": "No current license card PDF exists. Call /card-create first."}, status=404)
+
+        return self._pdf_http_response(seq=seq, actor=actor, doc=doc)
+
+    def _get_actor_from_request(self, request) -> Actor:
+        actor_id = request.query_params.get("actor_id")
+        if not actor_id:
+            raise ValueError("actor_id is required")
+        try:
+            return Actor.objects.get(pk=actor_id)
+        except Actor.DoesNotExist:
+            raise LookupError("Actor not found")
+
+    def _pdf_http_response(self, *, seq: LicenseSequence, actor: Actor, doc) -> HttpResponse:
         filename = doc.reference or f"license-card-{seq.mnr}-actor-{actor.id}.pdf"
         resp = HttpResponse(bytes(doc.data), content_type="application/pdf")
         resp["Content-Disposition"] = f'inline; filename="{filename}"'
