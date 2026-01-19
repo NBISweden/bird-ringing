@@ -59,7 +59,7 @@ function LicenseViewInner() {
         <div className="container">
             <div className="row ">
                 <div className="col-12 col-xl-10 col-xxl-9">
-                    <div className="py-3">
+                    <div>
                         <h1 className="h2 mb-1">Licens {data.mnr}</h1>
                     </div>
                     <LicenceView license={data.current}/>

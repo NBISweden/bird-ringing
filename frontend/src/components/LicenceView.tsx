@@ -8,7 +8,7 @@ type LicenceViewProps = {
 export function LicenceView({license}: LicenceViewProps){
     return (
         <>
-            <div className="py-3">
+            <div className="mb-3">
                 {/* Header */}
                 <div className="card border-primary">
                     <div className="card-header">
@@ -54,7 +54,7 @@ export function LicenceView({license}: LicenceViewProps){
                 </div>
             </div>
             {/* Permissions */}
-            <div className="py-3">
+            <div className="mb-3">
                 <div className="row">
                     {/* Actors */}
                     <div className="col-sm-6">
@@ -64,7 +64,7 @@ export function LicenceView({license}: LicenceViewProps){
                                 {license.actors?.length ? (
                                     <ul className="list-group list-group-flush">
                                         {license.actors.map((rel, i) => (
-                                            <li className="list-group-item py-3" key={i}>
+                                            <li className="list-group-item mb-3" key={i}>
                                                 <div className="row align-items-center g-2">
                                                     <div className="col-12 col-md-3 fw-semibold text-capitalize">
                                                         {rel.role}
@@ -115,12 +115,12 @@ export function LicenceView({license}: LicenceViewProps){
                 </div>
             </div>
             {/* Documents */}
-            <div className="py-3">
+            <div className="mb-3">
                 <h3 className="h2">Dokument</h3>
                 {license.documents?.length ? (
                     <ul className="list-group list-group-flush">
                         {license.documents.map((doc, i) => (
-                            <li className="list-group-item py-3" key={i}>
+                            <li className="list-group-item mb-3" key={i}>
                                 <div className="row align-items-center g-2">
                                     <div className="col-12 col-md-2 fw-semibold text-capitalize">
                                         {doc.type}
@@ -144,12 +144,12 @@ export function LicenceView({license}: LicenceViewProps){
                 )}
             </div>
             {/* Communication */}
-            <div className="py-3">
+            <div className="mb-3">
                 <h3 className="h2">Kommunikation</h3>
                 {license.communication?.length ? (
                     <ul className="list-group list-group-flush">
                         {license.communication.map((item, i) => (
-                            <li className="list-group-item py-3" key={i}>
+                            <li className="list-group-item mb-3" key={i}>
                                 <div className="row align-items-center g-2">
                                     <div className="col-12 col-md-2 fw-semibold text-capitalize">
                                         {item.type}
