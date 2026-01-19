@@ -13,7 +13,7 @@ from licensing.models import (
     LicenseStatusChoices,
 )
 from rest_framework.authentication import SessionAuthentication
-from rest_framework.permissions import IsAuthenticated, DjangoModelPermissions
+from rest_framework.permissions import DjangoModelPermissions
 
 from rest_framework import routers, serializers, viewsets, filters, pagination, response
 from django.db import models

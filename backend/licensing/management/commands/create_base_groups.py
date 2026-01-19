@@ -3,6 +3,7 @@ from django.contrib.auth.models import Group, Permission
 from django.db import transaction
 from django.conf import settings
 
+
 class Command(BaseCommand):
     help = "Create user groups defined in settings.GROUP_NAMES"
 
@@ -11,13 +12,12 @@ class Command(BaseCommand):
             group_names = getattr(settings, "GROUP_NAMES", {})
 
             if not group_names:
-                self.stdout.write(self.style.WARNING("No group names found in settings.GROUP_NAMES"))
+                self.stdout.write(
+                    self.style.WARNING("No group names found in settings.GROUP_NAMES")
+                )
                 return
 
-            permissions = [
-                "view_licensesequence",
-                "view_actor"
-            ]
+            permissions = ["view_licensesequence", "view_actor"]
 
             for _, group_name in group_names.items():
                 group, created = Group.objects.get_or_create(name=group_name)
@@ -27,6 +27,10 @@ class Command(BaseCommand):
                         group.permissions.add(perm)
                     group.save()
 
-                    self.stdout.write(self.style.SUCCESS(f"Group '{group_name}' was created."))
+                    self.stdout.write(
+                        self.style.SUCCESS(f"Group '{group_name}' was created.")
+                    )
                 else:
-                    self.stdout.write(self.style.NOTICE(f"Group '{group_name}' already exists."))
+                    self.stdout.write(
+                        self.style.NOTICE(f"Group '{group_name}' already exists.")
+                    )
