@@ -20,7 +20,7 @@ from licensing.models import (
     LicenseDocument,
     LicenseCommunication,
 )
-from rest_framework.authentication import SessionAuthentication
+from rest_framework.authentication import SessionAuthentication, BasicAuthentication
 from rest_framework.permissions import DjangoModelPermissions
 
 from rest_framework import routers, serializers, viewsets, filters, pagination, response
@@ -301,7 +301,7 @@ license_report_status_label = models.Case(
 
 
 class LicenseSequenceViewSet(viewsets.ModelViewSet):
-    authentication_classes = [SessionAuthentication]
+    authentication_classes = [SessionAuthentication, BasicAuthentication]
     permission_classes = [DjangoProtectedModelPermissions]
 
     lookup_field = "mnr"
@@ -466,7 +466,7 @@ license_mnr = models.Case(
 
 
 class ActorViewSet(viewsets.ModelViewSet):
-    authentication_classes = [SessionAuthentication]
+    authentication_classes = [SessionAuthentication, BasicAuthentication]
     permission_classes = [DjangoProtectedModelPermissions]
 
     queryset = Actor.objects.annotate(
