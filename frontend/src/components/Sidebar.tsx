@@ -1,16 +1,21 @@
 "use client";
 
+import { AuthContext } from "@/app/system/contexts";
 import Link from "next/link";
-import { useState } from "react";
+import { usePathname } from "next/navigation";
+import { useContext, useState } from "react";
 
 export type NavItem = (
-    {type: "item", label: string, href: string, id: string, icon: string} |
+    {type: "item", label: string, href: string, id: string, icon: string, permissions?: string[]} |
     {type: "separator"} |
     {type: "heading", label: string}
 )
 
 export default function Sidebar({items}: {items: NavItem[]}) {
     const [collapsed, setCollapsed] = useState(false);
+    const pathname = usePathname();
+    const auth = useContext(AuthContext);
+    const permissionsSet = new Set(auth === null ? [] : auth.permissions);
 
     return (
         <nav
@@ -25,15 +30,18 @@ export default function Sidebar({items}: {items: NavItem[]}) {
             >
                 <i className={`bi ${collapsed ? "bi-chevron-right" : "bi-chevron-left"} fs-4`}></i>
             </button>
-            <ul className="nav flex-column p-3 flex-grow-1">
+            <ul className="nav nav-pills flex-column p-3 flex-grow-1">
                 {items.map((ni, index) => {
                     if (ni.type === "item") {
-                        const isActive = false;
+                        const isActive = pathname === ni.href;
+                        const isEnabled = permissionsSet.isSupersetOf(new Set(ni.permissions || []));
                         return (
                             <li key={index} className="nav-item">
-                                <Link href={ni.href} className="nav-link d-flex align-items-center">
-                                    <i className={`bi ${ni.icon} fs-5 text-secondary me-2`}></i>
-                                    <span className="nav-label"><span className="nav-label-content">{ni.label}</span></span>
+                                <Link href={ni.href} className={`nav-link ${isActive ? "active" : ""} ${isEnabled ? "" : "disabled"} d-flex align-items-center`}>
+                                    <i className={`bi ${ni.icon} fs-5 me-2`}></i>
+                                    <span className="nav-label">
+                                        <span className="nav-label-content">{ni.label}{!isEnabled ? <i className={`bi bi-lock fs-5 ms-2`}></i> : <></>}</span>
+                                    </span>
                                 </Link>
                             </li>
                         )

@@ -2,11 +2,20 @@
 
 import './page.scss';
 import { useContext } from "react";
-import { UserContext } from "./system/contexts"
+import { AuthContext } from "./system/contexts"
 import Link from "next/link";
+import { AuthProvider } from '@/components/AuthProvider';
 
 export default function Home() {
-  const userContext = useContext(UserContext);
+  return (
+    <AuthProvider>
+      <HomeCore />
+    </AuthProvider>
+  );
+}
+
+function HomeCore() {
+  const auth = useContext(AuthContext);
 
   return (
     <main className="container text-center mt-5">
@@ -15,7 +24,7 @@ export default function Home() {
         <p>The most fantastic place to manage your licenses.</p>
       </div>
       <div className="mt-4">
-        {userContext && userContext.auth ? (
+        {auth && auth.isAuthenticated ? (
           <Link className="btn btn-primary" href="/system/welcome">
             <i className="bi bi-twitter"></i> Go to system
           </Link>
@@ -26,5 +35,5 @@ export default function Home() {
         )}
       </div>
     </main>
-  );
+  )
 }

@@ -45,7 +45,9 @@ export class Client {
       url.searchParams.set("ordering", ordering)
     }
     url.search = String(new URLSearchParams([...url.searchParams, ...(params ? params : [])]));
-    const response = await fetch(`${url.href}`);
+    const response = await fetch(`${url.href}`, {
+      credentials: "same-origin"
+    });
     if (response.ok) {
       const pageData: PagedResponse<T> = await response.json();
       return pageData;
@@ -61,7 +63,9 @@ export class Client {
     while (currentPage) {
       items.push(...currentPage.results);
       if (currentPage.next) {
-        const response: Response = await fetch(currentPage.next);
+        const response: Response = await fetch(currentPage.next, {
+          credentials: "same-origin"
+        });
 
         if (response.ok) {
           currentPage = await response.json()

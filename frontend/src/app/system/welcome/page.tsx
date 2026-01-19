@@ -1,9 +1,9 @@
 'use client';
 
-import { useModalsContext, useUser } from "../contexts";
+import { useModalsContext, useAuth } from "../contexts";
 
 export default function WelcomePage() {
-  const user = useUser();
+  const user = useAuth();
   const modals = useModalsContext();
 
   const handleButtonPress = () => {
@@ -26,7 +26,7 @@ export default function WelcomePage() {
   }
 
   return (
-    <>
+    <div className="container">
       <div className="d-flex flex-column gap-2 mb-3" style={{textAlign: "left"}}>
         <h1>Welcome, {user.username} 🐦</h1>
         <p>You’re successfully logged in as an expert.</p>
@@ -41,35 +41,23 @@ export default function WelcomePage() {
         <button type="button" className="btn btn-light" onClick={handleButtonPress}>Light</button>
         <button type="button" className="btn btn-dark" onClick={handleButtonPress}>Dark</button>
       </div>
-      <div className="table-responsive w-75">
+      <div className="table-responsive">
         <table className="table table-striped table-bordered align-middle">
           <thead className="table-success">
           <tr>
-            <th scope="col">First name</th>
-            <th scope="col">Last name</th>
-            <th scope="col">Email</th>
+            <th scope="col">Permission</th>
           </tr>
           </thead>
           <tbody>
-          <tr>
-            <td>Anna</td>
-            <td>Svensson</td>
-            <td>anna.svensson@example.com</td>
-          </tr>
-          <tr>
-            <td>Johan</td>
-            <td>Andersson</td>
-            <td>johan.andersson@example.com</td>
-          </tr>
-          <tr>
-            <td>Karin</td>
-            <td>Lindberg</td>
-            <td>karin.lindberg@example.com</td>
-          </tr>
+          {user.permissions.map(p => (
+            <tr key={p}>
+              <td>{p}</td>
+            </tr>
+          ))}
           </tbody>
         </table>
       </div>
-      <div className="d-flex flex-column  w-75 gap-2 mb-3">
+      <div className="d-flex flex-column gap-2 mb-3">
         <div className="alert alert-success" role="alert">
           A simple success alert—check it out!
         </div>
@@ -80,7 +68,7 @@ export default function WelcomePage() {
           A simple warning alert—check it out!
         </div>
       </div>
-    </>
+    </div>
   );
 }
 

@@ -9,6 +9,11 @@ from django.db import connection
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+from django.contrib.auth import authenticate, login
+from rest_framework.parsers import JSONParser
+from django.views.decorators.cache import never_cache
+from django.views.decorators.csrf import ensure_csrf_cookie
+from django.utils.decorators import method_decorator
 
 from bird_ringing import __version__
 
@@ -57,3 +62,40 @@ class SystemInfoView(APIView):
 class HealthCheckView(APIView):
     def get(self, request):
         return Response({"status": "ok"}, status=status.HTTP_200_OK)
+
+
+@method_decorator(ensure_csrf_cookie, name="dispatch")
+@method_decorator(never_cache, name="dispatch")
+class LoginView(APIView):
+    parser_classes = [JSONParser]
+
+    def get(self, request):
+        return Response(self.get_user_info(request.user))
+
+    def post(self, request):
+        if "username" not in request.data or "password" not in request.data:
+            return Response(
+                {"detail": "Missing parameters"}, status=status.HTTP_400_BAD_REQUEST
+            )
+        username = request.data["username"]
+        password = request.data["password"]
+        user = authenticate(request, username=username, password=password)
+
+        if user is not None:
+            login(request, user)
+            return Response(self.get_user_info(user))
+        else:
+            return Response(
+                {"detail": "Incorrect user or password"},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+
+    def get_user_info(self, user):
+        user_permissions = {perm.codename for perm in user.user_permissions.all()}
+        for group in user.groups.all():
+            user_permissions.update({perm.codename for perm in group.permissions.all()})
+        return {
+            "username": user.username,
+            "permissions": user_permissions,
+            "isAuthenticated": user.is_authenticated,
+        }

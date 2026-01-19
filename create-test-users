@@ -13,4 +13,4 @@
 
 ./compose-dev.sh exec \
     backend \
-    python manage.py createroles
+    python manage.py create_base_groups
