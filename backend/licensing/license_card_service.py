@@ -10,6 +10,7 @@ import json
 from django.db import transaction
 
 from licensing.models import (
+    License,
     LicenseSequence,
     LicenseRoleChoices,
     Actor,
@@ -45,23 +46,21 @@ class RenderedPdf:
 
 class LicenseCardService:
     """
-    Logic for producing a license card PDF from a LicenseSequence, for a specific Actor.
-    Supports both RINGER and HELPER (and can be extended).
+    Logic for producing a license card PDF from the current License of a LicenseSequence, for a specific Actor.
+    Supports both RINGER and HELPER (and can be extended). Since this is using License, it could be extended
+    to historical licenses in the future if needed.
     """
 
     def __init__(self, renderer: Optional[LicenseCardRenderer] = None):
         self.renderer = renderer or LicenseCardRenderer()
 
-    def render_pdf_for_sequence_and_actor(
+    def render_pdf_for_license_and_actor(
         self,
         *,
-        seq: LicenseSequence,
+        lic: License,
         actor: Actor,
         allowed_roles: Iterable[int] = (LicenseRoleChoices.RINGER, LicenseRoleChoices.HELPER),
     ) -> RenderedPdf:
-        lic = seq.current
-        if not lic:
-            raise NoCurrentLicense("No current license found.")
 
         rel = (
             lic.actors
@@ -76,9 +75,12 @@ class LicenseCardService:
 
         holder_name = actor.full_name
         valid_to = format_date(lic.ends_at)
-        mnr_line = seq.mnr
+
+        mnr = lic.sequence.mnr
+        mnr_line = mnr
         if rel.role == LicenseRoleChoices.HELPER:
-            mnr_line = f"{seq.mnr}: {rel.mednr}"
+            mnr_line = f"{mnr}: {rel.mednr}"
+
         lines_info = [valid_to, mnr_line, holder_name]
 
         req = RenderRequest(
@@ -88,7 +90,8 @@ class LicenseCardService:
 
         pdf_bytes = self.renderer.render_pdf_bytes(req)
 
-        filename = f"license-card-{seq.mnr}-actor-{actor.id}.pdf"
+        # filename could have version instead of lic.id but for now this is enough
+        filename = f"license-card-{mnr}-license-{lic.id}-actor-{actor.id}.pdf"
         return RenderedPdf(filename=filename, pdf_bytes=pdf_bytes)
 
     @staticmethod
@@ -97,17 +100,17 @@ class LicenseCardService:
         resp["Content-Disposition"] = f'inline; filename="{rendered.filename}"'
         return resp
 
-    def _build_fingerprint_payload(self, *, seq: LicenseSequence, actor: Actor, rel) -> dict:
+    def _build_fingerprint_payload(self, *, lic: License, actor: Actor, rel) -> dict:
         """
         Define exactly what counts as “license changed” for card generation.
         Anything included here triggers a new document when it changes.
         """
-        lic = seq.current
         return {
             "template": str(get_template_path("LICENSING_CARD_TEMPLATE")),
 
-            "sequence_mnr": seq.mnr,
+            "sequence_mnr": lic.sequence.mnr,
             "license_version": lic.version,
+            "license_id": lic.id,
             "actor_id": actor.id,
             "actor_full_name": actor.full_name,
 
@@ -143,7 +146,7 @@ class LicenseCardService:
             allowed_roles=allowed_roles,
         )
 
-        payload = self._build_fingerprint_payload(seq=seq, actor=actor, rel=rel)
+        payload = self._build_fingerprint_payload(lic=lic, actor=actor, rel=rel)
         fp = self._fingerprint(payload)
 
         # If current doc already exists with same fingerprint -> reuse it
@@ -158,7 +161,7 @@ class LicenseCardService:
         if existing:
             return existing
 
-        rendered = self.render_pdf_for_sequence_and_actor(seq=seq, actor=actor, allowed_roles=allowed_roles)
+        rendered = self.render_pdf_for_license_and_actor(lic=lic, actor=actor, allowed_roles=allowed_roles)
 
         # Archive previous current docs for this actor+license
         LicenseDocument.objects.filter(
