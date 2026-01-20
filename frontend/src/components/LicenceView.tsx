@@ -16,7 +16,7 @@ export function LicenceView({license}: LicenceViewProps){
                             <div className="col-12 col-md-9">
                                 <div>
                                     <span className="fst-italic">Giltig mellan </span>
-                                    {license.starts_at} <span className="fst-italic">till</span>
+                                    {license.starts_at} <span className="fst-italic">till </span>
                                     {" "}{license.ends_at}
                                 </div>
                             </div>
@@ -40,12 +40,12 @@ export function LicenceView({license}: LicenceViewProps){
                                           </span>
                                     </div>
                                     <div className="d-flex gap-3 text-muted small">
-                                              <span>
-                                                Skapad {convertDateToLocale(license.created_at)}
-                                              </span>
-                                        <span>
-                                                Uppdaterad {convertDateToLocale(license.updated_at)}
-                                              </span>
+                                      <span>
+                                        Skapad {convertDateToLocale(license.created_at)}
+                                      </span>
+                                      <span>
+                                        Uppdaterad {convertDateToLocale(license.updated_at)}
+                                      </span>
                                     </div>
                                 </div>
                             </li>

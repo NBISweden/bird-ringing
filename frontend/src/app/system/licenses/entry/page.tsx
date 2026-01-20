@@ -6,7 +6,6 @@ import { useSearchParams } from "next/navigation";
 import Spinner from "@/components/Spinner";
 
 import { useClient } from "../../contexts";
-import { convertDateToLocale } from "../../common";
 import { Client } from "../../client";
 import {LicenceView} from "@/components/LicenceView";
 
@@ -18,17 +17,17 @@ async function fetchLicense(
 
 function LicenseViewInner() {
     const params = useSearchParams();
-    const entryId = params.get("entryId");
+    const mnr = params.get("mnr");
     const client = useClient();
 
     const { data, isLoading, error } = useSWR(
-        entryId ? [client, "license", entryId] : null,
+        mnr ? [client, "license", mnr] : null,
         fetchLicense
     );
 
     const [historyPage, setHistoryPage] = useState(1);
 
-    if (!entryId || error || !data) {
+    if (!mnr || error || !data) {
         return (
             <div className="container">
                 <h2>Något gick fel.</h2>
@@ -40,7 +39,7 @@ function LicenseViewInner() {
     if (isLoading) {
         return (
             <div className="container">
-                <h2>License view: {entryId}</h2>
+                <h2>License view: {mnr}</h2>
                 <Spinner />
             </div>
         );
@@ -73,7 +72,9 @@ function LicenseViewInner() {
                                         <li className="list-group-item py-3" key={h.version}>
                                             <div className="row align-items-center g-2">
                                                 <div className="col-12 col-lg-8">
-                                                    Giltig under {h.starts_at} till {h.ends_at}
+                                                    <span className="fst-italic">Giltig under </span>
+                                                    {h.starts_at}
+                                                    <span className="fst-italic"> till </span> {h.ends_at}
                                                 </div>
                                             </div>
 
