@@ -273,10 +273,6 @@ class LicenseSequenceSerializer(serializers.HyperlinkedModelSerializer):
         qs = obj.instances.exclude(version=0).order_by("-version")
         return LicenseHistoryItemSerializer(qs, many=True).data
 
-    def create(self, validated_data):
-        # TODO: Implement real function
-        raise RuntimeError(f"create: {validated_data}")
-
 
 license_status_label = models.Case(
     *[
