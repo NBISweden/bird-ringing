@@ -11,11 +11,11 @@ from django.db import transaction
 
 from licensing.models import (
     License,
-    LicenseSequence,
     LicenseRoleChoices,
     Actor,
     LicenseDocument,
-    DocumentTypeChoices)
+    DocumentTypeChoices,
+)
 
 from licensing.license_renderer import (
     LicenseCardRenderer,
@@ -46,7 +46,7 @@ class RenderedPdf:
 
 class LicenseCardService:
     """
-    Logic for producing a license card PDF from the current License of a LicenseSequence, for a specific Actor.
+    Logic for producing a license card PDF from a current License (version==0), for a specific Actor.
     Supports both RINGER and HELPER (and can be extended). Since this is using License, it could be extended
     to historical licenses in the future if needed.
     """
@@ -62,16 +62,11 @@ class LicenseCardService:
         allowed_roles: Iterable[int] = (LicenseRoleChoices.RINGER, LicenseRoleChoices.HELPER),
     ) -> RenderedPdf:
 
-        rel = (
-            lic.actors
-            .filter(actor=actor, role__in=list(allowed_roles))
-            .select_related("actor")
-            .first()
+        lic, rel = self._get_current_license_and_relation(
+            lic=lic,
+            actor=actor,
+            allowed_roles=allowed_roles,
         )
-        if not rel:
-            raise ActorNotOnLicense(
-                "Specified actor is not registered on the current license as ringer/helper."
-            )
 
         holder_name = actor.full_name
         valid_to = format_date(lic.ends_at)
@@ -129,19 +124,19 @@ class LicenseCardService:
     def get_or_create_current_license_card_document(
         self,
         *,
-        seq: LicenseSequence,
+        lic: License,
         actor: Actor,
         created_by,
         updated_by,
         allowed_roles: Iterable[int] = (LicenseRoleChoices.RINGER, LicenseRoleChoices.HELPER),
     ) -> LicenseDocument:
         """
--        Returns the current LicenseDocument for this (current license, actor).
--        Generates and stores a new one only if the fingerprint changed.
--        Archives older ones.
--        """
+        Returns the current LicenseDocument for this actor and current license.
+        Generates and stores a new one only if the fingerprint changed.
+        Archives older ones.
+        """
         lic, rel = self._get_current_license_and_relation(
-            seq=seq,
+            lic=lic,
             actor=actor,
             allowed_roles=allowed_roles,
         )
@@ -188,12 +183,12 @@ class LicenseCardService:
     def get_current_license_card_document(
         self,
         *,
-        seq: LicenseSequence,
+        lic: License,
         actor: Actor,
         allowed_roles: Iterable[int] = (LicenseRoleChoices.RINGER, LicenseRoleChoices.HELPER),
     ) -> Optional[LicenseDocument]:
         lic, _rel = self._get_current_license_and_relation(
-            seq=seq,
+            lic=lic,
             actor=actor,
             allowed_roles=allowed_roles,
         )
@@ -208,12 +203,11 @@ class LicenseCardService:
     def _get_current_license_and_relation(
         self,
         *,
-        seq: LicenseSequence,
+        lic: License,
         actor: Actor,
         allowed_roles: Iterable[int],
     ):
-        lic = seq.current
-        if not lic:
+        if not lic or lic.version != 0:
             raise NoCurrentLicense("No current license found.")
 
         rel = (

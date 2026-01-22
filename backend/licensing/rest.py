@@ -372,8 +372,12 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
 
         service = LicenseCardService()
         try:
+            lic = seq.current
+            if not lic:
+                raise NoCurrentLicense("No current license found.")
+
             doc = service.get_or_create_current_license_card_document(
-                seq=seq,
+                lic=lic,
                 actor=actor,
                 created_by=request.user,
                 updated_by=request.user,
@@ -405,7 +409,11 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
 
         service = LicenseCardService()
         try:
-            doc = service.get_current_license_card_document(seq=seq, actor=actor)
+            lic = seq.current
+            if not lic:
+                raise NoCurrentLicense("No current license found.")
+
+            doc = service.get_current_license_card_document(lic=lic, actor=actor)
         except NoCurrentLicense as e:
             return Response({"detail": str(e)}, status=404)
         except ActorNotOnLicense as e:
@@ -416,7 +424,7 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
         if not doc:
             return Response({"detail": "No current license card PDF exists. Call /card-create first."}, status=404)
 
-        return self._pdf_http_response(seq=seq, actor=actor, doc=doc)
+        return self._pdf_http_response(lic=lic, actor=actor, doc=doc)
 
     def _get_actor_from_request(self, request) -> Actor:
         actor_id = request.query_params.get("actor_id")
@@ -427,8 +435,8 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
         except Actor.DoesNotExist:
             raise LookupError("Actor not found")
 
-    def _pdf_http_response(self, *, seq: LicenseSequence, actor: Actor, doc) -> HttpResponse:
-        filename = doc.reference or f"license-card-{seq.mnr}-actor-{actor.id}.pdf"
+    def _pdf_http_response(self, *, lic: License, actor: Actor, doc) -> HttpResponse:
+        filename = doc.reference or f"license-card-{lic.sequence.mnr}-actor-{actor.id}.pdf"
         resp = HttpResponse(bytes(doc.data), content_type="application/pdf")
         resp["Content-Disposition"] = f'inline; filename="{filename}"'
         return resp
