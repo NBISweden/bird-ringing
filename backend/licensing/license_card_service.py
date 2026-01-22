@@ -62,7 +62,7 @@ class LicenseCardService:
         allowed_roles: Iterable[int] = (LicenseRoleChoices.RINGER, LicenseRoleChoices.HELPER),
     ) -> RenderedPdf:
 
-        lic, rel = self._get_current_license_and_relation(
+        rel = self._get_license_relation(
             lic=lic,
             actor=actor,
             allowed_roles=allowed_roles,
@@ -135,7 +135,7 @@ class LicenseCardService:
         Generates and stores a new one only if the fingerprint changed.
         Archives older ones.
         """
-        lic, rel = self._get_current_license_and_relation(
+        rel = self._get_license_relation(
             lic=lic,
             actor=actor,
             allowed_roles=allowed_roles,
@@ -187,7 +187,7 @@ class LicenseCardService:
         actor: Actor,
         allowed_roles: Iterable[int] = (LicenseRoleChoices.RINGER, LicenseRoleChoices.HELPER),
     ) -> Optional[LicenseDocument]:
-        lic, _rel = self._get_current_license_and_relation(
+        self._get_license_relation(
             lic=lic,
             actor=actor,
             allowed_roles=allowed_roles,
@@ -200,7 +200,7 @@ class LicenseCardService:
             is_current=True,
         ).order_by("-created_at").first()
 
-    def _get_current_license_and_relation(
+    def _get_license_relation(
         self,
         *,
         lic: License,
@@ -213,7 +213,7 @@ class LicenseCardService:
         rel = (
             lic.actors
             .filter(actor=actor, role__in=list(allowed_roles))
-            .select_related("actor")
+            .select_related("actor") # keep for now
             .first()
         )
         if not rel:
@@ -221,4 +221,4 @@ class LicenseCardService:
                 "Specified actor is not registered on the current license as ringer/helper."
             )
 
-        return lic, rel
+        return rel
