@@ -101,21 +101,57 @@ export function getPages<T>(pathname: string, params: ReadonlyURLSearchParams, p
   return pages;
 }
 
+export type LicenseHistoryItem = {
+    version: number;
+    starts_at: string;
+    ends_at: string;
+};
+
 export type LicenseListItem = {
     mnr: string;
     current: LicenseCurrent;
+    history?: LicenseHistoryItem[];
     status: string;
     license_holder: string;
     methods: string;
     last_email_sent_at: string;
 }
+export type LicensePermissionType = {
+    name: string;
+    description: string;
+};
+
+export type LicensePermission = {
+    type: LicensePermissionType;
+    description: string;
+};
+
+export type LicenseDocument = {
+    actor: string;
+    type: string;
+    reference: string;
+};
+
+export type LicenceCommunication = {
+    actor: string;
+    type: string;
+    status: string;
+    note: string;
+}
 
 export type LicenseCurrent = {
     actors: LicenseActorRelation[];
+    permissions: LicensePermission[];
+    documents: LicenseDocument[];
+    communication: LicenceCommunication[];
     version: number;
     location: string;
     description: string;
     report_status: number;
+    starts_at: string;
+    ends_at: string;
+    created_at: string;
+    updated_at: string;
 }
 
 export type LicenseActorRelation = {

@@ -7,6 +7,22 @@ export class Client {
     this._apiRoot = apiRoot;
   }
 
+  private async _getJson<T>(path: string): Promise<T> {
+    const url = new URL(this._apiRoot + path);
+    const resp = await fetch(url.href);
+
+    if (!resp.ok) {
+      const body = await resp.text().catch(() => "");
+      throw new Error(`GET ${url.href} failed: ${resp.status} ${resp.statusText} ${body}`);
+    }
+
+    return (await resp.json()) as T;
+  }
+
+  async fetchLicenseSequenceByMnr(mnr: string): Promise<LicenseListItem> {
+    return this._getJson<LicenseListItem>(`license_sequence/${encodeURIComponent(mnr)}/`);
+  }
+
   async fetchActorPage(page: number, search?: string, ordering?: string, ids?: string[]): Promise<PagedResponse<ActorListItem>> {
     const params = new URLSearchParams();
     if (ids) {

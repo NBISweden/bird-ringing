@@ -11,6 +11,8 @@ from licensing.models import (
     LicensePermission,
     LicensePermissionType,
     LicenseStatusChoices,
+    LicenseDocument,
+    LicenseCommunication,
 )
 from rest_framework.authentication import SessionAuthentication
 from rest_framework.permissions import DjangoModelPermissions
@@ -197,30 +199,57 @@ class LicenseActorRelationSerializer(serializers.ModelSerializer):
 class LicensePermissionTypeSerializer(serializers.ModelSerializer):
     class Meta:
         model = LicensePermissionType
-        fields = ["name"]
-
+        fields = ['name', 'description']
 
 class LicenseLicensePermissionSerializer(serializers.ModelSerializer):
     type = LicensePermissionTypeSerializer(read_only=True)
 
     class Meta:
         model = LicensePermission
-        fields = ["type"]
+        fields = ["type", 'description']
+
+class LicenseDocumentSerializer(serializers.ModelSerializer):
+    actor = serializers.CharField(source="actor.full_name", read_only=True)
+    type = serializers.CharField(source="get_type_display", read_only=True)
+
+    class Meta:
+        model = LicenseDocument
+        fields = ["actor", "type", "reference"]
+
+class LicenseCommunicationSerializer(serializers.ModelSerializer):
+    actor = serializers.CharField(source="actor.full_name", read_only=True)
+    type = serializers.CharField(source="get_type_display", read_only=True)
+    status = serializers.CharField(source="get_status_display", read_only=True)
+
+    class Meta:
+        model = LicenseCommunication
+        fields = ["actor", "type", "status", "note"]
 
 
 class LicenseSerializer(serializers.ModelSerializer):
     actors = LicenseActorRelationSerializer(many=True, read_only=True)
+    permissions = LicenseLicensePermissionSerializer(many=True, read_only=True)
+    documents = LicenseDocumentSerializer(many=True, read_only=True)
+    communication = LicenseCommunicationSerializer(many=True, read_only=True)
     report_status = serializers.ChoiceField(
         choices=ReportStatusChoices, source="get_report_status_display"
     )
 
     class Meta:
         model = License
-        fields = ["actors", "version", "location", "description", "report_status"]
+        fields = ["actors", "permissions", "documents", "communication", "version", "location", "description",
+                  "report_status", "starts_at", "ends_at", "created_at", "updated_at"]
+
+
+class LicenseHistoryItemSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = License
+        fields = ["version", "starts_at", "ends_at"]
 
 
 class LicenseSequenceSerializer(serializers.HyperlinkedModelSerializer):
     current = LicenseSerializer(read_only=True)
+    history = serializers.SerializerMethodField()
     license_holder = serializers.CharField()
     status = serializers.ChoiceField(
         choices=LicenseStatusChoices, source="get_status_display"
@@ -233,11 +262,16 @@ class LicenseSequenceSerializer(serializers.HyperlinkedModelSerializer):
         fields = [
             "mnr",
             "current",
+            "history",
             "status",
             "license_holder",
             "methods",
             "last_email_sent_at",
         ]
+
+    def get_history(self, obj):
+        qs = obj.instances.exclude(version=0).order_by("-version")
+        return LicenseHistoryItemSerializer(qs, many=True).data
 
 
 license_status_label = models.Case(

@@ -43,7 +43,7 @@ function toLicenseTable(item: LicenseListItem): TableItem {
     id: item.mnr,
       properties: {
         "Mnr": {
-          component: <Link href={`license-view/?entryId=${item.mnr}`}>{item.mnr}</Link>
+          component: <Link href={`licenses/entry/?mnr=${item.mnr}`}>{item.mnr}</Link>
         },
         "Type": {
           component: licenseHolder?.type,
