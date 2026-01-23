@@ -359,7 +359,7 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
         return queryset
 
     # Authentication here is required for fetching the user.
-    @action(detail=True, methods=["get"], url_path="card-create", permission_classes=[IsAuthenticated])
+    @action(detail=True, methods=["post"], url_path="card-create", permission_classes=[IsAuthenticated])
     def card_create(self, request, mnr=None):
         seq = self.get_object()
 
@@ -389,12 +389,7 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response({"detail": str(e)}, status=400)
 
-        return Response(
-            {
-                "filename": doc.reference,
-            },
-            status=200,
-        )
+        return Response({"filename": doc.reference}, status=200)
 
     @action(detail=True, methods=["get"], url_path="card-pdf", permission_classes=[IsAuthenticated])
     def card_pdf(self, request, mnr=None):
@@ -427,7 +422,7 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
         return self._pdf_http_response(lic=lic, actor=actor, doc=doc)
 
     def _get_actor_from_request(self, request) -> Actor:
-        actor_id = request.query_params.get("actor_id")
+        actor_id = request.query_params.get("actor_id") or request.data.get("actor_id")
         if not actor_id:
             raise ValueError("actor_id is required")
         try:
