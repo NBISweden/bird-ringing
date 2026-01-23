@@ -1,4 +1,4 @@
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
@@ -360,8 +360,11 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
         return queryset
 
     # Authentication here is required for fetching the user.
-    @action(detail=True, methods=["post"], url_path="card-create", permission_classes=[IsAuthenticated])
+    @action(detail=True, methods=["post"], url_path="card-create")
     def card_create(self, request, mnr=None):
+        if not request.user.has_perm("licensing.change_licensesequence"):
+            raise PermissionDenied("Missing permission: licensing.change_licensesequence")
+
         seq = self.get_object()
         actor = self._get_actor_from_request(request)
 
@@ -389,7 +392,7 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
 
         return Response({"filename": doc.reference, "pdf_url": pdf_url}, status=200)
 
-    @action(detail=True, methods=["get"], url_path="card-pdf", permission_classes=[IsAuthenticated])
+    @action(detail=True, methods=["get"], url_path="card-pdf")
     def card_pdf(self, request, mnr=None):
         seq = self.get_object()
         actor = self._get_actor_from_request(request)
