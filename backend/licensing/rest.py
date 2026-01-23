@@ -362,13 +362,7 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=["post"], url_path="card-create", permission_classes=[IsAuthenticated])
     def card_create(self, request, mnr=None):
         seq = self.get_object()
-
-        try:
-            actor = self._get_actor_from_request(request)
-        except ValueError as e:
-            return Response({"detail": str(e)}, status=400)
-        except LookupError as e:
-            return Response({"detail": str(e)}, status=404)
+        actor = self._get_actor_from_request(request)
 
         service = LicenseCardService()
         try:
@@ -394,13 +388,7 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=["get"], url_path="card-pdf", permission_classes=[IsAuthenticated])
     def card_pdf(self, request, mnr=None):
         seq = self.get_object()
-
-        try:
-            actor = self._get_actor_from_request(request)
-        except ValueError as e:
-            return Response({"detail": str(e)}, status=400)
-        except LookupError as e:
-            return Response({"detail": str(e)}, status=404)
+        actor = self._get_actor_from_request(request)
 
         service = LicenseCardService()
         try:
@@ -422,13 +410,19 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
         return self._pdf_http_response(lic=lic, actor=actor, doc=doc)
 
     def _get_actor_from_request(self, request) -> Actor:
-        actor_id = request.query_params.get("actor_id") or request.data.get("actor_id")
-        if not actor_id:
-            raise ValueError("actor_id is required")
+        payload = request.data if request.method in ("POST", "PUT", "PATCH") else request.query_params
+        # allow fallback if body is empty but query param exists
+        if not payload or "actor_id" not in payload:
+            payload = {"actor_id": request.query_params.get("actor_id")}
+
+        ser = LicenseCardRenderSerializer(data=payload)
+        ser.is_valid(raise_exception=True)
+        actor_id = ser.validated_data["actor_id"]
+
         try:
             return Actor.objects.get(pk=actor_id)
         except Actor.DoesNotExist:
-            raise LookupError("Actor not found")
+            raise serializers.ValidationError({"actor_id": "Actor not found"})
 
     def _pdf_http_response(self, *, lic: License, actor: Actor, doc) -> HttpResponse:
         filename = doc.reference or f"license-card-{lic.sequence.mnr}-actor-{actor.id}.pdf"
@@ -516,8 +510,7 @@ class ActorViewSet(viewsets.ModelViewSet):
     default_ordering = ["full_name", "city", "country"]
 
 class LicenseCardRenderSerializer(serializers.Serializer):
-    # Plaaceholder for possible future options that the client may want to pass.
-    pass
+    actor_id = serializers.IntegerField(required=True, min_value=1)
 
 router = routers.DefaultRouter()
 router.register(r"license_sequence", LicenseSequenceViewSet)
