@@ -1,6 +1,7 @@
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework.reverse import reverse
 
 from licensing.license_card_service import LicenseCardService, NoCurrentLicense, ActorNotOnLicense
 
@@ -383,7 +384,10 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response({"detail": str(e)}, status=400)
 
-        return Response({"filename": doc.reference}, status=200)
+        pdf_url = reverse("licensesequence-card-pdf", kwargs={"mnr": seq.mnr}, request=request)
+        pdf_url = f"{pdf_url}?actor_id={actor.id}"
+
+        return Response({"filename": doc.reference, "pdf_url": pdf_url}, status=200)
 
     @action(detail=True, methods=["get"], url_path="card-pdf", permission_classes=[IsAuthenticated])
     def card_pdf(self, request, mnr=None):
