@@ -1,4 +1,3 @@
-from rest_framework.exceptions import PermissionDenied
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
@@ -359,12 +358,8 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
 
         return queryset
 
-    # Authentication here is required for fetching the user.
-    @action(detail=True, methods=["post"], url_path="card-create")
+    @action(detail=True, methods=["put"], url_path="card-create")
     def card_create(self, request, mnr=None):
-        if not request.user.has_perm("licensing.change_licensesequence"):
-            raise PermissionDenied("Missing permission: licensing.change_licensesequence")
-
         seq = self.get_object()
         actor = self._get_actor_from_request(request)
 
