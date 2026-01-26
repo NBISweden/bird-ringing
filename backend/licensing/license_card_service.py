@@ -7,6 +7,9 @@ from django.http import HttpResponse
 
 import hashlib
 import json
+import io
+import zipfile
+
 from django.db import transaction
 
 from licensing.models import (
@@ -179,6 +182,86 @@ class LicenseCardService:
             is_current=True,
         )
         return doc
+
+    def batch_get_or_create_current_license_card_documents(
+        self,
+        *,
+        licenses: Iterable[License],
+        created_by,
+        updated_by,
+        allowed_roles: Iterable[int] = (LicenseRoleChoices.RINGER, LicenseRoleChoices.HELPER),
+    ) -> list[LicenseDocument]:
+        """
+        Batch get-or-create current license card documents for all ringers/helpers
+        on each provided license (version==0).
+        """
+        docs: list[LicenseDocument] = []
+
+        for lic in licenses:
+            if not lic or lic.version != 0:
+                raise NoCurrentLicense("No current license found.")
+
+            relations = lic.actors.filter(role__in=list(allowed_roles)).select_related("actor")
+            if not relations.exists():
+                raise ValueError(f"No ringers/helpers on current license for mnr {lic.sequence.mnr}.")
+
+            for rel in relations:
+                doc = self.get_or_create_current_license_card_document(
+                    lic=lic,
+                    actor=rel.actor,
+                    created_by=created_by,
+                    updated_by=updated_by,
+                    allowed_roles=allowed_roles,
+                )
+                docs.append(doc)
+
+        return docs
+
+    def create_zip_with_current_license_card_pdfs(
+        self,
+        *,
+        licenses: Iterable[License],
+        allowed_roles: Iterable[int] = (LicenseRoleChoices.RINGER, LicenseRoleChoices.HELPER),
+    ) -> bytes:
+        """
+        Create ZIP (bytes) containing existing current license card PDFs
+        for all ringers/helpers on each provided license (version==0).
+        If any expected PDF is missing, raise a ValueError.
+        """
+        zip_buffer = io.BytesIO()
+
+        with zipfile.ZipFile(zip_buffer, "w", compression=zipfile.ZIP_DEFLATED) as zf:
+            for lic in licenses:
+                if not lic or lic.version != 0:
+                    raise NoCurrentLicense("No current license found.")
+
+                relations = lic.actors.filter(role__in=list(allowed_roles)).select_related("actor")
+                if not relations.exists():
+                    raise ValueError(f"No ringers/helpers on current license for mnr {lic.sequence.mnr}.")
+
+                for rel in relations:
+                    actor = rel.actor
+
+                    doc = self.get_current_license_card_document(
+                        lic=lic,
+                        actor=actor,
+                        allowed_roles=allowed_roles,
+                    )
+
+                    if not doc:
+                        raise ValueError(
+                            f"Current license card PDF(s) missing for mnr {lic.sequence.mnr}. "
+                            "Generate all license cards for your selected MNRs before creating ZIP."
+                        )
+
+                    if not doc.data:
+                        raise ValueError(f"{lic.sequence.mnr}: existing PDF has no data for actor {actor.id}.")
+
+                    filename = doc.reference or f"license-card-{lic.sequence.mnr}-actor-{actor.id}.pdf"
+                    zf.writestr(f"{lic.sequence.mnr}/{filename}", bytes(doc.data))
+
+        zip_buffer.seek(0)
+        return zip_buffer.getvalue()
 
     def get_current_license_card_document(
         self,
