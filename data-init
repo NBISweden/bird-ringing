@@ -1,0 +1,26 @@
+#!/bin/sh -
+
+# Helper script to fetch and load mock data for development ONLY
+
+dirPath=backend/mock_data/example
+
+mkdir -p "$dirPath" || exit 1
+
+wget -q -N -P "$dirPath" https://pdmnyberg.github.io/ui-examples/data/bird-ringing/legacy/br-ex-Artlista.csv
+wget -q -N -P "$dirPath" https://pdmnyberg.github.io/ui-examples/data/bird-ringing/legacy/br-ex-Maerkare.csv
+wget -q -N -P "$dirPath" https://pdmnyberg.github.io/ui-examples/data/bird-ringing/legacy/br-ex-MarkAss.csv
+wget -q -N -P "$dirPath" https://pdmnyberg.github.io/ui-examples/data/bird-ringing/legacy/br-ex-MarkAssYr.csv
+
+
+
+./compose-dev.sh exec backend python manage.py load_data "$@"
+
+
+
+
+
+
+
+
+
+

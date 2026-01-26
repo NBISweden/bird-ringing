@@ -1,3 +1,9 @@
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from rest_framework.reverse import reverse
+
+from licensing.license_card_service import LicenseCardService, NoCurrentLicense, ActorNotOnLicense
+
 from licensing.models import (
     LicenseSequence,
     License,
@@ -14,11 +20,12 @@ from licensing.models import (
     LicenseDocument,
     LicenseCommunication,
 )
-from rest_framework.authentication import SessionAuthentication
+from rest_framework.authentication import SessionAuthentication, BasicAuthentication
 from rest_framework.permissions import DjangoModelPermissions
 
 from rest_framework import routers, serializers, viewsets, filters, pagination, response
 from django.db import models
+from django.http import HttpResponse
 from django.contrib.postgres.aggregates import StringAgg
 from collections import OrderedDict
 
@@ -294,7 +301,7 @@ license_report_status_label = models.Case(
 
 
 class LicenseSequenceViewSet(viewsets.ModelViewSet):
-    authentication_classes = [SessionAuthentication]
+    authentication_classes = [SessionAuthentication, BasicAuthentication]
     permission_classes = [DjangoProtectedModelPermissions]
 
     lookup_field = "mnr"
@@ -351,6 +358,79 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
 
         return queryset
 
+    @action(detail=True, methods=["put"], url_path="card-create")
+    def card_create(self, request, mnr=None):
+        seq = self.get_object()
+        actor = self._get_actor_from_request(request)
+
+        service = LicenseCardService()
+        try:
+            lic = seq.current
+            if not lic:
+                raise NoCurrentLicense("No current license found.")
+
+            doc = service.get_or_create_current_license_card_document(
+                lic=lic,
+                actor=actor,
+                created_by=request.user,
+                updated_by=request.user,
+            )
+        except NoCurrentLicense as e:
+            return Response({"detail": str(e)}, status=404)
+        except ActorNotOnLicense as e:
+            return Response({"detail": str(e)}, status=400)
+        except Exception as e:
+            return Response({"detail": str(e)}, status=400)
+
+        pdf_url = reverse("licensesequence-card-pdf", kwargs={"mnr": seq.mnr}, request=request)
+        pdf_url = f"{pdf_url}?actor_id={actor.id}"
+
+        return Response({"filename": doc.reference, "pdf_url": pdf_url}, status=200)
+
+    @action(detail=True, methods=["get"], url_path="card-pdf")
+    def card_pdf(self, request, mnr=None):
+        seq = self.get_object()
+        actor = self._get_actor_from_request(request)
+
+        service = LicenseCardService()
+        try:
+            lic = seq.current
+            if not lic:
+                raise NoCurrentLicense("No current license found.")
+
+            doc = service.get_current_license_card_document(lic=lic, actor=actor)
+        except NoCurrentLicense as e:
+            return Response({"detail": str(e)}, status=404)
+        except ActorNotOnLicense as e:
+            return Response({"detail": str(e)}, status=400)
+        except Exception as e:
+            return Response({"detail": str(e)}, status=400)
+
+        if not doc:
+            return Response({"detail": "No current license card PDF exists. Call /card-create first."}, status=404)
+
+        return self._pdf_http_response(lic=lic, actor=actor, doc=doc)
+
+    def _get_actor_from_request(self, request) -> Actor:
+        payload = request.data if request.method in ("POST", "PUT", "PATCH") else request.query_params
+        # allow fallback if body is empty but query param exists
+        if not payload or "actor_id" not in payload:
+            payload = {"actor_id": request.query_params.get("actor_id")}
+
+        ser = LicenseCardRenderSerializer(data=payload)
+        ser.is_valid(raise_exception=True)
+        actor_id = ser.validated_data["actor_id"]
+
+        try:
+            return Actor.objects.get(pk=actor_id)
+        except Actor.DoesNotExist:
+            raise serializers.ValidationError({"actor_id": "Actor not found"})
+
+    def _pdf_http_response(self, *, lic: License, actor: Actor, doc) -> HttpResponse:
+        filename = doc.reference or f"license-card-{lic.sequence.mnr}-actor-{actor.id}.pdf"
+        resp = HttpResponse(bytes(doc.data), content_type="application/pdf")
+        resp["Content-Disposition"] = f'inline; filename="{filename}"'
+        return resp
 
 actor_type_label = models.Case(
     *[
@@ -385,7 +465,7 @@ license_mnr = models.Case(
 
 
 class ActorViewSet(viewsets.ModelViewSet):
-    authentication_classes = [SessionAuthentication]
+    authentication_classes = [SessionAuthentication, BasicAuthentication]
     permission_classes = [DjangoProtectedModelPermissions]
 
     queryset = Actor.objects.annotate(
@@ -431,6 +511,8 @@ class ActorViewSet(viewsets.ModelViewSet):
     )
     default_ordering = ["full_name", "city", "country"]
 
+class LicenseCardRenderSerializer(serializers.Serializer):
+    actor_id = serializers.IntegerField(required=True, min_value=1)
 
 router = routers.DefaultRouter()
 router.register(r"license_sequence", LicenseSequenceViewSet)
