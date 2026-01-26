@@ -83,4 +83,47 @@ export class Client {
     }
     return items
   }
+  
+  async batchCreateLicenseCards(mnrs: string[]): Promise<{ filenames: string[] }> {
+  const qs = new URLSearchParams({ mnrs: mnrs.join(",") });
+  const csrf = getCookie("csrftoken");
+  return this.fetchJson<{ filenames: string[] }>(
+    `license_sequence/card-create/?${qs.toString()}`,
+    { method: "PUT",
+      credentials: "include",
+      headers: csrf ? { "X-CSRFToken": csrf } : {}
+    }
+  );
+  }
+
+  private async fetchJson<T>(path: string, init?: RequestInit): Promise<T> {
+  const url = new URL(path, this._apiRoot);
+
+  const response = await fetch(url.href, {
+    ...init,
+    credentials: init?.credentials ?? "same-origin",
+    headers: {
+      Accept: "application/json",
+      ...(init?.headers || {}),
+    },
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`Request failed (${response.status}): ${text}`);
+  }
+
+  return (await response.json()) as T;
+  }
+
+  getLicenseCardsZipUrl(mnrs: string[]): string {
+    const url = new URL(this._apiRoot + "license_sequence/card-pdf/");
+    url.searchParams.set("mnrs", mnrs.join(","));
+    return url.href;
+  }
+}
+
+function getCookie(name: string): string | null {
+  const m = document.cookie.match(new RegExp(`(?:^|; )${name}=([^;]*)`));
+  return m ? decodeURIComponent(m[1]) : null;
 }

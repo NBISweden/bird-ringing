@@ -19,6 +19,15 @@ import {
 import { Client } from "../client";
 import { useClient } from "../contexts";
 
+import { useBatchCreateLicenseCardsAction } from "./actions";
+import { useDownloadLicenseCardsZipAction } from "./actions";
+
+type BatchAction = {
+  label: string;
+  action: (itemIds: Set<string>) => void;
+  disabled?: boolean;
+};
+
 async function fetchLicensePage(
   [client, _ctx, page, search]: [Client, "licenses", number, string]
 ): Promise<PagedResponse<LicenseListItem>> {
@@ -96,6 +105,26 @@ function ConnectedListView() {
   const pathname = usePathname();
   const pages = getPages(pathname, params, LicensePage);
   const currentPage = hrefWithParams(pathname, params, page, search)
+
+  const createDocsAction = useBatchCreateLicenseCardsAction(client);
+  const downloadZipAction = useDownloadLicenseCardsZipAction(client);
+
+  const batchActions: (BatchAction | { type: "divider" })[] = [
+    {
+      label: "Skapa licensdokument",
+      action: createDocsAction,
+    },
+    { type: "divider" },
+    { label: "Ladda ned licenskort (ZIP)",
+      action: downloadZipAction
+    },
+    { type: "divider" },
+    {
+      label: "Avaktivera",
+      action: () => {},
+      disabled: true,
+    },
+  ];
   return (
     <BaseListView
       isLoading={isLoading}
@@ -105,12 +134,13 @@ function ConnectedListView() {
       query={query}
       setQuery={setQuery}
       currentPage={currentPage} pageCount={LicensePage.num_pages}
+      batchActions={batchActions}
     />
   )
 }
 
 function BaseListView(
-  {licenses, count, pages, currentPage, pageCount, query, setQuery, isLoading}: {
+  {licenses, count, pages, currentPage, pageCount, query, setQuery, isLoading, batchActions}: {
     licenses: LicenseListItem[];
     count: number;
     pages: Page[];
@@ -119,6 +149,7 @@ function BaseListView(
     query: string;
     setQuery: (q: string) => void;
     isLoading?: boolean;
+    batchActions: (BatchAction | {type: "divider"})[];
   }
 ) {
   const [actionIsOpen, setActionIsOpen] = useState(false);
@@ -162,12 +193,13 @@ function BaseListView(
         <span className="input-group-text flex-grow-1" >{selectionInfo}</span>
         <button className={`btn btn-outline-secondary dropdown-toggle  ${isLoading ? "disabled" : ""}`} onClick={() => setActionIsOpen(!actionIsOpen)} type="button" aria-expanded={actionIsOpen}>Batch-funktioner</button>
         <ul className={`dropdown-menu batch-action-menu ${actionIsOpen ? "show" : ""}`} data-open={actionIsOpen} onClick={() => setActionIsOpen(false)}>
-          <li><a className="dropdown-item" href="#">Skicka licens</a></li>
-          <li><a className="dropdown-item" href="#">Skapa ny licens</a></li>
-          <li><a className="dropdown-item" href="#">Ladda ned licenser</a></li>
-          <li><hr className="dropdown-divider" /></li>
-          <li><a className="dropdown-item" href="#">Avaktivera</a></li>
-          <li><a className="dropdown-item" href="#">Aktivera</a></li>
+          {batchActions.map((action, index) => (
+            "type" in action ? (
+              <li key={index}><hr className="dropdown-divider" /></li>
+            ) : (
+              <li key={index}><span className={`dropdown-item ${action.disabled ? "disabled" : ""}`} onClick={() => !action.disabled && action.action(selectedItems)}>{action.label}</span></li>
+            )
+          ))}
         </ul>
       </div>
       <div className="d-flex flex-row align-items-center gap-3">
@@ -200,7 +232,7 @@ function BaseListView(
 
 export default function ListView() {
   return (
-    <Suspense fallback={<BaseListView query="" setQuery={() => {}} licenses={[]} count={0} pages={[]} currentPage="" pageCount={0}/>}>
+    <Suspense fallback={<BaseListView query="" setQuery={() => {}} licenses={[]} count={0} pages={[]} currentPage="" pageCount={0} batchActions={[]}/>}>
       <ConnectedListView />
     </Suspense>
   )
