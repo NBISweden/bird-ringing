@@ -36,8 +36,8 @@ export class Client {
     return await this._fetchPage("actor", page, search, ordering, params)
   }
 
-  async fetchLicensePage(page: number, search?: string): Promise<PagedResponse<LicenseListItem>> {
-    return await this._fetchPage("license_sequence", page, search)
+  async fetchLicensePage(page: number, search?: string, ordering?: string): Promise<PagedResponse<LicenseListItem>> {
+    return await this._fetchPage("license_sequence", page, search, ordering)
   }
 
   async _fetchPage<T>(type: string, page: number, search?: string, ordering?: string, params?: URLSearchParams): Promise<PagedResponse<T>> {

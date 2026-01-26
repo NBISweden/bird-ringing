@@ -1,8 +1,9 @@
 "use client"
-import { useState, Suspense, useMemo, useEffect } from "react";
+import { useState, Suspense, useMemo, useEffect, Fragment } from "react";
 import Link from "next/link";
 import { useItemSelections, useDebouncedValue } from "../hooks";
 import { Pagination } from "../../../components/Pagination";
+import Icon from "@/components/Icon";
 import useSWR from "swr";
 import { usePathname, useSearchParams } from 'next/navigation'
 import Spinner from "@/components/Spinner";
@@ -22,6 +23,15 @@ import { useClient } from "../contexts";
 import { useBatchCreateLicenseCardsAction } from "./actions";
 import { useDownloadLicenseCardsZipAction } from "./actions";
 
+type LicensePropertyIds = | "mnr" | "type" | "license_holder" | "helpers" | "methods" | "license_version" | "final_report_status" | "license_status" | "last_email_sent_at";
+type ColumnProperties = {
+  ordering?: {
+    forward: string;
+    reverse: string;
+  };
+  label: string;
+};
+
 type BatchAction = {
   label: string;
   action: (itemIds: Set<string>) => void;
@@ -29,9 +39,9 @@ type BatchAction = {
 };
 
 async function fetchLicensePage(
-  [client, _ctx, page, search]: [Client, "licenses", number, string]
+  [client, _ctx, page, search, ordering]: [Client, "licenses", number, string, string]
 ): Promise<PagedResponse<LicenseListItem>> {
-  return client.fetchLicensePage(page, search)
+  return client.fetchLicensePage(page, search, ordering)
 }
 
 const emptyLicensePage: PagedResponse<LicenseListItem> = {
@@ -42,7 +52,7 @@ const emptyLicensePage: PagedResponse<LicenseListItem> = {
   count: 0,
 }
 
-function toLicenseTable(item: LicenseListItem): TableItem {
+function toLicenseTable(item: LicenseListItem): TableItem<LicensePropertyIds> {
   const licenseHolderInfo = item.current.actors.find(r => r.role === "ringer");
   const licenseHolder = licenseHolderInfo ? licenseHolderInfo.actor : undefined;
 
@@ -50,61 +60,65 @@ function toLicenseTable(item: LicenseListItem): TableItem {
 
   return {
     id: item.mnr,
-      properties: {
-        "Mnr": {
-          component: <Link href={`licenses/entry/?mnr=${item.mnr}`}>{item.mnr}</Link>
-        },
-        "Type": {
-          component: licenseHolder?.type,
-        },
-        "License holder": {
-          component: item.license_holder,
-        },
-        "Number of helpers": {
-          component: String(licenseHelperInfo.length)
-        },
-        "Trapping methods": {
-          component: item.methods,
-        },
-        "License version": {
-          component: String(item.current.version),
-        },
-        "Final report status": {
-          component: item.current.report_status,
-        },
-        "License status": {
-          component: item.status,
-        },
-        "Last email sent at": {
-          component: convertDateToLocale(item.last_email_sent_at),
-        },
-      }
-  }
+    properties: {
+      mnr: {
+        component: <Link href={`licenses/entry/?mnr=${item.mnr}`}>{item.mnr}</Link>
+      },
+      type: {
+        component: licenseHolder?.type ?? "-",
+      },
+      license_holder: {
+        component: item.license_holder,
+      },
+      helpers: {
+        component: String(licenseHelperInfo.length),
+      },
+      methods: {
+        component: item.methods,
+      },
+      license_version: {
+        component: String(item.current.version),
+      },
+      final_report_status: {
+        component: item.current.report_status,
+      },
+      license_status: {
+        component: item.status,
+      },
+      last_email_sent_at: {
+        component: convertDateToLocale(item.last_email_sent_at),
+      },
+    },
+  };
 }
 
 function ConnectedListView() {
   const params = useSearchParams();
   const page = params.get("page") || 1;
   const search = params.get("search") || "";
+  const ordering = params.get("ordering") || "";
   const [query, setQuery] = useState<string>(search);
   const activeQuery = useDebouncedValue(query, 1000);
   const router = useRouter();
   const client = useClient();
-  
+  const pathname = usePathname();
+
   useEffect(() => {
     if (search !== activeQuery) {
-      router.push(`/system/licenses/?search=${activeQuery}`);
+      router.push(
+        hrefWithParams(pathname, undefined, undefined, activeQuery, ordering)
+      );
     }
-  }, [activeQuery, search]);
+  }, [pathname, activeQuery, search, ordering]);
   
   const {data: LicensePage, isLoading} = useSWR(
-    [client, "licenses", page, search],
+    [client, "licenses", page, search, ordering],
     fetchLicensePage,
     {fallbackData: emptyLicensePage, keepPreviousData: true}
   );
-  const pathname = usePathname();
+  // const pathname = usePathname();
   const pages = getPages(pathname, params, LicensePage);
-  const currentPage = hrefWithParams(pathname, params, page, search)
+  const currentPage = hrefWithParams(pathname, params, page, search, ordering)
 
   const createDocsAction = useBatchCreateLicenseCardsAction(client);
   const downloadZipAction = useDownloadLicenseCardsZipAction(client);
@@ -135,12 +149,13 @@ function ConnectedListView() {
       setQuery={setQuery}
       currentPage={currentPage} pageCount={LicensePage.num_pages}
       batchActions={batchActions}
+      params={params}
     />
   )
 }
 
 function BaseListView(
-  {licenses, count, pages, currentPage, pageCount, query, setQuery, isLoading, batchActions}: {
+  {licenses, count, pages, currentPage, pageCount, query, setQuery, isLoading, batchActions, params}: {
     licenses: LicenseListItem[];
     count: number;
     pages: Page[];
@@ -150,6 +165,7 @@ function BaseListView(
     setQuery: (q: string) => void;
     isLoading?: boolean;
     batchActions: (BatchAction | {type: "divider"})[];
+    params: URLSearchParams;
   }
 ) {
   const [actionIsOpen, setActionIsOpen] = useState(false);
@@ -161,17 +177,46 @@ function BaseListView(
     handleItemSelection,
     allSelected
   } = useItemSelections(new Set(items.map(r => r.id)));
-  const columns = [
-    "Mnr",
-    "Type",
-    "License holder",
-    "Number of helpers",
-    "Trapping methods",
-    "License version",
-    "Final report status",
-    "License status",
-    "Last email sent at"
-  ]
+  const ordering = params.get("ordering");
+
+  const columns: Record<LicensePropertyIds, ColumnProperties> = {
+    mnr: {
+      label: "Mnr",
+      ordering: { forward: "mnr", reverse: "-mnr" },
+    },
+    type: {
+      label: "Type",
+    },
+    license_holder: {
+      label: "License holder",
+      ordering: { forward: "license_holder,mnr", reverse: "-license_holder,mnr" },
+    },
+    helpers: {
+      label: "Number of helpers",
+    },
+    methods: {
+      label: "Trapping methods",
+      ordering: { forward: "methods,mnr", reverse: "-methods,mnr" },
+    },
+    license_version: {
+      label: "License version",
+    },
+    final_report_status: {
+      label: "Final report status",
+      ordering: {
+        forward: "report_status_label,mnr",
+        reverse: "-report_status_label,mnr",
+      },
+    },
+    license_status: {
+      label: "License status",
+      ordering: { forward: "status_label,mnr", reverse: "-status_label,mnr" },
+    },
+    last_email_sent_at: {
+      label: "Last email sent at",
+      ordering: { forward: "last_email_sent_at,mnr", reverse: "-last_email_sent_at,mnr" },
+    },
+  };
   const selectionInfo = isLoading ? "Laddar data" : `${selectedItems.size} valda av ${count}`;
   return (
     <div className="container">
@@ -210,15 +255,44 @@ function BaseListView(
         <thead>
           <tr>
             <th scope="col"></th>
-            {columns.map(c => <th key={c} scope="col">{c}</th>)}
+            {Object.entries(columns).map(([key, c]) => {
+              const direction =
+                c.ordering?.forward === ordering ? "+" :
+                c.ordering?.reverse === ordering ? "-" :
+                null;
+
+              const updatedParams = new URLSearchParams(params);
+              if (c.ordering) {
+                updatedParams.set(
+                  "ordering",
+                  direction === "+" ? c.ordering.reverse : c.ordering.forward
+                );
+              }
+              const href = "?" + updatedParams.toString();
+
+              return (
+                <th key={key} scope="col">
+                  {c.ordering ? (
+                    <Link className="text-nowrap" href={href}>
+                      {c.label}{" "}
+                      {direction ? (
+                        direction === "+" ? <Icon icon="caret-down-fill" /> : <Icon icon="caret-up-fill" />
+                      ) : null}
+                    </Link>
+                  ) : (
+                    c.label
+                  )}
+                </th>
+              );
+            })}
           </tr>
         </thead>
         <tbody>
           {items.map(item => {
             return (
               <tr key={item.id}>
-                <th><input type="checkbox" onChange={handleItemSelection} checked={selectedItems.has(item.id)} data-actor-id={item.id}/></th>
-                {columns.map(c => <td key={c}>{item.properties[c].component}</td>)}
+                <th><input type="checkbox" onChange={handleItemSelection} checked={selectedItems.has(item.id)} data-license-id={item.id} /></th>
+                {Object.entries(columns).map(([key]) => { return (<td key={key}>{item.properties[key as LicensePropertyIds].component}</td>) })}
               </tr>
             )
           })}
@@ -232,7 +306,7 @@ function BaseListView(
 
 export default function ListView() {
   return (
-    <Suspense fallback={<BaseListView query="" setQuery={() => {}} licenses={[]} count={0} pages={[]} currentPage="" pageCount={0} batchActions={[]}/>}>
+    <Suspense fallback={<BaseListView query="" setQuery={() => {}} licenses={[]} count={0} params={new URLSearchParams()} pages={[]} currentPage="" pageCount={0} batchActions={[]}/>}>
       <ConnectedListView />
     </Suspense>
   )
