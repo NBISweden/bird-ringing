@@ -451,6 +451,103 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
         resp["Content-Disposition"] = f'inline; filename="{filename}"'
         return resp
 
+    @action(detail=False, methods=["get"], url_path="card-pdf")
+    def card_pdf_batch(self, request):
+        raw = request.query_params.get("mnrs", "")
+        mnrs = [m for m in parse_csv_string(raw) if m]
+
+        if not mnrs:
+            return Response({"detail": "mnrs is required (comma-separated)."}, status=400)
+
+        invalid = [m for m in mnrs if len(m) != 4]
+        if invalid:
+            return Response(
+                {"detail": f"Invalid mnr(s): {', '.join(invalid)}. Expected 4 characters each."},
+                status=400,
+            )
+
+        seqs_by_mnr = {s.mnr: s for s in LicenseSequence.objects.filter(mnr__in=mnrs)}
+        missing = [m for m in mnrs if m not in seqs_by_mnr]
+        if missing:
+            return Response({"detail": f"Unknown mnr(s): {', '.join(missing)}"}, status=404)
+
+        sequences = [seqs_by_mnr[m] for m in mnrs]
+        licenses = []
+        for seq in sequences:
+            lic = seq.current
+            if not lic:
+                return Response({"detail": f"No current license for mnr {seq.mnr}."}, status=404)
+            licenses.append(lic)
+
+        service = LicenseCardService()
+        try:
+            zip_bytes = service.create_zip_with_current_license_card_pdfs(
+                licenses=licenses,
+                allowed_roles=(LicenseRoleChoices.RINGER, LicenseRoleChoices.HELPER),
+            )
+        except NoCurrentLicense as e:
+            return Response({"detail": str(e)}, status=404)
+        except ActorNotOnLicense as e:
+            return Response({"detail": str(e)}, status=400)
+        except ValueError as e:
+            return Response({"detail": str(e)}, status=404)
+        except Exception as e:
+            return Response({"detail": str(e)}, status=400)
+
+        resp = HttpResponse(zip_bytes, content_type="application/zip")
+        resp["Content-Disposition"] = 'attachment; filename="license-cards.zip"'
+        return resp
+
+    @action(detail=False, methods=["put"], url_path="card-create")
+    def card_create_batch(self, request):
+        raw = request.query_params.get("mnrs", "")
+        mnrs = [m for m in parse_csv_string(raw) if m]
+
+        if not mnrs:
+            return Response({"detail": "mnrs is required (comma-separated)."}, status=400)
+
+        invalid = [m for m in mnrs if len(m) != 4]
+        if invalid:
+            return Response(
+                {"detail": f"Invalid mnr(s): {', '.join(invalid)}. Expected 4 characters each."},
+                status=400,
+            )
+
+        seqs_by_mnr = {s.mnr: s for s in LicenseSequence.objects.filter(mnr__in=mnrs)}
+        missing = [m for m in mnrs if m not in seqs_by_mnr]
+        if missing:
+            return Response({"detail": f"Unknown mnr(s): {', '.join(missing)}"}, status=404)
+
+        sequences = [seqs_by_mnr[m] for m in mnrs]
+        licenses = []
+        for seq in sequences:
+            lic = seq.current
+            if not lic:
+                return Response({"detail": f"No current license for mnr {seq.mnr}."}, status=404)
+            licenses.append(lic)
+
+        service = LicenseCardService()
+        try:
+            docs = service.batch_get_or_create_current_license_card_documents(
+                licenses=licenses,
+                created_by=request.user,
+                updated_by=request.user,
+                allowed_roles=(LicenseRoleChoices.RINGER, LicenseRoleChoices.HELPER),
+            )
+        except NoCurrentLicense as e:
+            return Response({"detail": str(e)}, status=404)
+        except ActorNotOnLicense as e:
+            return Response({"detail": str(e)}, status=400)
+        except ValueError as e:
+            return Response({"detail": str(e)}, status=400)
+        except Exception as e:
+            return Response({"detail": str(e)}, status=400)
+
+        return Response(
+            {"filenames": [d.reference for d in docs]},
+            status=200,
+        )
+
 actor_type_label = models.Case(
     *[
         models.When(type=value, then=models.Value(label))
