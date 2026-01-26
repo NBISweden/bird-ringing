@@ -305,9 +305,24 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
     permission_classes = [DjangoProtectedModelPermissions]
 
     lookup_field = "mnr"
-    queryset = LicenseSequence.objects.all().distinct().order_by("mnr")
+    queryset = LicenseSequence.objects.all().distinct()
     serializer_class = LicenseSequenceSerializer
     pagination_class = StandardResultsSetPagination
+
+    filter_backends = [DynamicOrderingFilter]
+
+    allowed_ordering = DynamicOrderingFilter.include_reverse(
+        [
+            "mnr",
+            "status",
+            "license_holder",
+            "methods",
+            "last_email_sent_at",
+            "status_label",
+            "report_status_label",
+        ]
+    )
+    default_ordering = ["mnr"]
 
     def get_queryset(self):
         queryset = super().get_queryset()
