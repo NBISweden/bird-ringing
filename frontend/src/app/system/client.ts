@@ -116,11 +116,23 @@ export class Client {
   return (await response.json()) as T;
   }
 
-  getLicenseCardsZipUrl(mnrs: string[]): string {
-    const url = new URL(this._apiRoot + "license_sequence/card-pdf/");
-    url.searchParams.set("mnrs", mnrs.join(","));
-    return url.href;
+  async fetchLicenseCardsZipBlob(mnrs: string[]): Promise<Blob> {
+  const url = new URL(this._apiRoot + "license_sequence/card-pdf/");
+  url.searchParams.set("mnrs", mnrs.join(","));
+
+  const resp = await fetch(url.href, { credentials: "include" });
+
+  if (!resp.ok) {
+    const data = await resp.json().catch(() => null);
+    const detail =
+      data?.detail ??
+      (data ? JSON.stringify(data) : null) ??
+      `Request failed (${resp.status})`;
+    throw new Error(detail);
   }
+
+  return await resp.blob();
+}
 }
 
 function getCookie(name: string): string | null {

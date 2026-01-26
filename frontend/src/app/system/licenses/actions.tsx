@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useState, useEffect } from "react";
 import { ClientContext, useClient, useModalsContext } from "../contexts";
 import { Client } from "../client";
 import Spinner from "@/components/Spinner";
@@ -101,9 +101,34 @@ export function useDownloadLicenseCardsZipAction(client: Client) {
       actions: [{ label: "Stäng", action: () => {}, type: "primary" }],
     });
 
-    const url = client.getLicenseCardsZipUrl(mnrs);
-    window.location.href = url;
+    (async () => {
+      try {
+        const blob = await client.fetchLicenseCardsZipBlob(mnrs);
 
-    setTimeout(() => modalStack.remove(modal), 300);
+        // start download immediately
+        const objectUrl = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = objectUrl;
+        a.download = "license-cards.zip";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(objectUrl);
+
+        // close modal on success
+        modalStack.remove(modal);
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+
+        // Show error in the modal by replacing it:
+        // Your stack API has no update, so remove+add a new modal with the error.
+        modalStack.remove(modal);
+        modalStack.add({
+          title: "Download license cards (ZIP)",
+          content: <Alert type="danger">{msg}</Alert>,
+          actions: [{ label: "Close", action: () => {}, type: "primary" }],
+        });
+      }
+    })();
   }, [modalStack, client]);
 }
