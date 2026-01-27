@@ -103,23 +103,23 @@ function ActorViewBase() {
                 <li className="list-group-item d-flex">
                   <i className="bi bi-envelope-at-fill me-4"/>
                   <div className="d-flex flex-column">
-                    <span>{data.email}</span>
+                    {data.email ? <span>{data.email}</span> : <p className="text-muted fst-italic m-0">no e-mail address</p>}
                     {data.alternative_email && <span className="text-muted">{data.alternative_email}</span>}
                   </div>
                 </li>
                 <li className="list-group-item d-flex">
                   <i className="bi bi-telephone-fill me-4"/>
                   <div className="d-flex flex-column">
-                    <span>{data.phone_number1}</span>
+                    {data.phone_number1 ? <span>{data.phone_number1}</span> : <p className="text-muted fst-italic m-0">no phone number</p>}
                     {data.phone_number2 && <span className="text-muted">{data.phone_number2}</span>}
                   </div>
                 </li>
                 <li className="list-group-item d-flex">
                   <i className="bi bi-house-fill me-4"/>
                   <div className="d-flex flex-column">
-                    <span>{data.address}</span>
+                    {data.address ? <span>{data.address}</span> : <p className="text-muted fst-italic m-0">no address</p>}
                     {data.co_address && <span>{data.co_address}</span>}
-                    <span>{data.postal_code} {data.city}</span>
+                    {data.postal_code || data.city ? <span>{data.postal_code + " " + data.city}</span> : <p className="text-muted fst-italic m-0">no city</p>}
                     {data.country && <span>{data.country}</span>}
                   </div>
                 </li>
