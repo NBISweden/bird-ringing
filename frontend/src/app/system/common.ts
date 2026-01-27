@@ -113,6 +113,7 @@ export type LicenseListItem = {
     history?: LicenseHistoryItem[];
     status: string;
     license_holder: string;
+    license_holder_type: string;
     methods: string;
     last_email_sent_at: string;
 }

@@ -257,7 +257,8 @@ class LicenseHistoryItemSerializer(serializers.ModelSerializer):
 class LicenseSequenceSerializer(serializers.HyperlinkedModelSerializer):
     current = LicenseSerializer(read_only=True)
     history = serializers.SerializerMethodField()
-    license_holder = serializers.CharField()
+    license_holder = serializers.CharField(read_only=True)
+    license_holder_type = serializers.CharField(read_only=True)
     status = serializers.ChoiceField(
         choices=LicenseStatusChoices, source="get_status_display"
     )
@@ -272,6 +273,7 @@ class LicenseSequenceSerializer(serializers.HyperlinkedModelSerializer):
             "history",
             "status",
             "license_holder",
+            "license_holder_type",
             "methods",
             "last_email_sent_at",
         ]
@@ -316,7 +318,7 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
             "mnr",
             "status",
             "license_holder",
-            "type_label",
+            "license_holder_type",
             "methods",
             "last_email_sent_at",
             "status_label",
@@ -343,7 +345,7 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
                 delimiter=", ",
                 distinct=True,
             ),
-            type_label=models.Max(
+            license_holder_type=models.Max(
                 models.Case(
                     models.When(
                         instances__actors__role=models.Value(LicenseRoleChoices.RINGER),
@@ -390,7 +392,7 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
                     | models.Q(last_email_sent_at__icontains=term)
                     | models.Q(status_label__icontains=term)
                     | models.Q(report_status_label__icontains=term)
-                    | models.Q(type_label__icontains=term)
+                    | models.Q(license_holder_type__icontains=term)
                 )
 
         return queryset
