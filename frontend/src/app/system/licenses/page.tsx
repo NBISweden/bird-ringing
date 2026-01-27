@@ -189,6 +189,7 @@ function BaseListView(
     },
     helpers: {
       label: "Number of helpers",
+      ordering: { forward: "helper_count,mnr", reverse: "-helper_count,mnr" },
     },
     methods: {
       label: "Trapping methods",

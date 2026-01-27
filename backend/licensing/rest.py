@@ -321,6 +321,7 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
             "status",
             "license_holder",
             "license_holder_type",
+            "helper_count",
             "methods",
             "last_email_sent_at",
             "status_label",
