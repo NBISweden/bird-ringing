@@ -23,7 +23,7 @@ import { useClient } from "../contexts";
 import { useBatchCreateLicenseCardsAction } from "./actions";
 import { useDownloadLicenseCardsZipAction } from "./actions";
 
-type LicensePropertyIds = | "mnr" | "type" | "license_holder" | "helpers" | "methods" | "license_version" | "final_report_status" | "license_status" | "last_email_sent_at";
+type LicensePropertyIds = | "mnr" | "type" | "license_holder" | "helpers" | "methods" | "final_report_status" | "license_status" | "last_email_sent_at";
 type ColumnProperties = {
   ordering?: {
     forward: string;
@@ -70,9 +70,6 @@ function toLicenseTable(item: LicenseListItem): TableItem<LicensePropertyIds> {
       },
       methods: {
         component: item.methods,
-      },
-      license_version: {
-        component: String(item.current.version),
       },
       final_report_status: {
         component: item.current.report_status,
@@ -194,9 +191,6 @@ function BaseListView(
     methods: {
       label: "Trapping methods",
       ordering: { forward: "methods,mnr", reverse: "-methods,mnr" },
-    },
-    license_version: {
-      label: "License version",
     },
     final_report_status: {
       label: "Final report status",
