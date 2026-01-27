@@ -259,6 +259,7 @@ class LicenseSequenceSerializer(serializers.HyperlinkedModelSerializer):
     history = serializers.SerializerMethodField()
     license_holder = serializers.CharField(read_only=True)
     license_holder_type = serializers.CharField(read_only=True)
+    helper_count = serializers.IntegerField(read_only=True)
     status = serializers.ChoiceField(
         choices=LicenseStatusChoices, source="get_status_display"
     )
@@ -274,6 +275,7 @@ class LicenseSequenceSerializer(serializers.HyperlinkedModelSerializer):
             "status",
             "license_holder",
             "license_holder_type",
+            "helper_count",
             "methods",
             "last_email_sent_at",
         ]
@@ -364,6 +366,14 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
                     default=models.Value(None),
                     output_field=models.CharField(),
                 )
+            ),
+            helper_count=models.Count(
+                "instances__actors__actor",
+                filter=models.Q(
+                    instances__version=0,
+                    instances__actors__role=LicenseRoleChoices.HELPER,
+                ),
+                distinct=True,
             ),
             methods=StringAgg(
                 "instances__permissions__type__name", delimiter=", ", distinct=True
