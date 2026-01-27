@@ -439,6 +439,7 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
                     | models.Q(last_email_sent_at__icontains=term)
                     | models.Q(status_label__icontains=term)
                     | models.Q(report_status_label__icontains=term)
+                    | models.Q(type_label__icontains=term)
                 )
 
         return queryset
