@@ -316,6 +316,7 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
             "mnr",
             "status",
             "license_holder",
+            "type_label",
             "methods",
             "last_email_sent_at",
             "status_label",
@@ -333,7 +334,7 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
             license_holder=StringAgg(
                 models.Case(
                     models.When(
-                        instances__actors__role=models.Value(1),
+                        instances__actors__role=models.Value(LicenseRoleChoices.RINGER),
                         then="instances__actors__actor__full_name",
                     ),
                     default=models.Value(None),
@@ -341,6 +342,26 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
                 ),
                 delimiter=", ",
                 distinct=True,
+            ),
+            type_label=models.Max(
+                models.Case(
+                    models.When(
+                        instances__actors__role=models.Value(LicenseRoleChoices.RINGER),
+                        then=models.Case(
+                            *[
+                                models.When(
+                                    instances__actors__actor__type=value,
+                                    then=models.Value(label),
+                                )
+                                for value, label in ActorTypeChoices.choices
+                            ],
+                            default=models.Value(""),
+                            output_field=models.CharField(),
+                        ),
+                    ),
+                    default=models.Value(None),
+                    output_field=models.CharField(),
+                )
             ),
             methods=StringAgg(
                 "instances__permissions__type__name", delimiter=", ", distinct=True

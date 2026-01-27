@@ -186,6 +186,7 @@ function BaseListView(
     },
     type: {
       label: "Type",
+      ordering: { forward: "type_label,mnr", reverse: "-type_label,mnr" },
     },
     license_holder: {
       label: "License holder",
