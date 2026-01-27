@@ -65,7 +65,7 @@ function toLicenseTable(item: LicenseListItem): TableItem<LicensePropertyIds> {
         component: <Link href={`licenses/entry/?mnr=${item.mnr}`}>{item.mnr}</Link>
       },
       type: {
-        component: licenseHolder?.type ?? "-",
+        component: item.license_holder_type || "-",
       },
       license_holder: {
         component: item.license_holder,
@@ -186,7 +186,7 @@ function BaseListView(
     },
     type: {
       label: "Type",
-      ordering: { forward: "type_label,mnr", reverse: "-type_label,mnr" },
+      ordering: { forward: "license_holder_type,mnr", reverse: "-license_holder_type,mnr" },
     },
     license_holder: {
       label: "License holder",
