@@ -1,4 +1,5 @@
 import { ActorListItem, LicenseListItem, PagedResponse } from "./common";
+import { getCookie } from "./utils";
 
 export class Client {
   private _apiRoot: string;
@@ -85,57 +86,51 @@ export class Client {
   }
   
   async batchCreateLicenseCards(mnrs: string[]): Promise<{ filenames: string[] }> {
-  const qs = new URLSearchParams({ mnrs: mnrs.join(",") });
-  const csrf = getCookie("csrftoken");
-  return this.fetchJson<{ filenames: string[] }>(
-    `license_sequence/card-create/?${qs.toString()}`,
-    { method: "PUT",
-      credentials: "include",
-      headers: csrf ? { "X-CSRFToken": csrf } : {}
-    }
-  );
+    const qs = new URLSearchParams({ mnrs: mnrs.join(",") });
+    const csrf = getCookie("csrftoken");
+    return this.fetchJson<{ filenames: string[] }>(
+      `license_sequence/card-create/?${qs.toString()}`,
+      { method: "PUT",
+        headers: csrf ? { "X-CSRFToken": csrf } : {}
+      }
+    );
   }
 
   private async fetchJson<T>(path: string, init?: RequestInit): Promise<T> {
-  const url = new URL(path, this._apiRoot);
+    const url = new URL(path, this._apiRoot);
 
-  const response = await fetch(url.href, {
-    ...init,
-    credentials: init?.credentials ?? "same-origin",
-    headers: {
-      Accept: "application/json",
-      ...(init?.headers || {}),
-    },
-  });
+    const response = await fetch(url.href, {
+      ...init,
+      credentials: init?.credentials ?? "same-origin",
+      headers: {
+        Accept: "application/json",
+        ...(init?.headers || {}),
+      },
+    });
 
-  if (!response.ok) {
-    const text = await response.text();
-    throw new Error(`Request failed (${response.status}): ${text}`);
-  }
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error(`Request failed (${response.status}): ${text}`);
+    }
 
-  return (await response.json()) as T;
+    return (await response.json()) as T;
   }
 
   async fetchLicenseCardsZipBlob(mnrs: string[]): Promise<Blob> {
-  const url = new URL(this._apiRoot + "license_sequence/card-pdf/");
-  url.searchParams.set("mnrs", mnrs.join(","));
+    const url = new URL(this._apiRoot + "license_sequence/card-pdf/");
+    url.searchParams.set("mnrs", mnrs.join(","));
 
-  const resp = await fetch(url.href, { credentials: "include" });
+    const resp = await fetch(url.href, { credentials: "same-origin" });
 
-  if (!resp.ok) {
-    const data = await resp.json().catch(() => null);
-    const detail =
-      data?.detail ??
-      (data ? JSON.stringify(data) : null) ??
-      `Request failed (${resp.status})`;
-    throw new Error(detail);
+    if (!resp.ok) {
+      const data = await resp.json().catch(() => null);
+      const detail =
+        data?.detail ??
+        (data ? JSON.stringify(data) : null) ??
+        `Request failed (${resp.status})`;
+      throw new Error(detail);
+    }
+
+    return await resp.blob();
   }
-
-  return await resp.blob();
-}
-}
-
-function getCookie(name: string): string | null {
-  const m = document.cookie.match(new RegExp(`(?:^|; )${name}=([^;]*)`));
-  return m ? decodeURIComponent(m[1]) : null;
 }

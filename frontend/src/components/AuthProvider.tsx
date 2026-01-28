@@ -3,14 +3,7 @@ import { useEffect, useContext, useMemo } from "react";
 import { Auth, AuthContext } from "../app/system/contexts";
 import { usePathname, useRouter } from 'next/navigation';
 import useSWR from "swr";
-
-function getCookie(name: string) {
-  const entry = document.cookie || ""
-    .split("; ")
-    .map(s => s.trim())
-    .find(row => row.startsWith(name + "="));
-  return entry ? decodeURIComponent(entry.substring(name.length + 1)) : null;
-}
+import { getCookie } from "../app/system/utils";
 
 async function fetchUser([url]: [string]): Promise<Auth> {
   const response = await fetch(url, {
