@@ -88,7 +88,7 @@ function ConnectedListView() {
   const params = useSearchParams();
   const page = params.get("page") || 1;
   const search = params.get("search") || "";
-  const ordering = params.get("ordering") || "";
+  const ordering = params.get("ordering") || "mnr";
   const [query, setQuery] = useState<string>(search);
   const activeQuery = useDebouncedValue(query, 1000);
   const router = useRouter();
@@ -169,7 +169,7 @@ function BaseListView(
     handleItemSelection,
     allSelected
   } = useItemSelections(new Set(items.map(r => r.id)), "data-license-id");
-  const ordering = params.get("ordering");
+  const ordering = params.get("ordering") || "mnr";
 
   const columns: Record<LicensePropertyIds, ColumnProperties> = {
     mnr: {
