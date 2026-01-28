@@ -1,5 +1,5 @@
 "use client"
-import { useState, Suspense, useMemo, useEffect, Fragment } from "react";
+import { useState, Suspense, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { useItemSelections, useDebouncedValue } from "../hooks";
 import { Pagination } from "../../../components/Pagination";
@@ -168,7 +168,7 @@ function BaseListView(
     toggleItems,
     handleItemSelection,
     allSelected
-  } = useItemSelections(new Set(items.map(r => r.id)));
+  } = useItemSelections(new Set(items.map(r => r.id)), "data-license-id");
   const ordering = params.get("ordering");
 
   const columns: Record<LicensePropertyIds, ColumnProperties> = {
