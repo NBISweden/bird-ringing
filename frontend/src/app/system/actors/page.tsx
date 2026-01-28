@@ -171,7 +171,7 @@ function BaseListView(
     toggleItems,
     handleItemSelection,
     allSelected
-  } = useItemSelections(new Set(items.map(r => r.id)));
+  } = useItemSelections(new Set(items.map(r => r.id)), "data-actor-id");
   const ordering = params.get("ordering")
   const columns: Record<ActorPropertyIds, ColumnProperties> = {
     name: {
