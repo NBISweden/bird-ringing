@@ -31,6 +31,11 @@ export type ActorLicenseRelation = {
   mnr: string;
   role: string;
   mednr: string;
+  version: number,
+  starts_at: string;
+  ends_at: string;
+  communication_type: string;
+  communication_status: string;
 }
 
 export type Role = string;
@@ -180,6 +185,18 @@ export function convertDateToLocale(dateStr: string){
             hour: '2-digit',
             minute: '2-digit',
             hourCycle: 'h23'
+        });
+    } else {
+        return "-";
+    }
+}
+
+export function convertOnlyDateToLocale(dateStr: string){
+    if(dateStr){
+        return new Date(dateStr).toLocaleString('sv-SE', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
         });
     } else {
         return "-";

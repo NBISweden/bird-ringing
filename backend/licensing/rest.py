@@ -121,10 +121,29 @@ class ActorLicenseRelationSerializer(serializers.ModelSerializer):
     role = serializers.ChoiceField(
         choices=LicenseRoleChoices, source="get_role_display"
     )
+    version = serializers.IntegerField(source="license.version", read_only=True)
+    starts_at = serializers.DateField(source="license.starts_at", read_only=True)
+    ends_at = serializers.DateField(source="license.ends_at", read_only=True)
+    communication_status = serializers.SerializerMethodField(read_only=True)
+    communication_type = serializers.SerializerMethodField(read_only=True)
+
 
     class Meta:
         model = LicenseRelation
-        fields = ["license_id", "role", "mnr", "mednr"]
+        fields = ["license_id", "role", "mnr", "mednr", "version", "starts_at", "ends_at", "communication_status", "communication_type"]
+
+    def get_communication_status(self, obj):  
+        license_communication = LicenseCommunication.objects.filter(license=obj.license).last()
+        if license_communication:
+            return license_communication.get_status_display()
+        return None
+    
+    def get_communication_type(self, obj):
+        license_communication = LicenseCommunication.objects.filter(license=obj.license).last()
+        if license_communication:
+            return license_communication.get_type_display()
+        return None
+
 
 
 class ActorSerializer(serializers.ModelSerializer):

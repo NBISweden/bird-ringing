@@ -23,6 +23,10 @@ export class Client {
     return this._getJson<LicenseListItem>(`license_sequence/${encodeURIComponent(mnr)}/`);
   }
 
+  async fetchActorById(actorId: string): Promise<ActorListItem> {
+    return await this._getJson<ActorListItem>(`actor/${actorId}/`);
+  }
+  
   async fetchActorPage(page: number, search?: string, ordering?: string, ids?: string[]): Promise<PagedResponse<ActorListItem>> {
     const params = new URLSearchParams();
     if (ids) {
