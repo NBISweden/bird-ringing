@@ -49,7 +49,7 @@ class RenderedPdf:
 
 class LicenseCardService:
     """
-    Logic for producing a license card PDF from a current License (version==0), for a specific Actor.
+    Logic for producing a license card PDF from a License for a specific Actor.
     Supports both RINGER and HELPER (and can be extended). Since this is using License, it could be extended
     to historical licenses in the future if needed.
     """
@@ -124,7 +124,7 @@ class LicenseCardService:
         return hashlib.sha256(raw).hexdigest()
 
     @transaction.atomic
-    def get_or_create_current_license_card_document(
+    def get_or_create_license_card_document(
         self,
         *,
         lic: License,
@@ -134,7 +134,7 @@ class LicenseCardService:
         allowed_roles: Iterable[int] = (LicenseRoleChoices.RINGER, LicenseRoleChoices.HELPER),
     ) -> LicenseDocument:
         """
-        Returns the current LicenseDocument for this actor and current license.
+        Returns the current LicenseDocument for this actor and license.
         Generates and stores a new one only if the fingerprint changed.
         Archives older ones.
         """
@@ -183,7 +183,7 @@ class LicenseCardService:
         )
         return doc
 
-    def batch_get_or_create_current_license_card_documents(
+    def batch_get_or_create_license_card_documents(
         self,
         *,
         licenses: Iterable[License],
@@ -192,21 +192,20 @@ class LicenseCardService:
         allowed_roles: Iterable[int] = (LicenseRoleChoices.RINGER, LicenseRoleChoices.HELPER),
     ) -> list[LicenseDocument]:
         """
-        Batch get-or-create current license card documents for all ringers/helpers
-        on each provided license (version==0).
+        Batch get-or-create license card documents for all ringers/helpers on each provided license.
         """
         docs: list[LicenseDocument] = []
 
         for lic in licenses:
-            if not lic or lic.version != 0:
-                raise NoCurrentLicense("No current license found.")
+            if not lic:
+                raise NoCurrentLicense("No license found.")
 
             relations = lic.actors.filter(role__in=list(allowed_roles)).select_related("actor")
             if not relations.exists():
-                raise ValueError(f"No ringers/helpers on current license for mnr {lic.sequence.mnr}.")
+                raise ValueError(f"No ringers/helpers on license for mnr {lic.sequence.mnr}.")
 
             for rel in relations:
-                doc = self.get_or_create_current_license_card_document(
+                doc = self.get_or_create_license_card_document(
                     lic=lic,
                     actor=rel.actor,
                     created_by=created_by,
@@ -217,32 +216,32 @@ class LicenseCardService:
 
         return docs
 
-    def create_zip_with_current_license_card_pdfs(
+    def create_zip_with_license_card_pdfs(
         self,
         *,
         licenses: Iterable[License],
         allowed_roles: Iterable[int] = (LicenseRoleChoices.RINGER, LicenseRoleChoices.HELPER),
     ) -> bytes:
         """
-        Create ZIP (bytes) containing existing current license card PDFs
-        for all ringers/helpers on each provided license (version==0).
+        Create ZIP (bytes) containing existing current license-card PDFs
+        for all ringers/helpers on each provided license.
         If any expected PDF is missing, raise a ValueError.
         """
         zip_buffer = io.BytesIO()
 
         with zipfile.ZipFile(zip_buffer, "w", compression=zipfile.ZIP_DEFLATED) as zf:
             for lic in licenses:
-                if not lic or lic.version != 0:
-                    raise NoCurrentLicense("No current license found.")
+                if not lic:
+                    raise NoCurrentLicense("No license found.")
 
                 relations = lic.actors.filter(role__in=list(allowed_roles)).select_related("actor")
                 if not relations.exists():
-                    raise ValueError(f"No ringers/helpers on current license for mnr {lic.sequence.mnr}.")
+                    raise ValueError(f"No ringers/helpers on license for mnr {lic.sequence.mnr}.")
 
                 for rel in relations:
                     actor = rel.actor
 
-                    doc = self.get_current_license_card_document(
+                    doc = self.get_license_card_document(
                         lic=lic,
                         actor=actor,
                         allowed_roles=allowed_roles,
@@ -250,7 +249,7 @@ class LicenseCardService:
 
                     if not doc:
                         raise ValueError(
-                            f"Current license card PDF(s) missing for mnr {lic.sequence.mnr}. "
+                            f"License card PDF(s) missing for mnr {lic.sequence.mnr}. "
                             "Generate all license cards for your selected MNRs before creating ZIP."
                         )
 
@@ -263,7 +262,7 @@ class LicenseCardService:
         zip_buffer.seek(0)
         return zip_buffer.getvalue()
 
-    def get_current_license_card_document(
+    def get_license_card_document(
         self,
         *,
         lic: License,
@@ -290,8 +289,8 @@ class LicenseCardService:
         actor: Actor,
         allowed_roles: Iterable[int],
     ):
-        if not lic or lic.version != 0:
-            raise NoCurrentLicense("No current license found.")
+        if not lic:
+            raise NoCurrentLicense("No license found.")
 
         rel = (
             lic.actors
@@ -301,7 +300,7 @@ class LicenseCardService:
         )
         if not rel:
             raise ActorNotOnLicense(
-                "Specified actor is not registered on the current license as ringer/helper."
+                "Specified actor is not registered on the license as ringer/helper."
             )
 
         return rel

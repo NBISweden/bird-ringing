@@ -418,7 +418,7 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
             if not lic:
                 raise NoCurrentLicense("No current license found.")
 
-            doc = service.get_or_create_current_license_card_document(
+            doc = service.get_or_create_license_card_document(
                 lic=lic,
                 actor=actor,
                 created_by=request.user,
@@ -447,7 +447,7 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
             if not lic:
                 raise NoCurrentLicense("No current license found.")
 
-            doc = service.get_current_license_card_document(lic=lic, actor=actor)
+            doc = service.get_license_card_document(lic=lic, actor=actor)
         except NoCurrentLicense as e:
             return Response({"detail": str(e)}, status=404)
         except ActorNotOnLicense as e:
@@ -493,7 +493,7 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
 
         service = LicenseCardService()
         try:
-            zip_bytes = service.create_zip_with_current_license_card_pdfs(
+            zip_bytes = service.create_zip_with_license_card_pdfs(
                 licenses=licenses,
                 allowed_roles=(LicenseRoleChoices.RINGER, LicenseRoleChoices.HELPER),
             )
@@ -522,7 +522,7 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
 
         service = LicenseCardService()
         try:
-            docs = service.batch_get_or_create_current_license_card_documents(
+            docs = service.batch_get_or_create_license_card_documents(
                 licenses=licenses,
                 created_by=request.user,
                 updated_by=request.user,
