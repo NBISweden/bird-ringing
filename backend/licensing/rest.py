@@ -33,6 +33,31 @@ from collections import OrderedDict
 def parse_csv_string(csv_str: str):
     return [v.strip() for v in csv_str.split(",")]
 
+def get_current_licenses(mnrs: list[str]) -> list[License]:
+    if not mnrs:
+        raise serializers.ValidationError({"mnrs": "mnrs is required (comma-separated)."})
+
+    invalid_mnrs = [m for m in mnrs if not MnrSerializer(data={"mnr": m}).is_valid()]
+    if invalid_mnrs:
+        raise serializers.ValidationError(
+            {"mnrs": f"Invalid mnr(s): {', '.join(invalid_mnrs)}. Expected 4 digits each."}
+        )
+
+    seqs_by_mnr = {s.mnr: s for s in LicenseSequence.objects.filter(mnr__in=mnrs)}
+    missing_mnrs = [m for m in mnrs if m not in seqs_by_mnr]
+    if missing_mnrs:
+        raise serializers.ValidationError({"mnrs": f"Unknown mnr(s): {', '.join(missing_mnrs)}"})
+
+    sequences = [seqs_by_mnr[m] for m in mnrs]
+    licenses = []
+    for seq in sequences:
+        lic = seq.current
+        if not lic:
+            raise serializers.ValidationError({"mnrs": f"No current license for mnr {seq.mnr}."})
+        licenses.append(lic)
+
+    return licenses
+
 
 class DjangoProtectedModelPermissions(DjangoModelPermissions):
     perms_map = {
@@ -318,6 +343,11 @@ license_report_status_label = models.Case(
     default=models.Value(""),
 )
 
+class LicenseCardRenderSerializer(serializers.Serializer):
+    actor_id = serializers.IntegerField(required=True, min_value=1)
+
+class MnrSerializer(serializers.Serializer):
+    mnr = serializers.RegexField(regex=r"^\d{4}$")
 
 class LicenseSequenceViewSet(viewsets.ModelViewSet):
     authentication_classes = [SessionAuthentication, BasicAuthentication]
@@ -456,28 +486,10 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
         raw = request.query_params.get("mnrs", "")
         mnrs = [m for m in parse_csv_string(raw) if m]
 
-        if not mnrs:
-            return Response({"detail": "mnrs is required (comma-separated)."}, status=400)
-
-        invalid = [m for m in mnrs if len(m) != 4]
-        if invalid:
-            return Response(
-                {"detail": f"Invalid mnr(s): {', '.join(invalid)}. Expected 4 characters each."},
-                status=400,
-            )
-
-        seqs_by_mnr = {s.mnr: s for s in LicenseSequence.objects.filter(mnr__in=mnrs)}
-        missing = [m for m in mnrs if m not in seqs_by_mnr]
-        if missing:
-            return Response({"detail": f"Unknown mnr(s): {', '.join(missing)}"}, status=404)
-
-        sequences = [seqs_by_mnr[m] for m in mnrs]
-        licenses = []
-        for seq in sequences:
-            lic = seq.current
-            if not lic:
-                return Response({"detail": f"No current license for mnr {seq.mnr}."}, status=404)
-            licenses.append(lic)
+        try:
+            licenses = get_current_licenses(mnrs)
+        except serializers.ValidationError as e:
+            return Response(e.detail, status=400)
 
         service = LicenseCardService()
         try:
@@ -503,28 +515,10 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
         raw = request.query_params.get("mnrs", "")
         mnrs = [m for m in parse_csv_string(raw) if m]
 
-        if not mnrs:
-            return Response({"detail": "mnrs is required (comma-separated)."}, status=400)
-
-        invalid = [m for m in mnrs if len(m) != 4]
-        if invalid:
-            return Response(
-                {"detail": f"Invalid mnr(s): {', '.join(invalid)}. Expected 4 characters each."},
-                status=400,
-            )
-
-        seqs_by_mnr = {s.mnr: s for s in LicenseSequence.objects.filter(mnr__in=mnrs)}
-        missing = [m for m in mnrs if m not in seqs_by_mnr]
-        if missing:
-            return Response({"detail": f"Unknown mnr(s): {', '.join(missing)}"}, status=404)
-
-        sequences = [seqs_by_mnr[m] for m in mnrs]
-        licenses = []
-        for seq in sequences:
-            lic = seq.current
-            if not lic:
-                return Response({"detail": f"No current license for mnr {seq.mnr}."}, status=404)
-            licenses.append(lic)
+        try:
+            licenses = get_current_licenses(mnrs)
+        except serializers.ValidationError as e:
+            return Response(e.detail, status=400)
 
         service = LicenseCardService()
         try:
@@ -626,9 +620,6 @@ class ActorViewSet(viewsets.ModelViewSet):
         ]
     )
     default_ordering = ["full_name", "city", "country"]
-
-class LicenseCardRenderSerializer(serializers.Serializer):
-    actor_id = serializers.IntegerField(required=True, min_value=1)
 
 router = routers.DefaultRouter()
 router.register(r"license_sequence", LicenseSequenceViewSet)
