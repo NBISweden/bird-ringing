@@ -1,0 +1,7 @@
+#!/usr/bin/env sh
+set -e
+
+docker compose \
+  -f docker-compose.yml \
+  -f docker-compose.dev.yml \
+  run --rm frontend sh -c "npm run lint"
