@@ -27,6 +27,7 @@ from licensing.license_renderer import (
 )
 
 from django.utils import translation
+from django.utils.text import slugify
 from django.utils.formats import date_format
 
 def format_date(d) -> str:
@@ -56,6 +57,16 @@ class LicenseCardService:
 
     def __init__(self, renderer: Optional[LicenseCardRenderer] = None):
         self.renderer = renderer or LicenseCardRenderer()
+
+    def make_license_card_filename(self, lic, actor, allowed_roles=(LicenseRoleChoices.RINGER, LicenseRoleChoices.HELPER),
+    ) -> str:
+        rel = self._get_license_relation(lic=lic, actor=actor, allowed_roles=allowed_roles)
+
+        mnr = lic.sequence.mnr
+        identifier = f"{mnr}-{rel.mednr}" if rel.role == LicenseRoleChoices.HELPER else f"{mnr}"
+        name = slugify(actor.full_name)[:40]
+
+        return f"license-card-{identifier}" + (f"-{name}.pdf" if name else ".pdf")
 
     def render_pdf_for_license_and_actor(
         self,
@@ -88,8 +99,7 @@ class LicenseCardService:
 
         pdf_bytes = self.renderer.render_pdf_bytes(req)
 
-        # filename could have version instead of lic.id but for now this is enough
-        filename = f"license-card-{mnr}-license-{lic.id}-actor-{actor.id}.pdf"
+        filename = self.make_license_card_filename(lic, actor, allowed_roles=allowed_roles)
         return RenderedPdf(filename=filename, pdf_bytes=pdf_bytes)
 
     @staticmethod
@@ -256,7 +266,7 @@ class LicenseCardService:
                     if not doc.data:
                         raise ValueError(f"{lic.sequence.mnr}: existing PDF has no data for actor {actor.id}.")
 
-                    filename = doc.reference or f"license-card-{lic.sequence.mnr}-actor-{actor.id}.pdf"
+                    filename = self.make_license_card_filename(lic, actor, allowed_roles=allowed_roles)
                     zf.writestr(f"{lic.sequence.mnr}/{filename}", bytes(doc.data))
 
         zip_buffer.seek(0)

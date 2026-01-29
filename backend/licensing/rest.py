@@ -476,7 +476,8 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
             raise serializers.ValidationError({"actor_id": "Actor not found"})
 
     def _pdf_http_response(self, *, lic: License, actor: Actor, doc) -> HttpResponse:
-        filename = doc.reference or f"license-card-{lic.sequence.mnr}-actor-{actor.id}.pdf"
+        service = LicenseCardService()
+        filename = doc.reference or service.make_license_card_filename(lic, actor)
         resp = HttpResponse(bytes(doc.data), content_type="application/pdf")
         resp["Content-Disposition"] = f'inline; filename="{filename}"'
         return resp
