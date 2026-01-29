@@ -347,7 +347,7 @@ class LicenseCardRenderSerializer(serializers.Serializer):
     actor_id = serializers.IntegerField(required=True, min_value=1)
 
 class MnrSerializer(serializers.Serializer):
-    mnr = serializers.RegexField(regex=r"^\d{4}$")
+    mnr = serializers.CharField(min_length=4, max_length=4)
 
 class LicenseSequenceViewSet(viewsets.ModelViewSet):
     authentication_classes = [SessionAuthentication, BasicAuthentication]
