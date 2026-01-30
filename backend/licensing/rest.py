@@ -33,6 +33,31 @@ from collections import OrderedDict
 def parse_csv_string(csv_str: str):
     return [v.strip() for v in csv_str.split(",")]
 
+def get_current_licenses(mnrs: list[str]) -> list[License]:
+    if not mnrs:
+        raise serializers.ValidationError({"mnrs": "mnrs is required (comma-separated)."})
+
+    invalid_mnrs = [m for m in mnrs if not MnrSerializer(data={"mnr": m}).is_valid()]
+    if invalid_mnrs:
+        raise serializers.ValidationError(
+            {"mnrs": f"Invalid mnr(s): {', '.join(invalid_mnrs)}. Expected 4 digits each."}
+        )
+
+    seqs_by_mnr = {s.mnr: s for s in LicenseSequence.objects.filter(mnr__in=mnrs)}
+    missing_mnrs = [m for m in mnrs if m not in seqs_by_mnr]
+    if missing_mnrs:
+        raise serializers.ValidationError({"mnrs": f"Unknown mnr(s): {', '.join(missing_mnrs)}"})
+
+    sequences = [seqs_by_mnr[m] for m in mnrs]
+    licenses = []
+    for seq in sequences:
+        lic = seq.current
+        if not lic:
+            raise serializers.ValidationError({"mnrs": f"No current license for mnr {seq.mnr}."})
+        licenses.append(lic)
+
+    return licenses
+
 
 class DjangoProtectedModelPermissions(DjangoModelPermissions):
     perms_map = {
@@ -318,6 +343,11 @@ license_report_status_label = models.Case(
     default=models.Value(""),
 )
 
+class LicenseCardRenderSerializer(serializers.Serializer):
+    actor_id = serializers.IntegerField(required=True, min_value=1)
+
+class MnrSerializer(serializers.Serializer):
+    mnr = serializers.CharField(min_length=4, max_length=4)
 
 class LicenseSequenceViewSet(viewsets.ModelViewSet):
     authentication_classes = [SessionAuthentication, BasicAuthentication]
@@ -388,7 +418,7 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
             if not lic:
                 raise NoCurrentLicense("No current license found.")
 
-            doc = service.get_or_create_current_license_card_document(
+            doc = service.get_or_create_license_card_document(
                 lic=lic,
                 actor=actor,
                 created_by=request.user,
@@ -417,7 +447,7 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
             if not lic:
                 raise NoCurrentLicense("No current license found.")
 
-            doc = service.get_current_license_card_document(lic=lic, actor=actor)
+            doc = service.get_license_card_document(lic=lic, actor=actor)
         except NoCurrentLicense as e:
             return Response({"detail": str(e)}, status=404)
         except ActorNotOnLicense as e:
@@ -446,10 +476,72 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
             raise serializers.ValidationError({"actor_id": "Actor not found"})
 
     def _pdf_http_response(self, *, lic: License, actor: Actor, doc) -> HttpResponse:
-        filename = doc.reference or f"license-card-{lic.sequence.mnr}-actor-{actor.id}.pdf"
+        service = LicenseCardService()
+        filename = doc.reference or service.make_license_card_filename(lic, actor)
         resp = HttpResponse(bytes(doc.data), content_type="application/pdf")
         resp["Content-Disposition"] = f'inline; filename="{filename}"'
         return resp
+
+    @action(detail=False, methods=["get"], url_path="card-pdf")
+    def card_pdf_batch(self, request):
+        raw = request.query_params.get("mnrs", "")
+        mnrs = [m for m in parse_csv_string(raw) if m]
+
+        try:
+            licenses = get_current_licenses(mnrs)
+        except serializers.ValidationError as e:
+            return Response(e.detail, status=400)
+
+        service = LicenseCardService()
+        try:
+            zip_bytes = service.create_zip_with_license_card_pdfs(
+                licenses=licenses,
+                allowed_roles=(LicenseRoleChoices.RINGER, LicenseRoleChoices.HELPER),
+            )
+        except NoCurrentLicense as e:
+            return Response({"detail": str(e)}, status=404)
+        except ActorNotOnLicense as e:
+            return Response({"detail": str(e)}, status=400)
+        except ValueError as e:
+            return Response({"detail": str(e)}, status=404)
+        except Exception as e:
+            return Response({"detail": str(e)}, status=400)
+
+        resp = HttpResponse(zip_bytes, content_type="application/zip")
+        resp["Content-Disposition"] = 'attachment; filename="license-cards.zip"'
+        return resp
+
+    @action(detail=False, methods=["put"], url_path="card-create")
+    def card_create_batch(self, request):
+        raw = request.query_params.get("mnrs", "")
+        mnrs = [m for m in parse_csv_string(raw) if m]
+
+        try:
+            licenses = get_current_licenses(mnrs)
+        except serializers.ValidationError as e:
+            return Response(e.detail, status=400)
+
+        service = LicenseCardService()
+        try:
+            docs = service.batch_get_or_create_license_card_documents(
+                licenses=licenses,
+                created_by=request.user,
+                updated_by=request.user,
+                allowed_roles=(LicenseRoleChoices.RINGER, LicenseRoleChoices.HELPER),
+            )
+        except NoCurrentLicense as e:
+            return Response({"detail": str(e)}, status=404)
+        except ActorNotOnLicense as e:
+            return Response({"detail": str(e)}, status=400)
+        except ValueError as e:
+            return Response({"detail": str(e)}, status=400)
+        except Exception as e:
+            return Response({"detail": str(e)}, status=400)
+
+        return Response(
+            {"filenames": [d.reference for d in docs]},
+            status=200,
+        )
 
 actor_type_label = models.Case(
     *[
@@ -529,9 +621,6 @@ class ActorViewSet(viewsets.ModelViewSet):
         ]
     )
     default_ordering = ["full_name", "city", "country"]
-
-class LicenseCardRenderSerializer(serializers.Serializer):
-    actor_id = serializers.IntegerField(required=True, min_value=1)
 
 router = routers.DefaultRouter()
 router.register(r"license_sequence", LicenseSequenceViewSet)

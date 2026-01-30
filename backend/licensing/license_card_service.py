@@ -7,6 +7,9 @@ from django.http import HttpResponse
 
 import hashlib
 import json
+import io
+import zipfile
+
 from django.db import transaction
 
 from licensing.models import (
@@ -24,6 +27,7 @@ from licensing.license_renderer import (
 )
 
 from django.utils import translation
+from django.utils.text import slugify
 from django.utils.formats import date_format
 
 def format_date(d) -> str:
@@ -46,13 +50,23 @@ class RenderedPdf:
 
 class LicenseCardService:
     """
-    Logic for producing a license card PDF from a current License (version==0), for a specific Actor.
+    Logic for producing a license card PDF from a License for a specific Actor.
     Supports both RINGER and HELPER (and can be extended). Since this is using License, it could be extended
     to historical licenses in the future if needed.
     """
 
     def __init__(self, renderer: Optional[LicenseCardRenderer] = None):
         self.renderer = renderer or LicenseCardRenderer()
+
+    def make_license_card_filename(self, lic, actor, allowed_roles=(LicenseRoleChoices.RINGER, LicenseRoleChoices.HELPER),
+    ) -> str:
+        rel = self._get_license_relation(lic=lic, actor=actor, allowed_roles=allowed_roles)
+
+        mnr = lic.sequence.mnr
+        identifier = f"{mnr}-{rel.mednr}" if rel.role == LicenseRoleChoices.HELPER else f"{mnr}"
+        name = slugify(actor.full_name)[:40]
+
+        return f"license-card-{identifier}" + (f"-{name}.pdf" if name else ".pdf")
 
     def render_pdf_for_license_and_actor(
         self,
@@ -85,8 +99,7 @@ class LicenseCardService:
 
         pdf_bytes = self.renderer.render_pdf_bytes(req)
 
-        # filename could have version instead of lic.id but for now this is enough
-        filename = f"license-card-{mnr}-license-{lic.id}-actor-{actor.id}.pdf"
+        filename = self.make_license_card_filename(lic, actor, allowed_roles=allowed_roles)
         return RenderedPdf(filename=filename, pdf_bytes=pdf_bytes)
 
     @staticmethod
@@ -121,7 +134,7 @@ class LicenseCardService:
         return hashlib.sha256(raw).hexdigest()
 
     @transaction.atomic
-    def get_or_create_current_license_card_document(
+    def get_or_create_license_card_document(
         self,
         *,
         lic: License,
@@ -131,7 +144,7 @@ class LicenseCardService:
         allowed_roles: Iterable[int] = (LicenseRoleChoices.RINGER, LicenseRoleChoices.HELPER),
     ) -> LicenseDocument:
         """
-        Returns the current LicenseDocument for this actor and current license.
+        Returns the current LicenseDocument for this actor and license.
         Generates and stores a new one only if the fingerprint changed.
         Archives older ones.
         """
@@ -180,7 +193,86 @@ class LicenseCardService:
         )
         return doc
 
-    def get_current_license_card_document(
+    def batch_get_or_create_license_card_documents(
+        self,
+        *,
+        licenses: Iterable[License],
+        created_by,
+        updated_by,
+        allowed_roles: Iterable[int] = (LicenseRoleChoices.RINGER, LicenseRoleChoices.HELPER),
+    ) -> list[LicenseDocument]:
+        """
+        Batch get-or-create license card documents for all ringers/helpers on each provided license.
+        """
+        docs: list[LicenseDocument] = []
+
+        for lic in licenses:
+            if not lic:
+                raise NoCurrentLicense("No license found.")
+
+            relations = lic.actors.filter(role__in=list(allowed_roles)).select_related("actor")
+            if not relations.exists():
+                raise ValueError(f"No ringers/helpers on license for mnr {lic.sequence.mnr}.")
+
+            for rel in relations:
+                doc = self.get_or_create_license_card_document(
+                    lic=lic,
+                    actor=rel.actor,
+                    created_by=created_by,
+                    updated_by=updated_by,
+                    allowed_roles=allowed_roles,
+                )
+                docs.append(doc)
+
+        return docs
+
+    def create_zip_with_license_card_pdfs(
+        self,
+        *,
+        licenses: Iterable[License],
+        allowed_roles: Iterable[int] = (LicenseRoleChoices.RINGER, LicenseRoleChoices.HELPER),
+    ) -> bytes:
+        """
+        Create ZIP (bytes) containing existing current license-card PDFs
+        for all ringers/helpers on each provided license.
+        If any expected PDF is missing, raise a ValueError.
+        """
+        zip_buffer = io.BytesIO()
+
+        with zipfile.ZipFile(zip_buffer, "w", compression=zipfile.ZIP_DEFLATED) as zf:
+            for lic in licenses:
+                if not lic:
+                    raise NoCurrentLicense("No license found.")
+
+                relations = lic.actors.filter(role__in=list(allowed_roles)).select_related("actor")
+                if not relations.exists():
+                    raise ValueError(f"No ringers/helpers on license for mnr {lic.sequence.mnr}.")
+
+                for rel in relations:
+                    actor = rel.actor
+
+                    doc = self.get_license_card_document(
+                        lic=lic,
+                        actor=actor,
+                        allowed_roles=allowed_roles,
+                    )
+
+                    if not doc:
+                        raise ValueError(
+                            f"License card PDF(s) missing for mnr {lic.sequence.mnr}. "
+                            "Generate all license cards for your selected MNRs before creating ZIP."
+                        )
+
+                    if not doc.data:
+                        raise ValueError(f"{lic.sequence.mnr}: existing PDF has no data for actor {actor.id}.")
+
+                    filename = self.make_license_card_filename(lic, actor, allowed_roles=allowed_roles)
+                    zf.writestr(f"{lic.sequence.mnr}/{filename}", bytes(doc.data))
+
+        zip_buffer.seek(0)
+        return zip_buffer.getvalue()
+
+    def get_license_card_document(
         self,
         *,
         lic: License,
@@ -207,8 +299,8 @@ class LicenseCardService:
         actor: Actor,
         allowed_roles: Iterable[int],
     ):
-        if not lic or lic.version != 0:
-            raise NoCurrentLicense("No current license found.")
+        if not lic:
+            raise NoCurrentLicense("No license found.")
 
         rel = (
             lic.actors
@@ -218,7 +310,7 @@ class LicenseCardService:
         )
         if not rel:
             raise ActorNotOnLicense(
-                "Specified actor is not registered on the current license as ringer/helper."
+                "Specified actor is not registered on the license as ringer/helper."
             )
 
         return rel
