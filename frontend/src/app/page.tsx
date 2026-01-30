@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import './page.scss';
+import "./page.scss";
 import { useContext } from "react";
-import { AuthContext } from "./system/contexts"
+import { AuthContext } from "./system/contexts";
 import Link from "next/link";
-import { AuthProvider } from '@/components/AuthProvider';
+import { AuthProvider } from "@/components/AuthProvider";
 
 export default function Home() {
   return (
@@ -35,5 +35,5 @@ function HomeCore() {
         )}
       </div>
     </main>
-  )
+  );
 }

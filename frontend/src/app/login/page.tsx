@@ -1,34 +1,39 @@
-'use client';
+"use client";
 
-import { Suspense, useContext, useEffect, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { AuthContext, Auth } from '../system/contexts';
+import { Suspense, useContext, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { AuthContext, Auth } from "../system/contexts";
 
 function ConnectedLoginPage() {
   const params = useSearchParams();
   const auth = useContext(AuthContext);
   const target = params.get("target") || "/system/welcome";
-  return (
-    <BaseLoginPage target={target} auth={auth} />
-  )
+  return <BaseLoginPage target={target} auth={auth} />;
 }
 
-function BaseLoginPage({target, auth}: {target: string, auth: Auth | null}) {
+function BaseLoginPage({
+  target,
+  auth,
+}: {
+  target: string;
+  auth: Auth | null;
+}) {
   const router = useRouter();
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const signIn = auth && auth.signIn;
 
-  const isProtected = auth === null || auth.signIn === undefined || isAuthenticating;
+  const isProtected =
+    auth === null || auth.signIn === undefined || isAuthenticating;
   let inputMessage = "Log In";
   if (isAuthenticating) {
     inputMessage = "Authenticating...";
   } else if (auth === null) {
-    inputMessage = "Checking status..."
+    inputMessage = "Checking status...";
   } else if (!signIn) {
-    inputMessage = "No authenticating method"
+    inputMessage = "No authenticating method";
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -38,7 +43,7 @@ function BaseLoginPage({target, auth}: {target: string, auth: Auth | null}) {
     if (!signIn) return;
 
     try {
-      await signIn(username, password)
+      await signIn(username, password);
       window.location.reload(); // Force root to recheck auth
     } catch (err) {
       setError(String(err));
@@ -51,10 +56,10 @@ function BaseLoginPage({target, auth}: {target: string, auth: Auth | null}) {
     if (auth !== null && auth.isAuthenticated) {
       router.push(target);
     }
-  }, [auth, target])
+  }, [auth, target]);
 
   return (
-    <main className="container mt-5" style={{ maxWidth: '480px' }}>
+    <main className="container mt-5" style={{ maxWidth: "480px" }}>
       <h2 className="mb-4">Expert Login</h2>
       <form onSubmit={handleSubmit}>
         <div className="form-group mb-3">
@@ -82,7 +87,11 @@ function BaseLoginPage({target, auth}: {target: string, auth: Auth | null}) {
           />
         </div>
 
-        <button className="btn btn-primary w-100" type="submit" disabled={isProtected}>
+        <button
+          className="btn btn-primary w-100"
+          type="submit"
+          disabled={isProtected}
+        >
           {inputMessage}
         </button>
 
@@ -94,7 +103,7 @@ function BaseLoginPage({target, auth}: {target: string, auth: Auth | null}) {
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={<BaseLoginPage target="/system/welcome" auth={null}/>}>
+    <Suspense fallback={<BaseLoginPage target="/system/welcome" auth={null} />}>
       <ConnectedLoginPage />
     </Suspense>
   );

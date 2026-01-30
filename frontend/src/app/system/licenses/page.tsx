@@ -1,13 +1,13 @@
-"use client"
+"use client";
 import { useState, Suspense, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { useItemSelections, useDebouncedValue } from "../hooks";
 import { Pagination } from "../../../components/Pagination";
 import Icon from "@/components/Icon";
 import useSWR from "swr";
-import { usePathname, useSearchParams } from 'next/navigation'
+import { usePathname, useSearchParams } from "next/navigation";
 import Spinner from "@/components/Spinner";
-import { useRouter } from 'next/navigation';
+import { useRouter } from "next/navigation";
 import {
   PagedResponse,
   getPages,
@@ -16,7 +16,7 @@ import {
   LicenseListItem,
   TableItem,
   convertDateToLocale,
-} from "../common"
+} from "../common";
 import { Client } from "../client";
 import { useClient } from "../contexts";
 
@@ -50,7 +50,7 @@ const emptyLicensePage: PagedResponse<LicenseListItem> = {
   previous: null,
   num_pages: 0,
   count: 0,
-}
+};
 
 function toLicenseTable(item: LicenseListItem): TableItem<LicensePropertyIds> {
   return {
@@ -106,7 +106,7 @@ function ConnectedListView() {
   const {data: LicensePage, isLoading} = useSWR(
     [client, "licenses", page, search, ordering],
     fetchLicensePage,
-    {fallbackData: emptyLicensePage, keepPreviousData: true}
+    { fallbackData: emptyLicensePage, keepPreviousData: true },
   );
   // const pathname = usePathname();
   const pages = getPages(pathname, params, LicensePage);
@@ -143,7 +143,7 @@ function ConnectedListView() {
       batchActions={batchActions}
       params={params}
     />
-  )
+  );
 }
 
 function BaseListView(
@@ -239,8 +239,12 @@ function BaseListView(
         </ul>
       </div>
       <div className="d-flex flex-row align-items-center gap-3">
-        <Pagination pages={pages} currentPage={currentPage} pageCount={pageCount} />
-        {isLoading ? <Spinner className="mb-3"/> : <></>}
+        <Pagination
+          pages={pages}
+          currentPage={currentPage}
+          pageCount={pageCount}
+        />
+        {isLoading ? <Spinner className="mb-3" /> : <></>}
       </div>
       <table className="table">
         <thead>
@@ -279,26 +283,29 @@ function BaseListView(
           </tr>
         </thead>
         <tbody>
-          {items.map(item => {
+          {items.map((item) => {
             return (
               <tr key={item.id}>
                 <th><input type="checkbox" onChange={handleItemSelection} checked={selectedItems.has(item.id)} data-license-id={item.id} /></th>
                 {Object.entries(columns).map(([key]) => { return (<td key={key}>{item.properties[key as LicensePropertyIds].component}</td>) })}
               </tr>
-            )
+            );
           })}
         </tbody>
       </table>
-      <Pagination pages={pages} currentPage={currentPage} pageCount={pageCount} />
+      <Pagination
+        pages={pages}
+        currentPage={currentPage}
+        pageCount={pageCount}
+      />
     </div>
-  )
+  );
 }
-
 
 export default function ListView() {
   return (
     <Suspense fallback={<BaseListView query="" setQuery={() => {}} licenses={[]} count={0} params={new URLSearchParams()} pages={[]} currentPage="" pageCount={0} batchActions={[]}/>}>
       <ConnectedListView />
     </Suspense>
-  )
+  );
 }

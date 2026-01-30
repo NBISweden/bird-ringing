@@ -1,84 +1,94 @@
-import { ReadonlyURLSearchParams } from 'next/navigation';
+import { ReadonlyURLSearchParams } from "next/navigation";
 import React from "react";
 
 export type ActorBase = {
-  id: number,
-  full_name: string,
-  first_name: string,
-  last_name: string,
-  type: string,
-  sex: string,
-  birth_date: string,
-  language: string,
-  phone_number1: string,
-  phone_number2: string,
-  email: string,
-  alternative_email: string,
-  address: string,
-  co_address: string,
-  postal_code: string,
-  city: string,
-  country: string,
-  updated_at: string,
-}
+  id: number;
+  full_name: string;
+  first_name: string;
+  last_name: string;
+  type: string;
+  sex: string;
+  birth_date: string;
+  language: string;
+  phone_number1: string;
+  phone_number2: string;
+  email: string;
+  alternative_email: string;
+  address: string;
+  co_address: string;
+  postal_code: string;
+  city: string;
+  country: string;
+  updated_at: string;
+};
 
 export type ActorListItem = ActorBase & {
-  current_license_relations: ActorLicenseRelation[],
-}
+  current_license_relations: ActorLicenseRelation[];
+};
 
 export type ActorLicenseRelation = {
   license_id: number;
   mnr: string;
   role: string;
   mednr: string;
-  version: number,
+  version: number;
   starts_at: string;
   ends_at: string;
   communication_type: string;
   communication_status: string;
-}
+};
 
 export type Role = string;
 
 export type PagedResponse<T> = {
   count: number;
-  num_pages: number,
+  num_pages: number;
   next: string | null;
   previous: string | null;
-  results: T[]
-}
+  results: T[];
+};
 
 export type Page = {
   href: string | null;
   rel: string;
-}
+};
 
 export type TableItem<P extends string = string> = {
-  id: string,
-  properties: Record<P, {component: React.ReactNode}>
-}
+  id: string;
+  properties: Record<P, { component: React.ReactNode }>;
+};
 
-export function hrefWithParams(pathname: string, params?: ReadonlyURLSearchParams, page?: number | string, search?: string, ordering?: string) {
-  const updatedParams = new URLSearchParams(params)
+export function hrefWithParams(
+  pathname: string,
+  params?: ReadonlyURLSearchParams,
+  page?: number | string,
+  search?: string,
+  ordering?: string,
+) {
+  const updatedParams = new URLSearchParams(params);
   if (page) {
-    updatedParams.set("page", String(page))
+    updatedParams.set("page", String(page));
   }
   if (search) {
-    updatedParams.set("search", search)
+    updatedParams.set("search", search);
   }
   if (ordering) {
-    updatedParams.set("ordering", ordering)
+    updatedParams.set("ordering", ordering);
   }
-  return `${pathname}?${updatedParams.toString()}`
+  return `${pathname}?${updatedParams.toString()}`;
 }
 
 export function getPageNumber(href: string): number {
   const url = new URL(href);
   const page = url.searchParams.get("page");
-  return page ? parseInt(page) : 1
+  return page ? parseInt(page) : 1;
 }
 
-export function getPages<T>(pathname: string, params: ReadonlyURLSearchParams, pageData: PagedResponse<T>): Page[] {
+export function getPages<T>(
+  pathname: string,
+  params: ReadonlyURLSearchParams,
+  pageData: PagedResponse<T>,
+): Page[] {
   const pages: Page[] = [
     {
       rel: "Första",
@@ -86,30 +96,34 @@ export function getPages<T>(pathname: string, params: ReadonlyURLSearchParams, p
     },
     {
       rel: "Föregående",
-      href: pageData.previous ? hrefWithParams(pathname, params, getPageNumber(pageData.previous)) : null,
+      href: pageData.previous
+        ? hrefWithParams(pathname, params, getPageNumber(pageData.previous))
+        : null,
     },
-    ...Array.from({length: pageData.num_pages}).map<Page>((_, index) => {
+    ...Array.from({ length: pageData.num_pages }).map<Page>((_, index) => {
       return {
         rel: String(index + 1),
-        href: hrefWithParams(pathname, params, index + 1)
-      }
+        href: hrefWithParams(pathname, params, index + 1),
+      };
     }),
     {
       rel: "Nästa",
-      href: pageData.next ? hrefWithParams(pathname, params, getPageNumber(pageData.next)) : null,
+      href: pageData.next
+        ? hrefWithParams(pathname, params, getPageNumber(pageData.next))
+        : null,
     },
     {
       rel: "Sista",
       href: hrefWithParams(pathname, params, pageData.num_pages),
-    }
+    },
   ];
   return pages;
 }
 
 export type LicenseHistoryItem = {
-    version: number;
-    starts_at: string;
-    ends_at: string;
+  version: number;
+  starts_at: string;
+  ends_at: string;
 };
 
 export type LicenseListItem = {
@@ -124,83 +138,82 @@ export type LicenseListItem = {
     last_email_sent_at: string;
 }
 export type LicensePermissionType = {
-    name: string;
-    description: string;
+  name: string;
+  description: string;
 };
 
 export type LicensePermission = {
-    type: LicensePermissionType;
-    description: string;
+  type: LicensePermissionType;
+  description: string;
 };
 
 export type LicenseDocument = {
-    actor: string;
-    type: string;
-    reference: string;
+  actor: string;
+  type: string;
+  reference: string;
 };
 
 export type LicenceCommunication = {
-    actor: string;
-    type: string;
-    status: string;
-    note: string;
-}
+  actor: string;
+  type: string;
+  status: string;
+  note: string;
+};
 
 export type LicenseCurrent = {
-    actors: LicenseActorRelation[];
-    permissions: LicensePermission[];
-    documents: LicenseDocument[];
-    communication: LicenceCommunication[];
-    version: number;
-    location: string;
-    description: string;
-    report_status: number;
-    starts_at: string;
-    ends_at: string;
-    created_at: string;
-    updated_at: string;
-}
+  actors: LicenseActorRelation[];
+  permissions: LicensePermission[];
+  documents: LicenseDocument[];
+  communication: LicenceCommunication[];
+  version: number;
+  location: string;
+  description: string;
+  report_status: number;
+  starts_at: string;
+  ends_at: string;
+  created_at: string;
+  updated_at: string;
+};
 
 export type LicenseActorRelation = {
-    actor: ActorBase;
-    role: string;
-    mednr?: string;
+  actor: ActorBase;
+  role: string;
+  mednr?: string;
+};
+
+export type ButtonType =
+  | "primary"
+  | "secondary"
+  | "success"
+  | "warning"
+  | "danger"
+  | "info"
+  | "light"
+  | "dark";
+
+export function convertDateToLocale(dateStr: string) {
+  if (dateStr) {
+    return new Date(dateStr).toLocaleString("sv-SE", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      hourCycle: "h23",
+    });
+  } else {
+    return "-";
+  }
 }
 
-export type ButtonType = (
-  "primary" |
-  "secondary" |
-  "success" |
-  "warning" |
-  "danger" |
-  "info" |
-  "light" |
-  "dark"
-)
-
-export function convertDateToLocale(dateStr: string){
-    if(dateStr){
-        return new Date(dateStr).toLocaleString('sv-SE', {
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit',
-            hourCycle: 'h23'
-        });
-    } else {
-        return "-";
-    }
-}
-
-export function convertOnlyDateToLocale(dateStr: string){
-    if(dateStr){
-        return new Date(dateStr).toLocaleString('sv-SE', {
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit',
-        });
-    } else {
-        return "-";
-    }
+export function convertOnlyDateToLocale(dateStr: string) {
+  if (dateStr) {
+    return new Date(dateStr).toLocaleString("sv-SE", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    });
+  } else {
+    return "-";
+  }
 }

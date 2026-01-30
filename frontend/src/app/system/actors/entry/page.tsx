@@ -96,7 +96,7 @@ function ActorViewBase() {
                 <span className="m-0">{Array.from(roles).join(", ")}</span>
                 <i className={`bi bi-${get_gender_icon(data.sex)} ms-1`}/>
               </div>
-              <p className="fst-italic m-0">* {convertOnlyDateToLocale(data.birth_date)}</p>
+              {data.birth_date && <p className="fst-italic m-0">* {convertOnlyDateToLocale(data.birth_date)}</p>}
             </div>
             <div className="card-body pb-0">
               <ul className="list-group list-group-flush">

@@ -1,6 +1,14 @@
-"use client"
+"use client";
 import { useModalsContext } from "@/app/system/contexts";
-import { DetailedHTMLProps, HTMLAttributes, useCallback, useEffect, useId, useRef, useState } from "react";
+import {
+  DetailedHTMLProps,
+  HTMLAttributes,
+  useCallback,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+} from "react";
 
 export function ModalView() {
   const modals = useModalsContext();
@@ -9,40 +17,50 @@ export function ModalView() {
   const modalId = useId();
   const modalRef = useRef<HTMLDivElement | null>(null);
 
-  const handleClose = useCallback((action?: () => void) => {
-    action = action ? action : modal && modal.closeAction;
-    const currentRef = modalRef.current;
-    if (currentRef) {
-      const handleStack = () => {
-        currentRef.removeEventListener("transitionend", handleStack);
-        if (modal) {
-          if (action) {
-            action();
+  const handleClose = useCallback(
+    (action?: () => void) => {
+      action = action ? action : modal && modal.closeAction;
+      const currentRef = modalRef.current;
+      if (currentRef) {
+        const handleStack = () => {
+          currentRef.removeEventListener("transitionend", handleStack);
+          if (modal) {
+            if (action) {
+              action();
+            }
+            modals.remove(modal);
           }
-          modals.remove(modal)
-        }
+        };
+        setIsOpen(false);
+        currentRef.addEventListener("transitionend", handleStack);
       }
-      setIsOpen(false);
-      currentRef.addEventListener("transitionend", handleStack)
-    }
-  }, [modal, modals, setIsOpen, modalRef]);
+    },
+    [modal, modals, setIsOpen, modalRef],
+  );
 
   useEffect(() => {
     if (modal) {
-      setIsOpen(true)
+      setIsOpen(true);
     }
   }, [modal, setIsOpen]);
 
-  const modalProps: DetailedHTMLProps<HTMLAttributes<HTMLDivElement>, HTMLDivElement> = modal ? {
-    "aria-modal": "true",
-    "role": "dialog",
-  } : {
-    "aria-hidden": "true",
-  }
-  const style = modal ? {display: "block"} : {display: "none"};
+  const modalProps: DetailedHTMLProps<
+    HTMLAttributes<HTMLDivElement>,
+    HTMLDivElement
+  > = modal
+    ? {
+        "aria-modal": "true",
+        role: "dialog",
+      }
+    : {
+        "aria-hidden": "true",
+      };
+  const style = modal ? { display: "block" } : { display: "none" };
 
   return modal ? (
-    <div ref={modalRef} className={`modal fade ${isOpen ? "show" : ""}`}
+    <div
+      ref={modalRef}
+      className={`modal fade ${isOpen ? "show" : ""}`}
       tabIndex={-1}
       aria-labelledby={modalId}
       style={style}
@@ -51,12 +69,17 @@ export function ModalView() {
       <div className="modal-dialog">
         <div className="modal-content">
           <div className="modal-header">
-            <h1 className="modal-title fs-5" id={modalId}>{modal.title}</h1>
-            <button type="button" className="btn-close" aria-label="Close" onClick={() => handleClose()}></button>
+            <h1 className="modal-title fs-5" id={modalId}>
+              {modal.title}
+            </h1>
+            <button
+              type="button"
+              className="btn-close"
+              aria-label="Close"
+              onClick={() => handleClose()}
+            ></button>
           </div>
-          <div className="modal-body">
-            {modal?.content}
-          </div>
+          <div className="modal-body">{modal?.content}</div>
           <div className="modal-footer">
             {modal.actions.map((action, index) => (
               <button
@@ -64,11 +87,15 @@ export function ModalView() {
                 type="button"
                 className={`btn btn-${action.type || "primary"}`}
                 onClick={() => handleClose(action.action)}
-              >{action.label}</button>
+              >
+                {action.label}
+              </button>
             ))}
           </div>
         </div>
       </div>
     </div>
-  ) : <></>
+  ) : (
+    <></>
+  );
 }

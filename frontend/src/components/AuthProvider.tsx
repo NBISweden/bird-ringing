@@ -1,16 +1,16 @@
-"use client"
+"use client";
 import { useEffect, useContext, useMemo } from "react";
 import { Auth, AuthContext } from "../app/system/contexts";
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname, useRouter } from "next/navigation";
 import useSWR from "swr";
 import { getCookie } from "../app/system/utils";
 
 async function fetchUser([url]: [string]): Promise<Auth> {
   const response = await fetch(url, {
     method: "GET",
-    credentials: "same-origin"
+    credentials: "same-origin",
   });
-  const auth = await response.json()
+  const auth = await response.json();
   return {
     username: auth.username || "",
     permissions: auth.permissions || [],
@@ -18,7 +18,11 @@ async function fetchUser([url]: [string]): Promise<Auth> {
   };
 }
 
-async function authenticate(url: string, username: string, password: string): Promise<Auth> {
+async function authenticate(
+  url: string,
+  username: string,
+  password: string,
+): Promise<Auth> {
   const csrftoken = getCookie("csrftoken");
   let result: Auth = {
     username: "",
@@ -31,14 +35,14 @@ async function authenticate(url: string, username: string, password: string): Pr
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Accept": "application/json",
+        Accept: "application/json",
         "X-CSRFToken": csrftoken || "",
       },
       body: JSON.stringify({
         username,
-        password
+        password,
       }),
-      credentials: "same-origin"
+      credentials: "same-origin",
     });
 
     if (res.ok) {
@@ -51,33 +55,30 @@ async function authenticate(url: string, username: string, password: string): Pr
     error = "Network or server error.";
   }
   if (error) {
-    throw new Error(error)
+    throw new Error(error);
   }
   return result;
 }
 
-export function AuthProvider({children}: {children: React.ReactNode}) {
+export function AuthProvider({ children }: { children: React.ReactNode }) {
   const apiUrl = "http://localhost:3210/api/login/";
-  const {data: tryAuth, isLoading} = useSWR(
-    [apiUrl],
-    fetchUser,
-    {
-      revalidateOnMount: true,
-      revalidateOnFocus: false,
-      revalidateOnReconnect: false,
-      dedupingInterval: 0,
-    }
-  );
+  const { data: tryAuth, isLoading } = useSWR([apiUrl], fetchUser, {
+    revalidateOnMount: true,
+    revalidateOnFocus: false,
+    revalidateOnReconnect: false,
+    dedupingInterval: 0,
+  });
   const auth = isLoading ? null : tryAuth || null;
   const authWithAuthenticate = useMemo(() => {
     if (auth !== null) {
       return {
         ...auth,
-        signIn: (username: string, password: string) => authenticate(apiUrl, username, password) 
-      }
+        signIn: (username: string, password: string) =>
+          authenticate(apiUrl, username, password),
+      };
     }
     return auth;
-  }, [apiUrl, auth])
+  }, [apiUrl, auth]);
 
   return (
     <AuthContext.Provider value={authWithAuthenticate}>
@@ -86,7 +87,7 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
   );
 }
 
-export function RequireAuth({children}: {children: React.ReactNode}) {
+export function RequireAuth({ children }: { children: React.ReactNode }) {
   const user = useContext(AuthContext);
   const router = useRouter();
   const pathname = usePathname();
@@ -96,7 +97,5 @@ export function RequireAuth({children}: {children: React.ReactNode}) {
     }
   }, [user]);
 
-  return (
-    user && user.isAuthenticated ? children : <></>
-  );
+  return user && user.isAuthenticated ? children : <></>;
 }
