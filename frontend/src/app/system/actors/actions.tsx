@@ -34,29 +34,26 @@ export function useFetchEmailAddressesAction(client: Client) {
 export function useSendLicenseEmailAction() {
   const modalStack = useModalsContext();
 
-  const action = useCallback(
-    () => {
-      modalStack.add({
-        title: "Skicka ut licenser",
-        content: (
-          <>
-            <Spinner />
-            <span className="ms-3">
-              Skickande av license är ännu inte implementerad.
-            </span>
-          </>
-        ),
-        actions: [
-          {
-            label: "Stäng",
-            action: () => {},
-            type: "primary",
-          },
-        ],
-      });
-    },
-    [modalStack],
-  );
+  const action = useCallback(() => {
+    modalStack.add({
+      title: "Skicka ut licenser",
+      content: (
+        <>
+          <Spinner />
+          <span className="ms-3">
+            Skickande av license är ännu inte implementerad.
+          </span>
+        </>
+      ),
+      actions: [
+        {
+          label: "Stäng",
+          action: () => {},
+          type: "primary",
+        },
+      ],
+    });
+  }, [modalStack]);
   return action;
 }
 
