@@ -301,7 +301,9 @@ class LicenseHistoryItemSerializer(serializers.ModelSerializer):
 class LicenseSequenceSerializer(serializers.HyperlinkedModelSerializer):
     current = LicenseSerializer(read_only=True)
     history = serializers.SerializerMethodField()
-    license_holder = serializers.CharField()
+    license_holder = serializers.CharField(read_only=True)
+    license_holder_type = serializers.CharField(read_only=True)
+    helper_count = serializers.IntegerField(read_only=True)
     status = serializers.ChoiceField(
         choices=LicenseStatusChoices, source="get_status_display"
     )
@@ -316,6 +318,8 @@ class LicenseSequenceSerializer(serializers.HyperlinkedModelSerializer):
             "history",
             "status",
             "license_holder",
+            "license_holder_type",
+            "helper_count",
             "methods",
             "last_email_sent_at",
         ]
@@ -354,9 +358,26 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
     permission_classes = [DjangoProtectedModelPermissions]
 
     lookup_field = "mnr"
-    queryset = LicenseSequence.objects.all().distinct().order_by("mnr")
+    queryset = LicenseSequence.objects.all().distinct()
     serializer_class = LicenseSequenceSerializer
     pagination_class = StandardResultsSetPagination
+
+    filter_backends = [DynamicOrderingFilter]
+
+    allowed_ordering = DynamicOrderingFilter.include_reverse(
+        [
+            "mnr",
+            "status",
+            "license_holder",
+            "license_holder_type",
+            "helper_count",
+            "methods",
+            "last_email_sent_at",
+            "status_label",
+            "report_status_label",
+        ]
+    )
+    default_ordering = ["mnr"]
 
     def get_queryset(self):
         queryset = super().get_queryset()
@@ -367,13 +388,41 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
             license_holder=StringAgg(
                 models.Case(
                     models.When(
-                        instances__actors__role=models.Value(1),
+                        instances__actors__role=models.Value(LicenseRoleChoices.RINGER),
                         then="instances__actors__actor__full_name",
                     ),
                     default=models.Value(None),
                     output_field=models.CharField(),
                 ),
                 delimiter=", ",
+                distinct=True,
+            ),
+            license_holder_type=models.Max(
+                models.Case(
+                    models.When(
+                        instances__actors__role=models.Value(LicenseRoleChoices.RINGER),
+                        then=models.Case(
+                            *[
+                                models.When(
+                                    instances__actors__actor__type=value,
+                                    then=models.Value(label),
+                                )
+                                for value, label in ActorTypeChoices.choices
+                            ],
+                            default=models.Value(""),
+                            output_field=models.CharField(),
+                        ),
+                    ),
+                    default=models.Value(None),
+                    output_field=models.CharField(),
+                )
+            ),
+            helper_count=models.Count(
+                "instances__actors__actor",
+                filter=models.Q(
+                    instances__version=0,
+                    instances__actors__role=LicenseRoleChoices.HELPER,
+                ),
                 distinct=True,
             ),
             methods=StringAgg(
@@ -403,6 +452,7 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
                     | models.Q(last_email_sent_at__icontains=term)
                     | models.Q(status_label__icontains=term)
                     | models.Q(report_status_label__icontains=term)
+                    | models.Q(license_holder_type__icontains=term)
                 )
 
         return queryset

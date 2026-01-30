@@ -1,21 +1,21 @@
 import { useState, useCallback, ChangeEventHandler, useRef, useEffect } from "react";
 
-export function useItemSelections(currentSubSet: Set<string>, attributeId: string = "data-actor-id") {
+export function useItemSelections(currentSubSet: Set<string>, attributeId: string) {
   const [selectedItems, setSelectedItems] = useState(new Set<string>());
   const handleItemSelection = useCallback<ChangeEventHandler<HTMLInputElement>>((event) => {
-    const actorId = event.target.getAttribute(attributeId);
+    const id = event.target.getAttribute(attributeId);
     const checked = event.target.checked;
-    if (actorId) {
+    if (id) {
       if (checked) {
         setSelectedItems((prev) => {
           const next = new Set(prev);
-          next.add(actorId);
+          next.add(id);
           return next;
         })
       } else {
         setSelectedItems((prev) => {
           const next = new Set(prev);
-          next.delete(actorId);
+          next.delete(id);
           return next;
         })
       }
