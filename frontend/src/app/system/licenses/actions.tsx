@@ -1,90 +1,139 @@
-import { useCallback, useState } from "react";
+import { useCallback } from "react";
 import { ClientContext, useClient, useModalsContext } from "../contexts";
 import { Client } from "../client";
 import Spinner from "@/components/Spinner";
 import { Alert } from "@/components/Alert";
+import useSWR from "swr";
+import { downloadData } from "../utils";
 
 type BatchCreateResponse = { filenames: string[] };
 
+async function batchCreateLicenseDocs([client, mnrs]: [
+  Client,
+  string[],
+]): Promise<BatchCreateResponse> {
+  const files = await client.batchCreateLicenseCards(mnrs);
+  return files;
+}
+
+function fetchLicenseCardsZip([client, mnrs]: [
+  Client,
+  string[],
+]): Promise<Blob> {
+  return client.fetchLicenseCardsZipBlob(mnrs);
+}
+
 function LicenseDocBatchCreate({ mnrs }: { mnrs: string[] }) {
   const client = useClient();
-  const [isLoading, setIsLoading] = useState(false);
-  const [data, setData] = useState<BatchCreateResponse | null>(null);
-  const [error, setError] = useState<unknown>(null);
 
-  const run = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-    setData(null);
+  const { data, isLoading, error } = useSWR(
+    [client, mnrs],
+    batchCreateLicenseDocs,
+    { fallbackData: { filenames: [] } },
+  );
 
-    try {
-      const res = await client.batchCreateLicenseCards(mnrs);
-      setData(res);
-    } catch (e) {
-      setError(e);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [client, mnrs]);
-
-  return (
+  return isLoading ? (
     <>
-      <div className="mb-2">
-        <strong>Selected licenses:</strong> {mnrs.join(", ")}
-      </div>
-
-      <div className="d-flex gap-2 align-items-center">
-        <button
-          className="btn btn-primary"
-          onClick={run}
-          disabled={isLoading || mnrs.length === 0}
-        >
-          Create license cards (all ringers + helpers)
-        </button>
-        {isLoading ? <Spinner /> : null}
-      </div>
-
-      {error ? (
-        <div className="mt-3">
-          <Alert type="danger">{String(error)}</Alert>
-        </div>
-      ) : null}
-
-      {data ? (
-        <div className="mt-3">
-          <div>
-            <strong>Created/updated:</strong> {data.filenames.length}
-          </div>
-          <div className="mt-2">
-            <textarea
-              className="form-control"
-              rows={8}
-              readOnly
-              value={data.filenames.join("\n")}
-            />
-          </div>
-        </div>
-      ) : null}
+      <Spinner />
+      <span className="ms-3">Loading email listings</span>
     </>
+  ) : error ? (
+    <Alert type="danger">{String(error)}</Alert>
+  ) : (
+    <textarea
+      className="form-control"
+      rows={8}
+      readOnly
+      value={data.filenames.join("\n")}
+    />
   );
 }
 
 export function useBatchCreateLicenseCardsAction(client: Client) {
   const modalStack = useModalsContext();
 
-  return useCallback(
+  const createLicenseCards = useCallback(
     (itemIds: Set<string>) => {
       modalStack.add({
-        title: "Create license cards (batch)",
+        title: "Creating license cards (batch)",
         content: (
           <ClientContext.Provider value={client}>
             <LicenseDocBatchCreate mnrs={Array.from(itemIds)} />
           </ClientContext.Provider>
         ),
-        actions: [{ label: "Close", action: () => {}, type: "primary" }],
+        actions: [{ label: "Ok", action: () => {}, type: "primary" }],
       });
     },
     [modalStack, client],
+  );
+
+  return useCallback(
+    (itemIds: Set<string>) => {
+      if (itemIds.size === 0) return;
+      modalStack.add({
+        title: "Do you want to create license cards?",
+        content: (
+          <>
+            <p>
+              Do you want to create license cards for all ringers and helpers
+              for selected licenses?
+            </p>
+            <p>
+              <strong>Selected licenses:</strong>{" "}
+              {Array.from(itemIds).join(", ")}
+            </p>
+          </>
+        ),
+        actions: [
+          { label: "Abort", action: () => {}, type: "secondary" },
+          {
+            label: "Create license cards",
+            action: () => createLicenseCards(itemIds),
+            type: "primary",
+          },
+        ],
+      });
+    },
+    [modalStack, createLicenseCards],
+  );
+}
+
+function DownloadModal<T>({
+  downloadFunc,
+  filename,
+  params,
+}: {
+  downloadFunc: (params: [Client, T]) => Promise<Blob>;
+  filename: string;
+  params: T;
+}) {
+  const client = useClient();
+
+  const downloadExec = useCallback(
+    async ([c, filename, p]: [Client, string, T]) => {
+      const blob = await downloadFunc([c, p]);
+      downloadData(blob, filename);
+    },
+    [downloadFunc],
+  );
+
+  const { isLoading, error } = useSWR([client, filename, params], downloadExec);
+
+  return (
+    <>
+      {isLoading ? (
+        <Alert type="info">
+          <Spinner />
+          <span className="ms-3">Preparing download…</span>
+        </Alert>
+      ) : error ? (
+        <Alert type="danger">
+          {error instanceof Error ? error.message : String(error)}
+        </Alert>
+      ) : (
+        <Alert type="success">Download successful</Alert>
+      )}
+    </>
   );
 }
 
@@ -96,46 +145,25 @@ export function useDownloadLicenseCardsZipAction(client: Client) {
       const mnrs = Array.from(itemIds);
       if (mnrs.length === 0) return;
 
-      const modal = modalStack.add({
+      modalStack.add({
         title: "Download license cards (ZIP)",
         content: (
-          <>
-            <Spinner />
-            <span className="ms-3">Preparing download…</span>
-          </>
+          <ClientContext.Provider value={client}>
+            <p>Downloading license cards for licenses:</p>
+            <ul>
+              {mnrs.map((mnr) => (
+                <li key={mnr}>{mnr}</li>
+              ))}
+            </ul>
+            <DownloadModal
+              filename="license-cards.zip"
+              downloadFunc={fetchLicenseCardsZip}
+              params={mnrs}
+            />
+          </ClientContext.Provider>
         ),
-        actions: [{ label: "Stäng", action: () => {}, type: "primary" }],
+        actions: [{ label: "Close", action: () => {}, type: "primary" }],
       });
-
-      (async () => {
-        try {
-          const blob = await client.fetchLicenseCardsZipBlob(mnrs);
-
-          // start download immediately
-          const objectUrl = URL.createObjectURL(blob);
-          const a = document.createElement("a");
-          a.href = objectUrl;
-          a.download = "license-cards.zip";
-          document.body.appendChild(a);
-          a.click();
-          a.remove();
-          URL.revokeObjectURL(objectUrl);
-
-          // close modal on success
-          modalStack.remove(modal);
-        } catch (e) {
-          const msg = e instanceof Error ? e.message : String(e);
-
-          // Show error in the modal by replacing it:
-          // Your stack API has no update, so remove+add a new modal with the error.
-          modalStack.remove(modal);
-          modalStack.add({
-            title: "Download license cards (ZIP)",
-            content: <Alert type="danger">{msg}</Alert>,
-            actions: [{ label: "Close", action: () => {}, type: "primary" }],
-          });
-        }
-      })();
     },
     [modalStack, client],
   );
