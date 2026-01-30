@@ -121,9 +121,7 @@ function ConnectedListView() {
       action: createDocsAction,
     },
     { type: "divider" },
-    { label: "Ladda ned licenskort (ZIP)",
-      action: downloadZipAction
-    },
+    { label: "Ladda ned licenskort (ZIP)", action: downloadZipAction },
     { type: "divider" },
     {
       label: "Avaktivera",
@@ -139,7 +137,8 @@ function ConnectedListView() {
       pages={pages}
       query={query}
       setQuery={setQuery}
-      currentPage={currentPage} pageCount={LicensePage.num_pages}
+      currentPage={currentPage}
+      pageCount={LicensePage.num_pages}
       batchActions={batchActions}
       params={params}
     />
@@ -225,17 +224,45 @@ function BaseListView(
         />
       </div>
       <div className="input-group mb-3">
-        <button className={`btn btn-outline-secondary ${isLoading ? "disabled" : ""}`} type="button" onClick={toggleItems}>{allSelected ? "Välj inga" : "Välj alla"}</button>
-        <span className="input-group-text flex-grow-1" >{selectionInfo}</span>
-        <button className={`btn btn-outline-secondary dropdown-toggle  ${isLoading ? "disabled" : ""}`} onClick={() => setActionIsOpen(!actionIsOpen)} type="button" aria-expanded={actionIsOpen}>Batch-funktioner</button>
-        <ul className={`dropdown-menu batch-action-menu ${actionIsOpen ? "show" : ""}`} data-open={actionIsOpen} onClick={() => setActionIsOpen(false)}>
-          {batchActions.map((action, index) => (
+        <button
+          className={`btn btn-outline-secondary ${isLoading ? "disabled" : ""}`}
+          type="button"
+          onClick={toggleItems}
+        >
+          {allSelected ? "Välj inga" : "Välj alla"}
+        </button>
+        <span className="input-group-text flex-grow-1">{selectionInfo}</span>
+        <button
+          className={`btn btn-outline-secondary dropdown-toggle  ${isLoading ? "disabled" : ""}`}
+          onClick={() => setActionIsOpen(!actionIsOpen)}
+          type="button"
+          aria-expanded={actionIsOpen}
+        >
+          Batch-funktioner
+        </button>
+        <ul
+          className={`dropdown-menu batch-action-menu ${actionIsOpen ? "show" : ""}`}
+          data-open={actionIsOpen}
+          onClick={() => setActionIsOpen(false)}
+        >
+          {batchActions.map((action, index) =>
             "type" in action ? (
-              <li key={index}><hr className="dropdown-divider" /></li>
+              <li key={index}>
+                <hr className="dropdown-divider" />
+              </li>
             ) : (
-              <li key={index}><span className={`dropdown-item ${action.disabled ? "disabled" : ""}`} onClick={() => !action.disabled && action.action(selectedItems)}>{action.label}</span></li>
-            )
-          ))}
+              <li key={index}>
+                <span
+                  className={`dropdown-item ${action.disabled ? "disabled" : ""}`}
+                  onClick={() =>
+                    !action.disabled && action.action(selectedItems)
+                  }
+                >
+                  {action.label}
+                </span>
+              </li>
+            ),
+          )}
         </ul>
       </div>
       <div className="d-flex flex-row align-items-center gap-3">

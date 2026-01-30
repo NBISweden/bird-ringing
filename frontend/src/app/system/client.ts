@@ -105,15 +105,15 @@ export class Client {
     }
     return items;
   }
-  
-  async batchCreateLicenseCards(mnrs: string[]): Promise<{ filenames: string[] }> {
+
+  async batchCreateLicenseCards(
+    mnrs: string[],
+  ): Promise<{ filenames: string[] }> {
     const qs = new URLSearchParams({ mnrs: mnrs.join(",") });
     const csrf = getCookie("csrftoken");
     return this.fetchJson<{ filenames: string[] }>(
       `license_sequence/card-create/?${qs.toString()}`,
-      { method: "PUT",
-        headers: csrf ? { "X-CSRFToken": csrf } : {}
-      }
+      { method: "PUT", headers: csrf ? { "X-CSRFToken": csrf } : {} },
     );
   }
 

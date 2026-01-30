@@ -52,7 +52,9 @@ function LicenseDocBatchCreate({ mnrs }: { mnrs: string[] }) {
 
       {data ? (
         <div className="mt-3">
-          <div><strong>Created/updated:</strong> {data.filenames.length}</div>
+          <div>
+            <strong>Created/updated:</strong> {data.filenames.length}
+          </div>
           <div className="mt-2">
             <textarea
               className="form-control"
@@ -70,65 +72,71 @@ function LicenseDocBatchCreate({ mnrs }: { mnrs: string[] }) {
 export function useBatchCreateLicenseCardsAction(client: Client) {
   const modalStack = useModalsContext();
 
-  return useCallback((itemIds: Set<string>) => {
-    modalStack.add({
-      title: "Create license cards (batch)",
-      content: (
-        <ClientContext.Provider value={client}>
-          <LicenseDocBatchCreate mnrs={Array.from(itemIds)} />
-        </ClientContext.Provider>
-      ),
-      actions: [{ label: "Close", action: () => {}, type: "primary" }],
-    });
-  }, [modalStack, client]);
+  return useCallback(
+    (itemIds: Set<string>) => {
+      modalStack.add({
+        title: "Create license cards (batch)",
+        content: (
+          <ClientContext.Provider value={client}>
+            <LicenseDocBatchCreate mnrs={Array.from(itemIds)} />
+          </ClientContext.Provider>
+        ),
+        actions: [{ label: "Close", action: () => {}, type: "primary" }],
+      });
+    },
+    [modalStack, client],
+  );
 }
 
 export function useDownloadLicenseCardsZipAction(client: Client) {
   const modalStack = useModalsContext();
 
-  return useCallback((itemIds: Set<string>) => {
-    const mnrs = Array.from(itemIds);
-    if (mnrs.length === 0) return;
+  return useCallback(
+    (itemIds: Set<string>) => {
+      const mnrs = Array.from(itemIds);
+      if (mnrs.length === 0) return;
 
-    const modal = modalStack.add({
-      title: "Download license cards (ZIP)",
-      content: (
-        <>
-          <Spinner />
-          <span className="ms-3">Preparing download…</span>
-        </>
-      ),
-      actions: [{ label: "Stäng", action: () => {}, type: "primary" }],
-    });
+      const modal = modalStack.add({
+        title: "Download license cards (ZIP)",
+        content: (
+          <>
+            <Spinner />
+            <span className="ms-3">Preparing download…</span>
+          </>
+        ),
+        actions: [{ label: "Stäng", action: () => {}, type: "primary" }],
+      });
 
-    (async () => {
-      try {
-        const blob = await client.fetchLicenseCardsZipBlob(mnrs);
+      (async () => {
+        try {
+          const blob = await client.fetchLicenseCardsZipBlob(mnrs);
 
-        // start download immediately
-        const objectUrl = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = objectUrl;
-        a.download = "license-cards.zip";
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        URL.revokeObjectURL(objectUrl);
+          // start download immediately
+          const objectUrl = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = objectUrl;
+          a.download = "license-cards.zip";
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          URL.revokeObjectURL(objectUrl);
 
-        // close modal on success
-        modalStack.remove(modal);
-      } catch (e) {
-        const msg = e instanceof Error ? e.message : String(e);
+          // close modal on success
+          modalStack.remove(modal);
+        } catch (e) {
+          const msg = e instanceof Error ? e.message : String(e);
 
-        // Show error in the modal by replacing it:
-        // Your stack API has no update, so remove+add a new modal with the error.
-        modalStack.remove(modal);
-        modalStack.add({
-          title: "Download license cards (ZIP)",
-          content: <Alert type="danger">{msg}</Alert>,
-          actions: [{ label: "Close", action: () => {}, type: "primary" }],
-        });
-      }
-    })();
-  }, [modalStack, client]);
+          // Show error in the modal by replacing it:
+          // Your stack API has no update, so remove+add a new modal with the error.
+          modalStack.remove(modal);
+          modalStack.add({
+            title: "Download license cards (ZIP)",
+            content: <Alert type="danger">{msg}</Alert>,
+            actions: [{ label: "Close", action: () => {}, type: "primary" }],
+          });
+        }
+      })();
+    },
+    [modalStack, client],
+  );
 }
