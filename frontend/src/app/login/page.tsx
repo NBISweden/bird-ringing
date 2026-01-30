@@ -56,7 +56,7 @@ function BaseLoginPage({
     if (auth !== null && auth.isAuthenticated) {
       router.push(target);
     }
-  }, [auth, target]);
+  }, [auth, target, router]);
 
   return (
     <main className="container mt-5" style={{ maxWidth: "480px" }}>

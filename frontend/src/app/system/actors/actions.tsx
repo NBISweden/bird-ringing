@@ -26,7 +26,7 @@ export function useFetchEmailAddressesAction(client: Client) {
         ],
       });
     },
-    [modalStack],
+    [modalStack, client],
   );
   return action;
 }
@@ -35,7 +35,7 @@ export function useSendLicenseEmailAction() {
   const modalStack = useModalsContext();
 
   const action = useCallback(
-    (itemIds: Set<string>) => {
+    () => {
       modalStack.add({
         title: "Skicka ut licenser",
         content: (

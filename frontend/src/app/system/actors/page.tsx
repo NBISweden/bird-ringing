@@ -130,7 +130,7 @@ function ConnectedListView() {
         hrefWithParams(pathname, undefined, undefined, activeQuery, ordering),
       );
     }
-  }, [pathname, activeQuery, search, ordering]);
+  }, [pathname, activeQuery, search, ordering, router]);
 
   const { data: actorPage, isLoading } = useSWR(
     [client, "actors", page, search, ordering],

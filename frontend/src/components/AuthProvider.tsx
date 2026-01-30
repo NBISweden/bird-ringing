@@ -95,7 +95,7 @@ export function RequireAuth({ children }: { children: React.ReactNode }) {
     if (user && !user.isAuthenticated) {
       router.push(`/login/?target=${pathname}`);
     }
-  }, [user]);
+  }, [user, pathname, router]);
 
   return user && user.isAuthenticated ? children : <></>;
 }

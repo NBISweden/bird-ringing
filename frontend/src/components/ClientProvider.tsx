@@ -1,6 +1,6 @@
 "use client";
 import { Client } from "@/app/system/client";
-import { ClientContext, useAuth } from "@/app/system/contexts";
+import { ClientContext } from "@/app/system/contexts";
 import React, { useMemo } from "react";
 
 export function ClientProvider({ children }: { children: React.ReactNode }) {
