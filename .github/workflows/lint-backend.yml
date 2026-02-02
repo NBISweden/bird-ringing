@@ -1,0 +1,24 @@
+name: "Linting backend"
+
+on: [pull_request]
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install Dependencies
+        working-directory: backend
+        run: |
+          python -m pip install uv
+          uv sync --only-dev
+
+      - name: "Linting (ruff)"
+        working-directory: backend
+        run: uv run ruff check
