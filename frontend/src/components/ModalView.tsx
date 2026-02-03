@@ -7,6 +7,7 @@ import {
   useId,
   useRef,
   useState,
+  useEffect,
 } from "react";
 
 export function ModalView() {
@@ -37,9 +38,14 @@ export function ModalView() {
     [modal, modals, setIsOpen, modalRef],
   );
 
-  if (modal) {
-    setIsOpen(true);
-  }
+  useEffect(() => {
+    if (modal) {
+      const setOpen = async () => {
+        setIsOpen(true);
+      };
+      setOpen();
+    }
+  }, [modal, setIsOpen]);
 
   const modalProps: DetailedHTMLProps<
     HTMLAttributes<HTMLDivElement>,
