@@ -4,7 +4,6 @@ import {
   DetailedHTMLProps,
   HTMLAttributes,
   useCallback,
-  useEffect,
   useId,
   useRef,
   useState,
@@ -38,11 +37,9 @@ export function ModalView() {
     [modal, modals, setIsOpen, modalRef],
   );
 
-  useEffect(() => {
-    if (modal) {
-      setIsOpen(true);
-    }
-  }, [modal, setIsOpen]);
+  if (modal) {
+    setIsOpen(true);
+  }
 
   const modalProps: DetailedHTMLProps<
     HTMLAttributes<HTMLDivElement>,
