@@ -1,4 +1,4 @@
-import { useCallback, useState, useEffect } from "react";
+import { useCallback, useState } from "react";
 import { ClientContext, useClient, useModalsContext } from "../contexts";
 import { Client } from "../client";
 import Spinner from "@/components/Spinner";

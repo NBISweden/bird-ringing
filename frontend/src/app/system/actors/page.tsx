@@ -198,14 +198,10 @@ function BaseListView({
 }: ListViewProps) {
   const [actionIsOpen, setActionIsOpen] = useState(false);
 
-  const items = useMemo(() => actors.map<TableItem>(toActorTable), [actors])
-  const {
-    selectedItems,
-    toggleItems,
-    handleItemSelection,
-    allSelected
-  } = useItemSelections(new Set(items.map(r => r.id)), "data-actor-id");
-  const ordering = params.get("ordering")
+  const items = useMemo(() => actors.map<TableItem>(toActorTable), [actors]);
+  const { selectedItems, toggleItems, handleItemSelection, allSelected } =
+    useItemSelections(new Set(items.map((r) => r.id)), "data-actor-id");
+  const ordering = params.get("ordering");
   const columns: Record<ActorPropertyIds, ColumnProperties> = {
     name: {
       label: "Namn",

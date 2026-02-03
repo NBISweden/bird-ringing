@@ -51,7 +51,7 @@ async function authenticate(
       const errorInfo = await res.json();
       error = errorInfo?.detail || "Invalid credentials";
     }
-  } catch (err) {
+  } catch (_err) {
     error = "Network or server error.";
   }
   if (error) {

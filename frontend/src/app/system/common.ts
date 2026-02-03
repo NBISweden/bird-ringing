@@ -127,16 +127,16 @@ export type LicenseHistoryItem = {
 };
 
 export type LicenseListItem = {
-    mnr: string;
-    current: LicenseCurrent;
-    history?: LicenseHistoryItem[];
-    status: string;
-    license_holder: string;
-    license_holder_type: string;
-    helper_count: number;
-    methods: string;
-    last_email_sent_at: string;
-}
+  mnr: string;
+  current: LicenseCurrent;
+  history?: LicenseHistoryItem[];
+  status: string;
+  license_holder: string;
+  license_holder_type: string;
+  helper_count: number;
+  methods: string;
+  last_email_sent_at: string;
+};
 export type LicensePermissionType = {
   name: string;
   description: string;
