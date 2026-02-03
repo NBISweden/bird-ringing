@@ -1,9 +1,6 @@
 name: "Linting frontend"
 
-on:
-  push:
-    branches:
-      - chore/74-set-up-linter
+on: [pull_request]
 
 jobs:
   frontend:
@@ -30,5 +27,3 @@ jobs:
         if: always()
         working-directory: frontend
         run: npm run format
-  
-
