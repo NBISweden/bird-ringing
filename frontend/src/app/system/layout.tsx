@@ -13,7 +13,7 @@ export default function SystemLayout({
       label: "Dashboard",
       href: "/system/welcome",
       id: "dashboard",
-      icon: "bi-speedometer"
+      icon: "bi-speedometer",
     },
     {
       type: "item",
@@ -21,7 +21,7 @@ export default function SystemLayout({
       href: "/system/licenses",
       id: "licenses",
       icon: "bi-journal-check",
-      permissions: ["view_licensesequence"]
+      permissions: ["view_licensesequence"],
     },
     {
       type: "item",
@@ -29,16 +29,14 @@ export default function SystemLayout({
       href: "/system/actors",
       id: "ringare",
       icon: "bi-person-lines-fill",
-      permissions: ["view_actor"]
-    }
-  ]
+      permissions: ["view_actor"],
+    },
+  ];
   return (
     <RequireAuth>
-      <Sidebar items={navItems}/>
+      <Sidebar items={navItems} />
       <ClientProvider>
-        <main className="flex-grow-1 p-3 h-100 overflow-auto">
-          {children}
-        </main>
+        <main className="flex-grow-1 p-3 h-100 overflow-auto">{children}</main>
       </ClientProvider>
     </RequireAuth>
   );

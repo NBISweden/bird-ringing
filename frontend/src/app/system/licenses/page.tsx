@@ -1,13 +1,13 @@
-"use client"
+"use client";
 import { useState, Suspense, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { useItemSelections, useDebouncedValue } from "../hooks";
 import { Pagination } from "../../../components/Pagination";
 import Icon from "@/components/Icon";
 import useSWR from "swr";
-import { usePathname, useSearchParams } from 'next/navigation'
+import { usePathname, useSearchParams } from "next/navigation";
 import Spinner from "@/components/Spinner";
-import { useRouter } from 'next/navigation';
+import { useRouter } from "next/navigation";
 import {
   PagedResponse,
   getPages,
@@ -16,14 +16,22 @@ import {
   LicenseListItem,
   TableItem,
   convertDateToLocale,
-} from "../common"
+} from "../common";
 import { Client } from "../client";
 import { useClient } from "../contexts";
 
 import { useBatchCreateLicenseCardsAction } from "./actions";
 import { useDownloadLicenseCardsZipAction } from "./actions";
 
-type LicensePropertyIds = | "mnr" | "type" | "license_holder" | "helpers" | "methods" | "final_report_status" | "license_status" | "last_email_sent_at";
+type LicensePropertyIds =
+  | "mnr"
+  | "type"
+  | "license_holder"
+  | "helpers"
+  | "methods"
+  | "final_report_status"
+  | "license_status"
+  | "last_email_sent_at";
 type ColumnProperties = {
   ordering?: {
     forward: string;
@@ -38,10 +46,14 @@ type BatchAction = {
   disabled?: boolean;
 };
 
-async function fetchLicensePage(
-  [client, _ctx, page, search, ordering]: [Client, "licenses", number, string, string]
-): Promise<PagedResponse<LicenseListItem>> {
-  return client.fetchLicensePage(page, search, ordering)
+async function fetchLicensePage([client, _ctx, page, search, ordering]: [
+  Client,
+  "licenses",
+  number,
+  string,
+  string,
+]): Promise<PagedResponse<LicenseListItem>> {
+  return client.fetchLicensePage(page, search, ordering);
 }
 
 const emptyLicensePage: PagedResponse<LicenseListItem> = {
@@ -50,14 +62,16 @@ const emptyLicensePage: PagedResponse<LicenseListItem> = {
   previous: null,
   num_pages: 0,
   count: 0,
-}
+};
 
 function toLicenseTable(item: LicenseListItem): TableItem<LicensePropertyIds> {
   return {
     id: item.mnr,
     properties: {
       mnr: {
-        component: <Link href={`licenses/entry/?mnr=${item.mnr}`}>{item.mnr}</Link>
+        component: (
+          <Link href={`licenses/entry/?mnr=${item.mnr}`}>{item.mnr}</Link>
+        ),
       },
       type: {
         component: item.license_holder_type || "-",
@@ -98,19 +112,19 @@ function ConnectedListView() {
   useEffect(() => {
     if (search !== activeQuery) {
       router.push(
-        hrefWithParams(pathname, undefined, undefined, activeQuery, ordering)
+        hrefWithParams(pathname, undefined, undefined, activeQuery, ordering),
       );
     }
-  }, [pathname, activeQuery, search, ordering]);
-  
-  const {data: LicensePage, isLoading} = useSWR(
+  }, [pathname, activeQuery, search, ordering, router]);
+
+  const { data: LicensePage, isLoading } = useSWR(
     [client, "licenses", page, search, ordering],
     fetchLicensePage,
-    {fallbackData: emptyLicensePage, keepPreviousData: true}
+    { fallbackData: emptyLicensePage, keepPreviousData: true },
   );
   // const pathname = usePathname();
   const pages = getPages(pathname, params, LicensePage);
-  const currentPage = hrefWithParams(pathname, params, page, search, ordering)
+  const currentPage = hrefWithParams(pathname, params, page, search, ordering);
 
   const createDocsAction = useBatchCreateLicenseCardsAction(client);
   const downloadZipAction = useDownloadLicenseCardsZipAction(client);
@@ -121,9 +135,7 @@ function ConnectedListView() {
       action: createDocsAction,
     },
     { type: "divider" },
-    { label: "Ladda ned licenskort (ZIP)",
-      action: downloadZipAction
-    },
+    { label: "Ladda ned licenskort (ZIP)", action: downloadZipAction },
     { type: "divider" },
     {
       label: "Avaktivera",
@@ -139,36 +151,45 @@ function ConnectedListView() {
       pages={pages}
       query={query}
       setQuery={setQuery}
-      currentPage={currentPage} pageCount={LicensePage.num_pages}
+      currentPage={currentPage}
+      pageCount={LicensePage.num_pages}
       batchActions={batchActions}
       params={params}
     />
-  )
+  );
 }
 
-function BaseListView(
-  {licenses, count, pages, currentPage, pageCount, query, setQuery, isLoading, batchActions, params}: {
-    licenses: LicenseListItem[];
-    count: number;
-    pages: Page[];
-    currentPage: string;
-    pageCount: number;
-    query: string;
-    setQuery: (q: string) => void;
-    isLoading?: boolean;
-    batchActions: (BatchAction | {type: "divider"})[];
-    params: URLSearchParams;
-  }
-) {
+function BaseListView({
+  licenses,
+  count,
+  pages,
+  currentPage,
+  pageCount,
+  query,
+  setQuery,
+  isLoading,
+  batchActions,
+  params,
+}: {
+  licenses: LicenseListItem[];
+  count: number;
+  pages: Page[];
+  currentPage: string;
+  pageCount: number;
+  query: string;
+  setQuery: (q: string) => void;
+  isLoading?: boolean;
+  batchActions: (BatchAction | { type: "divider" })[];
+  params: URLSearchParams;
+}) {
   const [actionIsOpen, setActionIsOpen] = useState(false);
 
-  const items = useMemo(() => licenses.map<TableItem>(toLicenseTable), [licenses])
-  const {
-    selectedItems,
-    toggleItems,
-    handleItemSelection,
-    allSelected
-  } = useItemSelections(new Set(items.map(r => r.id)), "data-license-id");
+  const items = useMemo(
+    () => licenses.map<TableItem>(toLicenseTable),
+    [licenses],
+  );
+  const { selectedItems, toggleItems, handleItemSelection, allSelected } =
+    useItemSelections(new Set(items.map((r) => r.id)), "data-license-id");
   const ordering = params.get("ordering") || "mnr";
 
   const columns: Record<LicensePropertyIds, ColumnProperties> = {
@@ -178,11 +199,17 @@ function BaseListView(
     },
     type: {
       label: "Type",
-      ordering: { forward: "license_holder_type,mnr", reverse: "-license_holder_type,mnr" },
+      ordering: {
+        forward: "license_holder_type,mnr",
+        reverse: "-license_holder_type,mnr",
+      },
     },
     license_holder: {
       label: "License holder",
-      ordering: { forward: "license_holder,mnr", reverse: "-license_holder,mnr" },
+      ordering: {
+        forward: "license_holder,mnr",
+        reverse: "-license_holder,mnr",
+      },
     },
     helpers: {
       label: "Number of helpers",
@@ -205,10 +232,15 @@ function BaseListView(
     },
     last_email_sent_at: {
       label: "Last email sent at",
-      ordering: { forward: "last_email_sent_at,mnr", reverse: "-last_email_sent_at,mnr" },
+      ordering: {
+        forward: "last_email_sent_at,mnr",
+        reverse: "-last_email_sent_at,mnr",
+      },
     },
   };
-  const selectionInfo = isLoading ? "Laddar data" : `${selectedItems.size} valda av ${count}`;
+  const selectionInfo = isLoading
+    ? "Laddar data"
+    : `${selectedItems.size} valda av ${count}`;
   return (
     <div className="container">
       <h2>License List View</h2>
@@ -219,28 +251,62 @@ function BaseListView(
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           className="form-control"
-          placeholder={"Mnr, Type, License holder, Trapping methods, Last email sent at"}
+          placeholder={
+            "Mnr, Type, License holder, Trapping methods, Last email sent at"
+          }
           aria-label="Filtrera tabellen"
           aria-describedby="Tabellfilter"
         />
       </div>
       <div className="input-group mb-3">
-        <button className={`btn btn-outline-secondary ${isLoading ? "disabled" : ""}`} type="button" onClick={toggleItems}>{allSelected ? "Välj inga" : "Välj alla"}</button>
-        <span className="input-group-text flex-grow-1" >{selectionInfo}</span>
-        <button className={`btn btn-outline-secondary dropdown-toggle  ${isLoading ? "disabled" : ""}`} onClick={() => setActionIsOpen(!actionIsOpen)} type="button" aria-expanded={actionIsOpen}>Batch-funktioner</button>
-        <ul className={`dropdown-menu batch-action-menu ${actionIsOpen ? "show" : ""}`} data-open={actionIsOpen} onClick={() => setActionIsOpen(false)}>
-          {batchActions.map((action, index) => (
+        <button
+          className={`btn btn-outline-secondary ${isLoading ? "disabled" : ""}`}
+          type="button"
+          onClick={toggleItems}
+        >
+          {allSelected ? "Välj inga" : "Välj alla"}
+        </button>
+        <span className="input-group-text flex-grow-1">{selectionInfo}</span>
+        <button
+          className={`btn btn-outline-secondary dropdown-toggle  ${isLoading ? "disabled" : ""}`}
+          onClick={() => setActionIsOpen(!actionIsOpen)}
+          type="button"
+          aria-expanded={actionIsOpen}
+        >
+          Batch-funktioner
+        </button>
+        <ul
+          className={`dropdown-menu batch-action-menu ${actionIsOpen ? "show" : ""}`}
+          data-open={actionIsOpen}
+          onClick={() => setActionIsOpen(false)}
+        >
+          {batchActions.map((action, index) =>
             "type" in action ? (
-              <li key={index}><hr className="dropdown-divider" /></li>
+              <li key={index}>
+                <hr className="dropdown-divider" />
+              </li>
             ) : (
-              <li key={index}><span className={`dropdown-item ${action.disabled ? "disabled" : ""}`} onClick={() => !action.disabled && action.action(selectedItems)}>{action.label}</span></li>
-            )
-          ))}
+              <li key={index}>
+                <span
+                  className={`dropdown-item ${action.disabled ? "disabled" : ""}`}
+                  onClick={() =>
+                    !action.disabled && action.action(selectedItems)
+                  }
+                >
+                  {action.label}
+                </span>
+              </li>
+            ),
+          )}
         </ul>
       </div>
       <div className="d-flex flex-row align-items-center gap-3">
-        <Pagination pages={pages} currentPage={currentPage} pageCount={pageCount} />
-        {isLoading ? <Spinner className="mb-3"/> : <></>}
+        <Pagination
+          pages={pages}
+          currentPage={currentPage}
+          pageCount={pageCount}
+        />
+        {isLoading ? <Spinner className="mb-3" /> : <></>}
       </div>
       <table className="table">
         <thead>
@@ -248,15 +314,17 @@ function BaseListView(
             <th scope="col"></th>
             {Object.entries(columns).map(([key, c]) => {
               const direction =
-                c.ordering?.forward === ordering ? "+" :
-                c.ordering?.reverse === ordering ? "-" :
-                null;
+                c.ordering?.forward === ordering
+                  ? "+"
+                  : c.ordering?.reverse === ordering
+                    ? "-"
+                    : null;
 
               const updatedParams = new URLSearchParams(params);
               if (c.ordering) {
                 updatedParams.set(
                   "ordering",
-                  direction === "+" ? c.ordering.reverse : c.ordering.forward
+                  direction === "+" ? c.ordering.reverse : c.ordering.forward,
                 );
               }
               const href = "?" + updatedParams.toString();
@@ -267,7 +335,11 @@ function BaseListView(
                     <Link className="text-nowrap" href={href}>
                       {c.label}{" "}
                       {direction ? (
-                        direction === "+" ? <Icon icon="caret-down-fill" /> : <Icon icon="caret-up-fill" />
+                        direction === "+" ? (
+                          <Icon icon="caret-down-fill" />
+                        ) : (
+                          <Icon icon="caret-up-fill" />
+                        )
                       ) : null}
                     </Link>
                   ) : (
@@ -279,26 +351,56 @@ function BaseListView(
           </tr>
         </thead>
         <tbody>
-          {items.map(item => {
+          {items.map((item) => {
             return (
               <tr key={item.id}>
-                <th><input type="checkbox" onChange={handleItemSelection} checked={selectedItems.has(item.id)} data-license-id={item.id} /></th>
-                {Object.entries(columns).map(([key]) => { return (<td key={key}>{item.properties[key as LicensePropertyIds].component}</td>) })}
+                <th>
+                  <input
+                    type="checkbox"
+                    onChange={handleItemSelection}
+                    checked={selectedItems.has(item.id)}
+                    data-license-id={item.id}
+                  />
+                </th>
+                {Object.entries(columns).map(([key]) => {
+                  return (
+                    <td key={key}>
+                      {item.properties[key as LicensePropertyIds].component}
+                    </td>
+                  );
+                })}
               </tr>
-            )
+            );
           })}
         </tbody>
       </table>
-      <Pagination pages={pages} currentPage={currentPage} pageCount={pageCount} />
+      <Pagination
+        pages={pages}
+        currentPage={currentPage}
+        pageCount={pageCount}
+      />
     </div>
-  )
+  );
 }
-
 
 export default function ListView() {
   return (
-    <Suspense fallback={<BaseListView query="" setQuery={() => {}} licenses={[]} count={0} params={new URLSearchParams()} pages={[]} currentPage="" pageCount={0} batchActions={[]}/>}>
+    <Suspense
+      fallback={
+        <BaseListView
+          query=""
+          setQuery={() => {}}
+          licenses={[]}
+          count={0}
+          params={new URLSearchParams()}
+          pages={[]}
+          currentPage=""
+          pageCount={0}
+          batchActions={[]}
+        />
+      }
+    >
       <ConnectedListView />
     </Suspense>
-  )
+  );
 }

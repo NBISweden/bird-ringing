@@ -12,14 +12,14 @@ environments: `compose-prod.sh` for the production environment and
 
 To start and stop the production environment, use:
 
-``` sh
+```sh
 ./compose-prod.sh up --build
 ./compose-prod.sh down
 ```
 
 To start and stop the development environment, use:
 
-``` sh
+```sh
 ./compose-dev.sh up --build
 ./compose-dev.sh down
 ```
@@ -27,7 +27,7 @@ To start and stop the development environment, use:
 In general, the scripts can be used with any `docker compose` command,
 for example:
 
-``` sh
+```sh
 ./compose-dev.sh {up|down|logs|ps|...} [options]
 ```
 
@@ -37,13 +37,15 @@ available at `http://localhost:3210/`.
 ## Getting started
 
 ### Creating users
+
 From the project root (the bird-ringing directory), run:
 `/create-test-users`
-Then open http://localhost:3210/admin/ and log in to the Django admin 
-using the credentials admin:test. 
+Then open http://localhost:3210/admin/ and log in to the Django admin
+using the credentials admin:test.
 Create a new user and add that user to the bird-ringer expert group.
 
 ### Load mock data
+
 Create a directory `backend/mock_data` in the project root and place the following files in it:
 
 - `actors.json`
@@ -54,10 +56,28 @@ Create a directory `backend/mock_data` in the project root and place the followi
 
 From the project root (`bird-ringing`), run:
 
-``` sh
+```sh
 ./compose-dev.sh exec backend python manage.py load_mock_data
 ```
 
+## Frontend development
+
+### Adding dependencies
+
+To add a dependency, add it to `package.json` under "dependencies" or "devDependencies", depending on your usecase.
+We use the caret (^) syntax to make sure to always have the latest version of dependencies.
+
+Afterwards, run the script `update-package-lock` inside the `frontend` folder.
+Commit both your `package.json` and `package-lock.json` to GitHub.
+
+### Linting & formatting
+
+ESlint is running as a linter when you push to GitHub. For formatting, we have decided to follow Prettier's default settings.
+There are three scripts in the `scripts` folder that can help you do things locally:
+
+- If you want to check for linting errors locally, run `lint-frontend.sh`
+- If you want to check for formatting errors, run `format-frontend.sh`
+- If you want to fix formatting errors automatically, run `fix-frontend.sh`
 
 ## Switching between development and production deployments
 
@@ -68,7 +88,7 @@ environment before rebuilding and starting the other environment.
 For example, to switch from a running development environment to a
 production environment, use the following commands:
 
-``` sh
+```sh
 ./compose-dev.sh down           # Bring down the development environment
 ./compose-prod.sh up --build    # Build and start the production environment
 ```
@@ -76,7 +96,7 @@ production environment, use the following commands:
 To switch from a running production environment to a development
 environment, use the following commands:
 
-``` sh
+```sh
 ./compose-prod.sh down          # Bring down the production environment
 ./compose-dev.sh up --build     # Build and start the development environment
 ```
@@ -99,7 +119,6 @@ The main differences between the two environments are:
   development server with hot reloading, while in the production
   environment, it does nothing apart from checking to make sure the
   static site's file are present.
-
   - The development server is served by `npm run dev`.
   - The production server is built as an exported static site and served
     by a Caddy web server. The exported site is stored in the
@@ -126,7 +145,7 @@ port for the `database` container in the `docker-compose.yml` file and
 connecting to it directly from the host, or by using the `psql` command
 in the `database` container:
 
-``` sh
+```sh
 ./compose-prod.sh exec database psql -U db_user -d ringdb
 ```
 
@@ -164,7 +183,7 @@ initialised when the services are started with either
 A backup of the database can be created with the following command while
 the `database` container is running:
 
-``` sh
+```sh
 ./compose-prod.sh exec database pg_dump --format=custom -U postgres ringdb >initdb.d/database.dump
 ```
 
@@ -177,14 +196,14 @@ the `database-vol` Docker volume does not exist.
 All Docker volumes associated with the project can be removed with the
 following command:
 
-``` sh
+```sh
 ./compose-prod.sh down -v
 ```
 
 Or, to only remove the database volume (assuming all services are
 stopped), use:
 
-``` sh
+```sh
 docker volume rm bird-ringing_database-vol
 ```
 

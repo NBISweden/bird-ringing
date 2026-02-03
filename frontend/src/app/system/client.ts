@@ -14,85 +14,110 @@ export class Client {
 
     if (!resp.ok) {
       const body = await resp.text().catch(() => "");
-      throw new Error(`GET ${url.href} failed: ${resp.status} ${resp.statusText} ${body}`);
+      throw new Error(
+        `GET ${url.href} failed: ${resp.status} ${resp.statusText} ${body}`,
+      );
     }
 
     return (await resp.json()) as T;
   }
 
   async fetchLicenseSequenceByMnr(mnr: string): Promise<LicenseListItem> {
-    return this._getJson<LicenseListItem>(`license_sequence/${encodeURIComponent(mnr)}/`);
+    return this._getJson<LicenseListItem>(
+      `license_sequence/${encodeURIComponent(mnr)}/`,
+    );
   }
 
   async fetchActorById(actorId: string): Promise<ActorListItem> {
     return await this._getJson<ActorListItem>(`actor/${actorId}/`);
   }
-  
-  async fetchActorPage(page: number, search?: string, ordering?: string, ids?: string[]): Promise<PagedResponse<ActorListItem>> {
+
+  async fetchActorPage(
+    page: number,
+    search?: string,
+    ordering?: string,
+    ids?: string[],
+  ): Promise<PagedResponse<ActorListItem>> {
     const params = new URLSearchParams();
     if (ids) {
-      params.set("ids", ids.join(","))
+      params.set("ids", ids.join(","));
     }
-    return await this._fetchPage("actor", page, search, ordering, params)
+    return await this._fetchPage("actor", page, search, ordering, params);
   }
 
-  async fetchLicensePage(page: number, search?: string, ordering?: string): Promise<PagedResponse<LicenseListItem>> {
-    return await this._fetchPage("license_sequence", page, search, ordering)
+  async fetchLicensePage(
+    page: number,
+    search?: string,
+    ordering?: string,
+  ): Promise<PagedResponse<LicenseListItem>> {
+    return await this._fetchPage("license_sequence", page, search, ordering);
   }
 
-  async _fetchPage<T>(type: string, page: number, search?: string, ordering?: string, params?: URLSearchParams): Promise<PagedResponse<T>> {
+  async _fetchPage<T>(
+    type: string,
+    page: number,
+    search?: string,
+    ordering?: string,
+    params?: URLSearchParams,
+  ): Promise<PagedResponse<T>> {
     const url = new URL(this._apiRoot + type + "/");
-    url.searchParams.set("page", String(page))
+    url.searchParams.set("page", String(page));
     if (search) {
-      url.searchParams.set("search", search)
+      url.searchParams.set("search", search);
     }
     if (ordering) {
-      url.searchParams.set("ordering", ordering)
+      url.searchParams.set("ordering", ordering);
     }
-    url.search = String(new URLSearchParams([...url.searchParams, ...(params ? params : [])]));
+    url.search = String(
+      new URLSearchParams([...url.searchParams, ...(params ? params : [])]),
+    );
     const response = await fetch(`${url.href}`, {
-      credentials: "same-origin"
+      credentials: "same-origin",
     });
     if (response.ok) {
       const pageData: PagedResponse<T> = await response.json();
       return pageData;
     } else {
-      const text = await response.text()
-      throw new Error(`Failed to get page '${page}': ${text}`)
+      const text = await response.text();
+      throw new Error(`Failed to get page '${page}': ${text}`);
     }
   }
 
-  static async fetchAll<T>(firstPagePromise: Promise<PagedResponse<T>>): Promise<T[]> {
+  static async fetchAll<T>(
+    firstPagePromise: Promise<PagedResponse<T>>,
+  ): Promise<T[]> {
     let currentPage: PagedResponse<T> | null = await firstPagePromise;
-    const items: T[] = []
+    const items: T[] = [];
     while (currentPage) {
       items.push(...currentPage.results);
       if (currentPage.next) {
         const response: Response = await fetch(currentPage.next, {
-          credentials: "same-origin"
+          credentials: "same-origin",
         });
 
         if (response.ok) {
-          currentPage = await response.json()
+          currentPage = await response.json();
         } else {
-          const text = await response.text()
-          throw new Error(`Failed to get next page '${currentPage.next}': ${text}`)
+          const text = await response.text();
+          throw new Error(
+            `Failed to get next page '${currentPage.next}': ${text}`,
+          );
         }
       } else {
         currentPage = null;
       }
     }
-    return items
+    return items;
   }
-  
-  async batchCreateLicenseCards(mnrs: string[]): Promise<{ filenames: string[] }> {
+
+  async batchCreateLicenseCards(
+    mnrs: string[],
+  ): Promise<{ filenames: string[] }> {
     const qs = new URLSearchParams({ mnrs: mnrs.join(",") });
     const csrf = getCookie("csrftoken");
     return this.fetchJson<{ filenames: string[] }>(
       `license_sequence/card-create/?${qs.toString()}`,
-      { method: "PUT",
-        headers: csrf ? { "X-CSRFToken": csrf } : {}
-      }
+      { method: "PUT", headers: csrf ? { "X-CSRFToken": csrf } : {} },
     );
   }
 

@@ -17,7 +17,7 @@ export default function RootLayout({
           <ModalsProvider>
             <ModalView />
             <div className="d-flex flex-column vh-100">
-              <Header/>
+              <Header />
               <div className="flex-grow-1 flex-shrink-1 d-flex overflow-hidden">
                 {children}
               </div>

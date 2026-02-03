@@ -1,29 +1,43 @@
-import { useState, useCallback, ChangeEventHandler, useRef, useEffect } from "react";
+import {
+  useState,
+  useCallback,
+  ChangeEventHandler,
+  useRef,
+  useEffect,
+} from "react";
 
-export function useItemSelections(currentSubSet: Set<string>, attributeId: string) {
+export function useItemSelections(
+  currentSubSet: Set<string>,
+  attributeId: string,
+) {
   const [selectedItems, setSelectedItems] = useState(new Set<string>());
-  const handleItemSelection = useCallback<ChangeEventHandler<HTMLInputElement>>((event) => {
-    const id = event.target.getAttribute(attributeId);
-    const checked = event.target.checked;
-    if (id) {
-      if (checked) {
-        setSelectedItems((prev) => {
-          const next = new Set(prev);
-          next.add(id);
-          return next;
-        })
-      } else {
-        setSelectedItems((prev) => {
-          const next = new Set(prev);
-          next.delete(id);
-          return next;
-        })
+  const handleItemSelection = useCallback<ChangeEventHandler<HTMLInputElement>>(
+    (event) => {
+      const id = event.target.getAttribute(attributeId);
+      const checked = event.target.checked;
+      if (id) {
+        if (checked) {
+          setSelectedItems((prev) => {
+            const next = new Set(prev);
+            next.add(id);
+            return next;
+          });
+        } else {
+          setSelectedItems((prev) => {
+            const next = new Set(prev);
+            next.delete(id);
+            return next;
+          });
+        }
       }
-    }
-  }, [setSelectedItems, attributeId]);
+    },
+    [setSelectedItems, attributeId],
+  );
   const allSelected = selectedItems.isSupersetOf(currentSubSet);
   const toggleItems = useCallback<() => void>(() => {
-    const nextItems = allSelected ? selectedItems.difference(currentSubSet) : selectedItems.union(currentSubSet)
+    const nextItems = allSelected
+      ? selectedItems.difference(currentSubSet)
+      : selectedItems.union(currentSubSet);
     setSelectedItems(nextItems);
   }, [selectedItems, setSelectedItems, allSelected, currentSubSet]);
 
@@ -32,8 +46,8 @@ export function useItemSelections(currentSubSet: Set<string>, attributeId: strin
     setSelectedItems,
     toggleItems,
     handleItemSelection,
-    allSelected
-  }
+    allSelected,
+  };
 }
 
 export function useDebouncedValue<T>(value: T, timeout: number = 5000) {
