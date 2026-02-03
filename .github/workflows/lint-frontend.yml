@@ -25,9 +25,9 @@ jobs:
       - name: "Linting (eslint)"
         working-directory: frontend
         run: npm run lint
-        continue-on-error: true
 
       - name: "Check with Prettier"
+        if: always()
         working-directory: frontend
         run: npm run format
   
