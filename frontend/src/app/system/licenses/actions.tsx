@@ -3,8 +3,8 @@ import { ClientContext, useClient, useModalsContext } from "../contexts";
 import { Client } from "../client";
 import Spinner from "@/components/Spinner";
 import { Alert } from "@/components/Alert";
-import useSWR from "swr";
 import { downloadData } from "../utils";
+import useSWRImmutable from "swr/immutable";
 
 type BatchCreateResponse = { filenames: string[] };
 
@@ -26,10 +26,9 @@ function fetchLicenseCardsZip([client, mnrs]: [
 function LicenseDocBatchCreate({ mnrs }: { mnrs: string[] }) {
   const client = useClient();
 
-  const { data, isLoading, error } = useSWR(
+  const { data, isLoading, error } = useSWRImmutable(
     [client, mnrs],
     batchCreateLicenseDocs,
-    { fallbackData: { filenames: [] } },
   );
 
   return isLoading ? (
@@ -44,7 +43,7 @@ function LicenseDocBatchCreate({ mnrs }: { mnrs: string[] }) {
       className="form-control"
       rows={8}
       readOnly
-      value={data.filenames.join("\n")}
+      value={data?.filenames.join("\n")}
     />
   );
 }
@@ -117,7 +116,10 @@ function DownloadModal<T>({
     [downloadFunc],
   );
 
-  const { isLoading, error } = useSWR([client, filename, params], downloadExec);
+  const { isLoading, error } = useSWRImmutable(
+    [client, filename, params],
+    downloadExec,
+  );
 
   return (
     <>
