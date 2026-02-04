@@ -45,10 +45,12 @@ export type Modal = {
   }[];
 };
 
+export type ModalRef = unknown;
+
 export type ModalStack = {
-  stack: ({ id: string } & Modal)[];
-  add(modal: Modal): { id: string };
-  remove(modal: { id: string }): void;
+  stack: Modal[];
+  add(modal: Modal): ModalRef;
+  remove(modal: ModalRef): void;
 };
 
 export const ModalsContext = createContext<ModalStack>({
@@ -62,29 +64,22 @@ export const ModalsContext = createContext<ModalStack>({
 });
 
 export function useModalStack(): ModalStack {
-  const [{ stack, ticker }, setStack] = useState<{
-    stack: ModalStack["stack"];
-    ticker: number;
-  }>({ stack: [], ticker: 0 });
+  const [stack, setStack] = useState<ModalStack["stack"]>([]);
 
   const addModal = useCallback(
     (modal: Modal) => {
-      const nextTicker = ticker + 1;
-      const id = `modal-${nextTicker}`;
-      setStack({
-        stack: [...stack, { ...modal, id: id }],
-        ticker: nextTicker,
+      setStack((prev) => {
+        return [...prev, modal];
       });
-      return { id };
+      return modal;
     },
-    [stack, ticker, setStack],
+    [setStack],
   );
   const removeModal = useCallback(
-    (modal: { id: string }) => {
-      setStack((prev) => ({
-        ...prev,
-        stack: prev.stack.filter((m) => m.id !== modal.id),
-      }));
+    (modal: ModalRef) => {
+      setStack((prev) => {
+        return prev.filter((m) => m !== modal);
+      });
     },
     [setStack],
   );

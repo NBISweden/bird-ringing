@@ -1,9 +1,9 @@
 import { useCallback } from "react";
 import { ClientContext, useClient, useModalsContext } from "../contexts";
-import useSWR from "swr";
 import { Client } from "../client";
 import Spinner from "@/components/Spinner";
 import { Alert } from "@/components/Alert";
+import useSWRImmutable from "swr/immutable";
 
 export function useFetchEmailAddressesAction(client: Client) {
   const modalStack = useModalsContext();
@@ -73,9 +73,10 @@ async function fetchActorEmail([client, ids]: [
 function ActorEmailList({ ids }: { ids: string[] }) {
   const client = useClient();
 
-  const { data, isLoading, error } = useSWR([client, ids], fetchActorEmail, {
-    fallbackData: [],
-  });
+  const { data, isLoading, error } = useSWRImmutable(
+    [client, ids],
+    fetchActorEmail,
+  );
 
   return isLoading ? (
     <>
@@ -85,6 +86,6 @@ function ActorEmailList({ ids }: { ids: string[] }) {
   ) : error ? (
     <Alert type="danger">{String(error)}</Alert>
   ) : (
-    <>{data.join("; ")}</>
+    <>{data?.join("; ") || ""}</>
   );
 }
