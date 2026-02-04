@@ -35,7 +35,7 @@ function LicenseDocBatchCreate({ mnrs }: { mnrs: string[] }) {
   return isLoading ? (
     <>
       <Spinner />
-      <span className="ms-3">Loading email listings</span>
+      <span className="ms-3">Creating license pdf files</span>
     </>
   ) : error ? (
     <Alert type="danger">{String(error)}</Alert>
@@ -131,7 +131,7 @@ function DownloadModal<T>({
           {error instanceof Error ? error.message : String(error)}
         </Alert>
       ) : (
-        <Alert type="success">Download successful</Alert>
+        <Alert type="success">Starting download</Alert>
       )}
     </>
   );
