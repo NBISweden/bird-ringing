@@ -446,6 +446,16 @@ class Command(BaseCommand):
             species_codes = [c.strip() for c in species_raw.split(";") if c.strip()]
             if species_codes:
                 qs = models.Species.objects.filter(scientific_code__in=species_codes)
+                found_codes = set(qs.values_list("scientific_code", flat=True))
+
+                missing = sorted(set(species_codes) - found_codes)
+                if missing:
+                    raise ValueError(
+                        "Tillstand import error: unknown species_codes not present in database. "
+                        f"license_mnr={license_mnr}, type_code={type_code}, missing={missing}, "
+                        f"provided={species_codes}"
+                    )
+
                 perm.species_list.set(qs)
 
     def _parse_date_only(self, value: str | None):
