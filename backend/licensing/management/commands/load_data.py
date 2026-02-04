@@ -65,16 +65,16 @@ class Command(BaseCommand):
         self.include_legacy_permissions = bool(options.get("include_legacy_permissions"))
 
         with transaction.atomic():
-            self.load_permission_types()
+            if self.include_legacy_permissions:
+                self.load_permission_types()
             self.load_species(loader.get_dict_list("Artlista"))
             self.load_ringers_and_licenses(loader.get_dict_list("Maerkare"))
-            self.load_helpers(
-                loader.get_dict_list("MarkAss"), loader.get_dict_list("MarkAssYr")
-            )
-
             self.load_permit_types(loader.get_dict_list("TillstTyp"))
             self.load_permit_properties(loader.get_dict_list("TillstProp"))
             self.load_license_permits(loader.get_dict_list("Tillstand"))
+            self.load_helpers(
+                loader.get_dict_list("MarkAss"), loader.get_dict_list("MarkAssYr")
+            )
 
     def load_permission_types(self):
         permission_types = [
@@ -389,29 +389,46 @@ class Command(BaseCommand):
     def load_permit_types(self, entries: list[dict]):
         current_user = self.get_current_user()
         for row in entries:
-            type_code = row["type_code"].strip()
+            type_code = (row.get("type_code") or "").strip()
+            if not type_code:
+                raise ValueError(f"TillstTyp import error: missing type_code in row={row}")
+
+            name = (row.get("name") or "").strip()
+            if not name:
+                raise ValueError(
+                    f"TillstTyp import error: missing required name for type_code={type_code} (row={row})"
+                )
+
             obj = models.LicensePermissionType.objects.create(
                 created_by=current_user,
                 updated_by=current_user,
-                name=(row.get("name") or "").strip(),
+                name=name,
                 description=(row.get("description") or "").strip(),
             )
             self.permit_type_map[type_code] = obj
 
+
     def load_permit_properties(self, entries: list[dict]):
         current_user = self.get_current_user()
         for row in entries:
-            property_code = row["property_code"].strip()
+            property_code = (row.get("property_code") or "").strip()
+            if not property_code:
+                raise ValueError(f"TillstProp import error: missing property_code in row={row}")
+
+            name = (row.get("name") or "").strip()
+            if not name:
+                raise ValueError(
+                    f"TillstProp import error: missing required name for property_code={property_code} (row={row})"
+                )
+
             related_type_code = (row.get("related_type_code") or "").strip()
-            related_type = (
-                self.permit_type_map.get(related_type_code) if related_type_code else None
-            )
+            related_type = self.permit_type_map.get(related_type_code) if related_type_code else None
 
             obj = models.LicensePermissionProperty.objects.create(
                 created_by=current_user,
                 updated_by=current_user,
                 related_type=related_type,
-                name=(row.get("name") or "").strip(),
+                name=name,
                 description=(row.get("description") or "").strip(),
             )
             self.permit_property_map[property_code] = obj
