@@ -389,11 +389,11 @@ class Command(BaseCommand):
     def load_permit_types(self, entries: list[dict]):
         current_user = self.get_current_user()
         for row in entries:
-            type_code = (row.get("type_code") or "").strip()
+            type_code = row.get("type_code", "").strip()
             if not type_code:
                 raise ValueError(f"TillstTyp import error: missing type_code in row={row}")
 
-            name = (row.get("name") or "").strip()
+            name = row.get("name", "").strip()
             if not name:
                 raise ValueError(
                     f"TillstTyp import error: missing required name for type_code={type_code} (row={row})"
@@ -403,7 +403,7 @@ class Command(BaseCommand):
                 created_by=current_user,
                 updated_by=current_user,
                 name=name,
-                description=(row.get("description") or "").strip(),
+                description=row.get("description", "").strip(),
             )
             self.permit_type_map[type_code] = obj
 
@@ -411,17 +411,17 @@ class Command(BaseCommand):
     def load_permit_properties(self, entries: list[dict]):
         current_user = self.get_current_user()
         for row in entries:
-            property_code = (row.get("property_code") or "").strip()
+            property_code = row.get("property_code", "").strip()
             if not property_code:
                 raise ValueError(f"TillstProp import error: missing property_code in row={row}")
 
-            name = (row.get("name") or "").strip()
+            name = row.get("name", "").strip()
             if not name:
                 raise ValueError(
                     f"TillstProp import error: missing required name for property_code={property_code} (row={row})"
                 )
 
-            related_type_code = (row.get("related_type_code") or "").strip()
+            related_type_code = row.get("related_type_code", "").strip()
             related_type = self.permit_type_map.get(related_type_code) if related_type_code else None
 
             obj = models.LicensePermissionProperty.objects.create(
@@ -429,7 +429,7 @@ class Command(BaseCommand):
                 updated_by=current_user,
                 related_type=related_type,
                 name=name,
-                description=(row.get("description") or "").strip(),
+                description=row.get("description", "").strip(),
             )
             self.permit_property_map[property_code] = obj
 
@@ -450,16 +450,16 @@ class Command(BaseCommand):
                 type=permission_type,
                 starts_at=self._parse_date_only(row.get("starts_at")),
                 ends_at=self._parse_date_only(row.get("ends_at")),
-                location=(row.get("location") or "").strip(),
-                description=(row.get("description") or "").strip(),
+                location=row.get("location", "").strip(),
+                description=row.get("description", "").strip(),
             )
 
-            prop_raw = (row.get("property_codes") or "").strip()
+            prop_raw = row.get("property_codes", "").strip()
             prop_codes = [c.strip() for c in prop_raw.split(";") if c.strip()]
             if prop_codes:
                 perm.properties.set([self.permit_property_map[c] for c in prop_codes])
 
-            species_raw = (row.get("species_codes") or "").strip()
+            species_raw = row.get("species_codes", "").strip()
             species_codes = [c.strip() for c in species_raw.split(";") if c.strip()]
             if species_codes:
                 qs = models.Species.objects.filter(scientific_code__in=species_codes)
