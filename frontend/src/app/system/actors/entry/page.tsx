@@ -99,9 +99,11 @@ function ActorViewBase() {
                 <span className="m-0">{Array.from(roles).join(", ")}</span>
                 <i className={`bi bi-${get_gender_icon(data.sex)} ms-1`} />
               </div>
-              <p className="fst-italic m-0">
-                * {convertOnlyDateToLocale(data.birth_date)}
-              </p>
+              {data.birth_date && (
+                <p className="fst-italic m-0">
+                  * {convertOnlyDateToLocale(data.birth_date)}
+                </p>
+              )}
             </div>
             <div className="card-body pb-0">
               <ul className="list-group list-group-flush">
@@ -164,40 +166,44 @@ function ActorViewBase() {
         <div className="col-12 col-xxl-9">
           <h3 className="pt-4 fw-bold">Licenser</h3>
           <ul className="list-group list-group-flush">
-            {licenses.map((l) => (
-              <li className="list-group-item" key={`${l.mnr}-${l.mednr}`}>
-                <div className="row">
-                  <div className="py-2 col-3 text-nowrap d-flex flex-column justify-content-center">
-                    <span>
-                      {l.mnr}-{l.mednr}
-                    </span>
-                    <span className="text-secondary small">{l.role}</span>
-                  </div>
-                  <div className="py-2 col-5 d-flex flex-column flex-md-row align-items-center ">
-                    <div>
-                      <p className="m-0 text-end">{l.starts_at}</p>
-                      <p className="m-0">
-                        <span className="text-muted small">till</span>{" "}
-                        {l.ends_at}
-                      </p>
+            {licenses.length > 0 ? (
+              licenses.map((l) => (
+                <li className="list-group-item" key={`${l.mnr}-${l.mednr}`}>
+                  <div className="row">
+                    <div className="py-2 col-3 text-nowrap d-flex flex-column justify-content-center">
+                      <span>
+                        {l.mnr}-{l.mednr}
+                      </span>
+                      <span className="text-secondary small">{l.role}</span>
                     </div>
-                    <div className="ms-3">
-                      <span
-                        className={`badge rounded-pill ms-2 ${is_license_active(l) ? "text-success-emphasis bg-success-subtle" : "text-dark-emphasis bg-body-secondary"}`}
-                      >
-                        {is_license_active(l) ? "active" : "inactive"}
+                    <div className="py-2 col-5 d-flex flex-column flex-md-row align-items-center ">
+                      <div>
+                        <p className="m-0 text-end">{l.starts_at}</p>
+                        <p className="m-0">
+                          <span className="text-muted small">till</span>{" "}
+                          {l.ends_at}
+                        </p>
+                      </div>
+                      <div className="ms-3">
+                        <span
+                          className={`badge rounded-pill ms-2 ${is_license_active(l) ? "text-success-emphasis bg-success-subtle" : "text-dark-emphasis bg-body-secondary"}`}
+                        >
+                          {is_license_active(l) ? "active" : "inactive"}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="py-2 col-4 d-flex align-items-center fw-semibold text-capitalize">
+                      {l.communication_type}
+                      <span className="badge rounded-pill text-primary border border-primary ms-2">
+                        {l.communication_status}
                       </span>
                     </div>
                   </div>
-                  <div className="py-2 col-4 d-flex align-items-center fw-semibold text-capitalize">
-                    {l.communication_type}
-                    <span className="badge rounded-pill text-primary border border-primary ms-2">
-                      {l.communication_status}
-                    </span>
-                  </div>
-                </div>
-              </li>
-            ))}
+                </li>
+              ))
+            ) : (
+              <p className="text-muted fst-italic">No current licenses.</p>
+            )}
           </ul>
         </div>
       </div>
