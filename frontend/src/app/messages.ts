@@ -33,6 +33,17 @@ const messagesBase = {
   actorSendLicenses: "Send licenses",
   actorDeactivate: "Deactivate",
   actorLoadingEmailAddresses: "Loading e-mail addresses",
+  actorErrorLoadingActorTitle: "Failed to load ringer",
+  actorErrorLoadingActorText:
+    "Something went wrong while loading ringer data for ringer {actorId}.",
+  actorNoEmailAddress: "no e-mail address",
+  actorNoPhoneNumber: "no phone number",
+  actorNoAddress: "no address",
+  actorNoCity: "no city",
+  actorUpdatedAt: "Updated at {date}",
+  actorLicenseActive: "Active",
+  actorLicenseInactive: "Inactive",
+  actorNoCurrentLicenses: "No current licenses",
 
   licenseId: "Mnr",
   licenseType: "Type",

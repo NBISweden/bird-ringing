@@ -28,6 +28,18 @@ export const locale: TranslationMap = {
   actorDeactivate: "Avaktivera",
   actorLoadingEmailAddresses: "Laddar e-post adresser",
 
+  actorErrorLoadingActorTitle: "Misslyckades att hämta ringmärkare",
+  actorErrorLoadingActorText:
+    "Något gick fel när vi försökte ladda data för ringmärkare med id {actorId}.",
+  actorNoEmailAddress: "ingen e-post adress",
+  actorNoPhoneNumber: "inget telefonnummer",
+  actorNoAddress: "ingen adress",
+  actorNoCity: "ingen stad",
+  actorUpdatedAt: "Uppdaterad {date}",
+  actorLicenseActive: "Aktiv",
+  actorLicenseInactive: "Inaktiv",
+  actorNoCurrentLicenses: "Inga nuvarande licenser",
+
   licenseId: "Mnr",
   licenseType: "Typ",
   licenseHolder: "Licensinnehavare",
