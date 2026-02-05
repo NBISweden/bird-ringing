@@ -9,6 +9,7 @@ export const locale: TranslationMap = {
   dashboard: "Startskärm",
   goToSystem: "Gå till systemet",
   licenseListView: "Licenser",
+  licenseView: "Licens",
   actorListView: "Ringmärkare",
   expertsLogin: "Expertinloggning",
 
@@ -62,6 +63,25 @@ export const locale: TranslationMap = {
   licenseLicenseDownloadLoading: "Förbereder licenssamling för nedladdning...",
   licenseLicenseDownloadSucceeded: "Laddar ned licenssamling",
   licenseDownloadLicensesText: "Laddar ned licenskort.",
+  licenseErrorLoadingLicenseTitle: "Misslyckades att hämta licens",
+  licenseErrorLoadingLicenseText:
+    "Något gick fel när vi försökte ladda data för licensen med id {licenseId}",
+  licenseHistory: "Historik",
+  licenseValidityPeriod: "Giltig från {startsAt} till {endsAt}",
+  licenseNoPreviousVerions: "Inga tidigare versioner.",
+  licenseCreatedAt: "Skapad {date}",
+  licenseUpdatedAt: "Uppdaterad {date}",
+  licenseActors: "Ringmärkare / hjälpare",
+  licenseNoConnectedActors:
+    "Inga ringmärkare eller hjälpare kopplade till licensen.",
+  licensePermissions: "Tillstånd",
+  licenseNoPermissions: "Inga tillstånd att visa.",
+  licenseDocuments: "Dokument",
+  licenseDocumentReference: "Referens",
+  licenseNoDocuments: "Inga dokument",
+  licenseCommunication: "Kommunikation",
+  licenseCommunicationNote: "Anteckning",
+  licenseNoCommunication: "Ingen kommunikation kopplad till licensen.",
 
   paginationNext: "Nästa",
   paginationPrevious: "Föregående",

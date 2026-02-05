@@ -1,11 +1,17 @@
 "use Client";
 
-import { convertDateToLocale, LicenseCurrent } from "@/app/system/common";
+import {
+  convertDateToLocale,
+  convertOnlyDateToLocale,
+  LicenseCurrent,
+} from "@/app/system/common";
+import { useTranslation } from "@/app/system/internationalization";
 type LicenceViewProps = {
   license: LicenseCurrent;
 };
 
 export function LicenceView({ license }: LicenceViewProps) {
+  const { t } = useTranslation();
   return (
     <>
       <div className="mb-3">
@@ -15,9 +21,10 @@ export function LicenceView({ license }: LicenceViewProps) {
             <div className="row g-2">
               <div className="col-12 col-md-9">
                 <div>
-                  <span className="fst-italic">Giltig mellan </span>
-                  {license.starts_at} <span className="fst-italic">till </span>{" "}
-                  {license.ends_at}
+                  {t("licenseValidityPeriod", {
+                    startsAt: convertOnlyDateToLocale(license.starts_at),
+                    endsAt: convertOnlyDateToLocale(license.ends_at),
+                  })}
                 </div>
               </div>
               <div className="col-12 col-md-3 fw-light">
@@ -33,17 +40,21 @@ export function LicenceView({ license }: LicenceViewProps) {
               <li className="list-group-item ">
                 <div className="d-flex align-items-center">
                   <div className="me-auto">
-                    <span className="me-2">Rapportstatus</span>
+                    <span className="me-2">{t("licenseReportStatus")}</span>
                     <span className="badge rounded-pill border border-primary text-primary text-capitalize">
                       {String(license.report_status)}
                     </span>
                   </div>
                   <div className="d-flex gap-3 text-muted small">
                     <span>
-                      Skapad {convertDateToLocale(license.created_at)}
+                      {t("licenseCreatedAt", {
+                        date: convertDateToLocale(license.created_at),
+                      })}
                     </span>
                     <span>
-                      Uppdaterad {convertDateToLocale(license.updated_at)}
+                      {t("licenseUpdatedAt", {
+                        date: convertDateToLocale(license.updated_at),
+                      })}
                     </span>
                   </div>
                 </div>
@@ -59,7 +70,7 @@ export function LicenceView({ license }: LicenceViewProps) {
           <div className="col-sm-6">
             <div className="card border-primary">
               <div className="card-body">
-                <h2 className="h3 card-title">Märkare/hjälpare</h2>
+                <h2 className="h3 card-title">{t("licenseActors")}</h2>
                 {license.actors?.length ? (
                   <ul className="list-group list-group-flush">
                     {license.actors.map((rel, i) => (
@@ -78,7 +89,7 @@ export function LicenceView({ license }: LicenceViewProps) {
                   </ul>
                 ) : (
                   <p className="text-muted fst-italic">
-                    Inga personer kopplade till licensen.
+                    {t("licenseNoConnectedActors")}
                   </p>
                 )}
               </div>
@@ -87,7 +98,7 @@ export function LicenceView({ license }: LicenceViewProps) {
           <div className="col-sm-6 mb-3 mb-sm-0">
             <div className="card border-primary">
               <div className="card-body">
-                <h2 className="h3 card-title">Tillstånd</h2>
+                <h2 className="h3 card-title">{t("licensePermissions")}</h2>
                 <p className="card-text"></p>
                 {license.permissions?.length ? (
                   <ul className="list-group list-group-flush">
@@ -113,7 +124,7 @@ export function LicenceView({ license }: LicenceViewProps) {
                   </ul>
                 ) : (
                   <p className="text-muted fst-italic">
-                    Inga tillstånd att visa.
+                    {t("licenseNoPermissions")}
                   </p>
                 )}
               </div>
@@ -123,7 +134,7 @@ export function LicenceView({ license }: LicenceViewProps) {
       </div>
       {/* Documents */}
       <div className="mb-3">
-        <h3 className="h2">Dokument</h3>
+        <h3 className="h2">{t("licenseDocuments")}</h3>
         {license.documents?.length ? (
           <ul className="list-group list-group-flush">
             {license.documents.map((doc, i) => (
@@ -137,7 +148,9 @@ export function LicenceView({ license }: LicenceViewProps) {
                     {doc.actor}
                   </div>
                   <div className="col-12 col-md-5">
-                    <span className="text-muted small me-2">Referens</span>
+                    <span className="text-muted small me-2">
+                      {t("licenseDocumentReference")}
+                    </span>
                     <span className="badge rounded-pill border border-primary text-primary">
                       {doc.reference}
                     </span>
@@ -147,14 +160,12 @@ export function LicenceView({ license }: LicenceViewProps) {
             ))}
           </ul>
         ) : (
-          <p className="text-muted fst-italic">
-            Inga dokument kopplade till licensen.
-          </p>
+          <p className="text-muted fst-italic">{t("licenseNoDocuments")}</p>
         )}
       </div>
       {/* Communication */}
       <div className="mb-3">
-        <h3 className="h2">Kommunikation</h3>
+        <h3 className="h2">{t("licenseCommunication")}</h3>
         {license.communication?.length ? (
           <ul className="list-group list-group-flush">
             {license.communication.map((item, i) => (
@@ -173,7 +184,9 @@ export function LicenceView({ license }: LicenceViewProps) {
                     </span>
                   </div>
                   <div className="col-12 col-md-5">
-                    <span className="text-muted small me-2">Anteckning</span>
+                    <span className="text-muted small me-2">
+                      {t("licenseCommunicationNote")}
+                    </span>
                     <span className="fst-italic">“{item.note}”</span>
                   </div>
                 </div>
@@ -181,9 +194,7 @@ export function LicenceView({ license }: LicenceViewProps) {
             ))}
           </ul>
         ) : (
-          <p className="text-muted fst-italic">
-            Ingen kommunikation kopplad till licensen.
-          </p>
+          <p className="text-muted fst-italic">{t("licenseNoCommunication")}</p>
         )}
       </div>
     </>

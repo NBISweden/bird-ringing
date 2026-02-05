@@ -10,6 +10,7 @@ const messagesBase = {
   dashboard: "Dashboard",
 
   licenseListView: "Licenses",
+  licenseView: "License",
   actorListView: "Ringers",
   welcomeMessageHeader: {
     defaultMessage: "Welcome to Birdy!",
@@ -67,6 +68,24 @@ const messagesBase = {
   licenseLicenseDownloadLoading: "Preparing licenses package for download...",
   licenseLicenseDownloadSucceeded: "Downloading licenses package",
   licenseDownloadLicensesText: "Downloading license cards",
+  licenseErrorLoadingLicenseTitle: "Failed to load license",
+  licenseErrorLoadingLicenseText:
+    "Something went wrong while loading license with {licenseId}",
+  licenseHistory: "History",
+  licenseValidityPeriod: "Valid from {startsAt} to {endsAt}",
+  licenseNoPreviousVerions: "No previous versions",
+  licenseCreatedAt: "Created at {date}",
+  licenseUpdatedAt: "Updated at {date}",
+  licenseActors: "Ringers / helpers",
+  licenseNoConnectedActors: "No connected actors",
+  licensePermissions: "Permissions",
+  licenseNoPermissions: "No permissions",
+  licenseDocuments: "Documents",
+  licenseDocumentReference: "Reference",
+  licenseNoDocuments: "No documents",
+  licenseCommunication: "Communication",
+  licenseCommunicationNote: "Note",
+  licenseNoCommunication: "No communication",
 
   paginationNext: "Next",
   paginationPrevious: "Previous",
