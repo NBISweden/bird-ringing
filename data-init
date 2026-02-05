@@ -11,9 +11,9 @@ wget -q -N -P "$dirPath" https://pdmnyberg.github.io/ui-examples/data/bird-ringi
 wget -q -N -P "$dirPath" https://pdmnyberg.github.io/ui-examples/data/bird-ringing/legacy/br-ex-MarkAss.csv
 wget -q -N -P "$dirPath" https://pdmnyberg.github.io/ui-examples/data/bird-ringing/legacy/br-ex-MarkAssYr.csv
 
-wget -q -N -P "$dirPath" https://github.com/user-attachments/files/25075736/br-ex-Tillstand.csv
-wget -q -N -P "$dirPath" https://github.com/user-attachments/files/25075737/br-ex-TillstProp.csv
-wget -q -N -P "$dirPath" https://github.com/user-attachments/files/25075738/br-ex-TillstTyp.csv
+wget -q -N -P "$dirPath" https://pdmnyberg.github.io/ui-examples/data/bird-ringing/legacy/br-ex-Tillstand.csv
+wget -q -N -P "$dirPath" https://pdmnyberg.github.io/ui-examples/data/bird-ringing/legacy/br-ex-TillstProp.csv
+wget -q -N -P "$dirPath" https://pdmnyberg.github.io/ui-examples/data/bird-ringing/legacy/br-ex-TillstTyp.csv
 
 ./compose-dev.sh exec backend python manage.py load_data "$@"
 
