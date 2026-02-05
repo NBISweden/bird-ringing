@@ -44,7 +44,7 @@ Then open http://localhost:3210/admin/ and log in to the Django admin
 using the credentials admin:test.
 Create a new user and add that user to the bird-ringer expert group.
 
-### Load mock data
+### Load mock data (legacy)
 
 Create a directory `backend/mock_data` in the project root and place the following files in it:
 
@@ -58,6 +58,16 @@ From the project root (`bird-ringing`), run:
 
 ```sh
 ./compose-dev.sh exec backend python manage.py load_mock_data
+```
+
+### Load mock data (latest)
+
+To use the more recent batch of mock data, from the project root (`bird-ringing`), run the three commands:
+
+```sh
+mkdir -p backend/mock_data/example/
+./create-test-users
+./data-init
 ```
 
 ## Frontend development
