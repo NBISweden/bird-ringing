@@ -22,6 +22,7 @@ import { useClient } from "../contexts";
 
 import { useBatchCreateLicenseCardsAction } from "./actions";
 import { useDownloadLicenseCardsZipAction } from "./actions";
+import { useTranslation } from "../internationalization";
 
 type LicensePropertyIds =
   | "mnr"
@@ -108,6 +109,7 @@ function ConnectedListView() {
   const router = useRouter();
   const client = useClient();
   const pathname = usePathname();
+  const { t } = useTranslation();
 
   useEffect(() => {
     if (search !== activeQuery) {
@@ -123,7 +125,7 @@ function ConnectedListView() {
     { fallbackData: emptyLicensePage, keepPreviousData: true },
   );
   // const pathname = usePathname();
-  const pages = getPages(pathname, params, LicensePage);
+  const pages = getPages(pathname, params, LicensePage, t);
   const currentPage = hrefWithParams(pathname, params, page, search, ordering);
 
   const createDocsAction = useBatchCreateLicenseCardsAction(client);
@@ -131,11 +133,11 @@ function ConnectedListView() {
 
   const batchActions: (BatchAction | { type: "divider" })[] = [
     {
-      label: "Skapa licensdokument",
+      label: t("licenseCreateLicenseDocuments"),
       action: createDocsAction,
     },
     { type: "divider" },
-    { label: "Ladda ned licenskort (ZIP)", action: downloadZipAction },
+    { label: t("licenseDownloadLicenses"), action: downloadZipAction },
     { type: "divider" },
     {
       label: "Avaktivera",
@@ -183,6 +185,7 @@ function BaseListView({
   params: URLSearchParams;
 }) {
   const [actionIsOpen, setActionIsOpen] = useState(false);
+  const { t } = useTranslation();
 
   const items = useMemo(
     () => licenses.map<TableItem>(toLicenseTable),
@@ -194,44 +197,44 @@ function BaseListView({
 
   const columns: Record<LicensePropertyIds, ColumnProperties> = {
     mnr: {
-      label: "Mnr",
+      label: t("licenseId"),
       ordering: { forward: "mnr", reverse: "-mnr" },
     },
     type: {
-      label: "Type",
+      label: t("licenseType"),
       ordering: {
         forward: "license_holder_type,mnr",
         reverse: "-license_holder_type,mnr",
       },
     },
     license_holder: {
-      label: "License holder",
+      label: t("licenseHolder"),
       ordering: {
         forward: "license_holder,mnr",
         reverse: "-license_holder,mnr",
       },
     },
     helpers: {
-      label: "Number of helpers",
+      label: t("licenseNumberOfHelpers"),
       ordering: { forward: "helper_count,mnr", reverse: "-helper_count,mnr" },
     },
     methods: {
-      label: "Trapping methods",
+      label: t("licenseTrappingMethods"),
       ordering: { forward: "methods,mnr", reverse: "-methods,mnr" },
     },
     final_report_status: {
-      label: "Final report status",
+      label: t("licenseReportStatus"),
       ordering: {
         forward: "report_status_label,mnr",
         reverse: "-report_status_label,mnr",
       },
     },
     license_status: {
-      label: "License status",
+      label: t("licenseStatus"),
       ordering: { forward: "status_label,mnr", reverse: "-status_label,mnr" },
     },
     last_email_sent_at: {
-      label: "Last email sent at",
+      label: t("licenseLastEmailSentAt"),
       ordering: {
         forward: "last_email_sent_at,mnr",
         reverse: "-last_email_sent_at,mnr",
@@ -239,23 +242,31 @@ function BaseListView({
     },
   };
   const selectionInfo = isLoading
-    ? "Laddar data"
-    : `${selectedItems.size} valda av ${count}`;
+    ? t("loadingData")
+    : t("selectionSizeComparison", {
+        selectedCount: selectedItems.size,
+        fullCount: count,
+      });
   return (
     <div className="container">
-      <h2>License List View</h2>
+      <h2>{t("licenseListView")}</h2>
       <div className="input-group mb-3">
-        <span className="input-group-text">Filter</span>
+        <label
+          className="input-group-text"
+          id="table-filter-label"
+          htmlFor="table-filter"
+        >
+          {t("licenseFilterLabel")}
+        </label>
         <input
+          id="table-filter"
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           className="form-control"
-          placeholder={
-            "Mnr, Type, License holder, Trapping methods, Last email sent at"
-          }
-          aria-label="Filtrera tabellen"
-          aria-describedby="Tabellfilter"
+          placeholder={t("licenseFilterPlaceholder")}
+          aria-label={t("licenseFilterDescription")}
+          aria-describedby="table-filter-label"
         />
       </div>
       <div className="input-group mb-3">
@@ -264,7 +275,7 @@ function BaseListView({
           type="button"
           onClick={toggleItems}
         >
-          {allSelected ? "Välj inga" : "Välj alla"}
+          {allSelected ? t("selectNone") : t("selectAll")}
         </button>
         <span className="input-group-text flex-grow-1">{selectionInfo}</span>
         <button
@@ -273,7 +284,7 @@ function BaseListView({
           type="button"
           aria-expanded={actionIsOpen}
         >
-          Batch-funktioner
+          {t("batchActions")}
         </button>
         <ul
           className={`dropdown-menu batch-action-menu ${actionIsOpen ? "show" : ""}`}

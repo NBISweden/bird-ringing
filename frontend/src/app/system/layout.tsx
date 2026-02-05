@@ -1,23 +1,26 @@
+"use client";
 import Sidebar, { NavItem } from "@/components/Sidebar";
 import { RequireAuth } from "../../components/AuthProvider";
 import { ClientProvider } from "@/components/ClientProvider";
+import { useTranslation } from "./internationalization";
 
 export default function SystemLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const { t } = useTranslation();
   const navItems: NavItem[] = [
     {
       type: "item",
-      label: "Dashboard",
+      label: t("dashboard"),
       href: "/system/welcome",
       id: "dashboard",
       icon: "bi-speedometer",
     },
     {
       type: "item",
-      label: "Licenses",
+      label: t("licenseListView"),
       href: "/system/licenses",
       id: "licenses",
       icon: "bi-journal-check",
@@ -25,7 +28,7 @@ export default function SystemLayout({
     },
     {
       type: "item",
-      label: "Ringare",
+      label: t("actorListView"),
       href: "/system/actors",
       id: "ringare",
       icon: "bi-person-lines-fill",

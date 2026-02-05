@@ -1,10 +1,12 @@
 "use client";
 
 import { useModalsContext, useAuth } from "../contexts";
+import { useTranslation } from "../internationalization";
 
 export default function WelcomePage() {
   const user = useAuth();
   const modals = useModalsContext();
+  const { t } = useTranslation();
 
   const handleButtonPress = () => {
     modals.add({
@@ -31,8 +33,8 @@ export default function WelcomePage() {
         className="d-flex flex-column gap-2 mb-3"
         style={{ textAlign: "left" }}
       >
-        <h1>Welcome, {user.username} 🐦</h1>
-        <p>You’re successfully logged in as an expert.</p>
+        <h1>{t("userWelcomeHeader", { name: user.username })} 🐦</h1>
+        <p>{t("userWelcomeText")}</p>
       </div>
       <div className="d-flex flex-wrap gap-2 mb-3">
         <button

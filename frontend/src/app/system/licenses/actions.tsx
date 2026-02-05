@@ -5,6 +5,7 @@ import Spinner from "@/components/Spinner";
 import { Alert } from "@/components/Alert";
 import { downloadData } from "../utils";
 import useSWRImmutable from "swr/immutable";
+import { useTranslation } from "../internationalization";
 
 type BatchCreateResponse = { filenames: string[] };
 
@@ -25,6 +26,7 @@ function fetchLicenseCardsZip([client, mnrs]: [
 
 function LicenseDocBatchCreate({ mnrs }: { mnrs: string[] }) {
   const client = useClient();
+  const { t } = useTranslation();
 
   const { data, isLoading, error } = useSWRImmutable(
     [client, mnrs],
@@ -34,7 +36,7 @@ function LicenseDocBatchCreate({ mnrs }: { mnrs: string[] }) {
   return isLoading ? (
     <>
       <Spinner />
-      <span className="ms-3">Creating license pdf files</span>
+      <span className="ms-3">{t("licenseCreatingLicenseDocuments")}</span>
     </>
   ) : error ? (
     <Alert type="danger">{String(error)}</Alert>
@@ -50,50 +52,48 @@ function LicenseDocBatchCreate({ mnrs }: { mnrs: string[] }) {
 
 export function useBatchCreateLicenseCardsAction(client: Client) {
   const modalStack = useModalsContext();
+  const { t } = useTranslation();
 
   const createLicenseCards = useCallback(
     (itemIds: Set<string>) => {
       modalStack.add({
-        title: "Creating license cards (batch)",
+        title: t("licenseCreateLicenseDocuments"),
         content: (
           <ClientContext.Provider value={client}>
             <LicenseDocBatchCreate mnrs={Array.from(itemIds)} />
           </ClientContext.Provider>
         ),
-        actions: [{ label: "Ok", action: () => {}, type: "primary" }],
+        actions: [{ label: t("okModal"), action: () => {}, type: "primary" }],
       });
     },
-    [modalStack, client],
+    [modalStack, client, t],
   );
 
   return useCallback(
     (itemIds: Set<string>) => {
       if (itemIds.size === 0) return;
       modalStack.add({
-        title: "Do you want to create license cards?",
+        title: t("licenseCreateLicenseDocuments"),
         content: (
           <>
+            <p>{t("licenseCreateLicenseDocumentsConfirmText")}</p>
             <p>
-              Do you want to create license cards for all ringers and helpers
-              for selected licenses?
-            </p>
-            <p>
-              <strong>Selected licenses:</strong>{" "}
+              <strong>{t("licenseSelectedLicenses")}:</strong>{" "}
               {Array.from(itemIds).join(", ")}
             </p>
           </>
         ),
         actions: [
-          { label: "Abort", action: () => {}, type: "secondary" },
+          { label: t("abortModal"), action: () => {}, type: "secondary" },
           {
-            label: "Create license cards",
+            label: t("licenseCreateLicenseDocuments"),
             action: () => createLicenseCards(itemIds),
             type: "primary",
           },
         ],
       });
     },
-    [modalStack, createLicenseCards],
+    [modalStack, createLicenseCards, t],
   );
 }
 
@@ -101,10 +101,14 @@ function DownloadModal<T>({
   downloadFunc,
   filename,
   params,
+  loadingMessage,
+  successMessage,
 }: {
   downloadFunc: (params: [Client, T]) => Promise<Blob>;
   filename: string;
   params: T;
+  loadingMessage: string;
+  successMessage: string;
 }) {
   const client = useClient();
 
@@ -126,14 +130,14 @@ function DownloadModal<T>({
       {isLoading ? (
         <Alert type="info">
           <Spinner />
-          <span className="ms-3">Preparing download…</span>
+          <span className="ms-3">{loadingMessage}</span>
         </Alert>
       ) : error ? (
         <Alert type="danger">
           {error instanceof Error ? error.message : String(error)}
         </Alert>
       ) : (
-        <Alert type="success">Starting download</Alert>
+        <Alert type="success">{successMessage}</Alert>
       )}
     </>
   );
@@ -141,6 +145,7 @@ function DownloadModal<T>({
 
 export function useDownloadLicenseCardsZipAction(client: Client) {
   const modalStack = useModalsContext();
+  const { t } = useTranslation();
 
   return useCallback(
     (itemIds: Set<string>) => {
@@ -148,10 +153,10 @@ export function useDownloadLicenseCardsZipAction(client: Client) {
       if (mnrs.length === 0) return;
 
       modalStack.add({
-        title: "Download license cards (ZIP)",
+        title: t("licenseDownloadLicenses"),
         content: (
           <ClientContext.Provider value={client}>
-            <p>Downloading license cards for licenses:</p>
+            <p>{t("licenseDownloadLicensesText")}:</p>
             <ul>
               {mnrs.map((mnr) => (
                 <li key={mnr}>{mnr}</li>
@@ -161,12 +166,16 @@ export function useDownloadLicenseCardsZipAction(client: Client) {
               filename="license-cards.zip"
               downloadFunc={fetchLicenseCardsZip}
               params={mnrs}
+              loadingMessage={t("licenseLicenseDownloadLoading")}
+              successMessage={t("licenseLicenseDownloadSucceeded")}
             />
           </ClientContext.Provider>
         ),
-        actions: [{ label: "Close", action: () => {}, type: "primary" }],
+        actions: [
+          { label: t("closeModal"), action: () => {}, type: "primary" },
+        ],
       });
     },
-    [modalStack, client],
+    [modalStack, client, t],
   );
 }

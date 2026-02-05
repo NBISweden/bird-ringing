@@ -1,3 +1,4 @@
+"use client";
 import "./globals.scss";
 import "bootstrap-icons/font/bootstrap-icons.css";
 import Header from "@/components/Header";
@@ -7,6 +8,7 @@ import { AuthProvider } from "@/components/AuthProvider";
 import { ConfigProvider } from "@/components/ConfigProvider";
 import { Alert } from "@/components/Alert";
 import { Config } from "./system/contexts";
+import { LocaleProvider } from "@/components/LocaleProvider";
 
 function ConfigError() {
   return (
@@ -29,25 +31,28 @@ export default function RootLayout({
     apiRootUrl: "api/",
     defaultLang: "en",
   };
+  const locale = defaultConfig.defaultLang;
   return (
-    <html lang={defaultConfig.defaultLang}>
+    <html lang={locale}>
       <body>
         <ConfigProvider
           configUrl="/config.json"
           errorMessage={<ConfigError />}
           defaultConfig={defaultConfig}
         >
-          <AuthProvider>
-            <ModalsProvider>
-              <ModalView />
-              <div className="d-flex flex-column vh-100">
-                <Header />
-                <div className="flex-grow-1 flex-shrink-1 d-flex overflow-hidden">
-                  {children}
+          <LocaleProvider locale={locale}>
+            <AuthProvider>
+              <ModalsProvider>
+                <ModalView />
+                <div className="d-flex flex-column vh-100">
+                  <Header />
+                  <div className="flex-grow-1 flex-shrink-1 d-flex overflow-hidden">
+                    {children}
+                  </div>
                 </div>
-              </div>
-            </ModalsProvider>
-          </AuthProvider>
+              </ModalsProvider>
+            </AuthProvider>
+          </LocaleProvider>
         </ConfigProvider>
       </body>
     </html>
