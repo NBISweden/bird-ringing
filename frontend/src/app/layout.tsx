@@ -4,26 +4,51 @@ import Header from "@/components/Header";
 import { ModalsProvider } from "@/components/ModalsProvider";
 import { ModalView } from "@/components/ModalView";
 import { AuthProvider } from "@/components/AuthProvider";
+import { ConfigProvider } from "@/components/ConfigProvider";
+import { Alert } from "@/components/Alert";
+import { Config } from "./system/contexts";
+
+function ConfigError() {
+  return (
+    <div className="container">
+      <h1>Failed to load site</h1>
+      <Alert>
+        The site seems to be misconfigured. See console for error details.
+      </Alert>
+    </div>
+  );
+}
 
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const defaultConfig: Config = {
+    authUrl: "api/login/",
+    apiRootUrl: "api/",
+    defaultLang: "en",
+  };
   return (
-    <html lang="sv">
+    <html lang={defaultConfig.defaultLang}>
       <body>
-        <AuthProvider>
-          <ModalsProvider>
-            <ModalView />
-            <div className="d-flex flex-column vh-100">
-              <Header />
-              <div className="flex-grow-1 flex-shrink-1 d-flex overflow-hidden">
-                {children}
+        <ConfigProvider
+          configUrl="/config.json"
+          errorMessage={<ConfigError />}
+          defaultConfig={defaultConfig}
+        >
+          <AuthProvider>
+            <ModalsProvider>
+              <ModalView />
+              <div className="d-flex flex-column vh-100">
+                <Header />
+                <div className="flex-grow-1 flex-shrink-1 d-flex overflow-hidden">
+                  {children}
+                </div>
               </div>
-            </div>
-          </ModalsProvider>
-        </AuthProvider>
+            </ModalsProvider>
+          </AuthProvider>
+        </ConfigProvider>
       </body>
     </html>
   );

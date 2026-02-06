@@ -1,11 +1,11 @@
 import { ActorListItem, LicenseListItem, PagedResponse } from "./common";
-import { getCookie } from "./utils";
+import { getCookie, parseCompleteUrl } from "./utils";
 
 export class Client {
   private _apiRoot: string;
 
   constructor(apiRoot: string) {
-    this._apiRoot = apiRoot;
+    this._apiRoot = parseCompleteUrl(apiRoot);
   }
 
   private async _getJson<T>(path: string): Promise<T> {

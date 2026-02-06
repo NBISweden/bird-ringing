@@ -17,3 +17,13 @@ export function downloadData(blob: Blob, filename: string) {
   a.remove();
   URL.revokeObjectURL(objectUrl);
 }
+
+export function parseCompleteUrl(url: string) {
+  try {
+    new URL(url);
+    return url;
+  } catch {
+    const rootUrl = new URL(location.href);
+    return `${rootUrl.protocol}//${rootUrl.host}/${url}`;
+  }
+}
