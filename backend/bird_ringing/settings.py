@@ -13,7 +13,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 from django.core.exceptions import ImproperlyConfigured
 from pathlib import Path
 from os import getenv
-from bird_ringing.helpers import get_secret_from_file
+from bird_ringing.helpers import get_secret_from_file, parse_csv_from_env
 from bird_ringing.helpers import strtobool
 from django.core.management.utils import get_random_secret_key
 
@@ -32,7 +32,7 @@ if not SECRET_KEY:
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = strtobool(getenv("DJANGO_DEBUG_MODE", False))
 
-ALLOWED_HOSTS = ["localhost", "backend"]
+ALLOWED_HOSTS = parse_csv_from_env("DJANGO_ALLOWED_HOSTS", ["localhost", "backend"])
 
 
 # Application definition
