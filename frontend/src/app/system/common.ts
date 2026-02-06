@@ -147,6 +147,9 @@ export type LicensePermissionType = {
 export type LicensePermission = {
   type: LicensePermissionType;
   description: string;
+  location: string;
+  starts_at: string;
+  ends_at: string;
 };
 
 export type LicenseDocument = {

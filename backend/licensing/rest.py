@@ -257,7 +257,7 @@ class LicenseLicensePermissionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = LicensePermission
-        fields = ["type", 'description']
+        fields = ["type", "description", "location", "starts_at", "ends_at"]
 
 class LicenseDocumentSerializer(serializers.ModelSerializer):
     actor = serializers.CharField(source="actor.full_name", read_only=True)

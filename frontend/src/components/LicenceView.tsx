@@ -109,8 +109,8 @@ export function LicenceView({ license }: LicenceViewProps) {
                 {license.permissions?.length ? (
                   <ul className="list-group list-group-flush">
                     {license.permissions.map((p, i) => (
-                      <li className="list-group-item" key={i}>
-                        <div>
+                      <li className="list-group-item mb-3" key={i}>
+                        <div className="pb-2">
                           <strong>{p.type.name}</strong>
                           {p.type.description ? (
                             <i
@@ -124,7 +124,19 @@ export function LicenceView({ license }: LicenceViewProps) {
                             " "
                           )}
                         </div>
-                        <div>{p.description || " "}</div>
+                        <div className="py-1">
+                          <i className="bi bi-geo-alt text-primary me-1" />{" "}
+                          {p.location}
+                        </div>
+                        <div className="py-1">
+                          <i className="bi bi-calendar2-week text-primary me-1" />{" "}
+                          {p.starts_at}{" "}
+                          <span className="fst-italic mx-1"> till </span>{" "}
+                          {p.ends_at}
+                        </div>
+                        {p.description && (
+                          <div className="py-1">{p.description}</div>
+                        )}
                       </li>
                     ))}
                   </ul>
