@@ -134,8 +134,34 @@ export function LicenceView({ license }: LicenceViewProps) {
                           <span className="fst-italic mx-1"> till </span>{" "}
                           {p.ends_at}
                         </div>
+                        {p.species.length > 0 && (
+                          <div className="py-1">
+                            <i className="bi bi-twitter text-primary me-1" />{" "}
+                            {p.species.join(", ")}
+                          </div>
+                        )}
                         {p.description && (
-                          <div className="py-1">{p.description}</div>
+                          <div className="pt-3">{p.description}</div>
+                        )}
+                        {p.properties.length > 0 && (
+                          <div className="py-3">
+                            {p.properties.map((p, i) => (
+                              <p className="my-1 fst-italic" key={i}>
+                                &bull; {p.name}{" "}
+                                {p.description ? (
+                                  <i
+                                    className="bi bi-info-circle text-primary p-1"
+                                    role="button"
+                                    data-bs-toggle="tooltip"
+                                    data-bs-placement="right"
+                                    title={p.description}
+                                  />
+                                ) : (
+                                  " "
+                                )}
+                              </p>
+                            ))}
+                          </div>
                         )}
                       </li>
                     ))}

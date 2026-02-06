@@ -144,12 +144,19 @@ export type LicensePermissionType = {
   description: string;
 };
 
+export type LicensePermissionProperty = {
+  name: string;
+  description: string;
+};
+
 export type LicensePermission = {
   type: LicensePermissionType;
   description: string;
   location: string;
   starts_at: string;
   ends_at: string;
+  species: string[];
+  properties: LicensePermissionProperty[];
 };
 
 export type LicenseDocument = {
