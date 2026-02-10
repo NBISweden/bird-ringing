@@ -83,9 +83,10 @@ services:
       DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-}
       LICENSE_CARD_FILE: ${LICENSE_CARD_FILE:-}
       LICENSE_CARD_FILE_BACK: ${LICENSE_CARD_FILE_BACK:-}
+      PERMIT_TEMPLATE_FILE: ${PERMIT_TEMPLATE_FILE:-}
     volumes:
       - backend-vol:/vol
-      - ./secrets/card_templates:/card_templates
+      - ./secrets/doc_templates:/doc_templates
     healthcheck:
       test: ["CMD", "wget", "--spider", "--timeout=5", "http://backend:8000/api/system/health/"]
       interval: 10s
