@@ -83,6 +83,7 @@ services:
       DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-}
       LICENSE_CARD_FILE: ${LICENSE_CARD_FILE:-}
       LICENSE_CARD_BACK_FILE: ${LICENSE_CARD_BACK_FILE:-}
+      PERMIT_TEMPLATE_FILE: ${PERMIT_TEMPLATE_FILE:-}
     volumes:
       - backend-vol:/vol
     healthcheck:
