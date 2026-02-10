@@ -2,7 +2,7 @@
 
 import { Suspense } from "react";
 import useSWR from "swr";
-import { useSearchParams } from "next/navigation";
+import { notFound, useSearchParams } from "next/navigation";
 import { useClient } from "../../contexts";
 import {
   ActorLicenseRelation,
@@ -12,36 +12,51 @@ import {
 } from "../../common";
 import { Client } from "../../client";
 import Spinner from "@/components/Spinner";
+import { useTranslation } from "../../internationalization";
+import { Alert } from "@/components/Alert";
 
 async function fetchActor([client, _ctx, entryId]: [Client, "actor", string]) {
   return client.fetchActorById(entryId);
+}
+
+function LoadingActor() {
+  return (
+    <div className="container">
+      <Spinner />
+    </div>
+  );
 }
 
 function ActorViewBase() {
   const searchParams = useSearchParams();
   const actorId = searchParams.get("entryId");
   const client = useClient();
+  const { t, format } = useTranslation();
 
   const { data, isLoading, error } = useSWR(
     actorId ? [client, "actor", actorId] : null,
     fetchActor,
   );
 
-  if (!actorId || error || !data) {
+  if (!actorId) {
+    notFound();
+  }
+
+  if (error) {
     return (
       <div className="container">
-        <h2>Något gick fel.</h2>
-        <p>Persondatat kunde inte laddas.</p>
+        <h2>{t("actorErrorLoadingActorTitle")}</h2>
+
+        <p>{t("actorErrorLoadingActorText", { actorId })}</p>
+        <Alert type="danger">
+          <p>{error instanceof Error ? error.message : String(error)}</p>
+        </Alert>
       </div>
     );
   }
 
-  if (isLoading) {
-    return (
-      <div className="container">
-        <Spinner />
-      </div>
-    );
+  if (isLoading || !data) {
+    return <LoadingActor />;
   }
 
   const licenses: ActorLicenseRelation[] = data.current_license_relations;
@@ -114,7 +129,7 @@ function ActorViewBase() {
                       <span>{data.email}</span>
                     ) : (
                       <p className="text-muted fst-italic m-0">
-                        no e-mail address
+                        {t("actorNoEmailAddress")}
                       </p>
                     )}
                     {data.alternative_email && (
@@ -131,7 +146,7 @@ function ActorViewBase() {
                       <span>{data.phone_number1}</span>
                     ) : (
                       <p className="text-muted fst-italic m-0">
-                        no phone number
+                        {t("actorNoPhoneNumber")}
                       </p>
                     )}
                     {data.phone_number2 && (
@@ -145,13 +160,17 @@ function ActorViewBase() {
                     {data.address ? (
                       <span>{data.address}</span>
                     ) : (
-                      <p className="text-muted fst-italic m-0">no address</p>
+                      <p className="text-muted fst-italic m-0">
+                        {t("actorNoAddress")}
+                      </p>
                     )}
                     {data.co_address && <span>{data.co_address}</span>}
                     {data.postal_code || data.city ? (
                       <span>{data.postal_code + " " + data.city}</span>
                     ) : (
-                      <p className="text-muted fst-italic m-0">no city</p>
+                      <p className="text-muted fst-italic m-0">
+                        {t("actorNoCity")}
+                      </p>
                     )}
                     {data.country && <span>{data.country}</span>}
                   </div>
@@ -159,12 +178,14 @@ function ActorViewBase() {
               </ul>
             </div>
             <p className="text-muted text-end small m-1">
-              Uppdaterad {convertDateToLocale(data.updated_at)}
+              {t("actorUpdatedAt", {
+                date: convertDateToLocale(data.updated_at),
+              })}
             </p>
           </div>
         </div>
         <div className="col-12 col-xxl-9">
-          <h3 className="pt-4 fw-bold">Licenser</h3>
+          <h3 className="pt-4 fw-bold">{t("actorLicenses")}</h3>
           <ul className="list-group list-group-flush">
             {licenses.length > 0 ? (
               licenses.map((l) => (
@@ -178,17 +199,25 @@ function ActorViewBase() {
                     </div>
                     <div className="py-2 col-5 d-flex flex-column flex-md-row align-items-center ">
                       <div>
-                        <p className="m-0 text-end">{l.starts_at}</p>
-                        <p className="m-0">
-                          <span className="text-muted small">till</span>{" "}
-                          {l.ends_at}
-                        </p>
+                        {format("actorLicenseValidityPeriod", {
+                          startsAt: convertOnlyDateToLocale(l.starts_at),
+                          endsAt: convertOnlyDateToLocale(l.ends_at),
+                          from: (chunks: React.ReactNode) => (
+                            <p className="m-0 text-end">{chunks}</p>
+                          ),
+                          to: (chunks) => <p className="m-0">{chunks}</p>,
+                          muted: (chunks) => (
+                            <span className="text-muted small">{chunks}</span>
+                          ),
+                        })}
                       </div>
                       <div className="ms-3">
                         <span
                           className={`badge rounded-pill ms-2 ${is_license_active(l) ? "text-success-emphasis bg-success-subtle" : "text-dark-emphasis bg-body-secondary"}`}
                         >
-                          {is_license_active(l) ? "active" : "inactive"}
+                          {is_license_active(l)
+                            ? t("actorLicenseActive")
+                            : t("actorLicenseInactive")}
                         </span>
                       </div>
                     </div>
@@ -202,7 +231,9 @@ function ActorViewBase() {
                 </li>
               ))
             ) : (
-              <p className="text-muted fst-italic">No current licenses.</p>
+              <p className="text-muted fst-italic">
+                {t("actorNoCurrentLicenses")}
+              </p>
             )}
           </ul>
         </div>
@@ -213,7 +244,7 @@ function ActorViewBase() {
 
 export default function ActorView() {
   return (
-    <Suspense fallback={<div>Loading...</div>}>
+    <Suspense fallback={<LoadingActor />}>
       <ActorViewBase />
     </Suspense>
   );

@@ -1,5 +1,6 @@
 import { ReadonlyURLSearchParams } from "next/navigation";
 import React from "react";
+import { Translation } from "./internationalization";
 
 export type ActorBase = {
   id: number;
@@ -88,14 +89,15 @@ export function getPages<T>(
   pathname: string,
   params: ReadonlyURLSearchParams,
   pageData: PagedResponse<T>,
+  t: Translation["t"],
 ): Page[] {
   const pages: Page[] = [
     {
-      rel: "Första",
+      rel: t("paginationFirst"),
       href: hrefWithParams(pathname, params, 1),
     },
     {
-      rel: "Föregående",
+      rel: t("paginationPrevious"),
       href: pageData.previous
         ? hrefWithParams(pathname, params, getPageNumber(pageData.previous))
         : null,
@@ -107,13 +109,13 @@ export function getPages<T>(
       };
     }),
     {
-      rel: "Nästa",
+      rel: t("paginationNext"),
       href: pageData.next
         ? hrefWithParams(pathname, params, getPageNumber(pageData.next))
         : null,
     },
     {
-      rel: "Sista",
+      rel: t("paginationLast"),
       href: hrefWithParams(pathname, params, pageData.num_pages),
     },
   ];

@@ -25,6 +25,7 @@ import {
   useFetchEmailAddressesAction,
   useSendLicenseEmailAction,
 } from "./actions";
+import { useTranslation } from "../internationalization";
 
 type ActorPropertyIds =
   | "name"
@@ -123,6 +124,7 @@ function ConnectedListView() {
   const client = useClient();
   const fetchEmailAddressesAction = useFetchEmailAddressesAction(client);
   const sendLicenseEmailAction = useSendLicenseEmailAction();
+  const { t } = useTranslation();
 
   useEffect(() => {
     if (search !== activeQuery) {
@@ -137,20 +139,20 @@ function ConnectedListView() {
     fetchActorPage,
     { fallbackData: emptyActorPage, keepPreviousData: true },
   );
-  const pages = getPages(pathname, params, actorPage);
+  const pages = getPages(pathname, params, actorPage, t);
   const currentPage = hrefWithParams(pathname, params, page, search);
   const batchActions: ListViewProps["batchActions"] = [
     {
-      label: "Hämta e-postadresser",
+      label: t("actorFetchEmailAddresses"),
       action: fetchEmailAddressesAction,
     },
     {
-      label: "Skicka licenser",
+      label: t("actorSendLicenses"),
       action: sendLicenseEmailAction,
     },
     { type: "divider" },
     {
-      label: "Avaktivera",
+      label: t("actorDeactivate"),
       action: () => {},
       disabled: true,
     },
@@ -196,6 +198,7 @@ function BaseListView({
   params,
   batchActions,
 }: ListViewProps) {
+  const { t } = useTranslation();
   const [actionIsOpen, setActionIsOpen] = useState(false);
 
   const items = useMemo(() => actors.map<TableItem>(toActorTable), [actors]);
@@ -204,41 +207,41 @@ function BaseListView({
   const ordering = params.get("ordering");
   const columns: Record<ActorPropertyIds, ColumnProperties> = {
     name: {
-      label: "Namn",
+      label: t("actorName"),
       ordering: {
         forward: "full_name",
         reverse: "-full_name",
       },
     },
     type: {
-      label: "Type",
+      label: t("actorType"),
       ordering: {
         forward: "type,full_name",
         reverse: "-type,full_name",
       },
     },
     roles: {
-      label: "Roller",
+      label: t("actorRoles"),
     },
     licenses: {
-      label: "Licenser",
+      label: t("actorLicenses"),
     },
     email: {
-      label: "E-post",
+      label: t("actorEmail"),
       ordering: {
         forward: "email,alternative_email",
         reverse: "-email,-alternative_email",
       },
     },
     city: {
-      label: "Ort",
+      label: t("actorCity"),
       ordering: {
         forward: "city,full_name",
         reverse: "-city,full_name",
       },
     },
     updated_at: {
-      label: "Senast uppdaterad",
+      label: t("actorLastUpdated"),
       ordering: {
         forward: "updated_at,full_name",
         reverse: "-updated_at,full_name",
@@ -246,21 +249,31 @@ function BaseListView({
     },
   };
   const selectionInfo = isLoading
-    ? "Laddar data"
-    : `${selectedItems.size} valda av ${count}`;
+    ? t("loadingData")
+    : t("selectionSizeComparison", {
+        selectedCount: selectedItems.size,
+        fullCount: count,
+      });
   return (
     <div className="container">
-      <h2>Ringare</h2>
+      <h2>{t("actorListView")}</h2>
       <div className="input-group mb-3">
-        <span className="input-group-text">Filter</span>
+        <label
+          className="input-group-text"
+          id="table-filter-label"
+          htmlFor="table-filter"
+        >
+          {t("actorFilterLabel")}
+        </label>
         <input
+          id="table-filter"
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           className="form-control"
-          placeholder={"Namn, E-post, Ort, Mnr, Roll, Typ"}
-          aria-label="Filtrera tabellen"
-          aria-describedby="Tabellfilter"
+          placeholder={t("actorFilterPlaceholder")}
+          aria-label={t("actorFilterDescription")}
+          aria-describedby="table-filter-label"
         />
       </div>
       <div className="input-group mb-3">
@@ -269,7 +282,7 @@ function BaseListView({
           type="button"
           onClick={toggleItems}
         >
-          {allSelected ? "Välj inga" : "Välj alla"}
+          {allSelected ? t("selectNone") : t("selectAll")}
         </button>
         <span className="input-group-text flex-grow-1">{selectionInfo}</span>
         <button
@@ -278,7 +291,7 @@ function BaseListView({
           type="button"
           aria-expanded={actionIsOpen}
         >
-          Batch-funktioner
+          {t("batchActions")}
         </button>
         <ul
           className={`dropdown-menu batch-action-menu ${actionIsOpen ? "show" : ""}`}

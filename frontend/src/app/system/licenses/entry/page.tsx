@@ -2,12 +2,15 @@
 
 import { Suspense, useState } from "react";
 import useSWR from "swr";
-import { useSearchParams } from "next/navigation";
+import { notFound, useSearchParams } from "next/navigation";
 import Spinner from "@/components/Spinner";
 
 import { useClient } from "../../contexts";
 import { Client } from "../../client";
 import { LicenceView } from "@/components/LicenceView";
+import { Alert } from "@/components/Alert";
+import { useTranslation } from "../../internationalization";
+import { convertOnlyDateToLocale } from "../../common";
 
 async function fetchLicense([client, _ctx, entryId]: [
   Client,
@@ -21,6 +24,7 @@ function LicenseViewInner() {
   const params = useSearchParams();
   const mnr = params.get("mnr");
   const client = useClient();
+  const { t, format } = useTranslation();
 
   const { data, isLoading, error } = useSWR(
     mnr ? [client, "license", mnr] : null,
@@ -29,19 +33,29 @@ function LicenseViewInner() {
 
   const [historyPage, setHistoryPage] = useState(1);
 
-  if (!mnr || error || !data) {
+  if (!mnr) {
+    notFound();
+  }
+
+  if (error) {
     return (
       <div className="container">
-        <h2>Något gick fel.</h2>
-        <p className="text-muted fst-italic">Licenserna kunde inte laddas.</p>
+        <h2>{t("licenseErrorLoadingLicenseTitle")}</h2>
+
+        <p>{t("licenseErrorLoadingLicenseText", { licenseId: mnr })}</p>
+        <Alert type="danger">
+          <p>{error instanceof Error ? error.message : String(error)}</p>
+        </Alert>
       </div>
     );
   }
 
-  if (isLoading) {
+  if (isLoading || !data) {
     return (
       <div className="container">
-        <h2>License view: {mnr}</h2>
+        <h2>
+          {t("licenseView")}: {mnr}
+        </h2>
         <Spinner />
       </div>
     );
@@ -64,12 +78,14 @@ function LicenseViewInner() {
       <div className="row ">
         <div className="col-12 col-xl-10 col-xxl-9">
           <div>
-            <h1 className="h2 mb-1">Licens {data.mnr}</h1>
+            <h1 className="h2 mb-1">
+              {t("licenseView")} {data.mnr}
+            </h1>
           </div>
           <LicenceView license={data.current} />
           {/* History */}
           <div className="py-3">
-            <h3 className="h2">Historik</h3>
+            <h3 className="h2">{t("licenseHistory")}</h3>
             {data.history?.length ? (
               <>
                 <ul className="list-group list-group-flush">
@@ -77,9 +93,16 @@ function LicenseViewInner() {
                     <li className="list-group-item py-3" key={h.version}>
                       <div className="row align-items-center g-2">
                         <div className="col-12 col-lg-8">
-                          <span className="fst-italic">Giltig under </span>
-                          {h.starts_at}
-                          <span className="fst-italic"> till </span> {h.ends_at}
+                          {format("licenseValidityPeriod", {
+                            startsAt: convertOnlyDateToLocale(h.starts_at),
+                            endsAt: convertOnlyDateToLocale(h.ends_at),
+                            from: (chunks) => (
+                              <span className="fst-italic">{chunks}</span>
+                            ),
+                            to: (chunks) => (
+                              <span className="fst-italic">{chunks}</span>
+                            ),
+                          })}
                         </div>
                       </div>
                     </li>
@@ -110,7 +133,9 @@ function LicenseViewInner() {
                 )}
               </>
             ) : (
-              <p className="text-muted fst-italic">Inga tidigare versioner.</p>
+              <p className="text-muted fst-italic">
+                {t("licenseNoPreviousVerions")}
+              </p>
             )}
           </div>
         </div>

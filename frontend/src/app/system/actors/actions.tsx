@@ -4,14 +4,16 @@ import { Client } from "../client";
 import Spinner from "@/components/Spinner";
 import { Alert } from "@/components/Alert";
 import useSWRImmutable from "swr/immutable";
+import { useTranslation } from "../internationalization";
 
 export function useFetchEmailAddressesAction(client: Client) {
   const modalStack = useModalsContext();
+  const { t } = useTranslation();
 
   const action = useCallback(
     (itemIds: Set<string>) => {
       modalStack.add({
-        title: "Hämta e-postadresser för ringare",
+        title: t("actorFetchEmailAddresses"),
         content: (
           <ClientContext.Provider value={client}>
             <ActorEmailList ids={Array.from(itemIds)} />
@@ -19,41 +21,40 @@ export function useFetchEmailAddressesAction(client: Client) {
         ),
         actions: [
           {
-            label: "Stäng",
+            label: t("closeModal"),
             action: () => {},
             type: "primary",
           },
         ],
       });
     },
-    [modalStack, client],
+    [modalStack, client, t],
   );
   return action;
 }
 
 export function useSendLicenseEmailAction() {
   const modalStack = useModalsContext();
+  const { t } = useTranslation();
 
   const action = useCallback(() => {
     modalStack.add({
-      title: "Skicka ut licenser",
+      title: t("actorSendLicenses"),
       content: (
         <>
           <Spinner />
-          <span className="ms-3">
-            Skickande av license är ännu inte implementerad.
-          </span>
+          <span className="ms-3">{t("featureNotImplemented")}</span>
         </>
       ),
       actions: [
         {
-          label: "Stäng",
+          label: t("closeModal"),
           action: () => {},
           type: "primary",
         },
       ],
     });
-  }, [modalStack]);
+  }, [modalStack, t]);
   return action;
 }
 
@@ -72,6 +73,7 @@ async function fetchActorEmail([client, ids]: [
 
 function ActorEmailList({ ids }: { ids: string[] }) {
   const client = useClient();
+  const { t } = useTranslation();
 
   const { data, isLoading, error } = useSWRImmutable(
     [client, ids],
@@ -81,7 +83,7 @@ function ActorEmailList({ ids }: { ids: string[] }) {
   return isLoading ? (
     <>
       <Spinner />
-      <span className="ms-3">Loading email listings</span>
+      <span className="ms-3">{t("actorLoadingEmailAddresses")}</span>
     </>
   ) : error ? (
     <Alert type="danger">{String(error)}</Alert>
