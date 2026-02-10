@@ -2,11 +2,21 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
 
-from licensing.license_card_service import LicenseCardService, NoCurrentLicense, ActorNotOnLicense
 from licensing.message_builder import MessageBuilder, LicenseAndPermitMessageBuilder
 from licensing.communication_service import CommunicationService
 from licensing.utils import get_flattened_license_and_relations
 from django.core import mail
+
+from licensing.license_card_service import (
+    LicenseCardService,
+    NoCurrentLicense as CardNoCurrentLicense,
+    ActorNotOnLicense as CardActorNotOnLicense,
+)
+from licensing.permit_service import (
+    PermitService,
+    NoCurrentLicense as PermitNoCurrentLicense,
+    ActorNotOnLicense as PermitActorNotOnLicense,
+)
 
 from licensing.models import (
     LicensePermissionProperty,
@@ -488,7 +498,7 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
         try:
             lic = seq.current
             if not lic:
-                raise NoCurrentLicense("No current license found.")
+                raise CardNoCurrentLicense("No current license found.")
 
             doc = service.get_or_create_license_card_document(
                 lic=lic,
@@ -496,9 +506,9 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
                 created_by=request.user,
                 updated_by=request.user,
             )
-        except NoCurrentLicense as e:
+        except CardNoCurrentLicense as e:
             return Response({"detail": str(e)}, status=404)
-        except ActorNotOnLicense as e:
+        except CardActorNotOnLicense as e:
             return Response({"detail": str(e)}, status=400)
         except Exception as e:
             return Response({"detail": str(e)}, status=400)
@@ -517,12 +527,12 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
         try:
             lic = seq.current
             if not lic:
-                raise NoCurrentLicense("No current license found.")
+                raise CardNoCurrentLicense("No current license found.")
 
             doc = service.get_license_card_document(lic=lic, actor=actor)
-        except NoCurrentLicense as e:
+        except CardNoCurrentLicense as e:
             return Response({"detail": str(e)}, status=404)
-        except ActorNotOnLicense as e:
+        except CardActorNotOnLicense as e:
             return Response({"detail": str(e)}, status=400)
         except Exception as e:
             return Response({"detail": str(e)}, status=400)
@@ -570,9 +580,9 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
                 licenses=licenses,
                 allowed_roles=(LicenseRoleChoices.RINGER, LicenseRoleChoices.HELPER),
             )
-        except NoCurrentLicense as e:
+        except CardNoCurrentLicense as e:
             return Response({"detail": str(e)}, status=404)
-        except ActorNotOnLicense as e:
+        except CardActorNotOnLicense as e:
             return Response({"detail": str(e)}, status=400)
         except ValueError as e:
             return Response({"detail": str(e)}, status=404)
@@ -601,9 +611,9 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
                 updated_by=request.user,
                 allowed_roles=(LicenseRoleChoices.RINGER, LicenseRoleChoices.HELPER),
             )
-        except NoCurrentLicense as e:
+        except CardNoCurrentLicense as e:
             return Response({"detail": str(e)}, status=404)
-        except ActorNotOnLicense as e:
+        except CardActorNotOnLicense as e:
             return Response({"detail": str(e)}, status=400)
         except ValueError as e:
             return Response({"detail": str(e)}, status=400)
@@ -674,6 +684,65 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
         except OSError as e:
             logger.error(f"send_license_emails: {type(e)}: {e}")
             return Response({"detail": "Failed to connect to mail server"}, status=503)
+
+    @action(detail=True, methods=["put"], url_path="permit-create")
+    def permit_create(self, request, mnr=None):
+        seq = self.get_object()
+        actor = self._get_actor_from_request(request)
+
+        service = PermitService()
+        try:
+            lic = seq.current
+            if not lic:
+                raise PermitNoCurrentLicense("No current license found.")
+
+            doc = service.get_or_create_permit_document(
+                lic=lic,
+                actor=actor,
+                created_by=request.user,
+                updated_by=request.user,
+            )
+        except PermitNoCurrentLicense as e:
+            return Response({"detail": str(e)}, status=404)
+        except PermitActorNotOnLicense as e:
+            return Response({"detail": str(e)}, status=400)
+        except Exception as e:
+            return Response({"detail": str(e)}, status=400)
+
+        docx_url = reverse("licensesequence-permit-docx", kwargs={"mnr": seq.mnr}, request=request)
+        docx_url = f"{docx_url}?actor_id={actor.id}"
+
+        return Response({"filename": doc.reference, "docx_url": docx_url}, status=200)
+
+    @action(detail=True, methods=["get"], url_path="permit-docx")
+    def permit_docx(self, request, mnr=None):
+        seq = self.get_object()
+        actor = self._get_actor_from_request(request)
+
+        service = PermitService()
+        try:
+            lic = seq.current
+            if not lic:
+                raise PermitNoCurrentLicense("No current license found.")
+
+            doc = service.get_permit_document(lic=lic, actor=actor)
+        except PermitNoCurrentLicense as e:
+            return Response({"detail": str(e)}, status=404)
+        except PermitActorNotOnLicense as e:
+            return Response({"detail": str(e)}, status=400)
+        except Exception as e:
+            return Response({"detail": str(e)}, status=400)
+
+        if not doc:
+            return Response({"detail": "No current permit DOCX exists. Call /permit-create first."}, status=404)
+
+        if not doc.data:
+            return Response({"detail": "Current permit document is missing file data. Call /permit-create again."}, status=409)
+
+        filename = doc.reference or service.make_permit_filename(lic, actor)
+        resp = HttpResponse(bytes(doc.data), content_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+        resp["Content-Disposition"] = f'inline; filename="{filename}"'
+        return resp
 
 actor_type_label = models.Case(
     *[
