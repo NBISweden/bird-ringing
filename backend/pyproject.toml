@@ -8,6 +8,8 @@ dependencies = [
     "cairosvg",
     "django>=5.2.7",
     "djangorestframework>=3.16.1",
+    "docxcompose>=2.0.0",
+    "docxtpl>=0.20.2",
     "gunicorn>=23.0.0",
     "lxml",
     "pikepdf>=10.2.0",
