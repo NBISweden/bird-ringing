@@ -64,6 +64,7 @@ class LicenseStatusChoices(models.IntegerChoices):
 class DocumentTypeChoices(models.IntegerChoices):
     DOCUMENT = (1, "document")
     LICENSE = (2, "license")
+    PERMIT = (3, "permit")
 
 
 class CommunicationTypeChoices(models.IntegerChoices):
