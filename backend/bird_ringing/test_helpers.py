@@ -3,8 +3,12 @@ from unittest.mock import patch
 import tempfile
 import os
 
-from bird_ringing.helpers import get_secret_from_file
-from bird_ringing.helpers import strtobool
+from bird_ringing.helpers import (
+    get_secret_from_file,
+    strtobool,
+    parse_single_row_csv,
+    parse_csv_from_env,
+)
 
 
 class GetSecretFromFileTests(SimpleTestCase):
@@ -38,3 +42,21 @@ class StrtoboolTests(SimpleTestCase):
         self.assertFalse(strtobool(False))
         with self.assertRaises(ValueError):
             strtobool("abc")
+
+
+class ParseCSVTest(SimpleTestCase):
+    def test_parse_single_row_csv(self):
+        self.assertEqual(parse_single_row_csv(""), [])
+        self.assertEqual(parse_single_row_csv(",,,"), [])
+        self.assertEqual(parse_single_row_csv(" , , ,"), [])
+        self.assertEqual(parse_single_row_csv("abc, cde, efg"), ["abc", "cde", "efg"])
+        self.assertEqual(parse_single_row_csv("abc, cde, efg\nhij, klm, nop"), ["abc", "cde", "efg"])
+
+
+class ParseCSVFromENV(SimpleTestCase):
+    def test_parse_csv_from_env(self):
+        with patch.dict(os.environ, {"__ALLOWED_HOSTS": "target_a, , target_b"}):
+            self.assertEqual(parse_csv_from_env("__ALLOWED_HOSTS", ["default"]), ["target_a", "target_b"])
+
+        with patch.dict(os.environ, {"__ALLOWED_HOSTS": ""}):
+            self.assertEqual(parse_csv_from_env("__ALLOWED_HOSTS", ["default"]), ["default"])

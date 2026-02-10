@@ -2,6 +2,24 @@ import { createContext, useContext, useState, useCallback } from "react";
 import { Client } from "./client";
 import { ButtonType } from "./common";
 
+export type Config = {
+  authUrl: string;
+  apiRootUrl: string;
+  defaultLang: string;
+};
+
+export const ConfigContext = createContext<Config | null>(null);
+
+export const useConfig = () => {
+  const config = useContext(ConfigContext);
+
+  if (!config) {
+    throw new Error("No config available");
+  }
+
+  return config;
+};
+
 export type Auth = {
   username: string;
   permissions: string[];

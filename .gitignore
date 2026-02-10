@@ -7,3 +7,6 @@
 
 # Mock data
 mock_data
+
+# Docker compose override
+docker-compose.override.yml

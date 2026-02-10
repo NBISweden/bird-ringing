@@ -1,9 +1,9 @@
 "use client";
 import { useEffect, useContext, useMemo } from "react";
-import { Auth, AuthContext } from "../app/system/contexts";
+import { Auth, AuthContext, useConfig } from "../app/system/contexts";
 import { usePathname, useRouter } from "next/navigation";
 import useSWR from "swr";
-import { getCookie } from "../app/system/utils";
+import { getCookie, parseCompleteUrl } from "../app/system/utils";
 
 async function fetchUser([url]: [string]): Promise<Auth> {
   const response = await fetch(url, {
@@ -61,8 +61,9 @@ async function authenticate(
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const apiUrl = "http://localhost:3210/api/login/";
-  const { data: tryAuth, isLoading } = useSWR([apiUrl], fetchUser, {
+  const { authUrl: baseUrl } = useConfig();
+  const authUrl = parseCompleteUrl(baseUrl);
+  const { data: tryAuth, isLoading } = useSWR([authUrl], fetchUser, {
     revalidateOnMount: true,
     revalidateOnFocus: false,
     revalidateOnReconnect: false,
@@ -74,11 +75,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return {
         ...auth,
         signIn: (username: string, password: string) =>
-          authenticate(apiUrl, username, password),
+          authenticate(authUrl, username, password),
       };
     }
     return auth;
-  }, [apiUrl, auth]);
+  }, [authUrl, auth]);
 
   return (
     <AuthContext.Provider value={authWithAuthenticate}>

@@ -1,4 +1,6 @@
 from pathlib import Path
+import csv
+import io
 import os
 
 
@@ -37,3 +39,35 @@ def strtobool(val: str):
         return False
     else:
         raise ValueError("invalid truth value %r" % (val,))
+
+
+def parse_csv_from_env(env_var_name: str, default: list[str]):
+    """
+    Reads an environment variable and parses it as a CSV string
+
+    :param env_var_name: Name of environment variable containing CSV
+    :param default: The value returned if the envornment variable is unset
+    :return: A list of (stripped, non-empty) strings
+    """
+    csv_str = os.getenv(env_var_name)
+    if csv_str:
+        return parse_single_row_csv(csv_str)
+    return default
+
+
+def parse_single_row_csv(data: str):
+    """
+    Parses a CSV string getting only the first row
+
+    :param data: The data to be parsed
+    :return: A list of (stripped, non-empty) strings
+    """
+    reader = csv.reader(io.StringIO(data))
+    try:
+        items = [
+            v.strip()
+            for v in next(reader)
+        ]
+        return [v for v in items if v != ""]
+    except StopIteration:
+        return []
