@@ -744,6 +744,64 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
         resp["Content-Disposition"] = f'inline; filename="{filename}"'
         return resp
 
+    @action(detail=False, methods=["put"], url_path="permit-create")
+    def permit_create_batch(self, request):
+        raw = request.query_params.get("mnrs", "")
+        mnrs = [m for m in parse_csv_string(raw) if m]
+
+        try:
+            licenses = get_current_licenses(mnrs)
+        except serializers.ValidationError as e:
+            return Response(e.detail, status=400)
+
+        service = PermitService()
+        try:
+            docs = service.batch_get_or_create_permit_documents(
+                licenses=licenses,
+                created_by=request.user,
+                updated_by=request.user,
+                allowed_roles=(LicenseRoleChoices.RINGER, LicenseRoleChoices.HELPER),
+            )
+        except PermitNoCurrentLicense as e:
+            return Response({"detail": str(e)}, status=404)
+        except PermitActorNotOnLicense as e:
+            return Response({"detail": str(e)}, status=400)
+        except ValueError as e:
+            return Response({"detail": str(e)}, status=400)
+        except Exception as e:
+            return Response({"detail": str(e)}, status=400)
+
+        return Response({"filenames": [d.reference for d in docs]}, status=200)
+
+    @action(detail=False, methods=["get"], url_path="permit-docx")
+    def permit_docx_batch(self, request):
+        raw = request.query_params.get("mnrs", "")
+        mnrs = [m for m in parse_csv_string(raw) if m]
+
+        try:
+            licenses = get_current_licenses(mnrs)
+        except serializers.ValidationError as e:
+            return Response(e.detail, status=400)
+
+        service = PermitService()
+        try:
+            zip_bytes = service.create_zip_with_permit_docx_files(
+                licenses=licenses,
+                allowed_roles=(LicenseRoleChoices.RINGER, LicenseRoleChoices.HELPER),
+            )
+        except PermitNoCurrentLicense as e:
+            return Response({"detail": str(e)}, status=404)
+        except PermitActorNotOnLicense as e:
+            return Response({"detail": str(e)}, status=400)
+        except ValueError as e:
+            return Response({"detail": str(e)}, status=404)
+        except Exception as e:
+            return Response({"detail": str(e)}, status=400)
+
+        resp = HttpResponse(zip_bytes, content_type="application/zip")
+        resp["Content-Disposition"] = 'attachment; filename="permits.zip"'
+        return resp
+
 actor_type_label = models.Case(
     *[
         models.When(type=value, then=models.Value(label))
