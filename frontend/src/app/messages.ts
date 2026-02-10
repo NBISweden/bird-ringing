@@ -45,6 +45,8 @@ const messagesBase = {
   actorLicenseActive: "Active",
   actorLicenseInactive: "Inactive",
   actorNoCurrentLicenses: "No current licenses",
+  actorLicenseValidityPeriod:
+    "<from>{startsAt}</from><to><muted>to</muted> {endsAt}</to>",
 
   licenseId: "Mnr",
   licenseType: "Type",
@@ -72,7 +74,8 @@ const messagesBase = {
   licenseErrorLoadingLicenseText:
     "Something went wrong while loading license with {licenseId}",
   licenseHistory: "History",
-  licenseValidityPeriod: "Valid from {startsAt} to {endsAt}",
+  licenseValidityPeriod:
+    "<from>Valid from </from>{startsAt}<to> to </to>{endsAt}",
   licenseNoPreviousVerions: "No previous versions",
   licenseCreatedAt: "Created at {date}",
   licenseUpdatedAt: "Updated at {date}",

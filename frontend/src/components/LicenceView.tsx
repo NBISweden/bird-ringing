@@ -11,7 +11,7 @@ type LicenceViewProps = {
 };
 
 export function LicenceView({ license }: LicenceViewProps) {
-  const { t } = useTranslation();
+  const { t, format } = useTranslation();
   return (
     <>
       <div className="mb-3">
@@ -21,9 +21,15 @@ export function LicenceView({ license }: LicenceViewProps) {
             <div className="row g-2">
               <div className="col-12 col-md-9">
                 <div>
-                  {t("licenseValidityPeriod", {
+                  {format("licenseValidityPeriod", {
                     startsAt: convertOnlyDateToLocale(license.starts_at),
                     endsAt: convertOnlyDateToLocale(license.ends_at),
+                    from: (chunks) => (
+                      <span className="fst-italic">{chunks}</span>
+                    ),
+                    to: (chunks) => (
+                      <span className="fst-italic">{chunks}</span>
+                    ),
                   })}
                 </div>
               </div>

@@ -31,7 +31,7 @@ function ActorViewBase() {
   const searchParams = useSearchParams();
   const actorId = searchParams.get("entryId");
   const client = useClient();
-  const { t } = useTranslation();
+  const { t, format } = useTranslation();
 
   const { data, isLoading, error } = useSWR(
     actorId ? [client, "actor", actorId] : null,
@@ -199,11 +199,17 @@ function ActorViewBase() {
                     </div>
                     <div className="py-2 col-5 d-flex flex-column flex-md-row align-items-center ">
                       <div>
-                        <p className="m-0 text-end">{l.starts_at}</p>
-                        <p className="m-0">
-                          <span className="text-muted small">till</span>{" "}
-                          {l.ends_at}
-                        </p>
+                        {format("actorLicenseValidityPeriod", {
+                          startsAt: convertOnlyDateToLocale(l.starts_at),
+                          endsAt: convertOnlyDateToLocale(l.ends_at),
+                          from: (chunks: React.ReactNode) => (
+                            <p className="m-0 text-end">{chunks}</p>
+                          ),
+                          to: (chunks) => <p className="m-0">{chunks}</p>,
+                          muted: (chunks) => (
+                            <span className="text-muted small">{chunks}</span>
+                          ),
+                        })}
                       </div>
                       <div className="ms-3">
                         <span

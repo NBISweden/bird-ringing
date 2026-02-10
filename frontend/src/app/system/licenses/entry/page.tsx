@@ -24,7 +24,7 @@ function LicenseViewInner() {
   const params = useSearchParams();
   const mnr = params.get("mnr");
   const client = useClient();
-  const { t } = useTranslation();
+  const { t, format } = useTranslation();
 
   const { data, isLoading, error } = useSWR(
     mnr ? [client, "license", mnr] : null,
@@ -93,9 +93,15 @@ function LicenseViewInner() {
                     <li className="list-group-item py-3" key={h.version}>
                       <div className="row align-items-center g-2">
                         <div className="col-12 col-lg-8">
-                          {t("licenseValidityPeriod", {
+                          {format("licenseValidityPeriod", {
                             startsAt: convertOnlyDateToLocale(h.starts_at),
                             endsAt: convertOnlyDateToLocale(h.ends_at),
+                            from: (chunks) => (
+                              <span className="fst-italic">{chunks}</span>
+                            ),
+                            to: (chunks) => (
+                              <span className="fst-italic">{chunks}</span>
+                            ),
                           })}
                         </div>
                       </div>

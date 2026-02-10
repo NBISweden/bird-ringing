@@ -140,7 +140,7 @@ function ConnectedListView() {
     { label: t("licenseDownloadLicenses"), action: downloadZipAction },
     { type: "divider" },
     {
-      label: "Avaktivera",
+      label: t("actorDeactivate"),
       action: () => {},
       disabled: true,
     },

@@ -40,6 +40,8 @@ export const locale: TranslationMap = {
   actorLicenseActive: "Aktiv",
   actorLicenseInactive: "Inaktiv",
   actorNoCurrentLicenses: "Inga nuvarande licenser",
+  actorLicenseValidityPeriod:
+    "<from>{startsAt}</from><to><muted>till</muted> {endsAt}</to>",
 
   licenseId: "Mnr",
   licenseType: "Typ",
@@ -52,9 +54,9 @@ export const locale: TranslationMap = {
   licenseFilterLabel: "Filtrera",
   licenseFilterDescription: "Filtrera licenslistan",
   licenseFilterPlaceholder:
-    "Mnr, Typ, Licensinnehavare, Fångstmetoder, Senaste e-post skickad vid",
+    "Mnr, Typ, Licensinnehavare, Fångstmetoder, Senaste e-post skickat vid",
   licenseCreateLicenseDocuments: "Skapa licensedokument",
-  licenseDownloadLicenses: "Ladda ned licenskort (PDF)",
+  licenseDownloadLicenses: "Ladda ned licenskort (ZIP)",
   licenseDeactivate: "Avaktivera",
   licenseCreatingLicenseDocuments: "Skapar licensdokument",
   licenseCreateLicenseDocumentsConfirmText:
@@ -67,7 +69,8 @@ export const locale: TranslationMap = {
   licenseErrorLoadingLicenseText:
     "Något gick fel när vi försökte ladda data för licensen med id {licenseId}",
   licenseHistory: "Historik",
-  licenseValidityPeriod: "Giltig från {startsAt} till {endsAt}",
+  licenseValidityPeriod:
+    "<from>Giltig från </from>{startsAt}<to> till </to>{endsAt}",
   licenseNoPreviousVerions: "Inga tidigare versioner.",
   licenseCreatedAt: "Skapad {date}",
   licenseUpdatedAt: "Uppdaterad {date}",
@@ -90,7 +93,7 @@ export const locale: TranslationMap = {
 
   loadingData: "Laddar data",
   selectionSizeComparison: "{selectedCount} valda av {fullCount}",
-  selectAll: "Välj all",
+  selectAll: "Välj alla",
   selectNone: "Välj inga",
   batchActions: "Batch-funktioner",
   closeModal: "Stäng",
