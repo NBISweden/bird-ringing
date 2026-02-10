@@ -14,7 +14,7 @@ export function LicenceView({ license }: LicenceViewProps) {
   const { t, format } = useTranslation();
   return (
     <>
-      <div className="mb-3">
+      <div className="mb-4">
         {/* Header */}
         <div className="card border-primary">
           <div className="card-header">
@@ -70,38 +70,9 @@ export function LicenceView({ license }: LicenceViewProps) {
         </div>
       </div>
       {/* Permissions */}
-      <div className="mb-3">
+      <div className="mb-4">
         <div className="row">
-          {/* Actors */}
-          <div className="col-sm-6">
-            <div className="card border-primary">
-              <div className="card-body">
-                <h2 className="h3 card-title">{t("licenseActors")}</h2>
-                {license.actors?.length ? (
-                  <ul className="list-group list-group-flush">
-                    {license.actors.map((rel, i) => (
-                      <li className="list-group-item mb-3" key={i}>
-                        <div className="row align-items-center g-2">
-                          <div className="col-12 col-md-3 fw-semibold text-capitalize">
-                            {rel.role}
-                          </div>
-                          <div className="col-12 col-md-9">
-                            <i className="bi bi-person text-primary me-1" />
-                            {rel.actor.full_name}({rel.mednr})
-                          </div>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="text-muted fst-italic">
-                    {t("licenseNoConnectedActors")}
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
-          <div className="col-sm-6 mb-3 mb-sm-0">
+          <div className="mb-3 mb-sm-0">
             <div className="card border-primary">
               <div className="card-body">
                 <h2 className="h3 card-title">{t("licensePermissions")}</h2>
@@ -124,65 +95,80 @@ export function LicenceView({ license }: LicenceViewProps) {
                             " "
                           )}
                         </div>
-                        {p.location && (
-                          <div className="py-1">
-                            <i className="bi bi-geo-alt text-primary me-1" />{" "}
-                            {p.location}
-                          </div>
-                        )}
-                        {(p.starts_at || p.ends_at) && (
-                          <div className="py-1 d-flex">
-                            <i className="bi bi-calendar2-week text-primary me-2" />
-                            {p.starts_at && p.ends_at ? (
-                              <p className="m-0">
-                                {p.starts_at}{" "}
-                                <span className="fst-italic mx-1"> till </span>{" "}
-                                {p.ends_at}
-                              </p>
-                            ) : !p.starts_at ? (
-                              <p className="m-0">
-                                <span className="fst-italic mx-1"> until </span>{" "}
-                                {p.ends_at}
-                              </p>
-                            ) : !p.ends_at ? (
-                              <p className="m-0">
-                                <span className="fst-italic mx-1"> from </span>
-                                {p.starts_at}
-                              </p>
-                            ) : (
-                              <></>
+                        <div className="row mb-3">
+                          <div className="col-12 col-lg-6">
+                            {p.location && (
+                              <div className="py-1">
+                                <i className="bi bi-geo-alt text-primary me-1" />{" "}
+                                {p.location}
+                              </div>
+                            )}
+                            {(p.starts_at || p.ends_at) && (
+                              <div className="py-1 d-flex">
+                                <i className="bi bi-calendar2-week text-primary me-2" />
+                                {p.starts_at && p.ends_at ? (
+                                  <p className="m-0">
+                                    {p.starts_at}{" "}
+                                    <span className="fst-italic mx-1">
+                                      {" "}
+                                      till{" "}
+                                    </span>{" "}
+                                    {p.ends_at}
+                                  </p>
+                                ) : !p.starts_at ? (
+                                  <p className="m-0">
+                                    <span className="fst-italic mx-1">
+                                      {" "}
+                                      until{" "}
+                                    </span>{" "}
+                                    {p.ends_at}
+                                  </p>
+                                ) : !p.ends_at ? (
+                                  <p className="m-0">
+                                    <span className="fst-italic mx-1">
+                                      {" "}
+                                      from{" "}
+                                    </span>
+                                    {p.starts_at}
+                                  </p>
+                                ) : (
+                                  <></>
+                                )}
+                              </div>
+                            )}
+                            {p.species.length > 0 && (
+                              <div className="py-1">
+                                <i className="bi bi-twitter text-primary me-1" />{" "}
+                                {p.species.join(", ")}
+                              </div>
+                            )}
+                            {p.description && (
+                              <div className="pt-3">{p.description}</div>
                             )}
                           </div>
-                        )}
-                        {p.species.length > 0 && (
-                          <div className="py-1">
-                            <i className="bi bi-twitter text-primary me-1" />{" "}
-                            {p.species.join(", ")}
+                          <div className="col-12 col-lg-6 py-3 py-lg-0">
+                            {p.properties.length > 0 && (
+                              <div>
+                                {p.properties.map((p, i) => (
+                                  <p className="my-1 fst-italic" key={i}>
+                                    &bull; {p.name}{" "}
+                                    {p.description ? (
+                                      <i
+                                        className="bi bi-info-circle text-primary p-1"
+                                        role="button"
+                                        data-bs-toggle="tooltip"
+                                        data-bs-placement="right"
+                                        title={p.description}
+                                      />
+                                    ) : (
+                                      " "
+                                    )}
+                                  </p>
+                                ))}
+                              </div>
+                            )}
                           </div>
-                        )}
-                        {p.description && (
-                          <div className="pt-3">{p.description}</div>
-                        )}
-                        {p.properties.length > 0 && (
-                          <div className="py-3">
-                            {p.properties.map((p, i) => (
-                              <p className="my-1 fst-italic" key={i}>
-                                &bull; {p.name}{" "}
-                                {p.description ? (
-                                  <i
-                                    className="bi bi-info-circle text-primary p-1"
-                                    role="button"
-                                    data-bs-toggle="tooltip"
-                                    data-bs-placement="right"
-                                    title={p.description}
-                                  />
-                                ) : (
-                                  " "
-                                )}
-                              </p>
-                            ))}
-                          </div>
-                        )}
+                        </div>
                       </li>
                     ))}
                   </ul>
@@ -196,9 +182,40 @@ export function LicenceView({ license }: LicenceViewProps) {
           </div>
         </div>
       </div>
+      <div className="row mb-4">
+        {/* Actors */}
+        <div>
+          <div className="card border-primary">
+            <div className="card-body">
+              <h2 className="h3 card-title">Märkare/hjälpare</h2>
+              {license.actors?.length ? (
+                <ul className="list-group list-group-flush">
+                  {license.actors.map((rel, i) => (
+                    <li className="list-group-item mb-3" key={i}>
+                      <div className="row align-items-center g-2">
+                        <div className="col-12 col-md-3 fw-semibold text-capitalize">
+                          {rel.role}
+                        </div>
+                        <div className="col-12 col-md-9">
+                          <i className="bi bi-person text-primary me-1" />
+                          {rel.actor.full_name}({rel.mednr})
+                        </div>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-muted fst-italic">
+                  Inga personer kopplade till licensen.
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
       {/* Documents */}
-      <div className="mb-3">
-        <h3 className="h2">{t("licenseDocuments")}</h3>
+      <div className="mb-3 pt-3">
+        <h3 className="h2">Dokument</h3>
         {license.documents?.length ? (
           <ul className="list-group list-group-flush">
             {license.documents.map((doc, i) => (
