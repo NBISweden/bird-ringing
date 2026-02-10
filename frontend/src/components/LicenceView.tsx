@@ -124,16 +124,36 @@ export function LicenceView({ license }: LicenceViewProps) {
                             " "
                           )}
                         </div>
-                        <div className="py-1">
-                          <i className="bi bi-geo-alt text-primary me-1" />{" "}
-                          {p.location}
-                        </div>
-                        <div className="py-1">
-                          <i className="bi bi-calendar2-week text-primary me-1" />{" "}
-                          {p.starts_at}{" "}
-                          <span className="fst-italic mx-1"> till </span>{" "}
-                          {p.ends_at}
-                        </div>
+                        {p.location && (
+                          <div className="py-1">
+                            <i className="bi bi-geo-alt text-primary me-1" />{" "}
+                            {p.location}
+                          </div>
+                        )}
+                        {(p.starts_at || p.ends_at) && (
+                          <div className="py-1 d-flex">
+                            <i className="bi bi-calendar2-week text-primary me-2" />
+                            {p.starts_at && p.ends_at ? (
+                              <p className="m-0">
+                                {p.starts_at}{" "}
+                                <span className="fst-italic mx-1"> till </span>{" "}
+                                {p.ends_at}
+                              </p>
+                            ) : !p.starts_at ? (
+                              <p className="m-0">
+                                <span className="fst-italic mx-1"> until </span>{" "}
+                                {p.ends_at}
+                              </p>
+                            ) : !p.ends_at ? (
+                              <p className="m-0">
+                                <span className="fst-italic mx-1"> from </span>
+                                {p.starts_at}
+                              </p>
+                            ) : (
+                              <></>
+                            )}
+                          </div>
+                        )}
                         {p.species.length > 0 && (
                           <div className="py-1">
                             <i className="bi bi-twitter text-primary me-1" />{" "}
