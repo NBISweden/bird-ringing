@@ -3,6 +3,8 @@ from __future__ import annotations
 from typing import Optional, Iterable
 import hashlib
 import json
+import io
+import zipfile
 
 from django.db import transaction, IntegrityError
 from django.utils.text import slugify
@@ -216,3 +218,87 @@ class PermitService:
             .order_by("-created_at")
             .first()
         )
+
+    def batch_get_or_create_permit_documents(
+        self,
+        *,
+        licenses: Iterable[License],
+        created_by,
+        updated_by,
+        allowed_roles: Iterable[int] = (LicenseRoleChoices.RINGER, LicenseRoleChoices.HELPER),
+    ) -> list[LicenseDocument]:
+        """
+        Batch get-or-create permit documents for all ringers/helpers on each provided license.
+        """
+        docs: list[LicenseDocument] = []
+
+        for lic in licenses:
+            if not lic:
+                raise NoCurrentLicense("No license found.")
+
+            relations = lic.actors.filter(role__in=list(allowed_roles)).select_related("actor")
+            if not relations.exists():
+                raise ValueError(f"No ringers/helpers on license for mnr {lic.sequence.mnr}.")
+
+            for rel in relations:
+                doc = self.get_or_create_permit_document(
+                    lic=lic,
+                    actor=rel.actor,
+                    created_by=created_by,
+                    updated_by=updated_by,
+                    allowed_roles=allowed_roles,
+                )
+                docs.append(doc)
+
+        return docs
+
+    def create_zip_with_permit_docx_files(
+        self,
+        *,
+        licenses: Iterable[License],
+        allowed_roles: Iterable[int] = (LicenseRoleChoices.RINGER, LicenseRoleChoices.HELPER),
+    ) -> bytes:
+        """
+        Create ZIP (bytes) containing existing current permit DOCX files
+        for all ringers/helpers on each provided license.
+
+        If any expected DOCX is missing, raise ValueError.
+        """
+        zip_buffer = io.BytesIO()
+
+        with zipfile.ZipFile(zip_buffer, "w", compression=zipfile.ZIP_DEFLATED) as zf:
+            for lic in licenses:
+                if not lic:
+                    raise NoCurrentLicense("No license found.")
+
+                relations = lic.actors.filter(role__in=list(allowed_roles)).select_related("actor")
+                if not relations.exists():
+                    raise ValueError(f"No ringers/helpers on license for mnr {lic.sequence.mnr}.")
+
+                for rel in relations:
+                    actor = rel.actor
+
+                    doc = self.get_permit_document(
+                        lic=lic,
+                        actor=actor,
+                        allowed_roles=allowed_roles,
+                    )
+
+                    if not doc:
+                        raise ValueError(
+                            f"Permit DOCX missing for mnr {lic.sequence.mnr}. "
+                            "Generate all permits for your selected MNRs before creating ZIP."
+                        )
+
+                    if not doc.data:
+                        raise ValueError(
+                            f"{lic.sequence.mnr}: existing permit DOCX has no data for actor {actor.id}."
+                        )
+
+                    filename = doc.reference or self.make_permit_filename(
+                        lic, actor, allowed_roles=allowed_roles, rel=rel
+                    )
+                    zf.writestr(f"{lic.sequence.mnr}/{filename}", bytes(doc.data))
+
+        zip_buffer.seek(0)
+        return zip_buffer.getvalue()
