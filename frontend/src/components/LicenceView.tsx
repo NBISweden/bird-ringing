@@ -187,7 +187,7 @@ export function LicenceView({ license }: LicenceViewProps) {
         <div>
           <div className="card border-primary">
             <div className="card-body">
-              <h2 className="h3 card-title">Märkare/hjälpare</h2>
+              <h2 className="h3 card-title">{t("licenseActors")}</h2>
               {license.actors?.length ? (
                 <ul className="list-group list-group-flush">
                   {license.actors.map((rel, i) => (
@@ -206,7 +206,7 @@ export function LicenceView({ license }: LicenceViewProps) {
                 </ul>
               ) : (
                 <p className="text-muted fst-italic">
-                  Inga personer kopplade till licensen.
+                  {t("licenseNoConnectedActors")}
                 </p>
               )}
             </div>
@@ -215,7 +215,7 @@ export function LicenceView({ license }: LicenceViewProps) {
       </div>
       {/* Documents */}
       <div className="mb-3 pt-3">
-        <h3 className="h2">Dokument</h3>
+        <h3 className="h2">{t("licenseDocuments")}</h3>
         {license.documents?.length ? (
           <ul className="list-group list-group-flush">
             {license.documents.map((doc, i) => (
