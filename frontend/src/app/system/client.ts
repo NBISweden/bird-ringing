@@ -113,10 +113,17 @@ export class Client {
   async batchCreateLicenseCards(
     mnrs: string[],
   ): Promise<{ filenames: string[] }> {
+    return this._batchCreateDocuments("license_sequence/card-create", mnrs);
+  }
+
+  private async _batchCreateDocuments(
+    endpoint: string,
+    mnrs: string[],
+  ): Promise<{ filenames: string[] }> {
     const qs = new URLSearchParams({ mnrs: mnrs.join(",") });
     const csrf = getCookie("csrftoken");
     return this.fetchJson<{ filenames: string[] }>(
-      `license_sequence/card-create/?${qs.toString()}`,
+      `${endpoint}/?${qs.toString()}`,
       { method: "PUT", headers: csrf ? { "X-CSRFToken": csrf } : {} },
     );
   }
@@ -142,7 +149,11 @@ export class Client {
   }
 
   async fetchLicenseCardsZipBlob(mnrs: string[]): Promise<Blob> {
-    const url = new URL(this._apiRoot + "license_sequence/card-pdf/");
+    return this._fetchZipBlob("license_sequence/card-pdf", mnrs);
+  }
+
+  private async _fetchZipBlob(endpoint: string, mnrs: string[]): Promise<Blob> {
+    const url = new URL(this._apiRoot + endpoint + "/");
     url.searchParams.set("mnrs", mnrs.join(","));
 
     const resp = await fetch(url.href, { credentials: "same-origin" });
