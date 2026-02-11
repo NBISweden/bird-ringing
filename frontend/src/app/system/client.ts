@@ -169,4 +169,12 @@ export class Client {
 
     return await resp.blob();
   }
+
+  async batchCreatePermits(mnrs: string[]): Promise<{ filenames: string[] }> {
+    return this._batchCreateDocuments("license_sequence/permit-create", mnrs);
+  }
+
+  async fetchPermitsZipBlob(mnrs: string[]): Promise<Blob> {
+    return this._fetchZipBlob("license_sequence/permit-docx", mnrs);
+  }
 }

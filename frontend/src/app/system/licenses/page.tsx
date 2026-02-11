@@ -19,9 +19,12 @@ import {
 } from "../common";
 import { Client } from "../client";
 import { useClient } from "../contexts";
-
-import { useBatchCreateLicenseCardsAction } from "./actions";
-import { useDownloadLicenseCardsZipAction } from "./actions";
+import {
+  useBatchCreateLicenseCardsAction,
+  useDownloadLicenseCardsZipAction,
+  useBatchCreatePermitsAction,
+  useDownloadPermitsZipAction,
+} from "./actions";
 import { useTranslation } from "../internationalization";
 
 type LicensePropertyIds =
@@ -130,6 +133,8 @@ function ConnectedListView() {
 
   const createDocsAction = useBatchCreateLicenseCardsAction(client);
   const downloadZipAction = useDownloadLicenseCardsZipAction(client);
+  const createPermitDocsAction = useBatchCreatePermitsAction(client);
+  const downloadPermitsZipAction = useDownloadPermitsZipAction(client);
 
   const batchActions: (BatchAction | { type: "divider" })[] = [
     {
@@ -138,6 +143,12 @@ function ConnectedListView() {
     },
     { type: "divider" },
     { label: t("licenseDownloadLicenses"), action: downloadZipAction },
+
+    { type: "divider" },
+    { label: t("permitCreateDocuments"), action: createPermitDocsAction },
+    { type: "divider" },
+    { label: t("permitDownloadZip"), action: downloadPermitsZipAction },
+
     { type: "divider" },
     {
       label: t("actorDeactivate"),

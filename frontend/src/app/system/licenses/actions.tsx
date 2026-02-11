@@ -225,6 +225,14 @@ async function downloadLicenseCardsZip(client: Client, mnrs: string[]): Promise<
   return await client.fetchLicenseCardsZipBlob(mnrs);
 }
 
+async function batchCreatePermitDocs(client: Client, mnrs: string[]): Promise<BatchCreateResponse> {
+  return await client.batchCreatePermits(mnrs);
+}
+
+async function downloadPermitsZip(client: Client, mnrs: string[]): Promise<Blob> {
+  return await client.fetchPermitsZipBlob(mnrs);
+}
+
 export function useBatchCreateLicenseCardsAction(client: Client) {
   const { t } = useTranslation();
 
@@ -249,5 +257,32 @@ export function useDownloadLicenseCardsZipAction(client: Client) {
     loadingMessage: t("licenseLicenseDownloadLoading"),
     successMessage: t("licenseLicenseDownloadSucceeded"),
     downloadFn: downloadLicenseCardsZip,
+  });
+}
+
+export function useBatchCreatePermitsAction(client: Client) {
+  const { t } = useTranslation();
+
+  return useBatchCreateAction({
+    client,
+    title: t("permitCreateDocuments"),
+    confirmText: t("permitCreateDocumentsConfirmText"),
+    selectedLabel: t("licenseSelectedLicenses"),
+    loadingText: t("permitCreatingDocuments"),
+    createFn: batchCreatePermitDocs,
+  });
+}
+
+export function useDownloadPermitsZipAction(client: Client) {
+  const { t } = useTranslation();
+
+  return useDownloadZipAction({
+    client,
+    title: t("permitDownloadZip"),
+    introText: t("permitDownloadZipText"),
+    filename: "permits.zip",
+    loadingMessage: t("permitDownloadLoading"),
+    successMessage: t("permitDownloadSucceeded"),
+    downloadFn: downloadPermitsZip,
   });
 }
