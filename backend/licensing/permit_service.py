@@ -5,6 +5,7 @@ import hashlib
 import json
 import io
 import zipfile
+import datetime
 
 from django.db import transaction, IntegrityError
 from django.utils.text import slugify
@@ -16,6 +17,7 @@ from licensing.models import (
     LicenseDocument,
     DocumentTypeChoices,
     LicenseRoleChoices,
+    PermitDnr,
 )
 from licensing.license_renderer import get_template_path
 from licensing.permit_renderer import PermitDocxRenderer, PermitRenderRequest
@@ -83,6 +85,25 @@ class PermitService:
             "context": context_fp,
         }
 
+    def _get_dnr_for_date(self, *, d: datetime.date) -> str:
+        """
+        Pick the DNR row valid for date d.
+        If multiple match, choose the most recent (largest starts_at, then created_at).
+        If none match, raise (permit must not be created).
+        """
+        row = (
+            PermitDnr.objects.filter(
+                is_active=True,
+                starts_at__lte=d,
+                ends_at__gte=d,
+            )
+            .order_by("-starts_at", "-created_at")
+            .first()
+        )
+        if not row:
+            raise ValueError(f"No DNR configured for date {d}.")
+        return row.dnr_number
+
     @transaction.atomic
     def get_or_create_permit_document(
         self,
@@ -104,10 +125,14 @@ class PermitService:
 
         permissions = self.renderer.get_permissions_for_license(lic)
 
+        render_date = timezone.localdate()
+        dnr_number = self._get_dnr_for_date(d=render_date)
+
         context_fp = self.renderer.build_context_fingerprint(
             lic=lic,
             actor=actor,
             permissions=permissions,
+            dnr_number=dnr_number,
         )
         payload = self._fingerprint_payload(lic=lic, actor=actor, context_fp=context_fp, template_sha256=template_sha256)
         fp = self._fingerprint(payload)
@@ -180,7 +205,6 @@ class PermitService:
             raise
 
         try:
-            render_date = timezone.localtime(doc.created_at).date()
             docx_bytes = self.renderer.render_docx_bytes(
                 PermitRenderRequest(
                     template_docx_path=template_path,
@@ -189,6 +213,7 @@ class PermitService:
                     date=render_date,
                 ),
                 permissions=permissions,
+                dnr_number=dnr_number,
             )
         except Exception:
             # Avoid leaving a current document with missing data in case rendering fails
