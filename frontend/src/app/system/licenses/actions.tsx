@@ -9,7 +9,10 @@ import { useTranslation } from "../internationalization";
 
 type BatchCreateResponse = { filenames: string[] };
 
-type BatchCreateFn = (client: Client, mnrs: string[]) => Promise<BatchCreateResponse>;
+type BatchCreateFn = (
+  client: Client,
+  mnrs: string[],
+) => Promise<BatchCreateResponse>;
 type DownloadZipFn = (client: Client, mnrs: string[]) => Promise<Blob>;
 
 function GenericBatchCreateBody({
@@ -23,9 +26,12 @@ function GenericBatchCreateBody({
 }) {
   const client = useClient();
 
-  const { data, isLoading, error } = useSWRImmutable([client, mnrs], async () => {
-    return createFn(client, mnrs);
-  });
+  const { data, isLoading, error } = useSWRImmutable(
+    [client, mnrs],
+    async () => {
+      return createFn(client, mnrs);
+    },
+  );
 
   return isLoading ? (
     <>
@@ -33,7 +39,9 @@ function GenericBatchCreateBody({
       <span className="ms-3">{loadingText}</span>
     </>
   ) : error ? (
-    <Alert type="danger">{error instanceof Error ? error.message : String(error)}</Alert>
+    <Alert type="danger">
+      {error instanceof Error ? error.message : String(error)}
+    </Alert>
   ) : (
     <textarea
       className="form-control"
@@ -200,7 +208,9 @@ function useDownloadZipAction({
             />
           </ClientContext.Provider>
         ),
-        actions: [{ label: t("closeModal"), action: () => {}, type: "primary" }],
+        actions: [
+          { label: t("closeModal"), action: () => {}, type: "primary" },
+        ],
       });
     },
     [
@@ -217,19 +227,31 @@ function useDownloadZipAction({
   );
 }
 
-async function batchCreateLicenseDocs(client: Client, mnrs: string[]): Promise<BatchCreateResponse> {
+async function batchCreateLicenseDocs(
+  client: Client,
+  mnrs: string[],
+): Promise<BatchCreateResponse> {
   return await client.batchCreateLicenseCards(mnrs);
 }
 
-async function downloadLicenseCardsZip(client: Client, mnrs: string[]): Promise<Blob> {
+async function downloadLicenseCardsZip(
+  client: Client,
+  mnrs: string[],
+): Promise<Blob> {
   return await client.fetchLicenseCardsZipBlob(mnrs);
 }
 
-async function batchCreatePermitDocs(client: Client, mnrs: string[]): Promise<BatchCreateResponse> {
+async function batchCreatePermitDocs(
+  client: Client,
+  mnrs: string[],
+): Promise<BatchCreateResponse> {
   return await client.batchCreatePermits(mnrs);
 }
 
-async function downloadPermitsZip(client: Client, mnrs: string[]): Promise<Blob> {
+async function downloadPermitsZip(
+  client: Client,
+  mnrs: string[],
+): Promise<Blob> {
   return await client.fetchPermitsZipBlob(mnrs);
 }
 
