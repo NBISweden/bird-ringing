@@ -249,7 +249,7 @@ class PermitDocxRenderer:
 
                 loc_order = list(by_loc.keys())
                 if "" in by_loc:
-                    loc_order = [""] + [l for l in loc_order if l != ""]
+                    loc_order = [""] + [loc_name for loc_name in loc_order if loc_name != ""]
 
                 first_loc = True
 
