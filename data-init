@@ -17,5 +17,33 @@ wget -q -N -P "$dirPath" https://pdmnyberg.github.io/ui-examples/data/bird-ringi
 
 ./compose-dev.sh exec backend python manage.py load_data "$@"
 
+# Create a test DNR permit in the database
 
+./compose-dev.sh exec backend python manage.py shell -c "
+from django.contrib.auth import get_user_model
+from django.utils import timezone
+import datetime
+from licensing.models import PermitDnr
 
+User = get_user_model()
+u = User.objects.filter(is_superuser=True).order_by('id').first() or User.objects.order_by('id').first()
+if not u:
+    raise SystemExit('No users in database. Create a user first (createsuperuser).')
+
+today = timezone.localdate()
+starts_at = today.replace(month=1, day=1)
+ends_at = datetime.date(starts_at.year + 5, 1, 1) - datetime.timedelta(days=1)
+
+obj, created = PermitDnr.objects.update_or_create(
+    starts_at=starts_at,
+    defaults=dict(
+        created_by=u,
+        updated_by=u,
+        dnr_number='DNR-TEST-0001',
+        ends_at=ends_at,
+        is_active=True,
+    )
+)
+
+print(f\"PermitDnr: created={created} dnr_number={obj.dnr_number} range={obj.starts_at}..{obj.ends_at}\")
+"
