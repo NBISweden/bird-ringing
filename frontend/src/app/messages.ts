@@ -93,6 +93,15 @@ const messagesBase = {
   licenseCommunicationNote: "Note",
   licenseNoCommunication: "No communication",
 
+  permitCreateDocuments: "Create permits",
+  permitCreatingDocuments: "Creating permit documents",
+  permitCreateDocumentsConfirmText:
+    "Do you want to create permits for all ringers and helpers for selected licenses?",
+  permitDownloadZip: "Download permits (ZIP)",
+  permitDownloadZipText: "Downloading permits",
+  permitDownloadLoading: "Preparing permits package for download...",
+  permitDownloadSucceeded: "Downloading permits package",
+
   paginationNext: "Next",
   paginationPrevious: "Previous",
   paginationLast: "Last",
