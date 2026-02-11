@@ -5,6 +5,7 @@ from rest_framework.reverse import reverse
 from licensing.license_card_service import LicenseCardService, NoCurrentLicense, ActorNotOnLicense
 
 from licensing.models import (
+    LicensePermissionProperty,
     LicenseSequence,
     License,
     Actor,
@@ -252,12 +253,22 @@ class LicensePermissionTypeSerializer(serializers.ModelSerializer):
         model = LicensePermissionType
         fields = ['name', 'description']
 
+class LicensePermissionPropertySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = LicensePermissionProperty
+        fields = ["name", "description"]
+
 class LicenseLicensePermissionSerializer(serializers.ModelSerializer):
     type = LicensePermissionTypeSerializer(read_only=True)
+    species = serializers.SerializerMethodField()
+    properties = LicensePermissionPropertySerializer(many=True, read_only=True)
 
     class Meta:
         model = LicensePermission
-        fields = ["type", 'description']
+        fields = ["type", "description", "location", "starts_at", "ends_at", "species", "properties"]
+
+    def get_species(self, obj):
+        return list(obj.species_list.values_list('name', flat=True))
 
 class LicenseDocumentSerializer(serializers.ModelSerializer):
     actor = serializers.CharField(source="actor.full_name", read_only=True)

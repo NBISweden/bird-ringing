@@ -6,6 +6,7 @@ import {
   LicenseCurrent,
 } from "@/app/system/common";
 import { useTranslation } from "@/app/system/internationalization";
+import { LicensePermissionItem } from "./LicensePermissionItem";
 type LicenceViewProps = {
   license: LicenseCurrent;
 };
@@ -14,7 +15,7 @@ export function LicenceView({ license }: LicenceViewProps) {
   const { t, format } = useTranslation();
   return (
     <>
-      <div className="mb-3">
+      <div className="mb-4">
         {/* Header */}
         <div className="card border-primary">
           <div className="card-header">
@@ -70,38 +71,9 @@ export function LicenceView({ license }: LicenceViewProps) {
         </div>
       </div>
       {/* Permissions */}
-      <div className="mb-3">
+      <div className="mb-4">
         <div className="row">
-          {/* Actors */}
-          <div className="col-sm-6">
-            <div className="card border-primary">
-              <div className="card-body">
-                <h2 className="h3 card-title">{t("licenseActors")}</h2>
-                {license.actors?.length ? (
-                  <ul className="list-group list-group-flush">
-                    {license.actors.map((rel, i) => (
-                      <li className="list-group-item mb-3" key={i}>
-                        <div className="row align-items-center g-2">
-                          <div className="col-12 col-md-3 fw-semibold text-capitalize">
-                            {rel.role}
-                          </div>
-                          <div className="col-12 col-md-9">
-                            <i className="bi bi-person text-primary me-1" />
-                            {rel.actor.full_name}({rel.mednr})
-                          </div>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="text-muted fst-italic">
-                    {t("licenseNoConnectedActors")}
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
-          <div className="col-sm-6 mb-3 mb-sm-0">
+          <div className="mb-3 mb-sm-0">
             <div className="card border-primary">
               <div className="card-body">
                 <h2 className="h3 card-title">{t("licensePermissions")}</h2>
@@ -109,22 +81,8 @@ export function LicenceView({ license }: LicenceViewProps) {
                 {license.permissions?.length ? (
                   <ul className="list-group list-group-flush">
                     {license.permissions.map((p, i) => (
-                      <li className="list-group-item" key={i}>
-                        <div>
-                          <strong>{p.type.name}</strong>
-                          {p.type.description ? (
-                            <i
-                              className="bi bi-info-circle text-primary p-1"
-                              role="button"
-                              data-bs-toggle="tooltip"
-                              data-bs-placement="right"
-                              title={p.type.description}
-                            />
-                          ) : (
-                            " "
-                          )}
-                        </div>
-                        <div>{p.description || " "}</div>
+                      <li className="list-group-item mb-3" key={i}>
+                        <LicensePermissionItem permission={p} />
                       </li>
                     ))}
                   </ul>
@@ -138,8 +96,39 @@ export function LicenceView({ license }: LicenceViewProps) {
           </div>
         </div>
       </div>
+      <div className="row mb-4">
+        {/* Actors */}
+        <div>
+          <div className="card border-primary">
+            <div className="card-body">
+              <h2 className="h3 card-title">{t("licenseActors")}</h2>
+              {license.actors?.length ? (
+                <ul className="list-group list-group-flush">
+                  {license.actors.map((rel, i) => (
+                    <li className="list-group-item mb-3" key={i}>
+                      <div className="row align-items-center g-2">
+                        <div className="col-12 col-md-3 fw-semibold text-capitalize">
+                          {rel.role}
+                        </div>
+                        <div className="col-12 col-md-9">
+                          <i className="bi bi-person text-primary me-1" />
+                          {rel.actor.full_name}({rel.mednr})
+                        </div>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-muted fst-italic">
+                  {t("licenseNoConnectedActors")}
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
       {/* Documents */}
-      <div className="mb-3">
+      <div className="mb-3 pt-3">
         <h3 className="h2">{t("licenseDocuments")}</h3>
         {license.documents?.length ? (
           <ul className="list-group list-group-flush">
