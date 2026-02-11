@@ -146,6 +146,7 @@ function ConnectedListView() {
       label: t("actorFetchEmailAddresses"),
       action: fetchEmailAddressesAction,
     },
+    { type: "divider" },
     {
       label: t("actorSendLicenses"),
       action: sendLicenseEmailAction,

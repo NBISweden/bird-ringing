@@ -308,3 +308,28 @@ export function useDownloadPermitsZipAction(client: Client) {
     downloadFn: downloadPermitsZip,
   });
 }
+
+export function useSendLicenseEmailAction() {
+  const modalStack = useModalsContext();
+  const { t } = useTranslation();
+
+  const action = useCallback(() => {
+    modalStack.add({
+      title: t("licenseSendLicenses"),
+      content: (
+        <>
+          <Spinner />
+          <span className="ms-3">{t("featureNotImplemented")}</span>
+        </>
+      ),
+      actions: [
+        {
+          label: t("closeModal"),
+          action: () => {},
+          type: "primary",
+        },
+      ],
+    });
+  }, [modalStack, t]);
+  return action;
+}

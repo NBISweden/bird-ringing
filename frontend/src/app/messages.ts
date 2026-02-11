@@ -62,6 +62,7 @@ const messagesBase = {
     "Mnr, Type, License holder, Trapping methods, Last email sent at",
   licenseCreateLicenseDocuments: "Create license documents",
   licenseDownloadLicenses: "Download licenses (ZIP)",
+  licenseSendLicenses: "Send licenses",
   licenseDeactivate: "Deactivate",
   licenseCreatingLicenseDocuments: "Creating license documents",
   licenseCreateLicenseDocumentsConfirmText:

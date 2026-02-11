@@ -55,8 +55,9 @@ export const locale: TranslationMap = {
   licenseFilterDescription: "Filtrera licenslistan",
   licenseFilterPlaceholder:
     "Mnr, Typ, Licensinnehavare, Fångstmetoder, Senaste e-post skickat vid",
-  licenseCreateLicenseDocuments: "Skapa licensedokument",
+  licenseCreateLicenseDocuments: "Skapa licensdokument",
   licenseDownloadLicenses: "Ladda ned licenskort (ZIP)",
+  licenseSendLicenses: "Skicka licenser",
   licenseDeactivate: "Avaktivera",
   licenseCreatingLicenseDocuments: "Skapar licensdokument",
   licenseCreateLicenseDocumentsConfirmText:
