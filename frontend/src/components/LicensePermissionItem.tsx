@@ -9,7 +9,7 @@ type LicensePermissionItemProps = {
 export function LicensePermissionItem({
   permission,
 }: LicensePermissionItemProps) {
-  const { t, format } = useTranslation();
+  const { format } = useTranslation();
   return (
     <>
       <div className="pb-2">
