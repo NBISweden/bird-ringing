@@ -521,3 +521,32 @@ class LicenseImport(ImportTracking):
     def get_key(**license):
         sequence = license["sequence"]
         return slugify(sequence.mnr)
+
+class PermitDnr(ChangeTracking):
+    """
+    Stores the DNR (diarienummer) value used for permit rendering.
+    Selection logic:
+      - choose a row where starts_at <= date <= ends_at and is_active=True
+      - if multiple match, pick the most recent (largest starts_at, then created_at)
+      - if none match: error (permit must not be created)
+    """
+
+    dnr_number = models.CharField(max_length=64)  # keep it generic for now
+    starts_at = models.DateField()
+    ends_at = models.DateField()
+    is_active = models.BooleanField(default=True, db_index=True)
+
+    class Meta:
+        constraints = [
+            # ensure starts_at itself is unique to avoid ambiguity
+            models.UniqueConstraint(
+                fields=["starts_at"],
+                name="unique_permit_dnr_starts_at",
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["is_active", "starts_at", "ends_at"]),
+        ]
+
+    def __str__(self):
+        return f"{self.dnr_number} ({self.starts_at}-{self.ends_at})"
