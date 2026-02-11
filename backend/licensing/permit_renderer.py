@@ -85,6 +85,7 @@ class PermitDocxRenderer:
         lic: License,
         actor: Actor,
         permissions: list[LicensePermission] | None = None,
+        dnr_number: str = "",
     ) -> dict[str, Any]:
         perms = permissions if permissions is not None else self.get_permissions_for_license(lic)
 
@@ -103,6 +104,7 @@ class PermitDocxRenderer:
             )
 
         return {
+            "dnr_number": dnr_number,
             "full_name": actor.full_name,
             "address": self.format_actor_address(actor),
             "permits": permits,
@@ -290,11 +292,13 @@ class PermitDocxRenderer:
         req: PermitRenderRequest,
         *,
         permissions: list[LicensePermission] | None = None,
+        dnr_number: str = "",
     ) -> bytes:
         doc = DocxTemplate(str(req.template_docx_path))
 
         context = {
             "date": req.date,
+            "dnr_number": dnr_number,
             "full_name": req.actor.full_name,
             "address": self.format_actor_address(req.actor),
             "permit_section_rich": self._build_permit_section_richtext(
