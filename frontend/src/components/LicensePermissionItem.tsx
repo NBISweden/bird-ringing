@@ -1,0 +1,102 @@
+"use client";
+
+import { LicensePermission } from "@/app/system/common";
+import { useTranslation } from "@/app/system/internationalization";
+type LicensePermissionItemProps = {
+  permission: LicensePermission;
+};
+
+export function LicensePermissionItem({
+  permission,
+}: LicensePermissionItemProps) {
+  const { t } = useTranslation();
+  return (
+    <>
+      <div className="pb-2">
+        <strong>{permission.type.name}</strong>
+        {permission.type.description ? (
+          <i
+            className="bi bi-info-circle text-primary p-1"
+            role="button"
+            data-bs-toggle="tooltip"
+            data-bs-placement="right"
+            title={permission.type.description}
+          />
+        ) : (
+          " "
+        )}
+      </div>
+      <div className="row mb-3">
+        <div className="col-12 col-lg-6">
+          {permission.location && (
+            <div className="py-1">
+              <i className="bi bi-geo-alt text-primary me-1" />{" "}
+              {permission.location}
+            </div>
+          )}
+          {(permission.starts_at || permission.ends_at) && (
+            <div className="py-1 d-flex">
+              <i className="bi bi-calendar2-week text-primary me-2" />
+              {permission.starts_at && permission.ends_at ? (
+                <p className="m-0">
+                  {permission.starts_at}{" "}
+                  <span className="fst-italic mx-1">
+                    {t("licensePermissionPeriodClosed")}
+                  </span>{" "}
+                  {permission.ends_at}
+                </p>
+              ) : !permission.starts_at ? (
+                <p className="m-0">
+                  <span className="fst-italic mx-1">
+                    {t("licensePermissionPeriodOpenBackward")}
+                  </span>{" "}
+                  {permission.ends_at}
+                </p>
+              ) : !permission.ends_at ? (
+                <p className="m-0">
+                  <span className="fst-italic mx-1">
+                    {t("licensePermissionPeriodOpenForward")}
+                  </span>
+                  {permission.starts_at}
+                </p>
+              ) : (
+                <></>
+              )}
+            </div>
+          )}
+          {permission.species.length > 0 && (
+            <div className="py-1">
+              <i className="bi bi-twitter text-primary me-1" />{" "}
+              {permission.species.join(", ")}
+            </div>
+          )}
+          {permission.description && (
+            <div className="pt-3">{permission.description}</div>
+          )}
+        </div>
+        <div className="col-12 col-lg-6 py-3 py-lg-0">
+          {permission.properties.length > 0 && (
+            <div>
+              {permission.properties.map((p, i) => (
+                <p className="my-1 fst-italic" key={i}>
+                  &bull; {p.name}{" "}
+                  {p.description ? (
+                    <i
+                      className="bi bi-info-circle text-primary p-1"
+                      role="button"
+                      data-bs-toggle="tooltip"
+                      data-bs-placement="right"
+                      title={p.description}
+                    />
+                  ) : (
+                    " "
+                  )}
+                </p>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </>
+  );
+}

@@ -6,6 +6,7 @@ import {
   LicenseCurrent,
 } from "@/app/system/common";
 import { useTranslation } from "@/app/system/internationalization";
+import { LicensePermissionItem } from "./LicensePermissionItem";
 type LicenceViewProps = {
   license: LicenseCurrent;
 };
@@ -81,91 +82,7 @@ export function LicenceView({ license }: LicenceViewProps) {
                   <ul className="list-group list-group-flush">
                     {license.permissions.map((p, i) => (
                       <li className="list-group-item mb-3" key={i}>
-                        <div className="pb-2">
-                          <strong>{p.type.name}</strong>
-                          {p.type.description ? (
-                            <i
-                              className="bi bi-info-circle text-primary p-1"
-                              role="button"
-                              data-bs-toggle="tooltip"
-                              data-bs-placement="right"
-                              title={p.type.description}
-                            />
-                          ) : (
-                            " "
-                          )}
-                        </div>
-                        <div className="row mb-3">
-                          <div className="col-12 col-lg-6">
-                            {p.location && (
-                              <div className="py-1">
-                                <i className="bi bi-geo-alt text-primary me-1" />{" "}
-                                {p.location}
-                              </div>
-                            )}
-                            {(p.starts_at || p.ends_at) && (
-                              <div className="py-1 d-flex">
-                                <i className="bi bi-calendar2-week text-primary me-2" />
-                                {p.starts_at && p.ends_at ? (
-                                  <p className="m-0">
-                                    {p.starts_at}{" "}
-                                    <span className="fst-italic mx-1">
-                                      {t("licensePermissionPeriodClosed")}
-                                    </span>{" "}
-                                    {p.ends_at}
-                                  </p>
-                                ) : !p.starts_at ? (
-                                  <p className="m-0">
-                                    <span className="fst-italic mx-1">
-                                      {t("licensePermissionPeriodOpenBackward")}
-                                    </span>{" "}
-                                    {p.ends_at}
-                                  </p>
-                                ) : !p.ends_at ? (
-                                  <p className="m-0">
-                                    <span className="fst-italic mx-1">
-                                      {t("licensePermissionPeriodOpenForward")}
-                                    </span>
-                                    {p.starts_at}
-                                  </p>
-                                ) : (
-                                  <></>
-                                )}
-                              </div>
-                            )}
-                            {p.species.length > 0 && (
-                              <div className="py-1">
-                                <i className="bi bi-twitter text-primary me-1" />{" "}
-                                {p.species.join(", ")}
-                              </div>
-                            )}
-                            {p.description && (
-                              <div className="pt-3">{p.description}</div>
-                            )}
-                          </div>
-                          <div className="col-12 col-lg-6 py-3 py-lg-0">
-                            {p.properties.length > 0 && (
-                              <div>
-                                {p.properties.map((p, i) => (
-                                  <p className="my-1 fst-italic" key={i}>
-                                    &bull; {p.name}{" "}
-                                    {p.description ? (
-                                      <i
-                                        className="bi bi-info-circle text-primary p-1"
-                                        role="button"
-                                        data-bs-toggle="tooltip"
-                                        data-bs-placement="right"
-                                        title={p.description}
-                                      />
-                                    ) : (
-                                      " "
-                                    )}
-                                  </p>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        </div>
+                        <LicensePermissionItem permission={p} />
                       </li>
                     ))}
                   </ul>
