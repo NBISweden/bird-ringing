@@ -9,7 +9,7 @@ type LicensePermissionItemProps = {
 export function LicensePermissionItem({
   permission,
 }: LicensePermissionItemProps) {
-  const { t } = useTranslation();
+  const { t, format } = useTranslation();
   return (
     <>
       <div className="pb-2">
@@ -39,25 +39,34 @@ export function LicensePermissionItem({
               <i className="bi bi-calendar2-week text-primary me-2" />
               {permission.starts_at && permission.ends_at ? (
                 <p className="m-0">
-                  {permission.starts_at}{" "}
-                  <span className="fst-italic mx-1">
-                    {t("licensePermissionPeriodClosed")}
-                  </span>{" "}
-                  {permission.ends_at}
+                  {format("licensePermissionPeriodClosed", {
+                    startsAt: permission.starts_at,
+                    endsAt: permission.ends_at,
+                    from: (chunks) => (
+                      <span className="fst-italic">{chunks}</span>
+                    ),
+                    to: (chunks) => (
+                      <span className="fst-italic mx-1">{chunks}</span>
+                    ),
+                  })}
                 </p>
               ) : !permission.starts_at ? (
                 <p className="m-0">
-                  <span className="fst-italic mx-1">
-                    {t("licensePermissionPeriodOpenBackward")}
-                  </span>{" "}
-                  {permission.ends_at}
+                  {format("licensePermissionPeriodOpenBackward", {
+                    endsAt: permission.ends_at,
+                    to: (chunks) => (
+                      <span className="fst-italic">{chunks}</span>
+                    ),
+                  })}
                 </p>
               ) : !permission.ends_at ? (
                 <p className="m-0">
-                  <span className="fst-italic mx-1">
-                    {t("licensePermissionPeriodOpenForward")}
-                  </span>
-                  {permission.starts_at}
+                  {format("licensePermissionPeriodOpenForward", {
+                    startsAt: permission.starts_at,
+                    from: (chunks) => (
+                      <span className="fst-italic">{chunks}</span>
+                    ),
+                  })}
                 </p>
               ) : (
                 <></>
