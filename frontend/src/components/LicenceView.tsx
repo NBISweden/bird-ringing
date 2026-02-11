@@ -110,24 +110,21 @@ export function LicenceView({ license }: LicenceViewProps) {
                                   <p className="m-0">
                                     {p.starts_at}{" "}
                                     <span className="fst-italic mx-1">
-                                      {" "}
-                                      till{" "}
+                                      {t("licensePermissionPeriodClosed")}
                                     </span>{" "}
                                     {p.ends_at}
                                   </p>
                                 ) : !p.starts_at ? (
                                   <p className="m-0">
                                     <span className="fst-italic mx-1">
-                                      {" "}
-                                      until{" "}
+                                      {t("licensePermissionPeriodOpenBackward")}
                                     </span>{" "}
                                     {p.ends_at}
                                   </p>
                                 ) : !p.ends_at ? (
                                   <p className="m-0">
                                     <span className="fst-italic mx-1">
-                                      {" "}
-                                      from{" "}
+                                      {t("licensePermissionPeriodOpenForward")}
                                     </span>
                                     {p.starts_at}
                                   </p>

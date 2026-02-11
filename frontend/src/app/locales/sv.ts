@@ -78,6 +78,9 @@ export const locale: TranslationMap = {
   licenseNoConnectedActors:
     "Inga ringmärkare eller hjälpare kopplade till licensen.",
   licensePermissions: "Tillstånd",
+  licensePermissionPeriodClosed: "till",
+  licensePermissionPeriodOpenForward: "från",
+  licensePermissionPeriodOpenBackward: "till",
   licenseNoPermissions: "Inga tillstånd att visa.",
   licenseDocuments: "Dokument",
   licenseDocumentReference: "Referens",
