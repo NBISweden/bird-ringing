@@ -610,8 +610,8 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
             status=200,
         )
     
-    @action(detail=False, methods=["get"], url_path="send-data")
-    def send_data(self, request):
+    @action(detail=False, methods=["put"], url_path="send-license-emails")
+    def send_license_emails(self, request):
         include_card = request.query_params.get("include_card") is not None
         include_permit = request.query_params.get("include_permit") is not None
         raw = request.query_params.get("mnrs", "")
