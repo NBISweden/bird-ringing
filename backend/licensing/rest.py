@@ -637,13 +637,13 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response({"detail": str(e)}, status=400)
 
-        docx_url = reverse("licensesequence-permit-docx", kwargs={"mnr": seq.mnr}, request=request)
-        docx_url = f"{docx_url}?actor_id={actor.id}"
+        pdf_url = reverse("licensesequence-permit-pdf", kwargs={"mnr": seq.mnr}, request=request)
+        pdf_url = f"{pdf_url}?actor_id={actor.id}"
 
-        return Response({"filename": doc.reference, "docx_url": docx_url}, status=200)
+        return Response({"filename": doc.reference, "pdf_url": pdf_url}, status=200)
 
-    @action(detail=True, methods=["get"], url_path="permit-docx")
-    def permit_docx(self, request, mnr=None):
+    @action(detail=True, methods=["get"], url_path="permit-pdf")
+    def permit_pdf(self, request, mnr=None):
         seq = self.get_object()
         actor = self._get_actor_from_request(request)
 
@@ -662,13 +662,13 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
             return Response({"detail": str(e)}, status=400)
 
         if not doc:
-            return Response({"detail": "No current permit DOCX exists. Call /permit-create first."}, status=404)
+            return Response({"detail": "No current permit PDF exists. Call /permit-create first."}, status=404)
 
         if not doc.data:
             return Response({"detail": "Current permit document is missing file data. Call /permit-create again."}, status=409)
 
         filename = doc.reference or service.make_permit_filename(lic, actor)
-        resp = HttpResponse(bytes(doc.data), content_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+        resp = HttpResponse(bytes(doc.data), content_type="application/pdf")
         resp["Content-Disposition"] = f'inline; filename="{filename}"'
         return resp
 
@@ -701,8 +701,8 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
 
         return Response({"filenames": [d.reference for d in docs]}, status=200)
 
-    @action(detail=False, methods=["get"], url_path="permit-docx")
-    def permit_docx_batch(self, request):
+    @action(detail=False, methods=["get"], url_path="permit-pdf")
+    def permit_pdf_batch(self, request):
         raw = request.query_params.get("mnrs", "")
         mnrs = [m for m in parse_csv_string(raw) if m]
 
