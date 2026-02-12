@@ -175,6 +175,6 @@ export class Client {
   }
 
   async fetchPermitsZipBlob(mnrs: string[]): Promise<Blob> {
-    return this._fetchZipBlob("license_sequence/permit-docx", mnrs);
+    return this._fetchZipBlob("license_sequence/permit-pdf", mnrs);
   }
 }

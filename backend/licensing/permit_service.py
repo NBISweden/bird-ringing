@@ -21,6 +21,7 @@ from licensing.models import (
 )
 from licensing.license_renderer import get_template_path
 from licensing.permit_renderer import PermitDocxRenderer, PermitRenderRequest
+from licensing.utils import docx_to_pdf_bytes
 
 
 class NoCurrentLicense(Exception):
@@ -62,7 +63,7 @@ class PermitService:
         mnr = lic.sequence.mnr
         identifier = f"{mnr}-{rel.mednr}" if rel.role == LicenseRoleChoices.HELPER else mnr
         name = slugify(actor.full_name)[:40]
-        return f"permit-{identifier}" + (f"-{name}.docx" if name else ".docx")
+        return f"permit-{identifier}" + (f"-{name}.pdf" if name else ".pdf")
 
     def _fingerprint(self, payload: dict) -> str:
         raw = json.dumps(payload, sort_keys=True, ensure_ascii=False).encode("utf-8")
@@ -215,12 +216,13 @@ class PermitService:
                 permissions=permissions,
                 dnr_number=dnr_number,
             )
+            pdf_bytes = docx_to_pdf_bytes(docx_bytes)
         except Exception:
             # Avoid leaving a current document with missing data in case rendering fails
             doc.delete()
             raise
 
-        doc.data = docx_bytes
+        doc.data = pdf_bytes
         doc.save(update_fields=["data", "updated_at"])
         return doc
 
@@ -311,13 +313,13 @@ class PermitService:
 
                     if not doc:
                         raise ValueError(
-                            f"Permit DOCX missing for mnr {lic.sequence.mnr}. "
+                            f"Permit PDF missing for mnr {lic.sequence.mnr}. "
                             "Generate all permits for your selected MNRs before creating ZIP."
                         )
 
                     if not doc.data:
                         raise ValueError(
-                            f"{lic.sequence.mnr}: existing permit DOCX has no data for actor {actor.id}."
+                            f"{lic.sequence.mnr}: existing permit PDF has no data for actor {actor.id}."
                         )
 
                     filename = doc.reference or self.make_permit_filename(
