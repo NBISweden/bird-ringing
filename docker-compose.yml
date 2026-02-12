@@ -84,6 +84,7 @@ services:
       LICENSE_CARD_FILE: ${LICENSE_CARD_FILE:-}
       LICENSE_CARD_FILE_BACK: ${LICENSE_CARD_FILE_BACK:-}
       PERMIT_TEMPLATE_FILE: ${PERMIT_TEMPLATE_FILE:-}
+      DOCX2PDF_URL: http://docx2pdf:8000/convert/docx-to-pdf
     volumes:
       - backend-vol:/vol
       - ./secrets/doc_templates:/doc_templates
@@ -96,9 +97,26 @@ services:
     depends_on:
       backend-init:
         condition: service_completed_successfully
+      docx2pdf:
+        condition: service_healthy
     secrets:
       - db-user-pass
       - django-secret-key
+
+  docx2pdf:
+    build:
+      context: ./docx2pdf
+      dockerfile: Dockerfile
+    tmpfs:
+      - /tmp
+      - /dev/shm
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "--timeout=5", "http://docx2pdf:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    restart: unless-stopped #ensure it restarts if the conversion process crashes
 
   proxy:
     image: caddy:2-alpine
