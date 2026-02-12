@@ -16,6 +16,7 @@ from os import getenv
 from bird_ringing.helpers import get_secret_from_file, parse_csv_from_env
 from bird_ringing.helpers import strtobool
 from django.core.management.utils import get_random_secret_key
+import sys
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -172,3 +173,33 @@ LICENSING_EMAIL_SUBJECT = getenv("LICENSING_EMAIL_SUBJECT")
 LICENSING_EMAIL_TEMPLATE = getenv("LICENSING_EMAIL_TEMPLATE")
 LICENSING_EMAIL_FROM_ADDR = getenv("LICENSING_EMAIL_FROM_ADDR")
 LICENSING_EMAIL_HTML_TEMPLATE = getenv("LICENSING_EMAIL_HTML_TEMPLATE")
+
+
+if "test" in sys.argv or "test_coverage" in sys.argv:
+    DATABASES["default"]["ENGINE"] = "django.db.backends.sqlite3"
+    EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
+    LICENSING_EMAIL_SUBJECT = "Test email {{name|safe}}"
+    LICENSING_EMAIL_HTML_TEMPLATE = "email_template.html"
+    LICENSING_EMAIL_TEMPLATE = "email_template.txt"
+    LICENSING_EMAIL_FROM_ADDR = "webmaster@bird-ringing.local"
+    TEMPLATES = [
+        {
+            "BACKEND": "django.template.backends.django.DjangoTemplates",
+            "OPTIONS": {
+                "loaders": [
+                    (
+                        "django.template.loaders.locmem.Loader",
+                        {
+                            "email_template.html": '<em>{{mnr}}</em> <em>{{name|safe}}</em> <em>{{date}}</em><ul>{%for document_type, filename in attachments%}<li>{{document_type}}: {{filename}}{%endfor%}</li></ul>',
+                            "email_template.txt": '{{mnr}} {{name|safe}} {{date}} {%for document_type, filename in attachments%} {{document_type}}: {{filename}}{%endfor%}',
+                        },
+                    ),
+                ],
+                "context_processors": [
+                    "django.template.context_processors.request",
+                    "django.contrib.auth.context_processors.auth",
+                    "django.contrib.messages.context_processors.messages",
+                ],
+            },
+        }
+    ]
