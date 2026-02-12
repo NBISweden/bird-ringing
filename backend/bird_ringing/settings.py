@@ -72,10 +72,12 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = "bird_ringing.urls"
 
+TEMPLATES_DIR = getenv("DJANGO_TEMPLATES_DIR")
+
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [],
+        "DIRS": [TEMPLATES_DIR],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -152,3 +154,21 @@ STATIC_ROOT = "static"
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# Licensing email configuration
+
+DEFAULT_FROM_EMAIL = getenv("DJANGO_DEFAULT_FROM_EMAIL")
+EMAIL_BACKEND = getenv("DJANGO_EMAIL_BACKEND", "django.core.mail.backends.smtp.EmailBackend")
+EMAIL_HOST = getenv("DJANGO_EMAIL_HOST")
+EMAIL_PORT = getenv("DJANGO_EMAIL_PORT")
+EMAIL_HOST_USER = getenv("DJANGO_EMAIL_HOST_USER")
+EMAIL_USE_TLS = strtobool(getenv("DJANGO_EMAIL_USE_TLS", "false"))
+EMAIL_USE_SSL = strtobool(getenv("DJANGO_EMAIL_USE_SSL", "false"))
+EMAIL_HOST_PASSWORD = get_secret_from_file("DJANGO_EMAIL_HOST_PASSWORD_FILE")
+EMAIL_SSL_KEYFILE = get_secret_from_file("DJANGO_EMAIL_SSL_KEYFILE")
+EMAIL_SSL_CERTFILE = get_secret_from_file("DJANGO_EMAIL_SSL_CERTFILE")
+
+LICENSING_EMAIL_SUBJECT = getenv("LICENSING_EMAIL_SUBJECT")
+LICENSING_EMAIL_TEMPLATE = getenv("LICENSING_EMAIL_TEMPLATE")
+LICENSING_EMAIL_FROM_ADDR = getenv("LICENSING_EMAIL_FROM_ADDR")
+LICENSING_EMAIL_HTML_TEMPLATE = getenv("LICENSING_EMAIL_HTML_TEMPLATE")

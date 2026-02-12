@@ -98,6 +98,7 @@ services:
     secrets:
       - db-user-pass
       - django-secret-key
+      - django-email-password
 
   proxy:
     image: caddy:2-alpine
@@ -135,3 +136,5 @@ secrets:
     file: ./secrets/db-user-pass.txt
   django-secret-key:
     file: ./secrets/django-secret-key.txt
+  django-email-password:
+    file: ./secrets/django-email-password.txt
