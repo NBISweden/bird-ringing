@@ -1,12 +1,24 @@
 from django.template.loader import render_to_string
-from django.core.mail import EmailMultiAlternatives, EmailAttachment
-from django.core import mail
+from django.core.mail import EmailMultiAlternatives, EmailAttachment, EmailMessage
 from django.conf import settings as django_settings
 from typing import Iterable
 from django.template import Template, Context
+from licensing.license_card_service import LicenseCardService
+from licensing.models import (
+    License,
+    LicenseRelation,
+    DocumentTypeChoices,
+)
+import datetime
+import mimetypes
 
 
 class MessageBuilder:
+    """
+    The MessageBuilder aims to be a generic way to group things
+    related to creating EmailMessages. It handles templates for
+    subject and content and allows for attechments.
+    """
     def __init__(
         self,
         subject: str,
@@ -25,7 +37,7 @@ class MessageBuilder:
         params: dict,
         attachments: Iterable[EmailAttachment],
         from_addr: str | None = None
-    ) -> EmailMultiAlternatives:
+    ) -> EmailMessage:
         msg = EmailMultiAlternatives(
             subject=self.apply_str_template(self.subject, params),
             body=self.apply_template(self.template_path, params),
@@ -55,3 +67,56 @@ class MessageBuilder:
             )
         except (FileNotFoundError, AttributeError, TypeError) as e:
             raise ValueError(f"Failed to configure message builder: {e}")
+
+
+class LicenseAndPermitMessageBuilder:
+    """
+    The LicenseAndPermitMessageBuilder builds messages specifically
+    related to sending license and permit documents.
+    """
+    def __init__(self, message_builder: MessageBuilder, card_service: LicenseCardService):
+        self.message_builder = message_builder
+        self.card_service = card_service
+    
+    def get_message(self, lic: License, relation: LicenseRelation, include_card: bool = False, include_permit: bool = False) -> EmailMessage:
+        email = relation.actor.email
+        if not email:
+            raise ValueError(f"No email address available for {lic.sequence.mnr}:{relation.mednr}")
+
+        card_document = self.card_service.get_license_card_document(lic=lic, actor=relation.actor)
+        card_attachment = None
+        if card_document is None and include_card:
+            raise ValueError(f"No license card document available for {lic.sequence.mnr}:{relation.mednr}")
+
+        elif include_card:
+            (mimetype, _encoding) = mimetypes.guess_type(card_document.reference)
+            card_attachment = (
+                EmailAttachment(
+                    content=card_document.data,
+                    mimetype=mimetype,
+                    filename=card_document.reference
+                ),
+                DocumentTypeChoices(card_document.type).label
+            )
+
+        permit_attachment = None
+        attachments = [
+            *([] if card_attachment is None else [card_attachment]),
+            *([] if permit_attachment is None else [permit_attachment])
+        ]
+        return self.message_builder.get_message(
+            to_addr=email,
+            params={
+                "mnr": lic.sequence.mnr,
+                "name": relation.actor.full_name,
+                "date": datetime.date.today().isoformat(),
+                "attachments": [
+                    (document_type, attachment.filename)
+                    for (attachment, document_type) in attachments
+                ]
+            },
+            attachments=[
+                attachment
+                for (attachment, _document_type) in attachments
+            ],
+        )

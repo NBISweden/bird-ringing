@@ -3,8 +3,8 @@ from rest_framework.response import Response
 from rest_framework.reverse import reverse
 
 from licensing.license_card_service import LicenseCardService, NoCurrentLicense, ActorNotOnLicense
-from licensing.message_builder import MessageBuilder
-from django.core.mail import EmailAttachment
+from licensing.message_builder import MessageBuilder, LicenseAndPermitMessageBuilder
+from licensing.communication_service import CommunicationService
 from licensing.utils import get_flattened_license_and_relations
 from django.core import mail
 
@@ -24,10 +24,7 @@ from licensing.models import (
     LicenseStatusChoices,
     LicenseDocument,
     LicenseCommunication,
-    DocumentTypeChoices,
-    LicenseCommunication,
     CommunicationTypeChoices,
-    CommunicationStatusChoices,
 )
 from rest_framework.authentication import SessionAuthentication, BasicAuthentication
 from rest_framework.permissions import DjangoModelPermissions
@@ -37,9 +34,7 @@ from django.db import models
 from django.http import HttpResponse
 from django.contrib.postgres.aggregates import StringAgg
 from collections import OrderedDict
-import datetime
 import smtplib
-import mimetypes
 
 
 def parse_csv_string(csv_str: str):
@@ -627,83 +622,34 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
         except serializers.ValidationError as e:
             return Response(e.detail, status=400)
 
-        card_service = LicenseCardService()
-        message_builder = MessageBuilder.from_licensing_settings()
+        message_builder = LicenseAndPermitMessageBuilder(
+            MessageBuilder.from_licensing_settings(),
+            LicenseCardService()
+        )
 
         messages = []
         for (lic, relation) in get_flattened_license_and_relations(licenses):
-            email = relation.actor.email
-            if not email: # Ignore sending if the actor has no email address declared
+            if not relation.actor.email: # Ignore sending if the actor has no email address declared
                 continue
 
-            card_document = card_service.get_license_card_document(lic=lic, actor=relation.actor)
-            card_attachment = None
-            if card_document is None and include_card:
-                return Response({"detail": f"No license card document available for {lic.sequence.mnr}:{relation.mednr}"}, status=400)
-
-            elif include_card:
-                (mimetype, _encoding) = mimetypes.guess_type(card_document.reference)
-                card_attachment = (
-                    EmailAttachment(
-                        content=card_document.data,
-                        mimetype=mimetype,
-                        filename=card_document.reference
-                    ),
-                    DocumentTypeChoices(card_document.type).label
+            try:
+                message = message_builder.get_message(
+                    lic,
+                    relation,
+                    include_card,
+                    include_permit
                 )
-
-            permit_attachment = None
-            attachments = [
-                *([] if card_attachment is None else [card_attachment]),
-                *([] if permit_attachment is None else [permit_attachment])
-            ]
-            message = message_builder.get_message(
-                to_addr=email,
-                params={
-                    "mnr": lic.sequence.mnr,
-                    "name": relation.actor.full_name,
-                    "date": datetime.date.today().isoformat(),
-                    "attachments": [
-                        (document_type, attachment.filename)
-                        for (attachment, document_type) in attachments
-                    ]
-                },
-                attachments=[
-                    attachment
-                    for (attachment, _document_type) in attachments
-                ],
-            )
+            except ValueError as e:
+                return Response({"detail": str(e)}, status=400)
             messages.append((lic, relation.actor, message))
 
         try:
-            with mail.get_connection() as connection:
-                failed_messages: list[str] = []
-                for (lic, actor, message) in messages:
-                    try:
-                        message.connection = connection
-                        message.send()
-                        LicenseCommunication.objects.create(
-                            actor=actor,
-                            license=lic,
-                            type=CommunicationTypeChoices.LICENSE_DELIVERY,
-                            status=CommunicationStatusChoices.SENT,
-                            created_by=request.user,
-                            updated_by=request.user,
-                        )
-                    except smtplib.SMTPException as e:
-                        failed_messages.append({
-                            "to": message.to,
-                            "details": str(e)
-                        })
-                        LicenseCommunication.objects.create(
-                            actor=actor,
-                            license=lic,
-                            type=CommunicationTypeChoices.LICENSE_DELIVERY,
-                            status=CommunicationStatusChoices.BOUNCED,
-                            note=str(e),
-                            created_by=request.user,
-                            updated_by=request.user,
-                        )
+            communication_service = CommunicationService(mail)
+            failed_messages = communication_service.send_email_messages(
+                messages,
+                CommunicationTypeChoices.LICENSE_DELIVERY,
+                request.user
+            )
             return Response({
                 "messages_sent": len(messages) - len(failed_messages),
                 "messages_prepared": len(messages),
