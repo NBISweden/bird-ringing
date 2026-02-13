@@ -32,8 +32,20 @@ if not SECRET_KEY:
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = strtobool(getenv("DJANGO_DEBUG_MODE", False))
 
-ALLOWED_HOSTS = parse_csv_from_env("DJANGO_ALLOWED_HOSTS", ["localhost", "backend"])
+# Get the list of allowed hosts from the DJANGO_ALLOWED_HOSTS
+# environment variable, or use a default list if not set.  These are
+# domain names or IP addresses that the Django application can serve.
+# We typically need two entries here: "backend", and the publicly
+# accessible domain name of the hosting server.
+ALLOWED_HOSTS = parse_csv_from_env("DJANGO_ALLOWED_HOSTS", ["backend", "localhost"])
 
+# Get the list of trusted origins for CSRF protection from the
+# DJANGO_CSRF_TRUSTED_ORIGINS environment variable, or use an empty list
+# if not set.  These are the origins that are allowed to make cross-site
+# requests to the Django application.  We typically need to include the
+# publicly accessible URL of the hosting server here, including the
+# scheme (e.g. "https://").  For example, "https://example.edu".
+CSRF_TRUSTED_ORIGINS = parse_csv_from_env("DJANGO_CSRF_TRUSTED_ORIGINS", [])
 
 # Application definition
 
