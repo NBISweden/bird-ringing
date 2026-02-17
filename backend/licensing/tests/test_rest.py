@@ -217,7 +217,7 @@ class LicenseDocumentEmailTests(TestCase):
     def _send_mail_url(self, mnrs: list[str], include_card: bool = False, include_permit = False):
         params = [
             *(["include_card"] if include_card else []),
-            *(["include_permit"] if include_card else [])
+            *(["include_permit"] if include_permit else [])
         ]
         return reverse("licensesequence-send-license-emails") + f"?mnrs={','.join(mnrs)}&{'&'.join(params)}"
 

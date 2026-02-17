@@ -27,7 +27,7 @@ class CommunicationService:
         user: User
     ):
         with self.mail.get_connection() as connection:
-            failed_messages: list[str] = []
+            failed_messages: list[dict[str, object]] = []
             for (lic, actor, message) in messages:
                 try:
                     message.connection = connection
