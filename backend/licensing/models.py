@@ -91,6 +91,7 @@ class Actor(ChangeTracking):
     type = models.PositiveIntegerField(choices=ActorTypeChoices)
     sex = models.PositiveIntegerField(choices=SexChoices)
     birth_date = models.DateField(blank=True, null=True)
+    birth_year = models.PositiveIntegerField(blank=True, null=True)
     language = models.PositiveIntegerField(
         choices=LanguageChoices, default=LanguageChoices.UNKNOWN
     )
@@ -489,9 +490,10 @@ class ActorImport(ImportTracking):
     @staticmethod
     def get_key(**actor):
         birth_date = actor.get("birth_date")
+        birth_year = actor.get("birth_year")
         type = actor["type"]
         full_name = actor["full_name"]
-        year = birth_date.year if birth_date else None
+        year = birth_year or (birth_date.year if birth_date else None)
         return slugify(f"{type} {full_name} {year}")
 
 
