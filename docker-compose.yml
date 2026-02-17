@@ -109,7 +109,6 @@ services:
       dockerfile: Dockerfile
     tmpfs:
       - /tmp
-      - /dev/shm
     healthcheck:
       test: ["CMD", "wget", "--spider", "--timeout=5", "http://docx2pdf:8000/health"]
       interval: 10s
