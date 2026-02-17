@@ -7,10 +7,15 @@ import datetime
 from django.utils.timezone import make_aware
 import csv
 import logging
-
+import re
+from dataclasses import dataclass
 
 logger = logging.getLogger(__name__)
 
+@dataclass(frozen=True)
+class BirthParsed:
+    birth_date: datetime.date | None
+    birth_year: int | None
 
 class CSVLoader:
     """
@@ -158,7 +163,7 @@ class Command(BaseCommand):
             if type == models.ActorTypeChoices.STATION
             else sex_choice
         )
-        birth_date = self._parse_birth_date(ringer_data.get("Fyr"))
+        birth_info = self._parse_birth_date_or_year(ringer_data.get("Fyr"))
         first_name = ringer_data.get("Fnamn", "")
         last_name = ringer_data.get("Enamn", "")
         language = self._parse_language(ringer_data.get("Spr"))
@@ -170,7 +175,8 @@ class Command(BaseCommand):
             last_name=last_name,
             type=type,
             sex=sex,
-            birth_date=birth_date,
+            birth_date=birth_info.birth_date,
+            birth_year=birth_info.birth_year,
             language=language,
             phone_number1=ringer_data.get("Telhem", ""),
             phone_number2=ringer_data.get("Telarb", ""),
@@ -347,7 +353,7 @@ class Command(BaseCommand):
 
     def load_helper(self, helper_data: dict):
         current_user = self.get_current_user()
-        birth_date = self._parse_birth_date(helper_data.get("Fyr"))
+        birth_info = self._parse_birth_date_or_year(helper_data.get("Fyr"))
         first_name = helper_data["FNamn"]
         last_name = helper_data["ENamn"]
         sex = {
@@ -358,7 +364,8 @@ class Command(BaseCommand):
             created_by=current_user,
             updated_by=current_user,
             type=models.ActorTypeChoices.PERSON,
-            birth_date=birth_date,
+            birth_date=birth_info.birth_date,
+            birth_year=birth_info.birth_year,
             full_name=" ".join([first_name, last_name]),
             first_name=first_name,
             last_name=last_name,
@@ -376,8 +383,46 @@ class Command(BaseCommand):
             value, models.LanguageChoices.UNKNOWN
         )
 
-    def _parse_birth_date(self, value: str | None):
-        return datetime.date(year=int(value), day=1, month=1) if value else None
+    def _parse_birth_date_or_year(self, value: str | None) -> BirthParsed:
+        """
+        Accepts:
+          - "YYYY" (year only)
+          - "YYYY[-/:]MM[-/:]DD"
+          - "DD[-/:]MM[-/:]YYYY"
+        Separators allowed: '-', '/', ':'
+        """
+        if not value:
+            return BirthParsed(None, None)
+
+        s = str(value).strip()
+        if not s:
+            return BirthParsed(None, None)
+
+        # year only
+        if re.fullmatch(r"\d{4}", s):
+            return BirthParsed(birth_date=None, birth_year=int(s))
+
+        parts = re.split(r"[-/:]", s)
+        parts = [p.strip() for p in parts if p.strip()]
+
+        if len(parts) != 3:
+            raise ValueError(f"Invalid Fyr format: {s!r}")
+
+        # require digits and a 4-digit year somewhere
+        if not all(re.fullmatch(r"\d{1,4}", p) for p in parts):
+            raise ValueError(f"Invalid Fyr format: {s!r}")
+
+        # make it work with YYYY-MM-DD or DD-MM-YYYY
+        a, b, c = (int(parts[0]), int(parts[1]), int(parts[2]))
+        if 1000 <= a <= 9999:
+            dt = datetime.date(year=a, month=b, day=c)
+            return BirthParsed(birth_date=dt, birth_year=dt.year)
+
+        if 1000 <= c <= 9999:
+            dt = datetime.date(year=c, month=b, day=a)
+            return BirthParsed(birth_date=dt, birth_year=dt.year)
+
+        raise ValueError(f"Invalid Fyr format (no 4-digit year found): {s!r}")
 
     def _get_helper_key(self, helper_data: dict):
         return (helper_data["Mnr"], helper_data["Mednr"])
