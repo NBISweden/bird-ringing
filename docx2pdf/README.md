@@ -6,11 +6,11 @@ The service is intended to be run as a sidecar in Docker Compose and called from
 
 ## What it does
 
-- Starts LibreOffice once in **headless listener mode** (UNO socket).
+- Starts LibreOffice once in **headless listener mode** (UNO socket). LibreOffice stays running between requests, avoiding the startup overhead of spawning `soffice` for each conversion.
 - Accepts `POST`ed DOCX bytes on an HTTP endpoint.
-- Converts the DOCX to PDF via `unoconv` connected to the warm LibreOffice listener.
+- Converts the DOCX to PDF via `uno` connected to the warm LibreOffice listener.
 - Returns the resulting PDF bytes (`application/pdf`).
-- Uses only ephemeral storage for conversion (`/dev/shm` if available, otherwise `/tmp`).
+- Uses only ephemeral storage for conversion (`/tmp`), cleans up written files after each successful conversion.
 
 ## Endpoints
 
@@ -43,35 +43,19 @@ curl -sS \
   -o out.pdf
 ```
 
-## How it works (high level)
-
-1. `entrypoint.sh` launches LibreOffice:
-
-- `soffice --headless ... --accept="socket,host=127.0.0.1,port=2002;urp;"`
-
-2. The FastAPI server receives a request, writes input DOCX to a temp path, runs:
-
-- `/usr/bin/python3 /usr/bin/unoconv ... --connection socket,...;urp;StarOffice.ComponentContext`
-
-3. The produced PDF is read back and returned.
-
-LibreOffice stays running between requests, avoiding the startup overhead of spawning `soffice` for each conversion.
-
 ## Environment variables
 
 The container supports:
 
 - `LO_HOST` (default: `127.0.0.1`)
 - `LO_PORT` (default: `2002`)
-- `UNO_URL` (default: `socket,host=127.0.0.1,port=2002;urp;StarOffice.ComponentContext`)
-
-Notes:
-- `UNO_URL` must include `StarOffice.ComponentContext` (required by `unoconv`).
+- `TMPDIR`  (default: `/tmp`)
 
 ## Timeouts and failure behavior
 
 - There is a client-side timeout in-place when calling the service.
-- Server-side the service also enforces a conversion timeout (currently set to 30s).
+- Server-side the service also enforces a conversion timeout (currently set to 60s).
+- There is a limit to the incoming `docx` size set to 50Mb.
 
 ## Performance and concurrency
 
