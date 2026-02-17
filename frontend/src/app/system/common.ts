@@ -9,7 +9,8 @@ export type ActorBase = {
   last_name: string;
   type: string;
   sex: string;
-  birth_date: string;
+  birth_date: string | null;
+  birth_year: number | null;
   language: string;
   phone_number1: string;
   phone_number2: string;
@@ -218,14 +219,13 @@ export function convertDateToLocale(dateStr: string) {
   }
 }
 
-export function convertOnlyDateToLocale(dateStr: string) {
+export function convertOnlyDateToLocale(dateStr: string | null | undefined) {
   if (dateStr) {
     return new Date(dateStr).toLocaleString("sv-SE", {
       year: "numeric",
       month: "2-digit",
       day: "2-digit",
     });
-  } else {
-    return "-";
   }
+  return "";
 }
