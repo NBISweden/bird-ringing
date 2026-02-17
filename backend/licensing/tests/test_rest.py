@@ -13,6 +13,7 @@ from licensing.models import (
     ReportStatusChoices,
     LicenseRoleChoices,
     DocumentTypeChoices,
+    LicenseCommunication,
 )
 from .utils import create_user
 import datetime
@@ -197,6 +198,21 @@ class LicenseDocumentEmailTests(TestCase):
             {"mnrs": f"Unknown mnr(s): {test_mnr}"},
             response.json(),
         )
+    
+    def test_communication_log_was_added(self):
+        self._add_license_documents(self.actors, self.licenses)
+        self._with_access()
+        url = self._send_mail_url([lic.sequence.mnr for lic in self.licenses], True)
+        response = self.client.put(url)
+        self.assertEqual(response.status_code, 200)
+        
+        for (actor, lic) in zip(self.actors, self.licenses):
+            self.assertEqual(
+                1,
+                LicenseCommunication.objects.filter(actor=actor, license=lic).count(),
+                "Make sure that there is exactly one communication object per actor and license combination."
+            )
+
     
     def _license_name(self, lic, actor):
         return f"{lic.sequence.mnr}-{actor.id}-test.pdf"

@@ -29,30 +29,27 @@ class CommunicationService:
         with self.mail.get_connection() as connection:
             failed_messages: list[dict[str, object]] = []
             for (lic, actor, message) in messages:
+                communication = LicenseCommunication.objects.create(
+                    actor=actor,
+                    license=lic,
+                    type=communication_type,
+                    status=CommunicationStatusChoices.FAILED,
+                    note="Tried to send email",
+                    created_by=user,
+                    updated_by=user,
+                )
                 try:
                     message.connection = connection
                     message.send()
-                    LicenseCommunication.objects.create(
-                        actor=actor,
-                        license=lic,
-                        type=communication_type,
-                        status=CommunicationStatusChoices.SENT,
-                        created_by=user,
-                        updated_by=user,
-                    )
+                    communication.status = CommunicationStatusChoices.SENT
+                    communication.save()
+                    
                 except smtplib.SMTPException as e:
                     failed_messages.append({
                         "to": message.to,
                         "details": str(e)
                     })
-                    LicenseCommunication.objects.create(
-                        actor=actor,
-                        license=lic,
-                        type=communication_type,
-                        status=CommunicationStatusChoices.BOUNCED,
-                        note=str(e),
-                        created_by=user,
-                        updated_by=user,
-                    )
+                    communication.note = str(e)
+                    communication.save()
 
             return failed_messages
