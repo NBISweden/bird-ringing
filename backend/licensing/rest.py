@@ -34,7 +34,11 @@ from django.db import models
 from django.http import HttpResponse
 from django.contrib.postgres.aggregates import StringAgg
 from collections import OrderedDict
-import smtplib
+from typing import Tuple
+import logging
+
+
+logger = logging.getLogger(__name__)
 
 
 def parse_csv_string(csv_str: str):
@@ -662,8 +666,9 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
                 "failed_messages": failed_messages,
             }, status=200 if len(failed_messages) == 0 else 422)
 
-        except smtplib.SMTPException as e:
-            return Response({"detail": f"Connect to mail server {e}"}, status=503)
+        except OSError as e:
+            logger.error(f"send_license_emails: {type(e)}: {e}")
+            return Response({"detail": "Failed to connect to mail server"}, status=503)
 
 actor_type_label = models.Case(
     *[
