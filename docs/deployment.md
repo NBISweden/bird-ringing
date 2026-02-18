@@ -10,6 +10,7 @@ In order to get the service up and running you will need to go through the follo
 3. [Configure environment variables](#docker-environment-variables)
 4. [Start the service](#starting-the-service)
 5. [Create super user and groups](#enable-service-admin)
+6. [Load data](#load-data)
 
 ## Prerequisites
 The current recommended setup of the service only requires Docker and Docker Compose as dependencies. The setup includes a backend container running `Django`, a `PostgreSQL` database, and a proxy serving static content and reverse-proxying the `Django` backend. Optionally, the service can be configured to use an externally hosted PostgreSQL database.
@@ -95,6 +96,8 @@ services:
 
 In order to make the service available for administrators and users you need to add atleast one super user and create the necessary permission groups.
 
+>**Note:** The following commands can only be run when the `backend` container is up and running
+
 ```sh
 # Follow the on screen instructions to create an initial super user
 ./compose-prod.sh exec backend python manage.py createsuperuser
@@ -106,7 +109,27 @@ In order to make the service available for administrators and users you need to 
 ./compose-prod.sh exec backend python manage.py create_base_groups
 ```
 
-Additional users can be created by the super user using the `Django` admin section. Regular users needs to be assigned to the group `Bird ringing experts` in order to have access to the Bird Ringing service.
+Additional users can be created by the super user using the `Django` admin section, available at `https://<your-host>/admin/`. Regular users needs to be assigned to the group `Bird ringing experts` in order to have access to the Bird Ringing service.
+
+### Load data
+
+In order to populate the service with data it is necessary to execute a management command in the `backend` container. This command requires a data export from the the original Bird Ringing database. It expects a folder containing the following CSV formatted files:
+
+| File Name | Expected Content |
+|:----------|:-------------------|
+|Artlista.csv|A table of species.|
+|Maerkare.csv|A table of bird ringers combined with some license information.|
+|MarkAss.csv|A table of bird ringing helpers mapped to licenses.|
+|MarkAssYr.csv|A table relating bird ringing helpers to licenses on specific years.|
+|TillstTyp.csv|A table of permission types.|
+|TillstProp.csv|A table of permission properties.|
+|Tillstand.csv|A table of entries describing permits.|
+
+Make sure to have the data available in a folder on the host system, ex. `./resources/bird-ringing-data`. You can then run the following command to populate the service with data:
+
+```sh
+./compose-prod.sh run --rm --volume "$(pwd)/resources/bird-ringing-data:/opt/bird-ringing-data:ro" backend-init python manage.py load_data --path_format=/opt/bird-ringing-data/br-ex-{id}.csv
+```
 
 ## Using an External Database
 If you want to host your database externally, note that the currently targeted database is `PostgreSQL`, which is the only recommended out-of-the-box supported solution. It is also expected that you are familiar with how to set up and configure the database yourself.
