@@ -643,12 +643,18 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
                 return Response({"detail": str(e)}, status=400)
             messages.append((lic, relation.actor, message))
 
+        success_messages: dict[Tuple(bool, bool), str] = {
+            (True, True): "E-mail with license and permit sent",
+            (True, False): "E-mail with license sent",
+            (False, True): "E-mail with permit sent",
+        }
         try:
             communication_service = CommunicationService(mail)
             failed_messages = communication_service.send_email_messages(
                 messages,
                 CommunicationTypeChoices.LICENSE_DELIVERY,
-                request.user
+                request.user,
+                success_message=success_messages.get((include_card, include_permit), "E-mail sent")
             )
             return Response({
                 "messages_sent": len(messages) - len(failed_messages),

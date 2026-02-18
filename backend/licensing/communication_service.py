@@ -24,7 +24,9 @@ class CommunicationService:
         self,
         messages: list[Tuple[License, Actor, EmailMessage]],
         communication_type: CommunicationTypeChoices,
-        user: User
+        user: User,
+        try_message: str = "Tried to send e-mail",
+        success_message: str = "E-mail sent"
     ):
         with self.mail.get_connection() as connection:
             failed_messages: list[dict[str, object]] = []
@@ -34,7 +36,7 @@ class CommunicationService:
                     license=lic,
                     type=communication_type,
                     status=CommunicationStatusChoices.FAILED,
-                    note="Tried to send email",
+                    note=try_message,
                     created_by=user,
                     updated_by=user,
                 )
@@ -42,6 +44,7 @@ class CommunicationService:
                     message.connection = connection
                     message.send()
                     communication.status = CommunicationStatusChoices.SENT
+                    communication.note = success_message
                     communication.save()
                     
                 except smtplib.SMTPException as e:
