@@ -9,6 +9,7 @@ In order to get the service up and running you will need to go through the follo
 2. [Create secrets](#docker-secrets)
 3. [Configure environment variables](#docker-environment-variables)
 4. [Start the service](#starting-the-service)
+5. [Create super user and groups](#enable-service-admin)
 
 ## Prerequisites
 The current recommended setup of the service only requires Docker and Docker Compose as dependencies. The setup includes a backend container running `Django`, a `PostgreSQL` database, and a proxy serving static content and reverse-proxying the `Django` backend. Optionally, the service can be configured to use an externally hosted PostgreSQL database.
@@ -89,6 +90,23 @@ services:
 ./compose-prod.sh build
 ./compose-prod.sh up -d
 ```
+
+### Enable service admin
+
+In order to make the service available for administrators and users you need to add atleast one super user and create the necessary permission groups.
+
+```sh
+# Follow the on screen instructions to create an initial super user
+./compose-prod.sh exec backend python manage.py createsuperuser
+```
+
+```sh
+# Creates groups with the permissions needed for regular service users.
+# Currently the only group is "Bird ringing experts", by default
+./compose-prod.sh exec backend python manage.py create_base_groups
+```
+
+Additional users can be created by the super user using the `Django` admin section. Regular users needs to be assigned to the group `Bird ringing experts` in order to have access to the Bird Ringing service.
 
 ## Using an External Database
 If you want to host your database externally, note that the currently targeted database is `PostgreSQL`, which is the only recommended out-of-the-box supported solution. It is also expected that you are familiar with how to set up and configure the database yourself.
