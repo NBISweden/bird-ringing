@@ -71,6 +71,15 @@ const messagesBase = {
   licenseLicenseDownloadLoading: "Preparing licenses package for download...",
   licenseLicenseDownloadSucceeded: "Downloading licenses package",
   licenseDownloadLicensesText: "Downloading license cards",
+  licenseSendLicensesOptionsText:
+    "Please choose what you want to include in the e-mail:",
+  licenseIncludeLicenseCard: "Include license card (PDF)",
+  licenseIncludePermit: "Include license permit (PDF)",
+  licenseSendingLicenses: "Sending licenses...",
+  licenseSendLicensesSucceeded: "{sent} e-mails sent successfully.",
+  licenseSendLicensesFailed: "Failed to send licenses. Please try again later.",
+  licenseSendLicensesNoAttachmentsWarning:
+    "You are trying to send e-mails without any attached documents. Are you sure?",
   licenseErrorLoadingLicenseTitle: "Failed to load license",
   licenseErrorLoadingLicenseText:
     "Something went wrong while loading license with {licenseId}",
@@ -116,7 +125,10 @@ const messagesBase = {
   closeModal: "Close",
   abortModal: "Abort",
   okModal: "Ok",
+  backModal: "Back",
+  continueModal: "Continue",
   featureNotImplemented: "This feature is not yet implemented",
+  unknownError: "An unknown error occurred.",
 };
 
 function makeMessageMap<T extends { [P in keyof T]: Message | string }>(

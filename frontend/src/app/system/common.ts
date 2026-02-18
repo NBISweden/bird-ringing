@@ -204,6 +204,12 @@ export type ButtonType =
   | "light"
   | "dark";
 
+export interface SendEmailResult {
+  messages_sent: number;
+  messages_prepared: number;
+  failed_messages: string[];
+}
+
 export function convertDateToLocale(dateStr: string) {
   if (dateStr) {
     return new Date(dateStr).toLocaleString("sv-SE", {

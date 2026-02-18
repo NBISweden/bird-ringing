@@ -2,6 +2,7 @@ import { useCallback } from "react";
 import { ClientContext, useClient, useModalsContext } from "../contexts";
 import { Client } from "../client";
 import Spinner from "@/components/Spinner";
+import { SendLicenseModalContent } from "@/components/SendLicenseModalContent";
 import { Alert } from "@/components/Alert";
 import { downloadData } from "../utils";
 import useSWRImmutable from "swr/immutable";
@@ -309,27 +310,24 @@ export function useDownloadPermitsZipAction(client: Client) {
   });
 }
 
-export function useSendLicenseEmailAction() {
+export function useSendLicenseEmailAction(client: Client) {
   const modalStack = useModalsContext();
   const { t } = useTranslation();
 
-  const action = useCallback(() => {
-    modalStack.add({
-      title: t("licenseSendLicenses"),
-      content: (
-        <>
-          <Spinner />
-          <span className="ms-3">{t("featureNotImplemented")}</span>
-        </>
-      ),
-      actions: [
-        {
-          label: t("closeModal"),
-          action: () => {},
-          type: "primary",
-        },
-      ],
-    });
-  }, [modalStack, t]);
-  return action;
+  return useCallback(
+    (itemIds: Set<string>) => {
+      if (itemIds.size === 0) return;
+
+      modalStack.add({
+        title: t("licenseSendLicenses"),
+        content: (
+          <SendLicenseModalContent client={client} mnrs={Array.from(itemIds)} />
+        ),
+        actions: [
+          { label: t("closeModal"), action: () => {}, type: "primary" },
+        ],
+      });
+    },
+    [modalStack, client, t],
+  );
 }

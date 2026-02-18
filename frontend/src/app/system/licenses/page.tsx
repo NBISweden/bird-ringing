@@ -137,7 +137,7 @@ function ConnectedListView() {
   const downloadZipAction = useDownloadLicenseCardsZipAction(client);
   const createPermitDocsAction = useBatchCreatePermitsAction(client);
   const downloadPermitsZipAction = useDownloadPermitsZipAction(client);
-  const sendEmailAction = useSendLicenseEmailAction();
+  const sendEmailAction = useSendLicenseEmailAction(client);
 
   const batchActions: (BatchAction | { type: "divider" })[] = [
     {
