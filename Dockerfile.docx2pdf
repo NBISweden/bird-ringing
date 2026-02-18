@@ -19,7 +19,8 @@ RUN --mount=type=cache,target=/var/cache/apt,id=apt-cache \
 		netcat-openbsd \
 		python3-fastapi \
 		python3-uno \
-		uvicorn
+		uvicorn \
+		wget
 
 ENV HOME=/home/app
 
