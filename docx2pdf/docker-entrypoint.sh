@@ -7,8 +7,7 @@ LO_PORT="${LO_PORT:-2002}"
 LO_PROFILE_DIR="${LO_PROFILE_DIR:-"${TMPDIR:-/tmp}"/lo-profile}"
 mkdir -p "$LO_PROFILE_DIR" || exit
 
-soffice \
-	--headless \
+soffice --headless \
 	--nologo \
 	--nofirststartwizard \
 	--norestore \
@@ -29,6 +28,8 @@ do
 		printf "LibreOffice did not start listening on %s:%s\n" "$LO_HOST" "$LO_PORT"
 		echo '--- soffice.stderr ---'
 		cat /tmp/soffice.stderr
+		echo '--- soffice.stdout ---'
+		cat /tmp/soffice.stdout
 		exit 1
 	fi >&2
 done

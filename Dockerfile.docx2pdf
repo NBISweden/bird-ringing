@@ -1,18 +1,24 @@
-FROM alpine:3.23.3
+FROM debian:stable-slim
 
 ARG UID=1000
 ARG GID=1000
 
+ENV DEBIAN_FRONTEND=noninteractive
+
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
-RUN --mount=type=cache,id=apk-cache,target=/var/cache/apk \
-	apk --cache-dir=/var/cache/apk add \
+RUN --mount=type=cache,target=/var/cache/apt,id=apt-cache \
+    --mount=type=cache,target=/var/lib/apt/lists,id=apt-lists-cache \
+	apt-get update && \
+	apt-get install -y --no-install-recommends \
 		dumb-init \
-		font-dejavu \
-		font-liberation \
+		fonts-dejavu-core \
+		fonts-liberation \
 		libreoffice-writer \
-		py3-fastapi \
+		netcat-openbsd \
+		python3-fastapi \
+		python3-uno \
 		uvicorn
 
 ENV HOME=/home/app
