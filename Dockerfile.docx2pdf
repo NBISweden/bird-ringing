@@ -1,0 +1,29 @@
+FROM alpine:3.23.3
+
+ARG UID=1000
+ARG GID=1000
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
+RUN --mount=type=cache,id=apk-cache,target=/var/cache/apk \
+	apk --cache-dir=/var/cache/apk add \
+		dumb-init \
+		font-dejavu \
+		font-liberation \
+		libreoffice-writer \
+		py3-fastapi \
+		uvicorn
+
+ENV HOME=/home/app
+
+USER "$UID:$GID"
+
+WORKDIR "$HOME"
+
+COPY --chown="$UID:$GID" --chmod=644 server.py "$HOME/server.py"
+COPY --chown="$UID:$GID" --chmod=755 docker-entrypoint.sh "$HOME/docker-entrypoint.sh"
+
+ENTRYPOINT ["/usr/bin/dumb-init", "--"]
+
+CMD ["./docker-entrypoint.sh"]
