@@ -84,7 +84,7 @@ export function LicensePermissionItem({
                 <div key={i}>
                   <p className="my-1 fst-italic">&bull; {p.name}</p>
 
-                  {p.description && <p className="my-1">{p.description}</p>}
+                  {p.description && <p className="mb-3">{p.description}</p>}
                 </div>
               ))}
             </div>
