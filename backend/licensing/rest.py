@@ -170,13 +170,13 @@ class ActorLicenseRelationSerializer(serializers.ModelSerializer):
         fields = ["license_id", "role", "mnr", "mednr", "version", "starts_at", "ends_at", "communication_status", "communication_type"]
 
     def get_communication_status(self, obj):  
-        license_communication = LicenseCommunication.objects.filter(license=obj.license).last()
+        license_communication = LicenseCommunication.objects.filter(license=obj.license, actor=obj.actor).last()
         if license_communication:
             return license_communication.get_status_display()
         return None
     
     def get_communication_type(self, obj):
-        license_communication = LicenseCommunication.objects.filter(license=obj.license).last()
+        license_communication = LicenseCommunication.objects.filter(license=obj.license, actor=obj.actor).last()
         if license_communication:
             return license_communication.get_type_display()
         return None
