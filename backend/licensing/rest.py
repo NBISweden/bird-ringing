@@ -510,8 +510,6 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
             return Response({"detail": str(e)}, status=404)
         except CardActorNotOnLicense as e:
             return Response({"detail": str(e)}, status=400)
-        except Exception as e:
-            return Response({"detail": str(e)}, status=400)
 
         pdf_url = reverse("licensesequence-card-pdf", kwargs={"mnr": seq.mnr}, request=request)
         pdf_url = f"{pdf_url}?actor_id={actor.id}"
@@ -533,8 +531,6 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
         except CardNoCurrentLicense as e:
             return Response({"detail": str(e)}, status=404)
         except CardActorNotOnLicense as e:
-            return Response({"detail": str(e)}, status=400)
-        except Exception as e:
             return Response({"detail": str(e)}, status=400)
 
         if not doc:
@@ -586,8 +582,6 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
             return Response({"detail": str(e)}, status=400)
         except ValueError as e:
             return Response({"detail": str(e)}, status=404)
-        except Exception as e:
-            return Response({"detail": str(e)}, status=400)
 
         resp = HttpResponse(zip_bytes, content_type="application/zip")
         resp["Content-Disposition"] = 'attachment; filename="license-cards.zip"'
@@ -616,8 +610,6 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
         except CardActorNotOnLicense as e:
             return Response({"detail": str(e)}, status=400)
         except ValueError as e:
-            return Response({"detail": str(e)}, status=400)
-        except Exception as e:
             return Response({"detail": str(e)}, status=400)
 
         return Response(
@@ -706,8 +698,6 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
             return Response({"detail": str(e)}, status=404)
         except PermitActorNotOnLicense as e:
             return Response({"detail": str(e)}, status=400)
-        except Exception as e:
-            return Response({"detail": str(e)}, status=400)
 
         pdf_url = reverse("licensesequence-permit-pdf", kwargs={"mnr": seq.mnr}, request=request)
         pdf_url = f"{pdf_url}?actor_id={actor.id}"
@@ -729,8 +719,6 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
         except PermitNoCurrentLicense as e:
             return Response({"detail": str(e)}, status=404)
         except PermitActorNotOnLicense as e:
-            return Response({"detail": str(e)}, status=400)
-        except Exception as e:
             return Response({"detail": str(e)}, status=400)
 
         if not doc:
@@ -768,8 +756,6 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
             return Response({"detail": str(e)}, status=400)
         except ValueError as e:
             return Response({"detail": str(e)}, status=400)
-        except Exception as e:
-            return Response({"detail": str(e)}, status=400)
 
         return Response({"filenames": [d.reference for d in docs]}, status=200)
 
@@ -795,8 +781,6 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
             return Response({"detail": str(e)}, status=400)
         except ValueError as e:
             return Response({"detail": str(e)}, status=404)
-        except Exception as e:
-            return Response({"detail": str(e)}, status=400)
 
         resp = HttpResponse(zip_bytes, content_type="application/zip")
         resp["Content-Disposition"] = 'attachment; filename="permits.zip"'
