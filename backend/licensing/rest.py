@@ -3,6 +3,10 @@ from rest_framework.response import Response
 from rest_framework.reverse import reverse
 
 from licensing.license_card_service import LicenseCardService, NoCurrentLicense, ActorNotOnLicense
+from licensing.message_builder import MessageBuilder, LicenseAndPermitMessageBuilder
+from licensing.communication_service import CommunicationService
+from licensing.utils import get_flattened_license_and_relations
+from django.core import mail
 
 from licensing.models import (
     LicensePermissionProperty,
@@ -20,6 +24,7 @@ from licensing.models import (
     LicenseStatusChoices,
     LicenseDocument,
     LicenseCommunication,
+    CommunicationTypeChoices,
 )
 from rest_framework.authentication import SessionAuthentication, BasicAuthentication
 from rest_framework.permissions import DjangoModelPermissions
@@ -27,8 +32,14 @@ from rest_framework.permissions import DjangoModelPermissions
 from rest_framework import routers, serializers, viewsets, filters, pagination, response
 from django.db import models
 from django.http import HttpResponse
+from django.template.exceptions import TemplateDoesNotExist
 from django.contrib.postgres.aggregates import StringAgg
 from collections import OrderedDict
+from typing import Tuple
+import logging
+
+
+logger = logging.getLogger(__name__)
 
 
 def parse_csv_string(csv_str: str):
@@ -159,13 +170,13 @@ class ActorLicenseRelationSerializer(serializers.ModelSerializer):
         fields = ["license_id", "role", "mnr", "mednr", "version", "starts_at", "ends_at", "communication_status", "communication_type"]
 
     def get_communication_status(self, obj):  
-        license_communication = LicenseCommunication.objects.filter(license=obj.license).last()
+        license_communication = LicenseCommunication.objects.filter(license=obj.license, actor=obj.actor).last()
         if license_communication:
             return license_communication.get_status_display()
         return None
     
     def get_communication_type(self, obj):
-        license_communication = LicenseCommunication.objects.filter(license=obj.license).last()
+        license_communication = LicenseCommunication.objects.filter(license=obj.license, actor=obj.actor).last()
         if license_communication:
             return license_communication.get_type_display()
         return None
@@ -603,6 +614,66 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
             {"filenames": [d.reference for d in docs]},
             status=200,
         )
+    
+    @action(detail=False, methods=["put"], url_path="send-license-emails")
+    def send_license_emails(self, request):
+        include_card = request.query_params.get("include_card") is not None
+        include_permit = request.query_params.get("include_permit") is not None
+        raw = request.query_params.get("mnrs", "")
+        mnrs = [m for m in parse_csv_string(raw) if m]
+
+        try:
+            licenses = get_current_licenses(mnrs)
+        except serializers.ValidationError as e:
+            return Response(e.detail, status=400)
+
+        message_builder = LicenseAndPermitMessageBuilder(
+            MessageBuilder.from_licensing_settings(),
+            LicenseCardService()
+        )
+
+        messages = []
+        try:
+            for (lic, relation) in get_flattened_license_and_relations(licenses):
+                if not relation.actor.email: # Ignore sending if the actor has no email address declared
+                    continue
+
+                try:
+                    message = message_builder.get_message(
+                        lic,
+                        relation,
+                        include_card,
+                        include_permit
+                    )
+                except ValueError as e:
+                    return Response({"detail": str(e)}, status=400)
+                messages.append((lic, relation.actor, message))
+        except TemplateDoesNotExist as e:
+            logger.error(f"send_license_emails: {type(e)}: {e}")
+            return Response({"detail": "E-mail template is misconfigured."}, status=503)
+
+        success_messages: dict[Tuple(bool, bool), str] = {
+            (True, True): "E-mail with license and permit sent",
+            (True, False): "E-mail with license sent",
+            (False, True): "E-mail with permit sent",
+        }
+        try:
+            communication_service = CommunicationService(mail)
+            failed_messages = communication_service.send_email_messages(
+                messages,
+                CommunicationTypeChoices.LICENSE_DELIVERY,
+                request.user,
+                success_message=success_messages.get((include_card, include_permit), "E-mail sent")
+            )
+            return Response({
+                "messages_sent": len(messages) - len(failed_messages),
+                "messages_prepared": len(messages),
+                "failed_messages": failed_messages,
+            }, status=200 if len(failed_messages) == 0 else 422)
+
+        except OSError as e:
+            logger.error(f"send_license_emails: {type(e)}: {e}")
+            return Response({"detail": "Failed to connect to mail server"}, status=503)
 
 actor_type_label = models.Case(
     *[

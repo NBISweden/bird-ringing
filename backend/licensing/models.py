@@ -75,6 +75,7 @@ class CommunicationStatusChoices(models.IntegerChoices):
     SENT = (1, "sent")
     RECEIVED = (2, "received")
     BOUNCED = (3, "bounced")
+    FAILED = (4, "failed")
 
 
 class Actor(ChangeTracking):
