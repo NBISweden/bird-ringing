@@ -141,12 +141,10 @@ function ConnectedListView() {
       label: t("licenseCreateLicenseDocuments"),
       action: createDocsAction,
     },
-    { type: "divider" },
     { label: t("licenseDownloadLicenses"), action: downloadZipAction },
 
     { type: "divider" },
     { label: t("permitCreateDocuments"), action: createPermitDocsAction },
-    { type: "divider" },
     { label: t("permitDownloadZip"), action: downloadPermitsZipAction },
 
     { type: "divider" },
