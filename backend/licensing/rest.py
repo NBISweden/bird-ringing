@@ -32,6 +32,7 @@ from rest_framework.permissions import DjangoModelPermissions
 from rest_framework import routers, serializers, viewsets, filters, pagination, response
 from django.db import models
 from django.http import HttpResponse
+from django.template.exceptions import TemplateDoesNotExist
 from django.contrib.postgres.aggregates import StringAgg
 from collections import OrderedDict
 from typing import Tuple
@@ -632,20 +633,24 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
         )
 
         messages = []
-        for (lic, relation) in get_flattened_license_and_relations(licenses):
-            if not relation.actor.email: # Ignore sending if the actor has no email address declared
-                continue
+        try:
+            for (lic, relation) in get_flattened_license_and_relations(licenses):
+                if not relation.actor.email: # Ignore sending if the actor has no email address declared
+                    continue
 
-            try:
-                message = message_builder.get_message(
-                    lic,
-                    relation,
-                    include_card,
-                    include_permit
-                )
-            except ValueError as e:
-                return Response({"detail": str(e)}, status=400)
-            messages.append((lic, relation.actor, message))
+                try:
+                    message = message_builder.get_message(
+                        lic,
+                        relation,
+                        include_card,
+                        include_permit
+                    )
+                except ValueError as e:
+                    return Response({"detail": str(e)}, status=400)
+                messages.append((lic, relation.actor, message))
+        except TemplateDoesNotExist as e:
+            logger.error(f"send_license_emails: {type(e)}: {e}")
+            return Response({"detail": "E-mail template is misconfigured."}, status=503)
 
         success_messages: dict[Tuple(bool, bool), str] = {
             (True, True): "E-mail with license and permit sent",
