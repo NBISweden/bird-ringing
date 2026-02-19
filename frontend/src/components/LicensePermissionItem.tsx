@@ -15,13 +15,7 @@ export function LicensePermissionItem({
       <div className="pb-2">
         <strong>{permission.type.name}</strong>
         {permission.type.description ? (
-          <i
-            className="bi bi-info-circle text-primary p-1"
-            role="button"
-            data-bs-toggle="tooltip"
-            data-bs-placement="right"
-            title={permission.type.description}
-          />
+          <p>{permission.type.description}</p>
         ) : (
           " "
         )}
@@ -87,20 +81,11 @@ export function LicensePermissionItem({
           {permission.properties.length > 0 && (
             <div>
               {permission.properties.map((p, i) => (
-                <p className="my-1 fst-italic" key={i}>
-                  &bull; {p.name}{" "}
-                  {p.description ? (
-                    <i
-                      className="bi bi-info-circle text-primary p-1"
-                      role="button"
-                      data-bs-toggle="tooltip"
-                      data-bs-placement="right"
-                      title={p.description}
-                    />
-                  ) : (
-                    " "
-                  )}
-                </p>
+                <div key={i}>
+                  <p className="my-1 fst-italic">&bull; {p.name}</p>
+
+                  {p.description && <p className="mb-3">{p.description}</p>}
+                </div>
               ))}
             </div>
           )}
