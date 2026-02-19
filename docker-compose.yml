@@ -82,7 +82,7 @@ services:
       DJANGO_SECRET_FILE: /run/secrets/django-secret-key
       DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-}
       LICENSE_CARD_FILE: ${LICENSE_CARD_FILE:-}
-      LICENSE_CARD_FILE_BACK: ${LICENSE_CARD_BACK_FILE:-}
+      LICENSE_CARD_BACK_FILE: ${LICENSE_CARD_BACK_FILE:-}
     volumes:
       - backend-vol:/vol
     healthcheck:
