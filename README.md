@@ -1,5 +1,8 @@
 # The Bird Ringing Project
 
+## Deployment
+Deployment instructions can be found [here](./docs/deployment.md).
+
 ## Development and production environments
 
 The `docker-compose.yml` file defines the production environment, while
