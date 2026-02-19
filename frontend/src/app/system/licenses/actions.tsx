@@ -9,37 +9,39 @@ import { useTranslation } from "../internationalization";
 
 type BatchCreateResponse = { filenames: string[] };
 
-async function batchCreateLicenseDocs([client, mnrs]: [
-  Client,
-  string[],
-]): Promise<BatchCreateResponse> {
-  const files = await client.batchCreateLicenseCards(mnrs);
-  return files;
-}
+type BatchCreateFn = (
+  client: Client,
+  mnrs: string[],
+) => Promise<BatchCreateResponse>;
+type DownloadZipFn = (client: Client, mnrs: string[]) => Promise<Blob>;
 
-function fetchLicenseCardsZip([client, mnrs]: [
-  Client,
-  string[],
-]): Promise<Blob> {
-  return client.fetchLicenseCardsZipBlob(mnrs);
-}
-
-function LicenseDocBatchCreate({ mnrs }: { mnrs: string[] }) {
+function GenericBatchCreateBody({
+  mnrs,
+  createFn,
+  loadingText,
+}: {
+  mnrs: string[];
+  createFn: BatchCreateFn;
+  loadingText: string;
+}) {
   const client = useClient();
-  const { t } = useTranslation();
 
   const { data, isLoading, error } = useSWRImmutable(
     [client, mnrs],
-    batchCreateLicenseDocs,
+    async () => {
+      return createFn(client, mnrs);
+    },
   );
 
   return isLoading ? (
     <>
       <Spinner />
-      <span className="ms-3">{t("licenseCreatingLicenseDocuments")}</span>
+      <span className="ms-3">{loadingText}</span>
     </>
   ) : error ? (
-    <Alert type="danger">{String(error)}</Alert>
+    <Alert type="danger">
+      {error instanceof Error ? error.message : String(error)}
+    </Alert>
   ) : (
     <textarea
       className="form-control"
@@ -50,50 +52,63 @@ function LicenseDocBatchCreate({ mnrs }: { mnrs: string[] }) {
   );
 }
 
-export function useBatchCreateLicenseCardsAction(client: Client) {
+function useBatchCreateAction({
+  client,
+  title,
+  confirmText,
+  selectedLabel,
+  loadingText,
+  createFn,
+}: {
+  client: Client;
+  title: string;
+  confirmText: string;
+  selectedLabel: string;
+  loadingText: string;
+  createFn: BatchCreateFn;
+}) {
   const modalStack = useModalsContext();
   const { t } = useTranslation();
 
-  const createLicenseCards = useCallback(
+  const runCreate = useCallback(
     (itemIds: Set<string>) => {
       modalStack.add({
-        title: t("licenseCreateLicenseDocuments"),
+        title,
         content: (
           <ClientContext.Provider value={client}>
-            <LicenseDocBatchCreate mnrs={Array.from(itemIds)} />
+            <GenericBatchCreateBody
+              mnrs={Array.from(itemIds)}
+              createFn={createFn}
+              loadingText={loadingText}
+            />
           </ClientContext.Provider>
         ),
         actions: [{ label: t("okModal"), action: () => {}, type: "primary" }],
       });
     },
-    [modalStack, client, t],
+    [modalStack, client, title, createFn, loadingText, t],
   );
 
   return useCallback(
     (itemIds: Set<string>) => {
       if (itemIds.size === 0) return;
       modalStack.add({
-        title: t("licenseCreateLicenseDocuments"),
+        title,
         content: (
           <>
-            <p>{t("licenseCreateLicenseDocumentsConfirmText")}</p>
+            <p>{confirmText}</p>
             <p>
-              <strong>{t("licenseSelectedLicenses")}:</strong>{" "}
-              {Array.from(itemIds).join(", ")}
+              <strong>{selectedLabel}:</strong> {Array.from(itemIds).join(", ")}
             </p>
           </>
         ),
         actions: [
           { label: t("abortModal"), action: () => {}, type: "secondary" },
-          {
-            label: t("licenseCreateLicenseDocuments"),
-            action: () => createLicenseCards(itemIds),
-            type: "primary",
-          },
+          { label: title, action: () => runCreate(itemIds), type: "primary" },
         ],
       });
     },
-    [modalStack, createLicenseCards, t],
+    [modalStack, runCreate, title, confirmText, selectedLabel, t],
   );
 }
 
@@ -143,9 +158,31 @@ function DownloadModal<T>({
   );
 }
 
-export function useDownloadLicenseCardsZipAction(client: Client) {
+function useDownloadZipAction({
+  client,
+  title,
+  introText,
+  filename,
+  loadingMessage,
+  successMessage,
+  downloadFn,
+}: {
+  client: Client;
+  title: string;
+  introText: string;
+  filename: string;
+  loadingMessage: string;
+  successMessage: string;
+  downloadFn: DownloadZipFn;
+}) {
   const modalStack = useModalsContext();
   const { t } = useTranslation();
+
+  // adapter to match DownloadModal signature
+  const downloadFunc = useCallback(
+    async ([c, mnrs]: [Client, string[]]) => downloadFn(c, mnrs),
+    [downloadFn],
+  );
 
   return useCallback(
     (itemIds: Set<string>) => {
@@ -153,21 +190,21 @@ export function useDownloadLicenseCardsZipAction(client: Client) {
       if (mnrs.length === 0) return;
 
       modalStack.add({
-        title: t("licenseDownloadLicenses"),
+        title,
         content: (
           <ClientContext.Provider value={client}>
-            <p>{t("licenseDownloadLicensesText")}:</p>
+            <p>{introText}:</p>
             <ul>
               {mnrs.map((mnr) => (
                 <li key={mnr}>{mnr}</li>
               ))}
             </ul>
             <DownloadModal
-              filename="license-cards.zip"
-              downloadFunc={fetchLicenseCardsZip}
+              filename={filename}
+              downloadFunc={downloadFunc}
               params={mnrs}
-              loadingMessage={t("licenseLicenseDownloadLoading")}
-              successMessage={t("licenseLicenseDownloadSucceeded")}
+              loadingMessage={loadingMessage}
+              successMessage={successMessage}
             />
           </ClientContext.Provider>
         ),
@@ -176,6 +213,98 @@ export function useDownloadLicenseCardsZipAction(client: Client) {
         ],
       });
     },
-    [modalStack, client, t],
+    [
+      modalStack,
+      client,
+      title,
+      introText,
+      filename,
+      loadingMessage,
+      successMessage,
+      downloadFunc,
+      t,
+    ],
   );
+}
+
+async function batchCreateLicenseDocs(
+  client: Client,
+  mnrs: string[],
+): Promise<BatchCreateResponse> {
+  return await client.batchCreateLicenseCards(mnrs);
+}
+
+async function downloadLicenseCardsZip(
+  client: Client,
+  mnrs: string[],
+): Promise<Blob> {
+  return await client.fetchLicenseCardsZipBlob(mnrs);
+}
+
+async function batchCreatePermitDocs(
+  client: Client,
+  mnrs: string[],
+): Promise<BatchCreateResponse> {
+  return await client.batchCreatePermits(mnrs);
+}
+
+async function downloadPermitsZip(
+  client: Client,
+  mnrs: string[],
+): Promise<Blob> {
+  return await client.fetchPermitsZipBlob(mnrs);
+}
+
+export function useBatchCreateLicenseCardsAction(client: Client) {
+  const { t } = useTranslation();
+
+  return useBatchCreateAction({
+    client,
+    title: t("licenseCreateLicenseDocuments"),
+    confirmText: t("licenseCreateLicenseDocumentsConfirmText"),
+    selectedLabel: t("licenseSelectedLicenses"),
+    loadingText: t("licenseCreatingLicenseDocuments"),
+    createFn: batchCreateLicenseDocs,
+  });
+}
+
+export function useDownloadLicenseCardsZipAction(client: Client) {
+  const { t } = useTranslation();
+
+  return useDownloadZipAction({
+    client,
+    title: t("licenseDownloadLicenses"),
+    introText: t("licenseDownloadLicensesText"),
+    filename: "license-cards.zip",
+    loadingMessage: t("licenseLicenseDownloadLoading"),
+    successMessage: t("licenseLicenseDownloadSucceeded"),
+    downloadFn: downloadLicenseCardsZip,
+  });
+}
+
+export function useBatchCreatePermitsAction(client: Client) {
+  const { t } = useTranslation();
+
+  return useBatchCreateAction({
+    client,
+    title: t("permitCreateDocuments"),
+    confirmText: t("permitCreateDocumentsConfirmText"),
+    selectedLabel: t("licenseSelectedLicenses"),
+    loadingText: t("permitCreatingDocuments"),
+    createFn: batchCreatePermitDocs,
+  });
+}
+
+export function useDownloadPermitsZipAction(client: Client) {
+  const { t } = useTranslation();
+
+  return useDownloadZipAction({
+    client,
+    title: t("permitDownloadZip"),
+    introText: t("permitDownloadZipText"),
+    filename: "permits.zip",
+    loadingMessage: t("permitDownloadLoading"),
+    successMessage: t("permitDownloadSucceeded"),
+    downloadFn: downloadPermitsZip,
+  });
 }

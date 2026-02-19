@@ -90,6 +90,15 @@ export const locale: TranslationMap = {
   licenseCommunicationNote: "Anteckning",
   licenseNoCommunication: "Ingen kommunikation kopplad till licensen.",
 
+  permitCreateDocuments: "Skapa tillstånd",
+  permitCreatingDocuments: "Skapar tillståndsdokument",
+  permitCreateDocumentsConfirmText:
+    "Vill du skapa tillstånd för alla ringmärkare och hjälpare för valda licenser?",
+  permitDownloadZip: "Ladda ned tillstånd (ZIP)",
+  permitDownloadZipText: "Laddar ned tillstånd.",
+  permitDownloadLoading: "Förbereder tillståndssamling för nedladdning...",
+  permitDownloadSucceeded: "Laddar ned tillståndssamling",
+
   paginationNext: "Nästa",
   paginationPrevious: "Föregående",
   paginationLast: "Sista",
