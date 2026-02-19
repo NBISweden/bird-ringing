@@ -5,13 +5,18 @@ import {
   convertOnlyDateToLocale,
   LicenseCurrent,
 } from "@/app/system/common";
+import { useClient } from "../app/system/contexts";
+import { useSendLicenseEmailAction } from "../app/system/licenses/actions";
 import { useTranslation } from "@/app/system/internationalization";
 import { LicensePermissionItem } from "./LicensePermissionItem";
 type LicenceViewProps = {
   license: LicenseCurrent;
+  mnr: string;
 };
 
-export function LicenceView({ license }: LicenceViewProps) {
+export function LicenceView({ license, mnr }: LicenceViewProps) {
+  const client = useClient();
+  const sendEmailAction = useSendLicenseEmailAction(client);
   const { t, format } = useTranslation();
   return (
     <>
@@ -72,58 +77,64 @@ export function LicenceView({ license }: LicenceViewProps) {
       </div>
       {/* Permissions */}
       <div className="mb-4">
-        <div className="row">
-          <div className="mb-3 mb-sm-0">
-            <div className="card border-primary">
-              <div className="card-body">
-                <h2 className="h3 card-title">{t("licensePermissions")}</h2>
-                <p className="card-text"></p>
-                {license.permissions?.length ? (
-                  <ul className="list-group list-group-flush">
-                    {license.permissions.map((p, i) => (
-                      <li className="list-group-item mb-3" key={i}>
-                        <LicensePermissionItem permission={p} />
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="text-muted fst-italic">
-                    {t("licenseNoPermissions")}
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div className="row mb-4">
-        {/* Actors */}
-        <div>
-          <div className="card border-primary">
+        <div className="row g-1">
+          <div className="mb-3 mb-sm-0 card border-primary">
             <div className="card-body">
-              <h2 className="h3 card-title">{t("licenseActors")}</h2>
-              {license.actors?.length ? (
+              <h2 className="h3 card-title">{t("licensePermissions")}</h2>
+              <p className="card-text"></p>
+              {license.permissions?.length ? (
                 <ul className="list-group list-group-flush">
-                  {license.actors.map((rel, i) => (
+                  {license.permissions.map((p, i) => (
                     <li className="list-group-item mb-3" key={i}>
-                      <div className="row align-items-center g-2">
-                        <div className="col-12 col-md-3 fw-semibold text-capitalize">
-                          {rel.role}
-                        </div>
-                        <div className="col-12 col-md-9">
-                          <i className="bi bi-person text-primary me-1" />
-                          {rel.actor.full_name}({rel.mednr})
-                        </div>
-                      </div>
+                      <LicensePermissionItem permission={p} />
                     </li>
                   ))}
                 </ul>
               ) : (
                 <p className="text-muted fst-italic">
-                  {t("licenseNoConnectedActors")}
+                  {t("licenseNoPermissions")}
                 </p>
               )}
             </div>
+          </div>
+        </div>
+      </div>
+      <div className="row g-1 mb-4">
+        {/* Actors */}
+        <div className="card border-primary">
+          <div className="card-body">
+            <div className="row">
+              <h2 className="h3 card-title col-5 col-sm-7 col-md-10">
+                {t("licenseActors")}
+              </h2>
+              <button
+                className="btn btn-secondary col-5 col-sm-5 col-md-2"
+                onClick={() => sendEmailAction(new Set([mnr]))}
+              >
+                {t("licenseSendLicenses")}
+              </button>
+            </div>
+            {license.actors?.length ? (
+              <ul className="list-group list-group-flush">
+                {license.actors.map((rel, i) => (
+                  <li className="list-group-item mb-3" key={i}>
+                    <div className="row align-items-center g-2">
+                      <div className="col-12 col-md-3 fw-semibold text-capitalize">
+                        {rel.role}
+                      </div>
+                      <div className="col-12 col-md-9">
+                        <i className="bi bi-person text-primary me-1" />
+                        {rel.actor.full_name}({rel.mednr})
+                      </div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-muted fst-italic">
+                {t("licenseNoConnectedActors")}
+              </p>
+            )}
           </div>
         </div>
       </div>
