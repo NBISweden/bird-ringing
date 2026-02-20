@@ -202,7 +202,8 @@ export type ButtonType =
   | "danger"
   | "info"
   | "light"
-  | "dark";
+  | "dark"
+  | "outline-primary";
 
 export interface SendEmailResult {
   messages_sent: number;

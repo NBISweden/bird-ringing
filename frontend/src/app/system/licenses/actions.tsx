@@ -104,8 +104,12 @@ function useBatchCreateAction({
           </>
         ),
         actions: [
-          { label: t("abortModal"), action: () => {}, type: "secondary" },
-          { label: title, action: () => runCreate(itemIds), type: "primary" },
+          { label: t("abortModal"), action: () => {}, type: "outline-primary" },
+          {
+            label: t("licenseCreateLicenseDocuments"),
+            action: () => runCreate(itemIds),
+            type: "primary",
+          },
         ],
       });
     },
@@ -314,6 +318,21 @@ export function useSendLicenseEmailAction(client: Client) {
   const modalStack = useModalsContext();
   const { t } = useTranslation();
 
+  const sendEmails = useCallback(
+    (itemIds: Set<string>) => {
+      modalStack.add({
+        title: t("licenseSendLicenses"),
+        content: (
+          <ClientContext.Provider value={client}>
+            <SendLicenseModalContent mnrs={Array.from(itemIds)} />
+          </ClientContext.Provider>
+        ),
+        actions: [{ label: t("okModal"), action: () => {}, type: "primary" }],
+      });
+    },
+    [modalStack, client, t],
+  );
+
   return useCallback(
     (itemIds: Set<string>) => {
       if (itemIds.size === 0) return;
@@ -321,10 +340,21 @@ export function useSendLicenseEmailAction(client: Client) {
       modalStack.add({
         title: t("licenseSendLicenses"),
         content: (
-          <SendLicenseModalContent client={client} mnrs={Array.from(itemIds)} />
+          <>
+            <p>{t("licenseSendLicensesConfirmText")}</p>
+            <p>
+              <strong>{t("licenseSelectedLicenses")}:</strong>{" "}
+              {Array.from(itemIds).join(", ")}
+            </p>
+          </>
         ),
         actions: [
-          { label: t("closeModal"), action: () => {}, type: "primary" },
+          { label: t("abortModal"), action: () => {}, type: "outline-primary" },
+          {
+            label: t("licenseSendLicenses"),
+            action: () => sendEmails(itemIds),
+            type: "primary",
+          },
         ],
       });
     },
