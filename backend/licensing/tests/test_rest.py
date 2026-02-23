@@ -34,6 +34,7 @@ class _EmailTestBase(TestCase):
                 "change_licensesequence",
                 "view_licensesequence",
                 "view_actor",
+                "change_actor",
             ]
         )
         self.user_without_access = create_user("userwithoutaccess", "pwd")
@@ -273,3 +274,79 @@ class LicenseDocumentEmailTests(_EmailTestBase):
             *(["include_permit"] if include_permit else [])
         ]
         return reverse("licensesequence-send-license-emails") + f"?mnrs={','.join(mnrs)}&{'&'.join(params)}"
+
+class ActorBatchSendLicenseEmailsTests(_EmailTestBase):
+    def _send_mail_url(self, actor_ids: list[int], include_card: bool = False, include_permit: bool = False):
+        params = [
+            *(["include_card"] if include_card else []),
+            *(["include_permit"] if include_permit else []),
+        ]
+        return reverse("actor-send-license-emails") + f"?ids={','.join(map(str, actor_ids))}&{'&'.join(params)}"
+
+    def test_selecting_actors_sends_for_all_their_current_licenses(self):
+        self._add_license_documents(self.actors, self.licenses)
+        self._with_access()
+
+        selected = [self.actors[0], self.actors[1]]
+
+        url = self._send_mail_url([a.id for a in selected], include_card=True)
+        response = self.client.put(url)
+
+        self.assertEqual(response.status_code, 200)
+
+        # Each selected actor has 2 current relations (ringer + helper) => 4 messages
+        self.assertEqual(
+            {
+                "messages_sent": 4,
+                "messages_prepared": 4,
+                "failed_messages": [],
+            },
+            response.json(),
+        )
+
+        # Ensure communication rows exist for each (actor, current license) pair (ringer/helper)
+        rels = LicenseRelation.objects.filter(
+            actor__in=selected,
+            license__version=0,
+            role__in=[LicenseRoleChoices.RINGER, LicenseRoleChoices.HELPER],
+        ).select_related("actor", "license")
+
+        for rel in rels:
+            qs = LicenseCommunication.objects.filter(actor=rel.actor, license=rel.license)
+            self.assertEqual(1, qs.count())
+            comm = qs.order_by("created_at").first()
+            self.assertEqual(comm.status, CommunicationStatusChoices.SENT)
+            self.assertEqual(comm.note, "E-mail with license sent")
+
+    def test_actor_without_email_is_skipped(self):
+        self.actors[0].email = ""
+        self.actors[0].save()
+
+        self._add_license_documents(self.actors, self.licenses)
+        self._with_access()
+
+        selected = [self.actors[0], self.actors[1]]
+        url = self._send_mail_url([a.id for a in selected], include_card=True)
+        response = self.client.put(url)
+
+        self.assertEqual(response.status_code, 200)
+
+        # actor[0] skipped entirely -> only actor[1]'s 2 relations => 2 messages
+        self.assertEqual(
+            {
+                "messages_sent": 2,
+                "messages_prepared": 2,
+                "failed_messages": [],
+            },
+            response.json(),
+        )
+
+    def test_fail_with_no_ids(self):
+        self._add_license_documents(self.actors, self.licenses)
+        self._with_access()
+
+        url = reverse("actor-send-license-emails") + "?ids=&include_card"
+        response = self.client.put(url)
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("ids", response.json())
