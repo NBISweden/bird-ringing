@@ -4,7 +4,7 @@ from rest_framework.reverse import reverse
 
 from licensing.message_builder import MessageBuilder, LicenseAndPermitMessageBuilder
 from licensing.communication_service import CommunicationService
-from licensing.utils import get_flattened_license_and_relations
+from licensing.utils import get_flattened_license_and_relations, get_flattened_relations_for_actors
 from django.core import mail
 
 from licensing.license_card_service import (
@@ -819,6 +819,11 @@ license_mnr = models.Case(
     default=models.Value(""),
 )
 
+class ActorIdsSerializer(serializers.Serializer):
+    ids = serializers.ListField(
+        child=serializers.IntegerField(min_value=1),
+        allow_empty=False,
+    )
 
 class ActorViewSet(viewsets.ModelViewSet):
     authentication_classes = [SessionAuthentication, BasicAuthentication]
@@ -866,6 +871,73 @@ class ActorViewSet(viewsets.ModelViewSet):
         ]
     )
     default_ordering = ["full_name", "city", "country"]
+
+    @action(detail=False, methods=["put"], url_path="send-license-emails")
+    def send_license_emails(self, request):
+        include_card = request.query_params.get("include_card") is not None
+        include_permit = request.query_params.get("include_permit") is not None
+
+        raw = request.query_params.get("ids", "")
+        actor_ids = [int(x) for x in parse_csv_string(raw) if x.strip().isdigit()]
+
+        serial_ids = ActorIdsSerializer(data={"ids": actor_ids})
+        serial_ids.is_valid(raise_exception=True)
+        actor_ids = serial_ids.validated_data["ids"]
+
+        message_builder = LicenseAndPermitMessageBuilder(
+            MessageBuilder.from_licensing_settings(),
+            LicenseCardService(),
+        )
+
+        messages = []
+        try:
+            for (lic, relation) in get_flattened_relations_for_actors(actor_ids):
+                if not relation.actor.email:
+                    continue
+
+                try:
+                    message = message_builder.get_message(
+                        lic,
+                        relation,
+                        include_card,
+                        include_permit,
+                    )
+                except ValueError as e:
+                    return Response({"detail": str(e)}, status=400)
+
+                messages.append((lic, relation.actor, message))
+
+        except TemplateDoesNotExist as e:
+            logger.error(f"actor.send_license_emails: {type(e)}: {e}")
+            return Response({"detail": "E-mail template is misconfigured."}, status=503)
+
+        success_messages: dict[tuple[bool, bool], str] = {
+            (True, True): "E-mail with license and permit sent",
+            (True, False): "E-mail with license sent",
+            (False, True): "E-mail with permit sent",
+        }
+
+        try:
+            communication_service = CommunicationService(mail)
+            failed_messages = communication_service.send_email_messages(
+                messages,
+                CommunicationTypeChoices.LICENSE_DELIVERY,
+                request.user,
+                success_message=success_messages.get((include_card, include_permit), "E-mail sent"),
+            )
+
+            return Response(
+                {
+                    "messages_sent": len(messages) - len(failed_messages),
+                    "messages_prepared": len(messages),
+                    "failed_messages": failed_messages,
+                },
+                status=200 if len(failed_messages) == 0 else 422,
+            )
+
+        except OSError as e:
+            logger.error(f"actor.send_license_emails: {type(e)}: {e}")
+            return Response({"detail": "Failed to connect to mail server"}, status=503)
 
 router = routers.DefaultRouter()
 router.register(r"license_sequence", LicenseSequenceViewSet)

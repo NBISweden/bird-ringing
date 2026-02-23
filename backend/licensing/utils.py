@@ -2,6 +2,7 @@ from typing import Iterable
 from licensing.models import (
     License,
     LicenseRoleChoices,
+    LicenseRelation,
 )
 import urllib.request
 import time
@@ -19,6 +20,19 @@ def get_flattened_license_and_relations(
         
         for relation in relations:
             yield (lic, relation)
+
+def get_flattened_relations_for_actors(
+    actor_ids: Iterable[int],
+    allowed_roles: Iterable[int] = (LicenseRoleChoices.RINGER, LicenseRoleChoices.HELPER),
+):
+
+    relations = (LicenseRelation.objects.filter(actor_id__in=list(actor_ids), role__in=list(allowed_roles), license__version=0)
+        .select_related("actor", "license", "license__sequence")
+        .order_by("actor_id", "license_id")
+    )
+
+    for rel in relations:
+        yield (rel.license, rel) # pull out license from relation for consistency
 
 def docx_to_pdf_bytes(docx_bytes: bytes) -> bytes:
     url = getattr(settings, "DOCX2PDF_URL", None).strip()

@@ -17,7 +17,7 @@ class Command(BaseCommand):
                 )
                 return
 
-            permissions = ["view_licensesequence", "view_actor", "change_licensesequence"]
+            permissions = ["view_licensesequence", "view_actor", "change_licensesequence", "change_actor"]
 
             for _, group_name in group_names.items():
                 group, created = Group.objects.get_or_create(name=group_name)
