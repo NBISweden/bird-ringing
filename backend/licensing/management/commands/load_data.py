@@ -387,9 +387,7 @@ class Command(BaseCommand):
         """
         Accepts:
           - "YYYY" (year only)
-          - "YYYY[-/:]MM[-/:]DD"
-          - "DD[-/:]MM[-/:]YYYY"
-        Separators allowed: '-', '/', ':'
+          - common date variants with separators: '-', '/', ':', '.', whitespace
         """
         if not value:
             return BirthParsed(None, None)
@@ -402,27 +400,20 @@ class Command(BaseCommand):
         if re.fullmatch(r"\d{4}", s):
             return BirthParsed(birth_date=None, birth_year=int(s))
 
-        parts = re.split(r"[-/:]", s)
-        parts = [p.strip() for p in parts if p.strip()]
+        # normalize separators to "-"
+        s = re.sub(r"[./:\s]+", "-", s).strip("-")
 
-        if len(parts) != 3:
-            raise ValueError(f"Invalid Fyr format: {s!r}")
+        allowed_formats = ["%Y-%m-%d", "%d-%m-%Y"]
 
-        # require digits and a 4-digit year somewhere
-        if not all(re.fullmatch(r"\d{1,4}", p) for p in parts):
-            raise ValueError(f"Invalid Fyr format: {s!r}")
+        last_err: Exception | None = None
+        for fmt in allowed_formats:
+            try:
+                dt = datetime.datetime.strptime(s, fmt).date()
+                return BirthParsed(birth_date=dt, birth_year=dt.year)
+            except ValueError as e:
+                last_err = e
 
-        # make it work with YYYY-MM-DD or DD-MM-YYYY
-        a, b, c = (int(parts[0]), int(parts[1]), int(parts[2]))
-        if 1000 <= a <= 9999:
-            dt = datetime.date(year=a, month=b, day=c)
-            return BirthParsed(birth_date=dt, birth_year=dt.year)
-
-        if 1000 <= c <= 9999:
-            dt = datetime.date(year=c, month=b, day=a)
-            return BirthParsed(birth_date=dt, birth_year=dt.year)
-
-        raise ValueError(f"Invalid Fyr format (no 4-digit year found): {s!r}")
+        raise ValueError(f"Invalid Fyr format: {value!r} (normalized={s!r}).") from last_err
 
     def _get_helper_key(self, helper_data: dict):
         return (helper_data["Mnr"], helper_data["Mednr"])
