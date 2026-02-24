@@ -48,13 +48,7 @@ services:
         condition: service_healthy
 
   backend-init:
-    build:
-      context: ./backend
-      dockerfile: ../Dockerfile.backend
-      target: prod
-      args:
-        BUILD_ID: "${BUILD_ID:-1000:1000}"
-        RUNTIME_ID: "${RUNTIME_ID:-1000:1000}"
+    image: backend
     environment:
       POSTGRES_USER: db_admin
       SERVICE_MODE: production-init
@@ -68,6 +62,7 @@ services:
       - django-secret-key
 
   backend:
+    image: backend
     build:
       context: ./backend
       dockerfile: ../Dockerfile.backend

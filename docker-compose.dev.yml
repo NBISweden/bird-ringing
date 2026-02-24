@@ -12,14 +12,14 @@ services:
       start_period: 10s
 
   backend-init:
-    build:
-      target: dev
+    image: backend
     environment:
       SERVICE_MODE: development-init
     volumes:
       - ./backend:/app
 
   backend:
+    image: backend
     build:
       target: dev
     environment:

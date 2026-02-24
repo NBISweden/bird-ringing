@@ -79,17 +79,18 @@ ARG GID=${BUILD_ID#*:}
 
 RUN --mount=type=cache,id=apk-cache,target=/var/cache/apk \
 	apk --cache-dir=/var/cache/apk add \
-		dumb-init \
-		libpq \
 		cairo \
+		dumb-init \
+		font-noto \
 		fontconfig \
-		font-noto
-RUN fc-cache -f
+		libpq
 
 ENV HOME=/app
 
 RUN install -d -o "$UID" -g "$GID" "$HOME" /vol
 VOLUME /vol
+
+RUN fc-cache -f
 
 USER "$UID:$GID"
 
