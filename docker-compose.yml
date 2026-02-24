@@ -43,7 +43,7 @@ services:
         BUILD_ID: "${BUILD_ID:-1000:1000}"
         RUNTIME_ID: "${RUNTIME_ID:-1000:1000}"
     volumes:
-      - frontend-vol:/vol
+      - frontend-vol:/vol:ro
     depends_on:
       database:
         condition: service_healthy
@@ -82,7 +82,7 @@ services:
       PERMIT_TEMPLATE_FILE: ${PERMIT_TEMPLATE_FILE:-}
       DOCX2PDF_URL: http://docx2pdf:8000/convert/docx-to-pdf
     volumes:
-      - backend-vol:/vol
+      - backend-vol:/vol:ro
     healthcheck:
       test: ["CMD", "wget", "--spider", "--timeout=5", "http://backend:8000/api/system/health/"]
       interval: 10s
@@ -120,8 +120,8 @@ services:
       - 127.0.0.1:3210:80
     volumes:
       - ./caddy:/etc/caddy:ro
-      - frontend-vol:/frontend:ro
-      - backend-vol:/backend:ro
+      - frontend-vol:/srv/frontend:ro
+      - backend-vol:/srv/backend:ro
       - proxy-vol:/data
     healthcheck:
       test: ["CMD", "wget", "--spider", "--timeout=5", "http://proxy/health"]

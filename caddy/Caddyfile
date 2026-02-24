@@ -32,12 +32,12 @@ handle @backend {
 	reverse_proxy backend:8000
 }
 handle_path /static/* {
-	root * /backend
+	root * /srv/backend
 	file_server
 }
 
 handle {
-	root * /frontend
+	root * /srv/frontend
 	try_files {path}.html
 	file_server
 }
