@@ -146,13 +146,13 @@ class LicenseDocumentEmailTests(_EmailTestBase):
         self.assertEqual(
             {
                 "messages_sent": 4,
-                "messages_prepared": 4,
                 "failed_messages": [],
-            }, 
+                "skipped_messages": [],
+            },
             response.json(),
             "All licenses are prepared and sent"
         )
-    
+
     def test_send_only_to_actors_with_email(self):
         self.actors[0].email = ""
         self.actors[0].save()
@@ -161,15 +161,12 @@ class LicenseDocumentEmailTests(_EmailTestBase):
         url = self._send_mail_url(["0001", "0002"], True)
         response = self.client.put(url)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(
-            {
-                "messages_sent": 3,
-                "messages_prepared": 3,
-                "failed_messages": [],
-            }, 
-            response.json(),
-            "Users without email are ignored when batch sending"
-        )
+
+        data = response.json()
+        self.assertEqual(data["messages_sent"], 3)
+        self.assertEqual(data["failed_messages"], [])
+        self.assertEqual(len(data["skipped_messages"]), 1)
+        self.assertEqual(data["skipped_messages"][0]["reason"], "missing_email")
 
     def test_message_content(self):
         self._add_license_documents(self.actors, self.licenses)
@@ -219,7 +216,7 @@ class LicenseDocumentEmailTests(_EmailTestBase):
             ], key=lambda a: a[0]),
             "Make sure that the license documents are attached"
         )
-    
+
     def test_fail_with_no_mnrs(self):
         self._add_license_documents(self.actors, self.licenses)
         self._with_access()
@@ -230,7 +227,7 @@ class LicenseDocumentEmailTests(_EmailTestBase):
             {"mnrs": "mnrs is required (comma-separated)."},
             response.json(),
         )
-    
+
     def test_fail_with_bad_mnrs(self):
         self._add_license_documents(self.actors, self.licenses)
         self._with_access()
@@ -242,14 +239,14 @@ class LicenseDocumentEmailTests(_EmailTestBase):
             {"mnrs": f"Unknown mnr(s): {test_mnr}"},
             response.json(),
         )
-    
+
     def test_communication_log_was_added(self):
         self._add_license_documents(self.actors, self.licenses)
         self._with_access()
         url = self._send_mail_url([lic.sequence.mnr for lic in self.licenses], True)
         response = self.client.put(url)
         self.assertEqual(response.status_code, 200)
-        
+
         for (actor, lic) in zip(self.actors, self.licenses):
             self.assertEqual(
                 1,
@@ -257,7 +254,7 @@ class LicenseDocumentEmailTests(_EmailTestBase):
                 "Make sure that there is exactly one communication object per actor and license combination."
             )
             communications = LicenseCommunication.objects.order_by("created_at").filter(actor=actor, license=lic)
-            
+
             for communication in communications:
                 self.assertEqual(
                     communication.note,
@@ -298,8 +295,8 @@ class ActorBatchSendLicenseEmailsTests(_EmailTestBase):
         self.assertEqual(
             {
                 "messages_sent": 4,
-                "messages_prepared": 4,
                 "failed_messages": [],
+                "skipped_messages": [],
             },
             response.json(),
         )
@@ -331,15 +328,14 @@ class ActorBatchSendLicenseEmailsTests(_EmailTestBase):
 
         self.assertEqual(response.status_code, 200)
 
-        # actor[0] skipped entirely -> only actor[1]'s 2 relations => 2 messages
-        self.assertEqual(
-            {
-                "messages_sent": 2,
-                "messages_prepared": 2,
-                "failed_messages": [],
-            },
-            response.json(),
-        )
+        data = response.json()
+        self.assertEqual(data["messages_sent"], 2)
+        self.assertEqual(data["failed_messages"], [])
+        self.assertEqual(len(data["skipped_messages"]), 2)
+
+        for item in data["skipped_messages"]:
+            self.assertEqual(item["reason"], "missing_email")
+            self.assertEqual(item["actor_id"], self.actors[0].id)
 
     def test_fail_with_no_ids(self):
         self._add_license_documents(self.actors, self.licenses)
