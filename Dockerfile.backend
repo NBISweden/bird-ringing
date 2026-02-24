@@ -89,6 +89,7 @@ RUN fc-cache -f
 ENV HOME=/app
 
 RUN install -d -o "$UID" -g "$GID" "$HOME" /vol
+VOLUME /vol
 
 USER "$UID:$GID"
 
@@ -98,14 +99,14 @@ COPY --from=prod-build --chown="$UID:$GID" "$HOME" .
 
 ENV PATH="$HOME/.venv/bin:$PATH"
 
-# This creates the static files in "$HOME/static".
+# This creates the static files in "/vol"
 RUN python manage.py collectstatic
+
+USER "$RUNTIME_ID"
 
 ENTRYPOINT ["/usr/bin/dumb-init", "--"]
 
 CMD ["./docker-entrypoint.sh"]
-
-USER "$RUNTIME_ID"
 
 # ----
 

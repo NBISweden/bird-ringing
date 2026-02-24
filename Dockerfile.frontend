@@ -44,7 +44,7 @@ COPY --chown="$UID:$GID" ./next*.ts .
 COPY --chown="$UID:$GID" ./src ./src
 
 RUN mkdir .next
-### Export static site into /app/out
+### Export static site into "$HOME/out".
 RUN --mount=type=cache,id=npm-cache,uid="$UID",target="$npm_config_cache" \
     --mount=type=cache,id=next-cache,uid="$UID",target=.next/cache \
 	npm run build
@@ -62,6 +62,7 @@ ARG GID=${BUILD_ID#*:}
 ENV HOME=/app
 
 RUN install -d -o "$UID" -g "$GID" "$HOME" /vol
+VOLUME /vol
 
 USER "$UID:$GID"
 
@@ -69,12 +70,12 @@ ENV SERVICE_MODE=production
 
 WORKDIR "$HOME"
 
-COPY --from=prod-build --chown="$UID:$GID" "$HOME/out" /static
+COPY --from=prod-build --chown="$UID:$GID" "$HOME/out" /vol
 COPY --chown="$UID:$GID" docker-entrypoint.sh .
 
-CMD ["./docker-entrypoint.sh"]
-
 USER "$RUNTIME_ID"
+
+CMD ["./docker-entrypoint.sh"]
 
 # The frontend container will not hang around to serve static files.
 # This is done by the proxy container.  The static files are in the
