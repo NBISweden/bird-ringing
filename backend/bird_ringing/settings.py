@@ -78,7 +78,7 @@ TEMPLATES_DIR = getenv("DJANGO_TEMPLATES_DIR")
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [TEMPLATES_DIR],
+        "DIRS": [] if TEMPLATES_DIR is None else [TEMPLATES_DIR],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
