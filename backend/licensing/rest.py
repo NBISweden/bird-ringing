@@ -903,6 +903,11 @@ class ActorViewSet(viewsets.ModelViewSet):
         serial_ids.is_valid(raise_exception=True)
         actor_ids = serial_ids.validated_data["ids"]
 
+        existing_ids = set(Actor.objects.filter(id__in=actor_ids).values_list("id", flat=True))
+        missing_ids = sorted(set(actor_ids) - existing_ids)
+        if missing_ids:
+            return Response({"ids": f"Unknown actor id(s): {', '.join(map(str, missing_ids))}"}, status=400)
+
         lic_rel_iter = get_flattened_relations_for_actors(actor_ids)
         return _send_license_emails_for_relations(
             request=request,
