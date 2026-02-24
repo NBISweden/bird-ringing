@@ -45,7 +45,6 @@ from django.http import HttpResponse
 from django.template.exceptions import TemplateDoesNotExist
 from django.contrib.postgres.aggregates import StringAgg
 from collections import OrderedDict
-from typing import Tuple
 import logging
 
 
