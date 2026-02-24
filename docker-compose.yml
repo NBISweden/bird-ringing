@@ -34,6 +34,7 @@ services:
         condition: service_completed_successfully
 
   frontend:
+    image: bird-ringing-frontend:latest
     build:
       context: ./frontend
       dockerfile: ../Dockerfile.frontend
@@ -48,7 +49,7 @@ services:
         condition: service_healthy
 
   backend-init:
-    image: backend
+    image: bird-ringing-backend:latest
     environment:
       POSTGRES_USER: db_admin
       SERVICE_MODE: production-init
@@ -62,7 +63,7 @@ services:
       - django-secret-key
 
   backend:
-    image: backend
+    image: bird-ringing-backend:latest
     build:
       context: ./backend
       dockerfile: ../Dockerfile.backend
@@ -99,6 +100,7 @@ services:
       - django-email-password
 
   docx2pdf:
+    image: bird-ringing-docx2pdf:latest
     build:
       context: ./docx2pdf
       dockerfile: ../Dockerfile.docx2pdf
