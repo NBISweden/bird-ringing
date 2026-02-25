@@ -88,7 +88,7 @@ export function ModalView() {
               <button
                 key={index}
                 type="button"
-                className={`btn btn-${action.type || "primary"}`}
+                className={`btn btn-${action.type || "primary"} ms-2`}
                 onClick={() => handleClose(action.action)}
               >
                 {action.label}

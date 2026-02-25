@@ -2,6 +2,7 @@ import { useCallback } from "react";
 import { ClientContext, useClient, useModalsContext } from "../contexts";
 import { Client } from "../client";
 import Spinner from "@/components/Spinner";
+import { SendLicenseModalContent } from "@/components/SendLicenseModalContent";
 import { Alert } from "@/components/Alert";
 import { downloadData } from "../utils";
 import useSWRImmutable from "swr/immutable";
@@ -103,8 +104,12 @@ function useBatchCreateAction({
           </>
         ),
         actions: [
-          { label: t("abortModal"), action: () => {}, type: "secondary" },
-          { label: title, action: () => runCreate(itemIds), type: "primary" },
+          { label: t("abortModal"), action: () => {}, type: "outline-primary" },
+          {
+            label: t("licenseCreateLicenseDocuments"),
+            action: () => runCreate(itemIds),
+            type: "primary",
+          },
         ],
       });
     },
@@ -307,4 +312,52 @@ export function useDownloadPermitsZipAction(client: Client) {
     successMessage: t("permitDownloadSucceeded"),
     downloadFn: downloadPermitsZip,
   });
+}
+
+export function useSendLicenseEmailAction(client: Client) {
+  const modalStack = useModalsContext();
+  const { t } = useTranslation();
+
+  const sendEmails = useCallback(
+    (itemIds: Set<string>) => {
+      modalStack.add({
+        title: t("licenseSendLicenses"),
+        content: (
+          <ClientContext.Provider value={client}>
+            <SendLicenseModalContent mnrs={Array.from(itemIds)} />
+          </ClientContext.Provider>
+        ),
+        actions: [{ label: t("okModal"), action: () => {}, type: "primary" }],
+      });
+    },
+    [modalStack, client, t],
+  );
+
+  return useCallback(
+    (itemIds: Set<string>) => {
+      if (itemIds.size === 0) return;
+
+      modalStack.add({
+        title: t("licenseSendLicenses"),
+        content: (
+          <>
+            <p>{t("licenseSendLicensesConfirmText")}</p>
+            <p>
+              <strong>{t("licenseSelectedLicenses")}:</strong>{" "}
+              {Array.from(itemIds).join(", ")}
+            </p>
+          </>
+        ),
+        actions: [
+          { label: t("abortModal"), action: () => {}, type: "outline-primary" },
+          {
+            label: t("licenseSendLicenses"),
+            action: () => sendEmails(itemIds),
+            type: "primary",
+          },
+        ],
+      });
+    },
+    [modalStack, t, sendEmails],
+  );
 }

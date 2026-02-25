@@ -62,6 +62,7 @@ const messagesBase = {
     "Mnr, Type, License holder, Trapping methods, Last email sent at",
   licenseCreateLicenseDocuments: "Create license documents",
   licenseDownloadLicenses: "Download licenses (ZIP)",
+  licenseSendLicenses: "Send licenses",
   licenseDeactivate: "Deactivate",
   licenseCreatingLicenseDocuments: "Creating license documents",
   licenseCreateLicenseDocumentsConfirmText:
@@ -70,6 +71,11 @@ const messagesBase = {
   licenseLicenseDownloadLoading: "Preparing licenses package for download...",
   licenseLicenseDownloadSucceeded: "Downloading licenses package",
   licenseDownloadLicensesText: "Downloading license cards",
+  licenseSendLicensesConfirmText:
+    "Do you want to send license cards to all ringers and helpers of the selected licenses?",
+  licenseSendingLicenses: "Sending licenses...",
+  licenseSendLicensesSucceeded: "{sent} e-mails sent successfully.",
+  licenseSendLicensesFailed: "Failed to send licenses. Please try again later.",
   licenseErrorLoadingLicenseTitle: "Failed to load license",
   licenseErrorLoadingLicenseText:
     "Something went wrong while loading license with {licenseId}",
@@ -115,7 +121,10 @@ const messagesBase = {
   closeModal: "Close",
   abortModal: "Abort",
   okModal: "Ok",
+  backModal: "Back",
+  continueModal: "Continue",
   featureNotImplemented: "This feature is not yet implemented",
+  unknownError: "An unknown error occurred.",
 };
 
 function makeMessageMap<T extends { [P in keyof T]: Message | string }>(

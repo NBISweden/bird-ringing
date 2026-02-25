@@ -202,7 +202,14 @@ export type ButtonType =
   | "danger"
   | "info"
   | "light"
-  | "dark";
+  | "dark"
+  | "outline-primary";
+
+export interface SendEmailResult {
+  messages_sent: number;
+  messages_prepared: number;
+  failed_messages: string[];
+}
 
 export function convertDateToLocale(dateStr: string) {
   if (dateStr) {
