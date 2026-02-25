@@ -21,7 +21,10 @@ import datetime
 from django.core import mail
 
 
-class LicenseDocumentEmailTests(TestCase):
+class _EmailTestBase(TestCase):
+    """
+    Shared setup + helpers for email batch-sending tests.
+    """
     def setUp(self):
         self.client = Client()
         self.user_with_access = create_user(
@@ -33,10 +36,7 @@ class LicenseDocumentEmailTests(TestCase):
                 "view_actor",
             ]
         )
-        self.user_without_access = create_user(
-            "userwithoutaccess",
-            "pwd"
-        )
+        self.user_without_access = create_user("userwithoutaccess", "pwd")
 
         self.actors = [
             Actor.objects.create(
@@ -92,6 +92,38 @@ class LicenseDocumentEmailTests(TestCase):
                 updated_by=self.user_with_access,
             )
 
+    def _license_name(self, lic, actor):
+        return f"{lic.sequence.mnr}-{actor.id}-test.pdf"
+
+    def _add_license_documents(self, actors, licenses):
+        for (actor, lic) in zip(actors, licenses):
+            LicenseDocument.objects.create(
+                is_current=True,
+                actor=actor,
+                license=lic,
+                reference=self._license_name(lic, actor),
+                data=b"b44df00d",
+                type=DocumentTypeChoices.LICENSE,
+                created_by=self.user_with_access,
+                updated_by=self.user_with_access,
+            )
+        for (actor, lic) in zip(actors, reversed(licenses)):
+            LicenseDocument.objects.create(
+                is_current=True,
+                actor=actor,
+                license=lic,
+                reference=self._license_name(lic, actor),
+                data=b"b44df00d",
+                type=DocumentTypeChoices.LICENSE,
+                created_by=self.user_with_access,
+                updated_by=self.user_with_access,
+            )
+
+    def _with_access(self):
+        self.client.login(username="userwithaccess", password="pwd")
+
+
+class LicenseDocumentEmailTests(_EmailTestBase):
     def test_fail_when_missing_license_documents(self):
         self._with_access()
         test_mnr = "0002"
@@ -235,40 +267,9 @@ class LicenseDocumentEmailTests(TestCase):
                     CommunicationStatusChoices.SENT
                 )
 
-    
-    def _license_name(self, lic, actor):
-        return f"{lic.sequence.mnr}-{actor.id}-test.pdf"
-
-    def _add_license_documents(self, actors, licenses):
-        for (actor, lic) in zip(actors, licenses):
-            LicenseDocument.objects.create(
-                is_current=True,
-                actor=actor,
-                license=lic,
-                reference=self._license_name(lic, actor),
-                data=b"b44df00d",
-                type=DocumentTypeChoices.LICENSE,
-                created_by=self.user_with_access,
-                updated_by=self.user_with_access,
-            )
-        for (actor, lic) in zip(actors, reversed(licenses)):
-            LicenseDocument.objects.create(
-                is_current=True,
-                actor=actor,
-                license=lic,
-                reference=self._license_name(lic, actor),
-                data=b"b44df00d",
-                type=DocumentTypeChoices.LICENSE,
-                created_by=self.user_with_access,
-                updated_by=self.user_with_access,
-            )
-
     def _send_mail_url(self, mnrs: list[str], include_card: bool = False, include_permit = False):
         params = [
             *(["include_card"] if include_card else []),
             *(["include_permit"] if include_permit else [])
         ]
         return reverse("licensesequence-send-license-emails") + f"?mnrs={','.join(mnrs)}&{'&'.join(params)}"
-
-    def _with_access(self):
-        self.client.login(username="userwithaccess", password="pwd")
