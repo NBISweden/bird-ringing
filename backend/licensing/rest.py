@@ -80,6 +80,66 @@ def get_current_licenses(mnrs: list[str]) -> list[License]:
 
     return licenses
 
+def _send_license_emails_for_relations(
+    *,
+    request,
+    lic_rel_iter,
+    include_card: bool,
+    include_permit: bool,
+):
+    """
+    Send license emails for a stream of (lic, relation). Returns a DRF Response.
+    """
+    message_builder = LicenseAndPermitMessageBuilder(
+        MessageBuilder.from_licensing_settings(),
+        LicenseCardService(),
+    )
+
+    messages = []
+    try:
+        for (lic, relation) in lic_rel_iter:
+            if not relation.actor.email: # Ignore sending if the actor has no email address declared
+                continue
+
+            try:
+                msg = message_builder.get_message(
+                    lic,
+                    relation,
+                    include_card,
+                    include_permit,
+                )
+            except ValueError as e:
+                return Response({"detail": str(e)}, status=400)
+            messages.append((lic, relation.actor, msg))
+    except TemplateDoesNotExist as e:
+        logger.error(f"send_license_emails: {type(e)}: {e}")
+        return Response({"detail": "E-mail template is misconfigured."}, status=503)
+
+    success_messages: dict[tuple[bool, bool], str] = {
+        (True, True): "E-mail with license and permit sent",
+        (True, False): "E-mail with license sent",
+        (False, True): "E-mail with permit sent",
+    }
+
+    try:
+        communication_service = CommunicationService(mail)
+        failed_messages = communication_service.send_email_messages(
+            messages,
+            CommunicationTypeChoices.LICENSE_DELIVERY,
+            request.user,
+            success_message=success_messages.get((include_card, include_permit), "E-mail sent"),
+        )
+        return Response(
+            {
+                "messages_sent": len(messages) - len(failed_messages),
+                "messages_prepared": len(messages),
+                "failed_messages": failed_messages,
+            }, status=200 if len(failed_messages) == 0 else 422,
+        )
+
+    except OSError as e:
+        logger.error(f"send_license_emails: {type(e)}: {e}")
+        return Response({"detail": "Failed to connect to mail server"}, status=503)
 
 class DjangoProtectedModelPermissions(DjangoModelPermissions):
     perms_map = {
@@ -631,53 +691,13 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
         except serializers.ValidationError as e:
             return Response(e.detail, status=400)
 
-        message_builder = LicenseAndPermitMessageBuilder(
-            MessageBuilder.from_licensing_settings(),
-            LicenseCardService()
+        lic_rel_iter = get_flattened_license_and_relations(licenses)
+        return _send_license_emails_for_relations(
+            request=request,
+            lic_rel_iter=lic_rel_iter,
+            include_card=include_card,
+            include_permit=include_permit,
         )
-
-        messages = []
-        try:
-            for (lic, relation) in get_flattened_license_and_relations(licenses):
-                if not relation.actor.email: # Ignore sending if the actor has no email address declared
-                    continue
-
-                try:
-                    message = message_builder.get_message(
-                        lic,
-                        relation,
-                        include_card,
-                        include_permit
-                    )
-                except ValueError as e:
-                    return Response({"detail": str(e)}, status=400)
-                messages.append((lic, relation.actor, message))
-        except TemplateDoesNotExist as e:
-            logger.error(f"send_license_emails: {type(e)}: {e}")
-            return Response({"detail": "E-mail template is misconfigured."}, status=503)
-
-        success_messages: dict[Tuple(bool, bool), str] = {
-            (True, True): "E-mail with license and permit sent",
-            (True, False): "E-mail with license sent",
-            (False, True): "E-mail with permit sent",
-        }
-        try:
-            communication_service = CommunicationService(mail)
-            failed_messages = communication_service.send_email_messages(
-                messages,
-                CommunicationTypeChoices.LICENSE_DELIVERY,
-                request.user,
-                success_message=success_messages.get((include_card, include_permit), "E-mail sent")
-            )
-            return Response({
-                "messages_sent": len(messages) - len(failed_messages),
-                "messages_prepared": len(messages),
-                "failed_messages": failed_messages,
-            }, status=200 if len(failed_messages) == 0 else 422)
-
-        except OSError as e:
-            logger.error(f"send_license_emails: {type(e)}: {e}")
-            return Response({"detail": "Failed to connect to mail server"}, status=503)
 
     @action(detail=True, methods=["put"], url_path="permit-create")
     def permit_create(self, request, mnr=None):
