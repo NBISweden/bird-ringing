@@ -19,6 +19,8 @@ from licensing.models import (
 from .utils import create_user
 import datetime
 from django.core import mail
+from unittest.mock import patch
+from licensing.rest import LicenseSequenceViewSet
 
 
 class _EmailTestBase(TestCase):
@@ -273,3 +275,78 @@ class LicenseDocumentEmailTests(_EmailTestBase):
             *(["include_permit"] if include_permit else [])
         ]
         return reverse("licensesequence-send-license-emails") + f"?mnrs={','.join(mnrs)}&{'&'.join(params)}"
+
+class LicenseDocumentEmailSelectedActorsTests(_EmailTestBase):
+    # We patch get_queryset() to a plain queryset for these tests to avoid postgres specific anotations
+    # like StringAgg(distinct=True) that fail with sqlite.
+    @staticmethod
+    def _plain_licensesequence_queryset(_self):
+        return LicenseSequence.objects.all()
+
+    def test_success_only_selected_actor_ids(self):
+        self._add_license_documents(self.actors, self.licenses)
+        self._with_access()
+
+        license_obj = next(lic for lic in self.licenses if lic.sequence.mnr == "0002")
+        selected_actor_ids = [self.actors[1].id, self.actors[2].id]
+
+        url = self._send_mail_url_for_actors(mnr=license_obj.sequence.mnr, actor_ids=selected_actor_ids, include_card=True)
+        with patch.object(LicenseSequenceViewSet, "get_queryset", self._plain_licensesequence_queryset):
+            resp = self.client.put(url)
+
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(
+            {
+                "messages_sent": 2,
+                "messages_prepared": 2,
+                "failed_messages": [],
+            },
+            resp.json(),
+        )
+
+        self.assertEqual(2, LicenseCommunication.objects.filter(license=license_obj).count())
+        self.assertEqual(sorted(LicenseCommunication.objects.filter(license=license_obj).values_list("actor_id", flat=True)),
+            sorted(selected_actor_ids),
+        )
+        self.assertEqual(2, len(mail.outbox))
+
+    def test_fail_if_actor_not_on_license(self):
+        self._add_license_documents(self.actors, self.licenses)
+        self._with_access()
+
+        license_obj = next(lic for lic in self.licenses if lic.sequence.mnr == "0002")
+        invalid_actor_id = self.actors[0].id
+
+        url = self._send_mail_url_for_actors(mnr=license_obj.sequence.mnr, actor_ids=[invalid_actor_id], include_card=True)
+        with patch.object(LicenseSequenceViewSet, "get_queryset", self._plain_licensesequence_queryset):
+            resp = self.client.put(url)
+
+        self.assertEqual(resp.status_code, 400)
+        self.assertEqual({"detail": f"Actor(s) not on license: {invalid_actor_id}."}, resp.json())
+        self.assertEqual(0, len(mail.outbox))
+        self.assertEqual(0, LicenseCommunication.objects.filter(license=license_obj).count())
+
+    def test_fail_when_actor_ids_missing(self):
+        self._add_license_documents(self.actors, self.licenses)
+        self._with_access()
+
+        license_obj = next(lic for lic in self.licenses if lic.sequence.mnr == "0002")
+
+        url = f"/api/license_sequence/{license_obj.sequence.mnr}/send-license-emails/?include_card"
+        with patch.object(LicenseSequenceViewSet, "get_queryset", self._plain_licensesequence_queryset):
+            resp = self.client.put(url)
+
+        self.assertEqual(resp.status_code, 400)
+        self.assertEqual({"actor_ids": "actor_ids is required (comma-separated)."}, resp.json())
+
+    def _send_mail_url_for_actors(self, *, mnr: str, actor_ids: list[int],
+        include_card: bool = False,
+        include_permit: bool = False,
+    ) -> str:
+        params = [
+            f"actor_ids={','.join(str(actor_id) for actor_id in actor_ids)}",
+            *(["include_card"] if include_card else []),
+            *(["include_permit"] if include_permit else []),
+        ]
+        query = "&".join(params)
+        return f"/api/license_sequence/{mnr}/send-license-emails/?{query}"
