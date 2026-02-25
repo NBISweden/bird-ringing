@@ -358,6 +358,6 @@ export function useSendLicenseEmailAction(client: Client) {
         ],
       });
     },
-    [modalStack, client, t],
+    [modalStack, t, sendEmails],
   );
 }

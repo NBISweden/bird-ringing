@@ -42,7 +42,7 @@ export function SendLicenseModalContent({
     if (hasSent.current) return;
     hasSent.current = true;
     trigger({ client, mnrs });
-  }, []);
+  });
 
   return isMutating ? (
     <>
