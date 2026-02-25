@@ -45,7 +45,6 @@ from django.http import HttpResponse
 from django.template.exceptions import TemplateDoesNotExist
 from django.contrib.postgres.aggregates import StringAgg
 from collections import OrderedDict
-from typing import Tuple
 import logging
 
 
@@ -698,6 +697,48 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
             include_card=include_card,
             include_permit=include_permit,
         )
+
+    @action(detail=True, methods=["put"], url_path="send-license-emails")
+    def send_license_emails_for_actors(self, request, mnr=None):
+        include_card = request.query_params.get("include_card") is not None
+        include_permit = request.query_params.get("include_permit") is not None
+
+        raw = request.query_params.get("actor_ids", "")
+        actor_ids_str = [v for v in parse_csv_string(raw) if v]
+        if not actor_ids_str:
+            return Response({"actor_ids": "actor_ids is required (comma-separated)."}, status=400)
+
+        try:
+            actor_ids = [int(v) for v in actor_ids_str]
+        except ValueError:
+            return Response({"actor_ids": "actor_ids must be a comma-separated list of integers."}, status=400)
+
+        actor_id_set = set(actor_ids)
+
+        license = self.get_object().current
+        if not license:
+            return Response({"detail": "No current license found."}, status=404)
+
+        try:
+            all_pairs = list(get_flattened_license_and_relations([license])) # reuse existing helper
+            filtered_pairs = [(lic, rel) for (lic, rel) in all_pairs if rel.actor.id in actor_id_set]
+
+            found_ids = {rel.actor.id for (_lic, rel) in filtered_pairs}
+            missing = sorted(actor_id_set - found_ids)
+            if missing:
+                return Response(
+                    {"detail": f"Actor(s) not on license: {', '.join(map(str, missing))}."},
+                    status=400,
+                )
+
+            return _send_license_emails_for_relations(
+                request=request,
+                lic_rel_iter=iter(filtered_pairs),
+                include_card=include_card,
+                include_permit=include_permit,
+            )
+        except ValueError as e:
+            return Response({"detail": str(e)}, status=400)
 
     @action(detail=True, methods=["put"], url_path="permit-create")
     def permit_create(self, request, mnr=None):
