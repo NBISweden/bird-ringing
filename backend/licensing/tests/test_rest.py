@@ -147,8 +147,8 @@ class LicenseDocumentEmailTests(_EmailTestBase):
         self.assertEqual(
             {
                 "messages_sent": 4,
-                "messages_prepared": 4,
                 "failed_messages": [],
+                "skipped_messages": [],
             }, 
             response.json(),
             "All licenses are prepared and sent"
@@ -165,8 +165,14 @@ class LicenseDocumentEmailTests(_EmailTestBase):
         self.assertEqual(
             {
                 "messages_sent": 3,
-                "messages_prepared": 3,
                 "failed_messages": [],
+                "skipped_messages": [
+                    {
+                        "actor_id": self.actors[0].id,
+                        "mnr": "0001",
+                        "reason": "missing_email",
+                    }
+                ],
             }, 
             response.json(),
             "Users without email are ignored when batch sending"
@@ -298,8 +304,8 @@ class LicenseDocumentEmailSelectedActorsTests(_EmailTestBase):
         self.assertEqual(
             {
                 "messages_sent": 2,
-                "messages_prepared": 2,
                 "failed_messages": [],
+                "skipped_messages": [],
             },
             resp.json(),
         )

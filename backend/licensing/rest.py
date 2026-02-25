@@ -95,9 +95,17 @@ def _send_license_emails_for_relations(
     )
 
     messages = []
+    skipped_messages: list[dict[str, object]] = []
     try:
         for (lic, relation) in lic_rel_iter:
             if not relation.actor.email: # Ignore sending if the actor has no email address declared
+                skipped_messages.append(
+                    {
+                        "actor_id": relation.actor.id,
+                        "mnr": lic.sequence.mnr,
+                        "reason": "missing_email",
+                    }
+                )
                 continue
 
             try:
@@ -131,8 +139,8 @@ def _send_license_emails_for_relations(
         return Response(
             {
                 "messages_sent": len(messages) - len(failed_messages),
-                "messages_prepared": len(messages),
                 "failed_messages": failed_messages,
+                "skipped_messages": skipped_messages,
             }, status=200 if len(failed_messages) == 0 else 422,
         )
 
