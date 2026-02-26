@@ -19,7 +19,7 @@ export const locale: TranslationMap = {
   actorErrorLoadingActorText:
     "Något gick fel när vi försökte ladda data för ringmärkare med id {actorId}.",
   actorErrorLoadingActorTitle: "Misslyckades att hämta ringmärkare",
-  actorFetchEmailAddresses: "Hämta e-post adresser",
+  actorFetchEmailAddresses: "Hämta e-postadresser",
   actorFilterDescription: "Filtrera ringmärkarlistan",
   actorFilterLabel: "Filtrera",
   actorFilterPlaceholder: "Namn, E-post, Ort, Mnr, Roll, Typ",
@@ -29,12 +29,12 @@ export const locale: TranslationMap = {
   actorLicenseValidityPeriod:
     "<from>{startsAt}</from><to><muted>till</muted> {endsAt}</to>",
   actorLicenses: "Licenser",
-  actorLoadingEmailAddresses: "Laddar e-post adresser",
+  actorLoadingEmailAddresses: "Laddar e-postadresser",
   actorName: "Namn",
   actorNoAddress: "ingen adress",
   actorNoCity: "ingen stad",
   actorNoCurrentLicenses: "Inga nuvarande licenser",
-  actorNoEmailAddress: "ingen e-post adress",
+  actorNoEmailAddress: "ingen e-postadress",
   actorNoPhoneNumber: "inget telefonnummer",
   actorRoles: "Roller",
   actorSendLicenses: "Skicka licenser",
