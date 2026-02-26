@@ -29,7 +29,7 @@ const messagesBase = {
   actorFetchEmailAddresses: "Fetch e-mail addresses",
   actorFilterDescription: "Filter ringer list",
   actorFilterLabel: "Filter",
-  actorFilterPlaceholder: "Name, E-mail, City, Id, Role, Type",
+  actorFilterPlaceholder: "Name, E-mail, City, Mnr, Role, Type",
   actorLastUpdated: "Last updated",
   actorLicenseActive: "Active",
   actorLicenseInactive: "Inactive",
