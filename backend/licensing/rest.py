@@ -208,6 +208,13 @@ def _notify_ringers_with_bundles(*, request, lic_rel_pairs: list[tuple[License, 
         success_message="Ringer bundle e-mail sent",
     )
 
+def _merge_response(resp: Response, extra: dict[str, object], *, status_code: int | None = None) -> Response:
+    base: dict[str, object] = {}
+    if isinstance(getattr(resp, "data", None), dict):
+        base = dict(resp.data)
+    base.update(extra)
+    return Response(base, status=resp.status_code if status_code is None else status_code)
+
 class DjangoProtectedModelPermissions(DjangoModelPermissions):
     perms_map = {
         "GET": ["%(app_label)s.view_%(model_name)s"],
@@ -807,15 +814,26 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
             )
 
             notify_ringer = request.query_params.get("notify_ringer") is not None
-            if notify_ringer and resp.status_code == 200:
-                _notify_ringers_with_bundles(
+            if not notify_ringer or resp.status_code != 200:
+                return resp
+
+            try:
+                bundle_failed = _notify_ringers_with_bundles(
                     request=request,
                     lic_rel_pairs=filtered_pairs,
                     include_card=include_card,
                     include_permit=include_permit,
                 )
+            except OSError:
+                return _merge_response(resp, {"ringer_bundle_error": "Failed to connect to mail server"}, status_code=503)
+            except Exception as exc:
+                logger.exception("notify_ringer bundle failed: %s", exc)
+                return _merge_response(resp, {"ringer_bundle_error": "Failed to send ringer bundle e-mail"}, status_code=503)
+            if bundle_failed:
+                # Partial failure: actor emails succeeded but ringer bundle failed
+                return _merge_response(resp, {"ringer_bundle_failed_messages": bundle_failed}, status_code=422)
 
-            return resp
+            return _merge_response(resp, {"ringer_bundle_message": "sent"})
         except ValueError as e:
             return Response({"detail": str(e)}, status=400)
 
