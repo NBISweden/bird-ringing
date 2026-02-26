@@ -2,10 +2,11 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
 
-from licensing.message_builder import MessageBuilder, LicenseAndPermitMessageBuilder
+from licensing.message_builder import MessageBuilder, LicenseAndPermitMessageBuilder, RingerBundleMessageBuilder
 from licensing.communication_service import CommunicationService
 from licensing.utils import get_flattened_license_and_relations
 from django.core import mail
+from django.core.mail import EmailMessage
 
 from licensing.license_card_service import (
     LicenseCardService,
@@ -147,6 +148,65 @@ def _send_license_emails_for_relations(
     except OSError as e:
         logger.error(f"send_license_emails: {type(e)}: {e}")
         return Response({"detail": "Failed to connect to mail server"}, status=503)
+
+def _notify_ringers_with_bundles(*, request, lic_rel_pairs: list[tuple[License, LicenseRelation]],
+    include_card: bool, include_permit: bool) -> list[dict[str, object]]:
+    """
+    Send one bundled ZIP email per license ringer using RingerBundleMessageBuilder.
+    Returns failed_messages from CommunicationService (same shape as existing).
+    """
+    if not lic_rel_pairs:
+        return []
+
+    rels_by_license_id: dict[int, list[LicenseRelation]] = {}
+    lic_by_id: dict[int, License] = {}
+
+    for lic, rel in lic_rel_pairs:
+        lic_by_id[lic.id] = lic
+        rels_by_license_id.setdefault(lic.id, []).append(rel)
+
+    msg_builder = MessageBuilder.from_licensing_settings()
+    bundle_builder = RingerBundleMessageBuilder(
+        msg_builder,
+        LicenseCardService(),
+        PermitService(),
+    )
+
+    bundle_messages: list[tuple[License, Actor, EmailMessage]] = []
+    for lic_id, rels in rels_by_license_id.items():
+        lic = lic_by_id[lic_id]
+
+        # Determine which actor to log the communication against (the ringer actor)
+        ringer_rel = next((r for r in rels if r.role == LicenseRoleChoices.RINGER), None)
+        if not ringer_rel:
+            continue
+        ringer_actor = ringer_rel.actor
+        if not (ringer_actor.email or "").strip():
+            continue
+
+        msg = bundle_builder.build_message(
+            lic=lic,
+            ringer_actor=ringer_actor,
+            relations=rels,
+            include_card=include_card,
+            include_permit=include_permit,
+        )
+        if msg is None:
+            continue
+
+        bundle_messages.append((lic, ringer_actor, msg))
+
+    if not bundle_messages:
+        return []
+
+    communication_service = CommunicationService(mail)
+    return communication_service.send_email_messages(
+        bundle_messages,
+        CommunicationTypeChoices.LICENSE_DELIVERY,
+        request.user,
+        try_message="Tried to send ringer bundle e-mail",
+        success_message="Ringer bundle e-mail sent",
+    )
 
 class DjangoProtectedModelPermissions(DjangoModelPermissions):
     perms_map = {
@@ -739,12 +799,23 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
                     status=400,
                 )
 
-            return _send_license_emails_for_relations(
+            resp = _send_license_emails_for_relations(
                 request=request,
                 lic_rel_iter=iter(filtered_pairs),
                 include_card=include_card,
                 include_permit=include_permit,
             )
+
+            notify_ringer = request.query_params.get("notify_ringer") is not None
+            if notify_ringer and resp.status_code == 200:
+                _notify_ringers_with_bundles(
+                    request=request,
+                    lic_rel_pairs=filtered_pairs,
+                    include_card=include_card,
+                    include_permit=include_permit,
+                )
+
+            return resp
         except ValueError as e:
             return Response({"detail": str(e)}, status=400)
 
