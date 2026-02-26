@@ -158,11 +158,10 @@ class RingerBundleMessageBuilder:
                     filename = self.card_service.make_license_card_filename(lic, rel.actor)
                     files.append((f"{filename}", bytes(card_doc.data)))
 
+            # Individual emails currently do not attach permits (see LicenseAndPermitMessageBuilder).
+            # To avoid ringers receiving documents that helpers did not receive, bundling permits is skipped for now.
             if include_permit:
-                permit_doc = self.permit_service.get_permit_document(lic=lic, actor=rel.actor)
-                if permit_doc and permit_doc.data:
-                    filename = self.permit_service.make_permit_filename(lic, rel.actor)
-                    files.append((f"{filename}", bytes(permit_doc.data)))
+                pass
 
         if not files:
             return None
