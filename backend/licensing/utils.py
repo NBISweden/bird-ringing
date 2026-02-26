@@ -5,8 +5,17 @@ from licensing.models import (
 )
 import urllib.request
 import time
-
+import io
+import zipfile
 from django.conf import settings
+
+def zip_bytes_from_files(files: list[tuple[str, bytes]]) -> bytes:
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w", compression=zipfile.ZIP_DEFLATED) as zf:
+        for filename, content in files:
+            zf.writestr(filename, content)
+    buf.seek(0)
+    return buf.getvalue()
 
 def get_flattened_license_and_relations(
     licenses: Iterable[License],

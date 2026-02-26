@@ -4,10 +4,14 @@ from django.conf import settings as django_settings
 from typing import Iterable
 from django.template import Template, Context
 from licensing.license_card_service import LicenseCardService
+from licensing.permit_service import PermitService
+from licensing.utils import zip_bytes_from_files
 from licensing.models import (
+    Actor,
     License,
     LicenseRelation,
     DocumentTypeChoices,
+    LicenseRoleChoices,
 )
 import datetime
 import mimetypes
@@ -119,4 +123,66 @@ class LicenseAndPermitMessageBuilder:
                 attachment
                 for (attachment, _document_type) in attachments
             ],
+        )
+
+class RingerBundleMessageBuilder:
+    """
+    Build a single email to the license ringer with a ZIP containing selected non-ringers' docs.
+    Returns:
+      - EmailMessage if a bundle could be built and ringer has email
+      - None if no ringer email or nothing to bundle
+    """
+
+    def __init__(self, message_builder: MessageBuilder, card_service: LicenseCardService, permit_service: PermitService | None = None):
+        self.message_builder = message_builder
+        self.card_service = card_service
+        self.permit_service = permit_service or PermitService()
+
+    def build_message(self, *, lic: License, ringer_actor: Actor, relations: list[LicenseRelation], include_card: bool,
+        include_permit: bool,
+    ) -> EmailMessage | None:
+
+        ringer_email = (ringer_actor.email or "").strip()
+        if not ringer_email:
+            return None
+
+        files: list[tuple[str, bytes]] = []
+
+        for rel in relations:
+            if rel.role == LicenseRoleChoices.RINGER:
+                continue
+
+            if include_card:
+                card_doc = self.card_service.get_license_card_document(lic=lic, actor=rel.actor)
+                if card_doc and card_doc.data:
+                    filename = self.card_service.make_license_card_filename(lic, rel.actor)
+                    files.append((f"{filename}", bytes(card_doc.data)))
+
+            if include_permit:
+                permit_doc = self.permit_service.get_permit_document(lic=lic, actor=rel.actor)
+                if permit_doc and permit_doc.data:
+                    filename = self.permit_service.make_permit_filename(lic, rel.actor)
+                    files.append((f"{filename}", bytes(permit_doc.data)))
+
+        if not files:
+            return None
+
+        zip_bytes = zip_bytes_from_files(files)
+        zip_filename = f"{lic.sequence.mnr}-helpers-documents.zip"
+
+        zip_attachment = EmailAttachment(
+            filename=zip_filename,
+            content=zip_bytes,
+            mimetype="application/zip",
+        )
+
+        return self.message_builder.get_message(
+            to_addr=ringer_email,
+            params={
+                "mnr": lic.sequence.mnr,
+                "name": ringer_actor.full_name,
+                "date": datetime.date.today().isoformat(),
+                "attachments": [("bundle", zip_filename)],
+            },
+            attachments=[zip_attachment],
         )
