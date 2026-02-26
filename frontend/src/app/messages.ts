@@ -23,7 +23,8 @@ const messagesBase = {
   actorCity: "City",
   actorDeactivate: "Deactivate",
   actorEmail: "E-mail",
-  actorErrorLoadingActorText: "Something went wrong while loading ringer data for ringer {actorId}.",
+  actorErrorLoadingActorText:
+    "Something went wrong while loading ringer data for ringer {actorId}.",
   actorErrorLoadingActorTitle: "Failed to load ringer",
   actorFetchEmailAddresses: "Fetch e-mail addresses",
   actorFilterDescription: "Filter ringer list",
@@ -32,7 +33,8 @@ const messagesBase = {
   actorLastUpdated: "Last updated",
   actorLicenseActive: "Active",
   actorLicenseInactive: "Inactive",
-  actorLicenseValidityPeriod: "<from>{startsAt}</from><to><muted>to</muted> {endsAt}</to>",
+  actorLicenseValidityPeriod:
+    "<from>{startsAt}</from><to><muted>to</muted> {endsAt}</to>",
   actorLicenses: "Licenses",
   actorLoadingEmailAddresses: "Loading e-mail addresses",
   actorName: "Name",
@@ -50,7 +52,8 @@ const messagesBase = {
   licenseCommunication: "Communication",
   licenseCommunicationNote: "Note",
   licenseCreateLicenseDocuments: "Create license documents",
-  licenseCreateLicenseDocumentsConfirmText: "Do you want to create license cards for all ringers and helpers for selected licenses?",
+  licenseCreateLicenseDocumentsConfirmText:
+    "Do you want to create license cards for all ringers and helpers for selected licenses?",
   licenseCreatedAt: "Created at {date}",
   licenseCreatingLicenseDocuments: "Creating license documents",
   licenseDeactivate: "Deactivate",
@@ -58,11 +61,13 @@ const messagesBase = {
   licenseDocuments: "Documents",
   licenseDownloadLicenses: "Download licenses (ZIP)",
   licenseDownloadLicensesText: "Downloading license cards",
-  licenseErrorLoadingLicenseText: "Something went wrong while loading license with {licenseId}",
+  licenseErrorLoadingLicenseText:
+    "Something went wrong while loading license with {licenseId}",
   licenseErrorLoadingLicenseTitle: "Failed to load license",
   licenseFilterDescription: "Filter license list",
   licenseFilterLabel: "Filter",
-  licenseFilterPlaceholder: "Mnr, Type, License holder, Trapping methods, Last email sent at",
+  licenseFilterPlaceholder:
+    "Mnr, Type, License holder, Trapping methods, Last email sent at",
   licenseHistory: "History",
   licenseHolder: "License holder",
   licenseId: "Mnr",
@@ -82,7 +87,8 @@ const messagesBase = {
   licenseReportStatus: "Final report status",
   licenseSelectedLicenses: "Selected licenses",
   licenseSendLicenses: "Send licenses",
-  licenseSendLicensesConfirmText: "Do you want to send license cards to all ringers and helpers of the selected licenses?",
+  licenseSendLicensesConfirmText:
+    "Do you want to send license cards to all ringers and helpers of the selected licenses?",
   licenseSendLicensesFailed: "Failed to send licenses. Please try again later.",
   licenseSendLicensesSucceeded: "{sent} e-mails sent successfully.",
   licenseSendingLicenses: "Sending licenses...",
@@ -90,10 +96,12 @@ const messagesBase = {
   licenseTrappingMethods: "Trapping methods",
   licenseType: "Type",
   licenseUpdatedAt: "Updated at {date}",
-  licenseValidityPeriod: "<from>Valid from </from>{startsAt}<to> to </to>{endsAt}",
+  licenseValidityPeriod:
+    "<from>Valid from </from>{startsAt}<to> to </to>{endsAt}",
 
   permitCreateDocuments: "Create permits",
-  permitCreateDocumentsConfirmText: "Do you want to create permits for all ringers and helpers for selected licenses?",
+  permitCreateDocumentsConfirmText:
+    "Do you want to create permits for all ringers and helpers for selected licenses?",
   permitCreatingDocuments: "Creating permit documents",
   permitDownloadLoading: "Preparing permits package for download...",
   permitDownloadSucceeded: "Downloading permits package",

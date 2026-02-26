@@ -16,7 +16,8 @@ export const locale: TranslationMap = {
   actorCity: "Ort",
   actorDeactivate: "Avaktivera",
   actorEmail: "E-post",
-  actorErrorLoadingActorText: "Något gick fel när vi försökte ladda data för ringmärkare med id {actorId}.",
+  actorErrorLoadingActorText:
+    "Något gick fel när vi försökte ladda data för ringmärkare med id {actorId}.",
   actorErrorLoadingActorTitle: "Misslyckades att hämta ringmärkare",
   actorFetchEmailAddresses: "Hämta e-post adresser",
   actorFilterDescription: "Filtrera ringmärkarlistan",
@@ -25,7 +26,8 @@ export const locale: TranslationMap = {
   actorLastUpdated: "Senast uppdaterad",
   actorLicenseActive: "Aktiv",
   actorLicenseInactive: "Inaktiv",
-  actorLicenseValidityPeriod: "<from>{startsAt}</from><to><muted>till</muted> {endsAt}</to>",
+  actorLicenseValidityPeriod:
+    "<from>{startsAt}</from><to><muted>till</muted> {endsAt}</to>",
   actorLicenses: "Licenser",
   actorLoadingEmailAddresses: "Laddar e-post adresser",
   actorName: "Namn",
@@ -43,7 +45,8 @@ export const locale: TranslationMap = {
   licenseCommunication: "Kommunikation",
   licenseCommunicationNote: "Anteckning",
   licenseCreateLicenseDocuments: "Skapa licensdokument",
-  licenseCreateLicenseDocumentsConfirmText: "Vill du skapa licensdokument för alla ringmärkare associerade med licenser?",
+  licenseCreateLicenseDocumentsConfirmText:
+    "Vill du skapa licensdokument för alla ringmärkare associerade med licenser?",
   licenseCreatedAt: "Skapad {date}",
   licenseCreatingLicenseDocuments: "Skapar licensdokument",
   licenseDeactivate: "Avaktivera",
@@ -51,11 +54,13 @@ export const locale: TranslationMap = {
   licenseDocuments: "Dokument",
   licenseDownloadLicenses: "Ladda ned licenskort (ZIP)",
   licenseDownloadLicensesText: "Laddar ned licenskort.",
-  licenseErrorLoadingLicenseText: "Något gick fel när vi försökte ladda data för licensen med id {licenseId}",
+  licenseErrorLoadingLicenseText:
+    "Något gick fel när vi försökte ladda data för licensen med id {licenseId}",
   licenseErrorLoadingLicenseTitle: "Misslyckades att hämta licens",
   licenseFilterDescription: "Filtrera licenslistan",
   licenseFilterLabel: "Filtrera",
-  licenseFilterPlaceholder: "Mnr, Typ, Licensinnehavare, Fångstmetoder, Senaste e-post skickat vid",
+  licenseFilterPlaceholder:
+    "Mnr, Typ, Licensinnehavare, Fångstmetoder, Senaste e-post skickat vid",
   licenseHistory: "Historik",
   licenseHolder: "Licensinnehavare",
   licenseId: "Mnr",
@@ -63,30 +68,36 @@ export const locale: TranslationMap = {
   licenseLicenseDownloadLoading: "Förbereder licenssamling för nedladdning...",
   licenseLicenseDownloadSucceeded: "Laddar ned licenssamling",
   licenseNoCommunication: "Ingen kommunikation kopplad till licensen.",
-  licenseNoConnectedActors: "Inga ringmärkare eller hjälpare kopplade till licensen.",
+  licenseNoConnectedActors:
+    "Inga ringmärkare eller hjälpare kopplade till licensen.",
   licenseNoDocuments: "Inga dokument",
   licenseNoPermissions: "Inga tillstånd att visa.",
   licenseNoPreviousVerions: "Inga tidigare versioner.",
   licenseNumberOfHelpers: "Antal hjälpare",
-  licensePermissionPeriodClosed: "<from></from>{startsAt}<to> till </to>{endsAt}",
+  licensePermissionPeriodClosed:
+    "<from></from>{startsAt}<to> till </to>{endsAt}",
   licensePermissionPeriodOpenBackward: "<to>till </to>{endsAt}",
   licensePermissionPeriodOpenForward: "<from>från </from>{startsAt}",
   licensePermissions: "Tillstånd",
   licenseReportStatus: "Slutrapportstatus",
   licenseSelectedLicenses: "Valda licenser",
   licenseSendLicenses: "Skicka licenser",
-  licenseSendLicensesConfirmText: "Vill du skicka licensdokument till alla ringmärkare och hjälpare för valda licenser?",
-  licenseSendLicensesFailed: "Misslyckades med att skicka licenser. Försök igen senare.",
+  licenseSendLicensesConfirmText:
+    "Vill du skicka licensdokument till alla ringmärkare och hjälpare för valda licenser?",
+  licenseSendLicensesFailed:
+    "Misslyckades med att skicka licenser. Försök igen senare.",
   licenseSendLicensesSucceeded: "{sent} e-postmeddelanden skickades.",
   licenseSendingLicenses: "Skickar licenser...",
   licenseStatus: "Licensstatus",
   licenseTrappingMethods: "Fångstmetoder",
   licenseType: "Typ",
   licenseUpdatedAt: "Uppdaterad {date}",
-  licenseValidityPeriod: "<from>Giltig från </from>{startsAt}<to> till </to>{endsAt}",
+  licenseValidityPeriod:
+    "<from>Giltig från </from>{startsAt}<to> till </to>{endsAt}",
 
   permitCreateDocuments: "Skapa tillstånd",
-  permitCreateDocumentsConfirmText: "Vill du skapa tillstånd för alla ringmärkare och hjälpare för valda licenser?",
+  permitCreateDocumentsConfirmText:
+    "Vill du skapa tillstånd för alla ringmärkare och hjälpare för valda licenser?",
   permitCreatingDocuments: "Skapar tillståndsdokument",
   permitDownloadLoading: "Förbereder tillståndssamling för nedladdning...",
   permitDownloadSucceeded: "Laddar ned tillståndssamling",
