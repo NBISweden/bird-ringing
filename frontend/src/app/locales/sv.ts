@@ -60,11 +60,11 @@ export const locale: TranslationMap = {
   licenseFilterDescription: "Filtrera licenslistan",
   licenseFilterLabel: "Filtrera",
   licenseFilterPlaceholder:
-    "Mnr, Typ, Licensinnehavare, Fångstmetoder, Senaste e-post skickat vid",
+    "Mnr, Typ, Licensinnehavare, Fångstmetoder, Senaste e-post skickades",
   licenseHistory: "Historik",
   licenseHolder: "Licensinnehavare",
   licenseId: "Mnr",
-  licenseLastEmailSentAt: "Senaste e-post skickat vid",
+  licenseLastEmailSentAt: "Senaste e-post skickades",
   licenseLicenseDownloadLoading: "Förbereder licenssamling för nedladdning...",
   licenseLicenseDownloadSucceeded: "Laddar ned licenssamling",
   licenseNoCommunication: "Ingen kommunikation kopplad till licensen.",
