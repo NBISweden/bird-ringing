@@ -39,8 +39,8 @@ services:
       dockerfile: ../Dockerfile.frontend
       target: prod
       args:
-        BUILD_ID: "${BUILD_ID:-1000:1000}"
-        RUNTIME_ID: "${RUNTIME_ID:-1000:1000}"
+        BUILD_ID: "${BUILD_ID:-6000:6000}"
+        RUNTIME_ID: "${RUNTIME_ID:-6001:6001}"
     volumes:
       - frontend-vol:/vol:ro
     depends_on:
@@ -53,8 +53,8 @@ services:
       dockerfile: ../Dockerfile.backend
       target: prod
       args:
-        BUILD_ID: "${BUILD_ID:-1000:1000}"
-        RUNTIME_ID: "${RUNTIME_ID:-1000:1000}"
+        BUILD_ID: "${BUILD_ID:-6000:6000}"
+        RUNTIME_ID: "${RUNTIME_ID:-6001:6001}"
     environment:
       POSTGRES_USER: db_admin
       SERVICE_MODE: production-init
@@ -73,8 +73,8 @@ services:
       dockerfile: ../Dockerfile.backend
       target: prod
       args:
-        BUILD_ID: "${BUILD_ID:-1000:1000}"
-        RUNTIME_ID: "${RUNTIME_ID:-1000:1000}"
+        BUILD_ID: "${BUILD_ID:-6000:6000}"
+        RUNTIME_ID: "${RUNTIME_ID:-6001:6001}"
     environment:
       POSTGRES_USER: db_user
       SERVICE_MODE: production
