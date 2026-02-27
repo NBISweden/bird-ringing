@@ -176,13 +176,15 @@ def _notify_ringers_with_bundles(*, request, lic_rel_pairs: list[tuple[License, 
     for lic_id, rels in rels_by_license_id.items():
         lic = lic_by_id[lic_id]
 
-        # Determine which actor to log the communication against (the ringer actor)
-        ringer_rel = next((r for r in rels if r.role == LicenseRoleChoices.RINGER), None)
+        # Always determine ringer from the license itself (not from selected relations)
+        ringer_rel = (lic.actors.filter(role=LicenseRoleChoices.RINGER).select_related("actor").first())
         if not ringer_rel:
-            continue
+            raise ValueError(f"No ringer registered on license for mnr {lic.sequence.mnr}.")
+
         ringer_actor = ringer_rel.actor
-        if not (ringer_actor.email or "").strip():
-            continue
+        ringer_email = (ringer_actor.email or "").strip()
+        if not ringer_email:
+            raise ValueError(f"No email address available for ringer on license {lic.sequence.mnr}.")
 
         msg = bundle_builder.build_message(
             lic=lic,
@@ -824,6 +826,9 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
                     include_card=include_card,
                     include_permit=include_permit,
                 )
+            except ValueError as exc:
+                # e.g. missing ringer email / no ringer on license
+                return _merge_response(resp, {"detail": str(exc)}, status_code=400)
             except OSError:
                 return _merge_response(resp, {"ringer_bundle_error": "Failed to connect to mail server"}, status_code=503)
             except Exception as exc:
