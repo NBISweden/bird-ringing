@@ -21,9 +21,7 @@ import {
 import { Client } from "../client";
 import { useClient } from "../contexts";
 import Icon from "@/components/Icon";
-import {
-  useFetchEmailAddressesAction,
-} from "./actions";
+import { useFetchEmailAddressesAction } from "./actions";
 import { useTranslation } from "../internationalization";
 
 type ActorPropertyIds =
