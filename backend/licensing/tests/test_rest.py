@@ -21,6 +21,10 @@ import datetime
 from django.core import mail
 from unittest.mock import patch
 from licensing.rest import LicenseSequenceViewSet
+from licensing.communication_service import CommunicationService
+from licensing.license_card_service import LicenseCardService
+import io
+import zipfile
 
 
 class _EmailTestBase(TestCase):
@@ -353,6 +357,132 @@ class LicenseDocumentEmailSelectedActorsTests(_EmailTestBase):
             f"actor_ids={','.join(str(actor_id) for actor_id in actor_ids)}",
             *(["include_card"] if include_card else []),
             *(["include_permit"] if include_permit else []),
+        ]
+        query = "&".join(params)
+        return f"/api/license_sequence/{mnr}/send-license-emails/?{query}"
+
+class LicenseDocumentEmailNotifyRingerTests(_EmailTestBase):
+    @staticmethod
+    def _plain_licensesequence_queryset(_self):
+        return LicenseSequence.objects.all()
+
+    def test_notify_ringer_sends_bundle_email(self):
+        self._with_access()
+
+        license_obj = next(lic for lic in self.licenses if lic.sequence.mnr == "0002")
+        helper_actor = self.actors[2]
+        ringer_actor = self.actors[1]
+
+        # Create license-card documents using the service to match production expectations
+        card_service = LicenseCardService()
+        card_service.get_or_create_license_card_document(lic=license_obj, actor=helper_actor, created_by=self.user_with_access, updated_by=self.user_with_access)
+        card_service.get_or_create_license_card_document(lic=license_obj, actor=ringer_actor, created_by=self.user_with_access, updated_by=self.user_with_access)
+
+        url = self._send_mail_url_for_actors(mnr=license_obj.sequence.mnr, actor_ids=[helper_actor.id], include_card=True, notify_ringer=True)
+
+        with patch.object(LicenseSequenceViewSet, "get_queryset", self._plain_licensesequence_queryset):
+            resp = self.client.put(url)
+
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(
+            {
+                "messages_sent": 1,
+                "failed_messages": [],
+                "skipped_messages": [],
+                "ringer_bundle_message": "sent",
+            },
+            resp.json(),
+        )
+
+        # helper + ringer bundle
+        self.assertEqual(2, len(mail.outbox))
+
+        bundle_messages = [msg for msg in mail.outbox if msg.to == [ringer_actor.email]]
+        self.assertEqual(1, len(bundle_messages))
+
+        bundle_msg = bundle_messages[0]
+        self.assertEqual(1, len(bundle_msg.attachments))
+
+        filename, data, mimetype = bundle_msg.attachments[0]
+        self.assertTrue(filename.endswith("-helpers-documents.zip"))
+        self.assertEqual("application/zip", mimetype)
+
+        with zipfile.ZipFile(io.BytesIO(data), "r") as zf:
+            names = zf.namelist()
+
+        self.assertGreaterEqual(len(names), 1)
+
+    def test_notify_ringer_reports_failure(self):
+        self._with_access()
+
+        license_obj = next(lic for lic in self.licenses if lic.sequence.mnr == "0002")
+        helper_actor = self.actors[2]
+        ringer_actor = self.actors[1]
+
+        card_service = LicenseCardService()
+        card_service.get_or_create_license_card_document(lic=license_obj, actor=helper_actor, created_by=self.user_with_access, updated_by=self.user_with_access)
+
+        url = self._send_mail_url_for_actors(mnr=license_obj.sequence.mnr, actor_ids=[helper_actor.id], include_card=True, notify_ringer=True)
+
+        original_send = CommunicationService.send_email_messages
+
+        def send_side_effect(self, messages, *args, **kwargs):
+            if kwargs.get("try_message") == "Tried to send ringer bundle e-mail":
+                return [{"to": [ringer_actor.email], "details": "SMTP failed"}]
+            return original_send(self, messages, *args, **kwargs)
+
+        with (
+            patch.object(LicenseSequenceViewSet, "get_queryset", self._plain_licensesequence_queryset),
+            patch.object(CommunicationService, "send_email_messages", new=send_side_effect),
+        ):
+            resp = self.client.put(url)
+
+        self.assertEqual(resp.status_code, 422)
+        self.assertEqual(
+            {
+                "messages_sent": 1,
+                "failed_messages": [],
+                "skipped_messages": [],
+                "ringer_bundle_failed_messages": [{"to": [ringer_actor.email], "details": "SMTP failed"}],
+            },
+            resp.json(),
+        )
+
+    def test_notify_ringer_fails_if_ringer_missing_email(self):
+        self._with_access()
+
+        license_obj = next(lic for lic in self.licenses if lic.sequence.mnr == "0002")
+        helper_actor = self.actors[2]
+        ringer_actor = self.actors[1]
+
+        card_service = LicenseCardService()
+        card_service.get_or_create_license_card_document(lic=license_obj, actor=helper_actor, created_by=self.user_with_access, updated_by=self.user_with_access)
+
+        ringer_actor.email = ""
+        ringer_actor.save(update_fields=["email"])
+
+        url = self._send_mail_url_for_actors(mnr=license_obj.sequence.mnr, actor_ids=[helper_actor.id], include_card=True, notify_ringer=True)
+
+        with patch.object(LicenseSequenceViewSet, "get_queryset", self._plain_licensesequence_queryset):
+            resp = self.client.put(url)
+
+        self.assertEqual(resp.status_code, 400)
+        self.assertEqual(
+            {
+                "messages_sent": 1,
+                "failed_messages": [],
+                "skipped_messages": [],
+                "detail": f"No email address available for ringer on license {license_obj.sequence.mnr}.",
+            },
+            resp.json(),
+        )
+
+    def _send_mail_url_for_actors(self, *, mnr: str, actor_ids: list[int], include_card: bool = False, include_permit: bool = False, notify_ringer: bool = False) -> str:
+        params = [
+            f"actor_ids={','.join(str(actor_id) for actor_id in actor_ids)}",
+            *(["include_card"] if include_card else []),
+            *(["include_permit"] if include_permit else []),
+            *(["notify_ringer"] if notify_ringer else []),
         ]
         query = "&".join(params)
         return f"/api/license_sequence/{mnr}/send-license-emails/?{query}"
