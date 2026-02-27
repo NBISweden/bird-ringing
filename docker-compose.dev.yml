@@ -1,6 +1,5 @@
 services:
   frontend:
-    image: bird-ringing-frontend-dev:latest
     build:
       target: dev
     volumes:
@@ -13,14 +12,14 @@ services:
       start_period: 10s
 
   backend-init:
-    image: bird-ringing-backend-dev:latest
+    build:
+      target: dev
     environment:
       SERVICE_MODE: development-init
     volumes:
       - ./backend:/app
 
   backend:
-    image: bird-ringing-backend-dev:latest
     build:
       target: dev
     environment:
