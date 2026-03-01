@@ -421,6 +421,7 @@ class LicenseDocumentEmailNotifyRingerTests(_EmailTestBase):
 
         card_service = LicenseCardService()
         card_service.get_or_create_license_card_document(lic=license_obj, actor=helper_actor, created_by=self.user_with_access, updated_by=self.user_with_access)
+        card_service.get_or_create_license_card_document(lic=license_obj, actor=ringer_actor, created_by=self.user_with_access, updated_by=self.user_with_access)
 
         url = self._send_mail_url_for_actors(mnr=license_obj.sequence.mnr, actor_ids=[helper_actor.id], include_card=True, notify_ringer=True)
 
@@ -476,6 +477,33 @@ class LicenseDocumentEmailNotifyRingerTests(_EmailTestBase):
             },
             resp.json(),
         )
+
+    def test_notify_ringer_fails_if_helper_missing_document(self):
+        self._with_access()
+
+        license_obj = next(lic for lic in self.licenses if lic.sequence.mnr == "0002")
+        helper_actor = self.actors[2]
+        ringer_actor = self.actors[1]
+
+        # Only create ringer document so that helper has no document.
+        card_service = LicenseCardService()
+        card_service.get_or_create_license_card_document(lic=license_obj, actor=ringer_actor, created_by=self.user_with_access, updated_by=self.user_with_access)
+
+        url = self._send_mail_url_for_actors(mnr=license_obj.sequence.mnr, actor_ids=[helper_actor.id], include_card=True, notify_ringer=True)
+
+        with patch.object(LicenseSequenceViewSet, "get_queryset", self._plain_licensesequence_queryset):
+            resp = self.client.put(url)
+
+        self.assertEqual(resp.status_code, 400)
+        self.assertEqual(
+            {
+                "detail": f"No license card document available for {license_obj.sequence.mnr}:H001",
+            },
+            resp.json(),
+        )
+
+        self.assertEqual(0, len(mail.outbox))
+        self.assertEqual(0, LicenseCommunication.objects.filter(license=license_obj).count())
 
     def _send_mail_url_for_actors(self, *, mnr: str, actor_ids: list[int], include_card: bool = False, include_permit: bool = False, notify_ringer: bool = False) -> str:
         params = [
