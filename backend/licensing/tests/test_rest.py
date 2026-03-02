@@ -458,6 +458,7 @@ class LicenseDocumentEmailNotifyRingerTests(_EmailTestBase):
 
         card_service = LicenseCardService()
         card_service.get_or_create_license_card_document(lic=license_obj, actor=helper_actor, created_by=self.user_with_access, updated_by=self.user_with_access)
+        card_service.get_or_create_license_card_document(lic=license_obj, actor=ringer_actor, created_by=self.user_with_access, updated_by=self.user_with_access)
 
         ringer_actor.email = ""
         ringer_actor.save(update_fields=["email"])
@@ -470,13 +471,13 @@ class LicenseDocumentEmailNotifyRingerTests(_EmailTestBase):
         self.assertEqual(resp.status_code, 400)
         self.assertEqual(
             {
-                "messages_sent": 1,
-                "failed_messages": [],
-                "skipped_messages": [],
                 "detail": f"No email address available for ringer on license {license_obj.sequence.mnr}.",
             },
             resp.json(),
         )
+
+        self.assertEqual(0, len(mail.outbox))
+        self.assertEqual(0, LicenseCommunication.objects.filter(license=license_obj).count())
 
     def test_notify_ringer_fails_if_helper_missing_document(self):
         self._with_access()
@@ -497,7 +498,7 @@ class LicenseDocumentEmailNotifyRingerTests(_EmailTestBase):
         self.assertEqual(resp.status_code, 400)
         self.assertEqual(
             {
-                "detail": f"No license card document available for {license_obj.sequence.mnr}:H001",
+                "detail": f"Missing license card document for bundle: mnr {license_obj.sequence.mnr}, actor {helper_actor.id}.",
             },
             resp.json(),
         )

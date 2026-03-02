@@ -149,11 +149,12 @@ def _send_license_emails_for_relations(
         logger.error(f"send_license_emails: {type(e)}: {e}")
         return Response({"detail": "Failed to connect to mail server"}, status=503)
 
-def _notify_ringers_with_bundles(*, request, lic_rel_pairs: list[tuple[License, LicenseRelation]],
-    include_card: bool, include_permit: bool) -> list[dict[str, object]]:
+def _build_ringer_bundle_messages(*, lic_rel_pairs: list[tuple[License, LicenseRelation]],
+    include_card: bool, include_permit: bool,
+) -> list[tuple[License, Actor, EmailMessage]]:
     """
-    Send one bundled ZIP email per license ringer using RingerBundleMessageBuilder.
-    Returns failed_messages from CommunicationService (same shape as existing).
+    Build one bundled ZIP email per license ringer using RingerBundleMessageBuilder.
+    Raise ValueError on validation failures.
     """
     if not lic_rel_pairs:
         return []
@@ -173,6 +174,7 @@ def _notify_ringers_with_bundles(*, request, lic_rel_pairs: list[tuple[License, 
     )
 
     bundle_messages: list[tuple[License, Actor, EmailMessage]] = []
+
     for lic_id, rels in rels_by_license_id.items():
         lic = lic_by_id[lic_id]
 
@@ -198,6 +200,13 @@ def _notify_ringers_with_bundles(*, request, lic_rel_pairs: list[tuple[License, 
 
         bundle_messages.append((lic, ringer_actor, msg))
 
+    return bundle_messages
+
+def _send_ringer_bundle_messages(*, request, bundle_messages: list[tuple[License, Actor, EmailMessage]],
+) -> list[dict[str, object]]:
+    """
+    Sends pre-built bundle messages. Returns failed_messages.
+    """
     if not bundle_messages:
         return []
 
@@ -808,6 +817,19 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
                     status=400,
                 )
 
+            notify_ringer = request.query_params.get("notify_ringer") is not None
+
+            bundle_messages: list[tuple[License, Actor, EmailMessage]] = []
+            if notify_ringer:
+                try:
+                    bundle_messages = _build_ringer_bundle_messages(
+                        lic_rel_pairs=filtered_pairs,
+                        include_card=include_card,
+                        include_permit=include_permit,
+                    )
+                except ValueError as exc:
+                    return Response({"detail": str(exc)}, status=400)
+
             resp = _send_license_emails_for_relations(
                 request=request,
                 lic_rel_iter=iter(filtered_pairs),
@@ -815,27 +837,18 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
                 include_permit=include_permit,
             )
 
-            notify_ringer = request.query_params.get("notify_ringer") is not None
             if not notify_ringer or resp.status_code != 200:
                 return resp
 
             try:
-                bundle_failed = _notify_ringers_with_bundles(
-                    request=request,
-                    lic_rel_pairs=filtered_pairs,
-                    include_card=include_card,
-                    include_permit=include_permit,
-                )
-            except ValueError as exc:
-                # e.g. missing ringer email / no ringer on license
-                return _merge_response(resp, {"detail": str(exc)}, status_code=400)
+                bundle_failed = _send_ringer_bundle_messages(request=request, bundle_messages=bundle_messages)
             except OSError:
                 return _merge_response(resp, {"ringer_bundle_error": "Failed to connect to mail server"}, status_code=503)
             except Exception as exc:
                 logger.exception("notify_ringer bundle failed: %s", exc)
                 return _merge_response(resp, {"ringer_bundle_error": "Failed to send ringer bundle e-mail"}, status_code=503)
             if bundle_failed:
-                # Partial failure: actor emails succeeded but ringer bundle failed
+                # Partial failure: actor emails succeeded, connection suceeded but the ringer bundle failed.
                 return _merge_response(resp, {"ringer_bundle_failed_messages": bundle_failed}, status_code=422)
 
             return _merge_response(resp, {"ringer_bundle_message": "sent"})
