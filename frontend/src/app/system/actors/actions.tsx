@@ -33,31 +33,6 @@ export function useFetchEmailAddressesAction(client: Client) {
   return action;
 }
 
-export function useSendLicenseEmailAction() {
-  const modalStack = useModalsContext();
-  const { t } = useTranslation();
-
-  const action = useCallback(() => {
-    modalStack.add({
-      title: t("actorSendLicenses"),
-      content: (
-        <>
-          <Spinner />
-          <span className="ms-3">{t("featureNotImplemented")}</span>
-        </>
-      ),
-      actions: [
-        {
-          label: t("closeModal"),
-          action: () => {},
-          type: "primary",
-        },
-      ],
-    });
-  }, [modalStack, t]);
-  return action;
-}
-
 async function fetchActorEmail([client, ids]: [
   Client,
   string[],

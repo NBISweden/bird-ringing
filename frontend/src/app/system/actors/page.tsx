@@ -21,10 +21,7 @@ import {
 import { Client } from "../client";
 import { useClient } from "../contexts";
 import Icon from "@/components/Icon";
-import {
-  useFetchEmailAddressesAction,
-  useSendLicenseEmailAction,
-} from "./actions";
+import { useFetchEmailAddressesAction } from "./actions";
 import { useTranslation } from "../internationalization";
 
 type ActorPropertyIds =
@@ -123,7 +120,6 @@ function ConnectedListView() {
   const router = useRouter();
   const client = useClient();
   const fetchEmailAddressesAction = useFetchEmailAddressesAction(client);
-  const sendLicenseEmailAction = useSendLicenseEmailAction();
   const { t } = useTranslation();
 
   useEffect(() => {
@@ -145,11 +141,6 @@ function ConnectedListView() {
     {
       label: t("actorFetchEmailAddresses"),
       action: fetchEmailAddressesAction,
-    },
-    { type: "divider" },
-    {
-      label: t("actorSendLicenses"),
-      action: sendLicenseEmailAction,
     },
     { type: "divider" },
     {
