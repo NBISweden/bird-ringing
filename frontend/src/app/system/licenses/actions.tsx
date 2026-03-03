@@ -28,7 +28,7 @@ function GenericBatchCreateBody({
   const client = useClient();
 
   const { data, isLoading, error } = useSWRImmutable(
-    [client, mnrs],
+    [client, createFn, mnrs],
     async () => {
       return createFn(client, mnrs);
     },
