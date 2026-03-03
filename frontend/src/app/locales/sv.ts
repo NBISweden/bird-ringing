@@ -120,6 +120,9 @@ export const locale: TranslationMap = {
   licenseSendLicensesFailed:
     "Misslyckades med att skicka licenser. Försök igen senare.",
   licenseSendLicensesSucceeded: "{sent} e-postmeddelanden skickades.",
+  licenseSendLicensesSelectedActorsConfirmText:
+    "Vill du skicka licensdokument till de valda ringmärkarna/hjälparna?",
+  licenseSelectedActors: "Valda ringmärkare/hjälpare",
   licenseSendingLicenses: "Skickar licenser...",
   licenseSpecies: "Arter",
   licenseStatus: "Licensstatus",

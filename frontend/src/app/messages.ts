@@ -127,6 +127,9 @@ const messagesBase = {
   licenseSendLicensesSucceeded: "{sent} e-mails sent successfully.",
   licenseSendingLicenses: "Sending licenses...",
   licenseSpecies: "Species",
+  licenseSendLicensesSelectedActorsConfirmText:
+    "Do you want to send license cards to the selected ringers/helpers?",
+  licenseSelectedActors: "Selected ringers/helpers",
   licenseStatus: "License status",
   licenseTrappingMethods: "Trapping methods",
   licenseType: "Type",

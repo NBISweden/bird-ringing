@@ -389,9 +389,10 @@ export function useSendLicenseEmailForActorsAction(client: Client) {
         title: t("licenseSendLicenses"),
         content: (
           <>
-            <p>{t("licenseSendLicensesConfirmText")}</p>
+            <p>{t("licenseSendLicensesSelectedActorsConfirmText")}</p>
             <p>
-              <strong>{t("licenseSelectedLicenses")}:</strong> {mnr}
+              <strong>{t("licenseSelectedActors")}:</strong>{" "}
+              {actorIds.join(", ")}
             </p>
           </>
         ),
