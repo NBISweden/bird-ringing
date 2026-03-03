@@ -134,7 +134,7 @@ class Command(BaseCommand):
         roles_and_keys = [
             (models.LicenseRoleChoices.RINGER, "Mnr", "R000"),
             *[
-                (models.LicenseRoleChoices.ASSOCIATE, ass_id, f"A00{i}")
+                (models.LicenseRoleChoices.AFFILIATE, ass_id, f"A00{i}")
                 for i, ass_id in enumerate(["AssMnr1", "AssMnr2", "AssMnr3"])
             ],
             (models.LicenseRoleChoices.COMMUNICATION, "AdrMnr", "ADRM"),
