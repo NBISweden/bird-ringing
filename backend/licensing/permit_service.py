@@ -23,7 +23,7 @@ from licensing.utils import docx_to_pdf_bytes
 from licensing.serializers import json_serialize
 
 
-class NoCurrentLicense(Exception):
+class NoLicense(Exception):
     pass
 
 
@@ -115,7 +115,7 @@ class PermitService:
         allowed_roles: Iterable[int] = (LicenseRoleChoices.RINGER, LicenseRoleChoices.ASSOCIATE_RINGER),
     ) -> LicenseDocument:
         if not lic:
-            raise NoCurrentLicense("No license found.")
+            raise NoLicense("No license found.")
 
         # validate actor role once and reuse relation (this should be broken ourt to helper (duplicate in license_service)
         rel = self._get_license_relation(lic=lic, actor=actor, allowed_roles=allowed_roles)
@@ -201,7 +201,7 @@ class PermitService:
 
         for lic in licenses:
             if not lic:
-                raise NoCurrentLicense("No license found.")
+                raise NoLicense("No license found.")
 
             relations = lic.actors.filter(role__in=list(allowed_roles)).select_related("actor")
             if not relations.exists():
@@ -236,7 +236,7 @@ class PermitService:
         with zipfile.ZipFile(zip_buffer, "w", compression=zipfile.ZIP_DEFLATED) as zf:
             for lic in licenses:
                 if not lic:
-                    raise NoCurrentLicense("No license found.")
+                    raise NoLicense("No license found.")
 
                 relations = lic.actors.filter(role__in=list(allowed_roles)).select_related("actor")
                 if not relations.exists():

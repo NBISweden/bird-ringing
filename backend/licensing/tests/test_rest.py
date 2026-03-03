@@ -66,7 +66,7 @@ class _EmailTestBase(TestCase):
             for mnr in ["0001", "0002", "0003", "0004"]
         ]
 
-        self.licenses = [
+        for seq in self.license_sequences:
             License.objects.create(
                 sequence=seq,
                 version=0,
@@ -76,6 +76,9 @@ class _EmailTestBase(TestCase):
                 created_by=self.user_with_access,
                 updated_by=self.user_with_access,
             )
+
+        self.licenses = [
+            seq.commit(seq.current)
             for seq in self.license_sequences
         ]
 

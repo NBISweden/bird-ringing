@@ -36,7 +36,7 @@ def format_date(d) -> str:
     month = month[:1].upper() + month[1:]
     return f"{day} {month} år {d.year}"
 
-class NoCurrentLicense(Exception):
+class NoLicense(Exception):
     pass
 
 class ActorNotOnLicense(Exception):
@@ -197,7 +197,7 @@ class LicenseCardService:
 
         for lic in licenses:
             if not lic:
-                raise NoCurrentLicense("No license found.")
+                raise NoLicense("No license found.")
 
             relations = lic.actors.filter(role__in=list(allowed_roles)).select_related("actor")
             if not relations.exists():
@@ -231,7 +231,7 @@ class LicenseCardService:
         with zipfile.ZipFile(zip_buffer, "w", compression=zipfile.ZIP_DEFLATED) as zf:
             for lic in licenses:
                 if not lic:
-                    raise NoCurrentLicense("No license found.")
+                    raise NoLicense("No license found.")
 
                 relations = lic.actors.filter(role__in=list(allowed_roles)).select_related("actor")
                 if not relations.exists():
@@ -287,7 +287,7 @@ class LicenseCardService:
         allowed_roles: Iterable[int],
     ):
         if not lic:
-            raise NoCurrentLicense("No license found.")
+            raise NoLicense("No license found.")
 
         rel = (
             lic.actors
