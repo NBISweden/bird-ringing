@@ -16,6 +16,8 @@ type BatchCreateFn = (
 ) => Promise<BatchCreateResponse>;
 type DownloadZipFn = (client: Client, mnrs: string[]) => Promise<Blob>;
 
+type SelectedActor = { id: number; name: string };
+
 function GenericBatchCreateBody({
   mnrs,
   createFn,
@@ -367,12 +369,12 @@ export function useSendLicenseEmailForActorsAction(client: Client) {
   const { t } = useTranslation();
 
   const sendEmails = useCallback(
-    (mnr: string, actorIds: number[]) => {
+    (mnr: string, actors: SelectedActor[]) => {
       modalStack.add({
         title: t("licenseSendLicenses"),
         content: (
           <ClientContext.Provider value={client}>
-            <SendLicenseForActorsModalContent mnr={mnr} actorIds={actorIds} />
+            <SendLicenseForActorsModalContent mnr={mnr} actorIds={actors.map((a) => a.id)}/>
           </ClientContext.Provider>
         ),
         actions: [{ label: t("okModal"), action: () => {}, type: "primary" }],
@@ -382,8 +384,8 @@ export function useSendLicenseEmailForActorsAction(client: Client) {
   );
 
   return useCallback(
-    (mnr: string, actorIds: number[]) => {
-      if (actorIds.length === 0) return;
+    (mnr: string, actors: SelectedActor[]) => {
+      if (actors.length === 0) return;
 
       modalStack.add({
         title: t("licenseSendLicenses"),
@@ -392,7 +394,7 @@ export function useSendLicenseEmailForActorsAction(client: Client) {
             <p>{t("licenseSendLicensesSelectedActorsConfirmText")}</p>
             <p>
               <strong>{t("licenseSelectedActors")}:</strong>{" "}
-              {actorIds.join(", ")}
+              {actors.map((a) => a.name).join(", ")}
             </p>
           </>
         ),
@@ -400,7 +402,7 @@ export function useSendLicenseEmailForActorsAction(client: Client) {
           { label: t("abortModal"), action: () => {}, type: "outline-primary" },
           {
             label: t("licenseSendLicenses"),
-            action: () => sendEmails(mnr, actorIds),
+            action: () => sendEmails(mnr, actors),
             type: "primary",
           },
         ],
