@@ -33,7 +33,7 @@ type LicensePropertyIds =
   | "mnr"
   | "type"
   | "license_holder"
-  | "helpers"
+  | "associate_ringers"
   | "methods"
   | "final_report_status"
   | "license_status"
@@ -85,8 +85,8 @@ function toLicenseTable(item: LicenseListItem): TableItem<LicensePropertyIds> {
       license_holder: {
         component: item.license_holder,
       },
-      helpers: {
-        component: String(item.helper_count || "0"),
+      associate_ringers: {
+        component: String(item.associate_ringer_count || "0"),
       },
       methods: {
         component: item.methods,
@@ -228,9 +228,12 @@ function BaseListView({
         reverse: "-license_holder,mnr",
       },
     },
-    helpers: {
-      label: t("licenseNumberOfHelpers"),
-      ordering: { forward: "helper_count,mnr", reverse: "-helper_count,mnr" },
+    associate_ringers: {
+      label: t("licenseNumberOfAssociateRingers"),
+      ordering: {
+        forward: "associate_ringer_count,mnr",
+        reverse: "-associate_ringer_count,mnr",
+      },
     },
     methods: {
       label: t("licenseTrappingMethods"),

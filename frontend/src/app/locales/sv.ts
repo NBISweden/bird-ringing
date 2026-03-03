@@ -73,7 +73,7 @@ export const locale: TranslationMap = {
   licenseNoDocuments: "Inga dokument",
   licenseNoPermissions: "Inga tillstånd att visa.",
   licenseNoPreviousVerions: "Inga tidigare versioner.",
-  licenseNumberOfHelpers: "Antal hjälpare",
+  licenseNumberOfAssociateRingers: "Antal hjälpare",
   licensePermissionPeriodClosed:
     "<from></from>{startsAt}<to> till </to>{endsAt}",
   licensePermissionPeriodOpenBackward: "<to>till </to>{endsAt}",

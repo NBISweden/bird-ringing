@@ -337,7 +337,7 @@ class LicenseSequenceSerializer(serializers.HyperlinkedModelSerializer):
     history = serializers.SerializerMethodField()
     license_holder = serializers.CharField(read_only=True)
     license_holder_type = serializers.CharField(read_only=True)
-    helper_count = serializers.IntegerField(read_only=True)
+    associate_ringer_count = serializers.IntegerField(read_only=True)
     status = serializers.ChoiceField(
         choices=LicenseStatusChoices, source="get_status_display"
     )
@@ -353,7 +353,7 @@ class LicenseSequenceSerializer(serializers.HyperlinkedModelSerializer):
             "status",
             "license_holder",
             "license_holder_type",
-            "helper_count",
+            "associate_ringer_count",
             "methods",
             "last_email_sent_at",
         ]
@@ -404,7 +404,7 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
             "status",
             "license_holder",
             "license_holder_type",
-            "helper_count",
+            "associate_ringer_count",
             "methods",
             "last_email_sent_at",
             "status_label",
@@ -451,11 +451,11 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
                     output_field=models.CharField(),
                 )
             ),
-            helper_count=models.Count(
+            associate_ringer_count=models.Count(
                 "instances__actors__actor",
                 filter=models.Q(
                     instances__version=0,
-                    instances__actors__role=LicenseRoleChoices.HELPER,
+                    instances__actors__role=LicenseRoleChoices.ASSOCIATE_RINGER,
                 ),
                 distinct=True,
             ),
@@ -576,7 +576,7 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
         try:
             zip_bytes = service.create_zip_with_license_card_pdfs(
                 licenses=licenses,
-                allowed_roles=(LicenseRoleChoices.RINGER, LicenseRoleChoices.HELPER),
+                allowed_roles=(LicenseRoleChoices.RINGER, LicenseRoleChoices.ASSOCIATE_RINGER),
             )
         except CardNoCurrentLicense as e:
             return Response({"detail": str(e)}, status=404)
@@ -605,7 +605,7 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
                 licenses=licenses,
                 created_by=request.user,
                 updated_by=request.user,
-                allowed_roles=(LicenseRoleChoices.RINGER, LicenseRoleChoices.HELPER),
+                allowed_roles=(LicenseRoleChoices.RINGER, LicenseRoleChoices.ASSOCIATE_RINGER),
             )
         except CardNoCurrentLicense as e:
             return Response({"detail": str(e)}, status=404)
@@ -750,7 +750,7 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
                 licenses=licenses,
                 created_by=request.user,
                 updated_by=request.user,
-                allowed_roles=(LicenseRoleChoices.RINGER, LicenseRoleChoices.HELPER),
+                allowed_roles=(LicenseRoleChoices.RINGER, LicenseRoleChoices.ASSOCIATE_RINGER),
             )
         except PermitNoCurrentLicense as e:
             return Response({"detail": str(e)}, status=404)
@@ -775,7 +775,7 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
         try:
             zip_bytes = service.create_zip_with_permit_docx_files(
                 licenses=licenses,
-                allowed_roles=(LicenseRoleChoices.RINGER, LicenseRoleChoices.HELPER),
+                allowed_roles=(LicenseRoleChoices.RINGER, LicenseRoleChoices.ASSOCIATE_RINGER),
             )
         except PermitNoCurrentLicense as e:
             return Response({"detail": str(e)}, status=404)
