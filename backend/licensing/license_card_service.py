@@ -6,7 +6,6 @@ from typing import Optional, Iterable
 from django.http import HttpResponse
 
 import hashlib
-import json
 import io
 import zipfile
 
@@ -19,7 +18,7 @@ from licensing.models import (
     LicenseDocument,
     DocumentTypeChoices,
 )
-
+from licensing.serializers import json_serialize
 from licensing.license_renderer import (
     LicenseCardRenderer,
     RenderRequest,
@@ -117,8 +116,6 @@ class LicenseCardService:
             "template": str(get_template_path("LICENSING_CARD_TEMPLATE")),
 
             "sequence_mnr": lic.sequence.mnr,
-            "license_version": lic.version,
-            "license_id": lic.id,
             "actor_id": actor.id,
             "actor_full_name": actor.full_name,
 
@@ -130,7 +127,7 @@ class LicenseCardService:
         }
 
     def _fingerprint(self, payload: dict) -> str:
-        raw = json.dumps(payload, sort_keys=True, ensure_ascii=False).encode("utf-8")
+        raw = json_serialize(payload).encode("utf-8")
         return hashlib.sha256(raw).hexdigest()
 
     @transaction.atomic
@@ -159,38 +156,30 @@ class LicenseCardService:
 
         # If current doc already exists with same fingerprint -> reuse it
         existing = LicenseDocument.objects.filter(
-            license=lic,
+            license__sequence__mnr__icontains=lic.sequence.mnr,
             actor=actor,
             type=DocumentTypeChoices.LICENSE,
-            is_current=True,
             fingerprint=fp,
         ).order_by("-created_at").first()
 
         if existing:
+            lic.documents.add(existing)
             return existing
 
         rendered = self.render_pdf_for_license_and_actor(lic=lic, actor=actor, allowed_roles=allowed_roles)
-
-        # Archive previous current docs for this actor+license
-        LicenseDocument.objects.filter(
-            license=lic,
-            actor=actor,
-            type=DocumentTypeChoices.LICENSE,
-            is_current=True,
-        ).update(is_current=False)
 
         # Store new document (keep old docs for archive)
         doc = LicenseDocument.objects.create(
             created_by=created_by,
             updated_by=updated_by,
             actor=actor,
-            license=lic,
             type=DocumentTypeChoices.LICENSE,
             data=rendered.pdf_bytes,
             reference=rendered.filename,
+            is_permanent=False,
             fingerprint=fp,
-            is_current=True,
         )
+        lic.documents.add(doc)
         return doc
 
     def batch_get_or_create_license_card_documents(
@@ -259,7 +248,7 @@ class LicenseCardService:
 
                     if not doc:
                         raise ValueError(
-                            f"License card PDF(s) missing for mnr {lic.sequence.mnr}. "
+                            f"License card PDF(s) missing for mnr {lic.sequence.mnr} {lic.version}. "
                             "Generate all license cards for your selected MNRs before creating ZIP."
                         )
 
@@ -285,11 +274,9 @@ class LicenseCardService:
             allowed_roles=allowed_roles,
         )
 
-        return LicenseDocument.objects.filter(
-            license=lic,
+        return lic.documents.filter(
             actor=actor,
             type=DocumentTypeChoices.LICENSE,
-            is_current=True,
         ).order_by("-created_at").first()
 
     def _get_license_relation(

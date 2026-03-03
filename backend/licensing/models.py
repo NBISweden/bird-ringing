@@ -1,11 +1,10 @@
 from django.db import models
+from django.db.models import Max
 from django.contrib.auth.models import User
 from django.core.validators import MinLengthValidator
 from django.template.defaultfilters import slugify
 import hashlib
-import json
-import datetime
-import decimal
+from .serializers import json_serialize
 
 
 class ChangeTracking(models.Model):
@@ -130,6 +129,21 @@ class LicenseSequence(ChangeTracking):
         max_length=4, validators=[MinLengthValidator(limit_value=4)], unique=True
     )
     status = models.PositiveIntegerField(choices=LicenseStatusChoices)
+    latest = models.ForeignKey("License", null=True, on_delete=models.SET_NULL, related_name='+')
+
+    def commit(self, current):
+        current = License.objects.get(pk=current.pk)
+        if current is None:
+            raise ValueError("No current license")
+        
+        if self.latest is None or not self.latest.is_equal(current):
+            last_version = License.objects.filter(sequence__mnr=self.mnr).aggregate(
+                last_version=Max("version", default=0)
+            )["last_version"]
+            self.latest = current.copy_to_new_version(last_version + 1)
+            self.save()
+        
+        return self.latest
 
     @property
     def current(self):
@@ -137,6 +151,41 @@ class LicenseSequence(ChangeTracking):
 
     def __str__(self):
         return self.mnr
+
+
+class LicenseDocument(ChangeTracking):
+    """
+    A License Document describes and references documents related to a
+    license. This can be general documents or system generated license files.
+
+    A license document should generally not be updated but references may be
+    as long as they belong to the active license instance.
+    """
+
+    is_permanent = models.BooleanField()
+    actor = models.ForeignKey(
+        Actor, on_delete=models.PROTECT, related_name="documents", null=True
+    )
+    type = models.PositiveIntegerField(choices=DocumentTypeChoices)
+    data = models.BinaryField(
+        null=True
+    )  # TODO: This might not be the best solution but let's try for now
+    reference = models.CharField(max_length=2048, blank=True, default="")
+
+    fingerprint = models.CharField(max_length=64, blank=True, default="", db_index=True)
+
+    def copy(self):
+        self.pk = None
+        self.save()
+        return self
+
+    def __str__(self):
+        type_str = DocumentTypeChoices(self.type).label
+        return (
+            f"doc: ({self.actor}): {self.reference}: {type_str}"
+            if self.actor
+            else f"doc: {self.reference}: {type_str}"
+        )
 
 
 class License(ChangeTracking):
@@ -154,13 +203,14 @@ class License(ChangeTracking):
 
     version = (
         models.PositiveIntegerField()
-    )  # Value zero is the current editable version
+    )
     sequence = models.ForeignKey(
         LicenseSequence, on_delete=models.PROTECT, related_name="instances"
     )
     location = models.TextField()
     description = models.TextField()
     report_status = models.PositiveIntegerField(choices=ReportStatusChoices)
+    documents = models.ManyToManyField(LicenseDocument, blank=True)
 
     starts_at = models.DateField()
     ends_at = models.DateField()
@@ -175,34 +225,57 @@ class License(ChangeTracking):
     @property
     def editable(self):
         return self.version == 0
+    
+    def save(self, *args, **kwargs):
+        if self.pk and not self.editable:
+            raise ValueError(f"Only current license is editable {self.id} {self.version}")
+        super().save(*args, **kwargs)
 
     def copy_to_new_version(
         self,
         version: int,
-        include_actors: bool = True,
-        include_documents: bool = True,
-        include_permissions: bool = True,
     ):
-        actor_relations = (
-            [actor_relation for actor_relation in self.actors.all()]
-            if include_actors
-            else []
+        base = License.objects.get(pk=self.pk)
+        actor_relations = [actor_relation for actor_relation in base.actors.all()]
+        documents = [document for document in base.documents.filter(is_permanent=True)]
+        permissions = [permission for permission in base.permissions.all()]
+
+        base.pk = None
+        base.version = version
+        base.save()
+
+        base.documents.set(documents)
+        for item in [*actor_relations, *permissions]:
+            item.copy_to(license=base)
+
+        return base
+    
+    def is_equal(self, other):
+        return self.dump() == other.dump()
+
+    def dump(self):
+        """
+        The result of the dump function is intended to be used as a way of 
+        comparing versions of licenses. It should contain all relevant information
+        that would change the interpretation of a license. LicenseRelations are 
+        intentionally ignored when making a comparision since it generally does
+        not change the license content.
+        """
+        return (
+            self.location,
+            self.description,
+            self.report_status,
+            self.starts_at,
+            self.ends_at,
+            set((
+                document
+                for document in self.documents.filter(is_permanent=True).values_list("id", flat=True)
+            )),
+            set((
+                permission.dump()
+                for permission in self.permissions.all()
+            )),
         )
-
-        documents = (
-            [document for document in self.documents.all()] if include_documents else []
-        )
-
-        permissions = [permission for permission in self.permissions.all()]
-
-        self.pk = None
-        self.version = version
-        self.save()
-
-        for item in [*actor_relations, *documents, *permissions]:
-            item.copy_to(license=self)
-
-        return self
 
     def __str__(self):
         return f"{self.sequence.mnr}:{self.version}"
@@ -254,10 +327,11 @@ class LicenseRelation(ChangeTracking):
         return self.license.sequence.mnr
 
     def copy_to(self, license: License):
-        self.pk = None
-        self.license = license
-        self.save()
-        return self
+        base = LicenseRelation.objects.get(pk=self.pk)
+        base.pk = None
+        base.license = license
+        base.save()
+        return base
 
     class Meta:
         constraints = [
@@ -286,54 +360,6 @@ class LicenseCommunication(ChangeTracking):
     type = models.PositiveIntegerField(choices=CommunicationTypeChoices)
     status = models.PositiveIntegerField(choices=CommunicationStatusChoices)
     note = models.CharField(max_length=512, blank=True, default="")
-
-
-class LicenseDocument(ChangeTracking):
-    """
-    A License Document describes and references documents related to a
-    license. This can be general documents or system generated license files.
-
-    A license document should generally not be updated but references may be
-    as long as they belong to the active license instance.
-    """
-
-    actor = models.ForeignKey(
-        Actor, on_delete=models.PROTECT, related_name="documents", null=True
-    )
-    license = models.ForeignKey(
-        License, on_delete=models.CASCADE, related_name="documents"
-    )
-    type = models.PositiveIntegerField(choices=DocumentTypeChoices)
-    data = models.BinaryField(
-        null=True
-    )  # TODO: This might not be the best solution but let's try for now
-    reference = models.CharField(max_length=2048, blank=True, default="")
-
-    fingerprint = models.CharField(max_length=64, blank=True, default="", db_index=True)
-    is_current = models.BooleanField(default=True, db_index=True)
-
-    class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                fields=["license", "actor", "type"],
-                condition=models.Q(is_current=True),
-                name="unique_current_doc_per_license_actor_type",
-            )
-        ]
-
-    def copy_to(self, license: License):
-        self.pk = None
-        self.license = license
-        self.save()
-        return self
-
-    def __str__(self):
-        type_str = DocumentTypeChoices(self.type).label
-        return (
-            f"{self.license} ({self.actor}) {type_str}"
-            if self.actor
-            else f"{self.license} {type_str}"
-        )
 
 
 class LicensePermissionType(ChangeTracking):
@@ -400,33 +426,62 @@ class LicensePermission(ChangeTracking):
     ends_at = models.DateField(blank=True, null=True)
 
     def copy_to(self, license: License):
-        properties = list(self.properties.all())
-        species_list = list(self.species_list.all())
-        self.pk = None
-        self.license = license
-        self.save()
-        self.properties.set(properties)
-        self.species_list.set(species_list)
-        return self
+        base = LicensePermission.objects.get(pk=self.pk)
+        properties = list(base.properties.all())
+        species_list = list(base.species_list.all())
+        base.pk = None
+        base.license = license
+        base.save()
+        base.properties.set(properties)
+        base.species_list.set(species_list)
+        return base
+    
+    def dump(self):
+        return (
+            self.type.id,
+            self.location,
+            self.description,
+            self.starts_at,
+            self.ends_at,
+            tuple((
+                species
+                for species in self.species_list.order_by("id").values_list("id", flat=True)
+            )),
+            tuple((
+                prop
+                for prop in self.properties.order_by("id").values_list("id", flat=True)
+            ))
+        )
 
 
-def json_serialize_defaults(value):
-    if isinstance(value, datetime.date):
-        return value.isoformat()
-    elif isinstance(value, datetime.datetime):
-        return value.isoformat()
-    elif isinstance(value, decimal.Decimal):
-        return float(value)
-    elif isinstance(value, set):
-        return list(value)
-    elif isinstance(value, models.Model):
-        return str(value)
-    else:
-        raise TypeError(f"No default serializer for {type(value).__name__}")
+class PermitDnr(ChangeTracking):
+    """
+    Stores the DNR (diarienummer) value used for permit rendering.
+    Selection logic:
+      - choose a row where starts_at <= date <= ends_at and is_active=True
+      - if multiple match, pick the most recent (largest starts_at, then created_at)
+      - if none match: error (permit must not be created)
+    """
 
+    dnr_number = models.CharField(max_length=64)  # keep it generic for now
+    starts_at = models.DateField()
+    ends_at = models.DateField()
+    is_active = models.BooleanField(default=True, db_index=True)
 
-def json_serialize(data):
-    return json.dumps(data, indent=4, default=json_serialize_defaults)
+    class Meta:
+        constraints = [
+            # ensure starts_at itself is unique to avoid ambiguity
+            models.UniqueConstraint(
+                fields=["starts_at"],
+                name="unique_permit_dnr_starts_at",
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["is_active", "starts_at", "ends_at"]),
+        ]
+
+    def __str__(self):
+        return f"{self.dnr_number} ({self.starts_at}-{self.ends_at})"
 
 
 class ImportModelManager(models.Manager):
@@ -441,6 +496,8 @@ class ImportModelManager(models.Manager):
                 for field, value in kwargs.items():
                     setattr(item, field, value)
                 item.save()
+                item_import.fingerprint = fingerprint
+                item_import.save()
             return (item_import, False)
 
         except self.model.DoesNotExist:
@@ -470,6 +527,9 @@ class ImportModelManager(models.Manager):
     def get_item_model(self):
         item_field = self.model._meta.get_field("item")
         return item_field.remote_field.model
+    
+    def get_key(self):
+        raise NotImplementedError("ImportModelManager.get_key")
 
 
 class ImportTracking(models.Model):
@@ -516,39 +576,46 @@ class LicenseSequenceImport(ImportTracking):
         return slugify(mnr)
 
 
+class LicenseImportModelManager(ImportModelManager):
+    def get_or_commit(self, license, context):
+        key = self.model.get_context_key(license, context)
+        try:
+            item_import = self.get(key=key)
+            return (item_import, False)
+        
+        except self.model.DoesNotExist:
+            item = license.sequence.commit(license)
+            try:
+                item_import = self.get(item=item)
+                return (item_import, False)
+            except self.model.DoesNotExist:
+                item_import = self.register(item, key)
+                return (item_import, True)
+
+    def register(self, item, key):
+        item_import = self.create(
+            key=key,
+            item=item,
+            fingerprint=self.get_fingerprint({
+                "mnr": item.sequence.mnr,
+                "version": item.version
+            })
+        )
+        return item_import
+
+
 class LicenseImport(ImportTracking):
     item = models.ForeignKey(License, on_delete=models.CASCADE)
+    objects = LicenseImportModelManager()
 
     @staticmethod
-    def get_key(**license):
-        sequence = license["sequence"]
-        return slugify(sequence.mnr)
-
-class PermitDnr(ChangeTracking):
-    """
-    Stores the DNR (diarienummer) value used for permit rendering.
-    Selection logic:
-      - choose a row where starts_at <= date <= ends_at and is_active=True
-      - if multiple match, pick the most recent (largest starts_at, then created_at)
-      - if none match: error (permit must not be created)
-    """
-
-    dnr_number = models.CharField(max_length=64)  # keep it generic for now
-    starts_at = models.DateField()
-    ends_at = models.DateField()
-    is_active = models.BooleanField(default=True, db_index=True)
-
-    class Meta:
-        constraints = [
-            # ensure starts_at itself is unique to avoid ambiguity
-            models.UniqueConstraint(
-                fields=["starts_at"],
-                name="unique_permit_dnr_starts_at",
-            ),
-        ]
-        indexes = [
-            models.Index(fields=["is_active", "starts_at", "ends_at"]),
-        ]
-
-    def __str__(self):
-        return f"{self.dnr_number} ({self.starts_at}-{self.ends_at})"
+    def get_key(**license_data):
+        mnr = license_data["sequence"].mnr
+        return slugify(f"{mnr}")
+    
+    @staticmethod
+    def get_context_key(lic, context=None):
+        key = LicenseImport.get_key(
+            sequence=lic.sequence,
+        )
+        return f"{key}-{context}"

@@ -2,14 +2,12 @@ from __future__ import annotations
 
 from typing import Optional, Iterable
 import hashlib
-import json
 import io
 import zipfile
 import datetime
 
-from django.db import transaction, IntegrityError
+from django.db import transaction
 from django.utils.text import slugify
-from django.utils import timezone
 
 from licensing.models import (
     License,
@@ -22,6 +20,7 @@ from licensing.models import (
 from licensing.license_renderer import get_template_path
 from licensing.permit_renderer import PermitDocxRenderer, PermitRenderRequest
 from licensing.utils import docx_to_pdf_bytes
+from licensing.serializers import json_serialize
 
 
 class NoCurrentLicense(Exception):
@@ -66,7 +65,7 @@ class PermitService:
         return f"permit-{identifier}" + (f"-{name}.pdf" if name else ".pdf")
 
     def _fingerprint(self, payload: dict) -> str:
-        raw = json.dumps(payload, sort_keys=True, ensure_ascii=False).encode("utf-8")
+        raw = json_serialize(payload).encode("utf-8")
         return hashlib.sha256(raw).hexdigest()
 
     def _fingerprint_payload(
@@ -126,7 +125,7 @@ class PermitService:
 
         permissions = self.renderer.get_permissions_for_license(lic)
 
-        render_date = timezone.localdate()
+        render_date = lic.created_at.date()
         dnr_number = self._get_dnr_for_date(d=render_date)
 
         context_fp = self.renderer.build_context_fingerprint(
@@ -138,92 +137,38 @@ class PermitService:
         payload = self._fingerprint_payload(lic=lic, actor=actor, context_fp=context_fp, template_sha256=template_sha256)
         fp = self._fingerprint(payload)
 
-        existing = (
-            LicenseDocument.objects.filter(
-                license=lic,
-                actor=actor,
-                type=DocumentTypeChoices.PERMIT,
-                is_current=True,
-                fingerprint=fp,
-            )
-            .order_by("-created_at")
-            .first()
-        )
+        existing = self.get_permit_document(lic=lic, actor=actor, allowed_roles=allowed_roles)
         if existing:
+            lic.documents.add(existing)
             return existing
-
-        LicenseDocument.objects.filter(
-            license=lic,
-            actor=actor,
-            type=DocumentTypeChoices.PERMIT,
-            is_current=True,
-        ).update(is_current=False)
 
         filename = self.make_permit_filename(lic, actor, allowed_roles=allowed_roles, rel=rel)
 
-        # Create first to get created_at.date
-        try:
-            doc = LicenseDocument.objects.create(
-                created_by=created_by,
-                updated_by=updated_by,
+        docx_bytes = self.renderer.render_docx_bytes(
+            PermitRenderRequest(
+                template_docx_path=template_path,
+                lic=lic,
                 actor=actor,
-                license=lic,
-                type=DocumentTypeChoices.PERMIT,
-                data=None,
-                reference=filename,
-                fingerprint=fp,
-                is_current=True,
-            )
-        except IntegrityError:
-            # Safeguard against race condition where another request created a "current" permit concurrently.
-            # Prefer returning the document with our fingerprint if it exists.
-            current = (
-                LicenseDocument.objects.filter(
-                    license=lic,
-                    actor=actor,
-                    type=DocumentTypeChoices.PERMIT,
-                    is_current=True,
-                    fingerprint=fp,
-                )
-                .order_by("-created_at")
-                .first()
-            )
-            if current:
-                return current
+                date=render_date,
+            ),
+            permissions=permissions,
+            dnr_number=dnr_number,
+        )
 
-            current = (
-                LicenseDocument.objects.filter(
-                    license=lic,
-                    actor=actor,
-                    type=DocumentTypeChoices.PERMIT,
-                    is_current=True,
-                )
-                .order_by("-created_at")
-                .first()
-            )
-            if current:
-                return current
-            raise
+        # Create first to get created_at.date
+        doc = LicenseDocument.objects.create(
+            created_by=created_by,
+            updated_by=updated_by,
+            actor=actor,
+            license=lic,
+            type=DocumentTypeChoices.PERMIT,
+            reference=filename,
+            fingerprint=fp,
+            is_permanent=False,
+            data=docx_to_pdf_bytes(docx_bytes)
+        )
 
-        try:
-            docx_bytes = self.renderer.render_docx_bytes(
-                PermitRenderRequest(
-                    template_docx_path=template_path,
-                    lic=lic,
-                    actor=actor,
-                    date=render_date,
-                ),
-                permissions=permissions,
-                dnr_number=dnr_number,
-            )
-            pdf_bytes = docx_to_pdf_bytes(docx_bytes)
-        except Exception:
-            # Avoid leaving a current document with missing data in case rendering fails
-            doc.delete()
-            raise
-
-        doc.data = pdf_bytes
-        doc.save(update_fields=["data", "updated_at"])
+        lic.documents.add(doc)
         return doc
 
     def get_permit_document(
@@ -235,16 +180,11 @@ class PermitService:
     ) -> Optional[LicenseDocument]:
         self._get_license_relation(lic=lic, actor=actor, allowed_roles=allowed_roles)
 
-        return (
-            LicenseDocument.objects.filter(
-                license=lic,
-                actor=actor,
-                type=DocumentTypeChoices.PERMIT,
-                is_current=True,
-            )
-            .order_by("-created_at")
-            .first()
-        )
+        return lic.documents.filter(
+            actor=actor,
+            type=DocumentTypeChoices.PERMIT,
+            is_permanent=False,
+        ).order_by("-created_at").first()
 
     def batch_get_or_create_permit_documents(
         self,
