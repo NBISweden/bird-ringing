@@ -103,26 +103,29 @@ class _EmailTestBase(TestCase):
 
     def _add_license_documents(self, actors, licenses):
         for (actor, lic) in zip(actors, licenses):
-            LicenseDocument.objects.create(
-                is_current=True,
-                actor=actor,
-                license=lic,
-                reference=self._license_name(lic, actor),
-                data=b"b44df00d",
-                type=DocumentTypeChoices.LICENSE,
-                created_by=self.user_with_access,
-                updated_by=self.user_with_access,
+            lic.documents.add(
+                LicenseDocument.objects.create(
+                    actor=actor,
+                    reference=self._license_name(lic, actor),
+                    data=b"b44df00d",
+                    type=DocumentTypeChoices.LICENSE,
+                    created_by=self.user_with_access,
+                    updated_by=self.user_with_access,
+                    is_permanent=False,
+                )
             )
         for (actor, lic) in zip(actors, reversed(licenses)):
-            LicenseDocument.objects.create(
-                is_current=True,
-                actor=actor,
-                license=lic,
-                reference=self._license_name(lic, actor),
-                data=b"b44df00d",
-                type=DocumentTypeChoices.LICENSE,
-                created_by=self.user_with_access,
-                updated_by=self.user_with_access,
+            lic.documents.add(
+                LicenseDocument.objects.create(
+                    actor=actor,
+                    license=lic,
+                    reference=self._license_name(lic, actor),
+                    data=b"b44df00d",
+                    type=DocumentTypeChoices.LICENSE,
+                    created_by=self.user_with_access,
+                    updated_by=self.user_with_access,
+                    is_permanent=False,
+                )
             )
 
     def _with_access(self):
