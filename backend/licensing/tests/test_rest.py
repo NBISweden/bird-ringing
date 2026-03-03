@@ -137,7 +137,7 @@ class LicenseDocumentEmailTests(_EmailTestBase):
         response = self.client.put(url)
         self.assertEqual(response.status_code, 400)
         self.assertEqual(
-            {"detail": f"No license card document available for {test_mnr}:R001"}, 
+            {"detail": f"Missing license card document for bundle: mnr {test_mnr}, actor {self.actors[2].id}."},
             response.json(),
             "The action fails if there are missing documents"
         )
@@ -153,14 +153,16 @@ class LicenseDocumentEmailTests(_EmailTestBase):
                 "messages_sent": 4,
                 "failed_messages": [],
                 "skipped_messages": [],
+                "ringer_bundle_messages_sent": 2,
             }, 
             response.json(),
             "All licenses are prepared and sent"
         )
     
     def test_send_only_to_actors_with_email(self):
-        self.actors[0].email = ""
-        self.actors[0].save()
+        # We need a non-empty email for the ringer so bundling can still be sent out.
+        self.actors[2].email = ""
+        self.actors[2].save()
         self._add_license_documents(self.actors, self.licenses)
         self._with_access()
         url = self._send_mail_url(["0001", "0002"], True)
@@ -172,11 +174,12 @@ class LicenseDocumentEmailTests(_EmailTestBase):
                 "failed_messages": [],
                 "skipped_messages": [
                     {
-                        "actor_id": self.actors[0].id,
-                        "mnr": "0001",
+                        "actor_id": self.actors[2].id,
+                        "mnr": "0002",
                         "reason": "missing_email",
                     }
                 ],
+                "ringer_bundle_messages_sent": 2,
             }, 
             response.json(),
             "Users without email are ignored when batch sending"
@@ -189,12 +192,22 @@ class LicenseDocumentEmailTests(_EmailTestBase):
         response = self.client.put(url)
         self.assertEqual(response.status_code, 200)
         today_str = str(datetime.date.today())
+        bundle_suffix = "-helpers-documents.zip"
+        actor_messages = [
+            m for m in mail.outbox
+            if not any(filename.endswith(bundle_suffix) for (filename, _data, _mimetype) in m.attachments)
+        ]
+
+        bundle_messages = [
+            m for m in mail.outbox
+            if any(filename.endswith(bundle_suffix) for (filename, _data, _mimetype) in m.attachments)
+        ]
 
         actor_license_combos = list(zip([*self.actors, *self.actors], [*self.licenses, *reversed(self.licenses)]))
         self.assertEqual(
             sorted([
                 message.body
-                for message in mail.outbox
+                for message in actor_messages
             ]),
             sorted([
                 f"{lic.sequence.mnr} {actor.full_name} {today_str}  license: {self._license_name(lic, actor)}"
@@ -206,7 +219,7 @@ class LicenseDocumentEmailTests(_EmailTestBase):
         self.assertEqual(
             sorted([
                 (alternative.content, alternative.mimetype)
-                for message in mail.outbox
+                for message in actor_messages
                 for alternative in message.alternatives
             ]),
             sorted([
@@ -222,7 +235,7 @@ class LicenseDocumentEmailTests(_EmailTestBase):
         self.assertEqual(
             sorted([
                 [(filename, mimetype) for (filename, _data, mimetype) in message.attachments]
-                for message in mail.outbox
+                for message in actor_messages
             ], key=lambda a: a[0]),
             sorted([
                 [(self._license_name(lic, actor), "application/pdf")]
@@ -230,6 +243,37 @@ class LicenseDocumentEmailTests(_EmailTestBase):
             ], key=lambda a: a[0]),
             "Make sure that the license documents are attached"
         )
+
+        # Assert bundle emails exist (one per license in this request)
+        self.assertEqual(len(self.licenses), len(bundle_messages), "Expected one ringer bundle e-mail per license.")
+
+        # Assert that all expected documents are included in the bundles (bundle skips ringers)
+        card_service = LicenseCardService()
+        licenses_by_mnr = {lic.sequence.mnr: lic for lic in self.licenses}
+        for msg in bundle_messages:
+            self.assertEqual(1, len(msg.attachments))
+
+            zip_filename, data, mimetype = msg.attachments[0]
+            self.assertTrue(zip_filename.endswith("-helpers-documents.zip"))
+            self.assertEqual("application/zip", mimetype)
+
+            mnr = zip_filename.split("-helpers-documents.zip")[0]
+            self.assertIn(mnr, licenses_by_mnr)
+            lic = licenses_by_mnr[mnr]
+
+            expected_names = sorted(
+                card_service.make_license_card_filename(lic, rel.actor)
+                for rel in lic.actors.filter(role=LicenseRoleChoices.HELPER).select_related("actor")
+            )
+
+            with zipfile.ZipFile(io.BytesIO(data), "r") as zf:
+                names = sorted(zf.namelist())
+
+            self.assertEqual(
+                expected_names,
+                names,
+                f"Unexpected bundle ZIP contents for mnr {mnr}.",
+            )
     
     def test_fail_with_no_mnrs(self):
         self._add_license_documents(self.actors, self.licenses)
@@ -253,7 +297,56 @@ class LicenseDocumentEmailTests(_EmailTestBase):
             {"mnrs": f"Unknown mnr(s): {test_mnr}"},
             response.json(),
         )
-    
+
+    def test_batch_bundle_reports_failure(self):
+        self._with_access()
+        self._add_license_documents(self.actors, self.licenses)
+
+        url = self._send_mail_url(["0001", "0002"], True)
+        original_send = CommunicationService.send_email_messages
+
+        def send_side_effect(self, messages, *args, **kwargs):
+            if kwargs.get("try_message") == "Tried to send ringer bundle e-mail":
+                return [{"to": ["ringer@example.com"], "details": "SMTP failed"}]
+            return original_send(self, messages, *args, **kwargs)
+
+        with patch.object(CommunicationService, "send_email_messages", new=send_side_effect):
+            resp = self.client.put(url)
+
+        self.assertEqual(resp.status_code, 422)
+        self.assertEqual(
+            {
+                "messages_sent": 4,
+                "failed_messages": [],
+                "skipped_messages": [],
+                "ringer_bundle_failed_messages": [{"to": ["ringer@example.com"], "details": "SMTP failed"}],
+            },
+            resp.json(),
+        )
+
+    def test_batch_bundle_connect_error(self):
+        self._with_access()
+        self._add_license_documents(self.actors, self.licenses)
+
+        url = self._send_mail_url(["0001", "0002"], True)
+        original_send = CommunicationService.send_email_messages
+
+        def send_side_effect(self, messages, *args, **kwargs):
+            if kwargs.get("try_message") == "Tried to send ringer bundle e-mail":
+                raise OSError("connection failed")
+            return original_send(self, messages, *args, **kwargs)
+
+        with patch.object(CommunicationService, "send_email_messages", new=send_side_effect):
+            resp = self.client.put(url)
+
+        self.assertEqual(resp.status_code, 503)
+
+        body = resp.json()
+        self.assertEqual(4, body["messages_sent"])
+        self.assertEqual([], body["failed_messages"])
+        self.assertEqual([], body["skipped_messages"])
+        self.assertEqual("Failed to connect to mail server", body["ringer_bundle_error"])
+
     def test_communication_log_was_added(self):
         self._add_license_documents(self.actors, self.licenses)
         self._with_access()
@@ -262,17 +355,18 @@ class LicenseDocumentEmailTests(_EmailTestBase):
         self.assertEqual(response.status_code, 200)
         
         for (actor, lic) in zip(self.actors, self.licenses):
+            expected = 2 if lic.actors.filter(actor=actor, role=LicenseRoleChoices.RINGER).exists() else 1
             self.assertEqual(
-                1,
+                expected,
                 LicenseCommunication.objects.filter(actor=actor, license=lic).count(),
-                "Make sure that there is exactly one communication object per actor and license combination."
+                "Make sure that communications are tracked for both individual and bundle e-mails."
             )
             communications = LicenseCommunication.objects.order_by("created_at").filter(actor=actor, license=lic)
-            
+
             for communication in communications:
-                self.assertEqual(
+                self.assertIn(
                     communication.note,
-                    "E-mail with license sent"
+                    {"E-mail with license sent", "Ringer bundle e-mail sent"},
                 )
                 self.assertEqual(
                     communication.status,
