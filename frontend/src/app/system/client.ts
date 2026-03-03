@@ -202,4 +202,29 @@ export class Client {
       { method: "PUT", headers: csrf ? { "X-CSRFToken": csrf } : {} },
     );
   }
+
+  async sendLicenseEmailsForActors(
+    mnr: string,
+    actorIds: number[],
+    includeCard: boolean,
+    includePermit: boolean,
+    notifyRinger?: boolean,
+  ): Promise<SendEmailResult> {
+    const qs = new URLSearchParams({actor_ids: actorIds.join(",")});
+    if (includeCard) {
+      qs.set("include_card", "1");
+    }
+    if (includePermit) {
+      qs.set("include_permit", "1");
+    }
+    if (notifyRinger) {
+      qs.set("notify_ringer", "1");
+    }
+
+    const csrf = getCookie("csrftoken");
+    return this.fetchJson<SendEmailResult>(
+      `license_sequence/${encodeURIComponent(mnr)}/send-license-emails/?${qs.toString()}`,
+      { method: "PUT", headers: csrf ? { "X-CSRFToken": csrf } : {} },
+    );
+  }
 }

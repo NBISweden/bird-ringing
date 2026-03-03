@@ -6,9 +6,10 @@ import {
   LicenseInstance,
 } from "@/app/system/common";
 import { useClient } from "../app/system/contexts";
-import { useSendLicenseEmailAction } from "../app/system/licenses/actions";
+import { useSendLicenseEmailAction, useSendLicenseEmailForActorsAction } from "../app/system/licenses/actions";
 import { useTranslation } from "@/app/system/internationalization";
 import { LicensePermissionItem } from "./LicensePermissionItem";
+import { useMemo, useState } from "react";
 type LicenceViewProps = {
   license: LicenseInstance;
   mnr: string;
@@ -17,7 +18,15 @@ type LicenceViewProps = {
 export function LicenceView({ license, mnr }: LicenceViewProps) {
   const client = useClient();
   const sendEmailAction = useSendLicenseEmailAction(client);
+  const sendEmailForActorsAction = useSendLicenseEmailForActorsAction(client);
   const { t, format } = useTranslation();
+
+  const [selectedActorIds, setSelectedActorIds] = useState(new Set<number>());
+
+  const actorIds = useMemo(() => {
+    return (license.actors || []).map((rel) => rel.actor.id);
+  }, [license.actors]);
+
   return (
     <>
       <div className="mb-4">
@@ -85,7 +94,11 @@ export function LicenceView({ license, mnr }: LicenceViewProps) {
               </h2>
               <button
                 className="btn btn-secondary col-5 col-sm-5 col-md-2"
-                onClick={() => sendEmailAction(new Set([mnr]))}
+                onClick={() =>
+                  selectedActorIds.size > 0
+                    ? sendEmailForActorsAction(mnr, Array.from(selectedActorIds))
+                    : sendEmailAction(new Set([mnr]))
+                }
               >
                 {t("licenseSendLicenses")}
               </button>
@@ -99,8 +112,28 @@ export function LicenceView({ license, mnr }: LicenceViewProps) {
                         {rel.role}
                       </div>
                       <div className="col-12 col-md-9">
-                        <i className="bi bi-person text-primary me-1" />
-                        {rel.actor.full_name}({rel.mednr})
+                        <div className="d-flex align-items-center">
+                          <input
+                            className="form-check-input me-2"
+                            type="checkbox"
+                            checked={selectedActorIds.has(rel.actor.id)}
+                            onChange={(e) => {
+                              const checked = e.target.checked;
+                              const id = rel.actor.id;
+                              setSelectedActorIds((prev) => {
+                                const next = new Set(prev);
+                                if (checked) {
+                                  next.add(id);
+                                } else {
+                                  next.delete(id);
+                                }
+                                return next;
+                              });
+                            }}
+                          />
+                          <i className="bi bi-person text-primary me-1" />
+                          {rel.actor.full_name}({rel.mednr})
+                        </div>
                       </div>
                     </div>
                   </li>

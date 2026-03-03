@@ -2,7 +2,7 @@ import { useCallback } from "react";
 import { ClientContext, useClient, useModalsContext } from "../contexts";
 import { Client } from "../client";
 import Spinner from "@/components/Spinner";
-import { SendLicenseModalContent } from "@/components/SendLicenseModalContent";
+import { SendLicenseModalContent, SendLicenseForActorsModalContent } from "@/components/SendLicenseModalContent";
 import { Alert } from "@/components/Alert";
 import { downloadData } from "../utils";
 import useSWRImmutable from "swr/immutable";
@@ -353,6 +353,53 @@ export function useSendLicenseEmailAction(client: Client) {
           {
             label: t("licenseSendLicenses"),
             action: () => sendEmails(itemIds),
+            type: "primary",
+          },
+        ],
+      });
+    },
+    [modalStack, t, sendEmails],
+  );
+}
+
+export function useSendLicenseEmailForActorsAction(client: Client) {
+  const modalStack = useModalsContext();
+  const { t } = useTranslation();
+
+  const sendEmails = useCallback(
+    (mnr: string, actorIds: number[]) => {
+      modalStack.add({
+        title: t("licenseSendLicenses"),
+        content: (
+          <ClientContext.Provider value={client}>
+            <SendLicenseForActorsModalContent mnr={mnr} actorIds={actorIds} />
+          </ClientContext.Provider>
+        ),
+        actions: [{ label: t("okModal"), action: () => {}, type: "primary" }],
+      });
+    },
+    [modalStack, client, t],
+  );
+
+  return useCallback(
+    (mnr: string, actorIds: number[]) => {
+      if (actorIds.length === 0) return;
+
+      modalStack.add({
+        title: t("licenseSendLicenses"),
+        content: (
+          <>
+            <p>{t("licenseSendLicensesConfirmText")}</p>
+            <p>
+              <strong>{t("licenseSelectedLicenses")}:</strong> {mnr}
+            </p>
+          </>
+        ),
+        actions: [
+          { label: t("abortModal"), action: () => {}, type: "outline-primary" },
+          {
+            label: t("licenseSendLicenses"),
+            action: () => sendEmails(mnr, actorIds),
             type: "primary",
           },
         ],

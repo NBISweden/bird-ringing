@@ -74,3 +74,76 @@ export function SendLicenseModalContent({
     </>
   );
 }
+
+interface SendLicenseForActorsModalContentProps {
+  mnr: string;
+  actorIds: number[];
+}
+
+export function SendLicenseForActorsModalContent({
+  mnr,
+  actorIds,
+}: SendLicenseForActorsModalContentProps) {
+  const client = useClient();
+  const { t } = useTranslation();
+  const hasSent = useRef(false);
+
+  const includeCard = true;
+  const includePermit = false;
+  const notifyRinger = false;
+
+  async function sendEmails(
+    key: string,
+    { arg }: { arg: { client: Client; mnr: string; actorIds: number[] } },
+  ): Promise<SendEmailResult> {
+    const response = await arg.client.sendLicenseEmailsForActors(
+      arg.mnr,
+      arg.actorIds,
+      includeCard,
+      includePermit,
+      notifyRinger,
+    );
+    return response;
+  }
+
+  const { data, trigger, isMutating, error } = useSWRMutation(
+    "send-license-emails-for-actors",
+    sendEmails,
+  );
+
+  useEffect(() => {
+    if (hasSent.current) return;
+    hasSent.current = true;
+    trigger({ client, mnr, actorIds });
+  });
+
+  return isMutating ? (
+    <>
+      <Spinner />
+      <span className="ms-3">{t("licenseSendingLicenses")}</span>
+    </>
+  ) : error ? (
+    <Alert type="danger">
+      <p>{t("licenseSendLicensesFailed")}</p>
+    </Alert>
+  ) : (
+    <>
+      <div className="alert alert-success">
+        {t("licenseSendLicensesSucceeded", {
+          sent: data?.messages_sent,
+        })}
+      </div>
+
+      {data && data.failed_messages && data.failed_messages.length > 0 && (
+        <div className="alert alert-warning">
+          <p>{t("licenseSendLicensesFailed")}:</p>
+          <ul>
+            {data?.failed_messages.map((msg, idx) => (
+              <li key={idx}>{msg}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </>
+  );
+}
