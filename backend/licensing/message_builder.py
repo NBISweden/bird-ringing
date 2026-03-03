@@ -35,7 +35,7 @@ class MessageBuilder:
         self.template_path = template_path
         self.html_template_path = html_template_path
     
-    def get_message(
+    def build_message(
         self,
         to_addr: str,
         params: dict,
@@ -82,7 +82,7 @@ class LicenseAndPermitMessageBuilder:
         self.message_builder = message_builder
         self.card_service = card_service
     
-    def get_message(self, lic: License, relation: LicenseRelation, include_card: bool = False, include_permit: bool = False) -> EmailMessage:
+    def build_message(self, lic: License, relation: LicenseRelation, include_card: bool = False, include_permit: bool = False) -> EmailMessage:
         email = relation.actor.email
         if not email:
             raise ValueError(f"No email address available for {lic.sequence.mnr}:{relation.mednr}")
@@ -108,7 +108,7 @@ class LicenseAndPermitMessageBuilder:
             *([] if card_attachment is None else [card_attachment]),
             *([] if permit_attachment is None else [permit_attachment])
         ]
-        return self.message_builder.get_message(
+        return self.message_builder.build_message(
             to_addr=email,
             params={
                 "mnr": lic.sequence.mnr,
@@ -178,7 +178,7 @@ class RingerBundleMessageBuilder:
             mimetype="application/zip",
         )
 
-        return self.message_builder.get_message(
+        return self.message_builder.build_message(
             to_addr=ringer_email,
             params={
                 "mnr": lic.sequence.mnr,

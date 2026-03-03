@@ -110,7 +110,7 @@ def _send_license_emails_for_relations(
                 continue
 
             try:
-                msg = message_builder.get_message(
+                msg = message_builder.build_message(
                     lic,
                     relation,
                     include_card,
