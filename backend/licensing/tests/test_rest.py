@@ -86,7 +86,7 @@ class LicenseDocumentEmailTests(TestCase):
             LicenseRelation.objects.create(
                 actor=actor,
                 license=lic,
-                role=LicenseRoleChoices.HELPER,
+                role=LicenseRoleChoices.ASSOCIATE_RINGER,
                 mednr="H001",
                 created_by=self.user_with_access,
                 updated_by=self.user_with_access,

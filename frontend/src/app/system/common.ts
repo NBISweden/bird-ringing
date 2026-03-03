@@ -136,7 +136,7 @@ export type LicenseListItem = {
   status: string;
   license_holder: string;
   license_holder_type: string;
-  helper_count: number;
+  associate_ringer_count: number;
   methods: string;
   last_email_sent_at: string;
 };
