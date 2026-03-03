@@ -385,7 +385,14 @@ export function useSendLicenseEmailForActorsAction(client: Client) {
 
   return useCallback(
     (mnr: string, actors: SelectedActor[]) => {
-      if (actors.length === 0) return;
+      if (actors.length === 0) {
+        modalStack.add({
+          title: t("licenseSendLicenses"),
+          content: <p>{t("licenseNoActorsSelected")}</p>,
+          actions: [{ label: t("okModal"), action: () => {}, type: "primary" }],
+        });
+        return;
+      }
 
       modalStack.add({
         title: t("licenseSendLicenses"),

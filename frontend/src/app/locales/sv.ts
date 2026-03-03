@@ -123,6 +123,7 @@ export const locale: TranslationMap = {
   licenseSendLicensesSelectedActorsConfirmText:
     "Vill du skicka licensdokument till de valda ringmärkarna/hjälparna?",
   licenseSelectedActors: "Valda ringmärkare/hjälpare",
+  licenseNoActorsSelected: "Ingen ringmärkare/hjälpare vald.",
   licenseSendingLicenses: "Skickar licenser...",
   licenseSpecies: "Arter",
   licenseStatus: "Licensstatus",

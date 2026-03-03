@@ -130,6 +130,7 @@ const messagesBase = {
   licenseSendLicensesSelectedActorsConfirmText:
     "Do you want to send license cards to the selected ringers/helpers?",
   licenseSelectedActors: "Selected ringers/helpers",
+  licenseNoActorsSelected: "No ringer/helper selected.",
   licenseStatus: "License status",
   licenseTrappingMethods: "Trapping methods",
   licenseType: "Type",

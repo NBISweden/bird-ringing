@@ -95,17 +95,15 @@ export function LicenceView({ license, mnr }: LicenceViewProps) {
               <button
                 className="btn btn-secondary col-5 col-sm-5 col-md-2"
                 onClick={() =>
-                  selectedActorIds.size > 0
-                    ? sendEmailForActorsAction(
-                        mnr,
-                        license.actors
-                          .filter((rel) => selectedActorIds.has(rel.actor.id))
-                          .map((rel) => ({
-                            id: rel.actor.id,
-                            name: rel.actor.full_name,
-                          })),
-                      )
-                    : sendEmailAction(new Set([mnr]))
+                  sendEmailForActorsAction(
+                    mnr,
+                    license.actors
+                      .filter((rel) => selectedActorIds.has(rel.actor.id))
+                      .map((rel) => ({
+                        id: rel.actor.id,
+                        name: rel.actor.full_name,
+                      })),
+                  )
                 }
               >
                 {t("licenseSendLicenses")}
