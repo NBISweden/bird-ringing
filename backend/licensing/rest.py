@@ -776,13 +776,40 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
         except serializers.ValidationError as e:
             return Response(e.detail, status=400)
 
-        lic_rel_iter = get_flattened_license_and_relations(licenses)
-        return _send_license_emails_for_relations(
+        # Always build bundle messages first (validation), then send actor mails, then send bundles.
+        try:
+            lic_rel_pairs = list(get_flattened_license_and_relations(licenses))
+            bundle_messages = _build_ringer_bundle_messages(
+                lic_rel_pairs=lic_rel_pairs,
+                include_card=include_card,
+                include_permit=include_permit,
+            )
+        except ValueError as exc:
+            return Response({"detail": str(exc)}, status=400)
+
+        resp = _send_license_emails_for_relations(
             request=request,
-            lic_rel_iter=lic_rel_iter,
+            lic_rel_iter=iter(lic_rel_pairs),
             include_card=include_card,
             include_permit=include_permit,
         )
+
+        if resp.status_code != 200:
+            return resp
+
+        try:
+            bundle_failed = _send_ringer_bundle_messages(request=request, bundle_messages=bundle_messages)
+        except OSError:
+            return _merge_response(resp, {"ringer_bundle_error": "Failed to connect to mail server"}, status_code=503)
+        except Exception as exc:
+            logger.exception("ringer bundle failed: %s", exc)
+            return _merge_response(resp, {"ringer_bundle_error": "Failed to send ringer bundle e-mail"}, status_code=503)
+
+        if bundle_failed:
+            # Partial failure: actor emails succeeded, connection suceeded but the ringer bundle failed.
+            return _merge_response(resp, {"ringer_bundle_failed_messages": bundle_failed}, status_code=422)
+
+        return _merge_response(resp, {"ringer_bundle_messages_sent": len(bundle_messages)})
 
     @action(detail=True, methods=["put"], url_path="send-license-emails")
     def send_license_emails_for_actors(self, request, mnr=None):
