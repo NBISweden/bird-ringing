@@ -3,14 +3,14 @@
 import {
   convertDateToLocale,
   convertOnlyDateToLocale,
-  LicenseCurrent,
+  LicenseInstance,
 } from "@/app/system/common";
 import { useClient } from "../app/system/contexts";
 import { useSendLicenseEmailAction } from "../app/system/licenses/actions";
 import { useTranslation } from "@/app/system/internationalization";
 import { LicensePermissionItem } from "./LicensePermissionItem";
 type LicenceViewProps = {
-  license: LicenseCurrent;
+  license: LicenseInstance;
   mnr: string;
 };
 

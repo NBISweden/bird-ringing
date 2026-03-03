@@ -131,7 +131,7 @@ export type LicenseHistoryItem = {
 
 export type LicenseListItem = {
   mnr: string;
-  current: LicenseCurrent;
+  latest: LicenseInstance;
   history?: LicenseHistoryItem[];
   status: string;
   license_holder: string;
@@ -175,7 +175,7 @@ export type LicenceCommunication = {
   note: string;
 };
 
-export type LicenseCurrent = {
+export type LicenseInstance = {
   actors: LicenseActorRelation[];
   permissions: LicensePermission[];
   documents: LicenseDocument[];

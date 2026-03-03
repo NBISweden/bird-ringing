@@ -87,14 +87,14 @@ function LicenseViewInner() {
               color="primary"
               className="inline-block ms-4"
             >
-              {formatOption(String(data.current.report_status), {
+              {formatOption(String(data.latest.report_status), {
                 yes: "licenseReportStatusYes",
                 no: "licenseReportStatusNo",
                 incomplete: "licenseReportStatusIncomplete",
               })}
             </Badge>
           </h1>
-          <LicenceView license={data.current} mnr={data.mnr} />
+          <LicenceView license={data.latest} mnr={data.mnr} />
           {/* History */}
           <div className="py-3">
             <h3 className="h2">{t("licenseHistory")}</h3>
