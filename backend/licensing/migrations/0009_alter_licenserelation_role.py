@@ -13,6 +13,6 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='licenserelation',
             name='role',
-            field=models.PositiveIntegerField(choices=[(1, 'ringer'), (2, 'associate-ringer'), (3, 'associate'), (4, 'communication')]),
+            field=models.PositiveIntegerField(choices=[(1, 'ringer'), (2, 'associate ringer'), (3, 'associate'), (4, 'communication')]),
         ),
     ]

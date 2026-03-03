@@ -78,7 +78,7 @@ class Command(BaseCommand):
                     actor=actor,
                     role=(
                         models.LicenseRoleChoices.ASSOCIATE_RINGER
-                        if relation["role"] == "associate-ringer"
+                        if relation["role"] == "associate ringer"
                         else models.LicenseRoleChoices.RINGER
                     ),
                     mednr=str(index).zfill(4),
