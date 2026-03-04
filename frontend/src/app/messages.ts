@@ -128,12 +128,12 @@ const messagesBase = {
   licenseSendingLicenses: "Sending licenses...",
   licenseSpecies: "Species",
   licenseSendLicensesSelectedActorsConfirmText:
-    "Do you want to send license cards to the selected ringers/helpers?",
-  licenseSelectedActors: "Selected ringers/helpers",
-  licenseNoActorsSelected: "No ringer/helper selected.",
+    "Do you want to send license cards to the selected ringers/associate ringers?",
+  licenseSelectedActors: "Selected ringers/associate ringers",
+  licenseNoActorsSelected: "No ringer/associate ringer selected.",
   licenseNotifyRinger: "Notify ringer",
   licenseNotifyRingerHelp:
-    "Also send a bundled e-mail to the license ringer with the selected helpers' documents.",
+    "Also send a bundled e-mail to the license ringer with the selected associate ringers' documents.",
   licenseStatus: "License status",
   licenseTrappingMethods: "Trapping methods",
   licenseType: "Type",
