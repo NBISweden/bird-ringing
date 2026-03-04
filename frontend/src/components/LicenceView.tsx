@@ -134,29 +134,29 @@ export function LicenceView({ license, mnr }: LicenceViewProps) {
                       <div className="col-12 col-md-3 fw-semibold text-capitalize">
                         {rel.role}
                       </div>
-                      <div className="col-12 col-md-9">
-                        <div className="d-flex align-items-center">
-                          <input
-                            className="form-check-input me-2"
-                            type="checkbox"
-                            checked={selectedActorIds.has(rel.actor.id)}
-                            onChange={(e) => {
-                              const checked = e.target.checked;
-                              const id = rel.actor.id;
-                              setSelectedActorIds((prev) => {
-                                const next = new Set(prev);
-                                if (checked) {
-                                  next.add(id);
-                                } else {
-                                  next.delete(id);
-                                }
-                                return next;
-                              });
-                            }}
-                          />
-                          <i className="bi bi-person text-primary me-1" />
-                          {rel.actor.full_name}({rel.mednr})
-                        </div>
+                      <div className="col-10 col-md-7">
+                        <i className="bi bi-person text-primary me-1" />
+                        {rel.actor.full_name}({rel.mednr})
+                      </div>
+                      <div className="col-2 col-md-2 d-flex justify-content-center">
+                        <input
+                          className="form-check-input"
+                          type="checkbox"
+                          checked={selectedActorIds.has(rel.actor.id)}
+                          onChange={(e) => {
+                            const checked = e.target.checked;
+                            const id = rel.actor.id;
+                            setSelectedActorIds((prev) => {
+                              const next = new Set(prev);
+                              if (checked) {
+                                next.add(id);
+                              } else {
+                                next.delete(id);
+                              }
+                              return next;
+                            });
+                          }}
+                        />
                       </div>
                     </div>
                   </li>
