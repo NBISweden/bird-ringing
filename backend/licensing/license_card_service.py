@@ -10,7 +10,7 @@ import json
 import io
 import zipfile
 
-from django.db import transaction
+from django.db import transaction, IntegrityError
 
 from licensing.models import (
     License,
@@ -180,18 +180,49 @@ class LicenseCardService:
         ).update(is_current=False)
 
         # Store new document (keep old docs for archive)
-        doc = LicenseDocument.objects.create(
-            created_by=created_by,
-            updated_by=updated_by,
-            actor=actor,
-            license=lic,
-            type=DocumentTypeChoices.LICENSE,
-            data=rendered.pdf_bytes,
-            reference=rendered.filename,
-            fingerprint=fp,
-            is_current=True,
-        )
-        return doc
+        try:
+            with transaction.atomic():
+                doc = LicenseDocument.objects.create(
+                    created_by=created_by,
+                    updated_by=updated_by,
+                    actor=actor,
+                    license=lic,
+                    type=DocumentTypeChoices.LICENSE,
+                    data=rendered.pdf_bytes,
+                    reference=rendered.filename,
+                    fingerprint=fp,
+                    is_current=True,
+                )
+                return doc
+        except IntegrityError:
+            # Safeguard against race condition
+            current = (
+                LicenseDocument.objects.filter(
+                    license=lic,
+                    actor=actor,
+                    type=DocumentTypeChoices.LICENSE,
+                    is_current=True,
+                    fingerprint=fp,
+                )
+                .order_by("-created_at")
+                .first()
+            )
+            if current:
+                return current
+
+            current = (
+                LicenseDocument.objects.filter(
+                    license=lic,
+                    actor=actor,
+                    type=DocumentTypeChoices.LICENSE,
+                    is_current=True,
+                )
+                .order_by("-created_at")
+                .first()
+            )
+            if current:
+                return current
+            raise
 
     def batch_get_or_create_license_card_documents(
         self,

@@ -163,17 +163,18 @@ class PermitService:
 
         # Create first to get created_at.date
         try:
-            doc = LicenseDocument.objects.create(
-                created_by=created_by,
-                updated_by=updated_by,
-                actor=actor,
-                license=lic,
-                type=DocumentTypeChoices.PERMIT,
-                data=None,
-                reference=filename,
-                fingerprint=fp,
-                is_current=True,
-            )
+            with transaction.atomic():
+                doc = LicenseDocument.objects.create(
+                    created_by=created_by,
+                    updated_by=updated_by,
+                    actor=actor,
+                    license=lic,
+                    type=DocumentTypeChoices.PERMIT,
+                    data=None,
+                    reference=filename,
+                    fingerprint=fp,
+                    is_current=True,
+                )
         except IntegrityError:
             # Safeguard against race condition where another request created a "current" permit concurrently.
             # Prefer returning the document with our fingerprint if it exists.
