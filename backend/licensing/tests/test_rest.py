@@ -263,7 +263,7 @@ class LicenseDocumentEmailTests(_EmailTestBase):
 
             expected_names = sorted(
                 card_service.make_license_card_filename(lic, rel.actor)
-                for rel in lic.actors.filter(role=LicenseRoleChoices.HELPER).select_related("actor")
+                for rel in lic.actors.filter(role=LicenseRoleChoices.ASSOCIATE_RINGER).select_related("actor")
             )
 
             with zipfile.ZipFile(io.BytesIO(data), "r") as zf:
