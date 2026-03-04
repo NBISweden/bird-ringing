@@ -139,6 +139,8 @@ export type LicenseListItem = {
   associate_ringer_count: number;
   methods: string;
   last_email_sent_at: string;
+  has_license_card: boolean;
+  has_permit: boolean;
 };
 export type LicensePermissionType = {
   name: string;

@@ -36,6 +36,7 @@ from licensing.models import (
     LicenseDocument,
     LicenseCommunication,
     CommunicationTypeChoices,
+    DocumentTypeChoices
 )
 from rest_framework.authentication import SessionAuthentication, BasicAuthentication
 from rest_framework.permissions import DjangoModelPermissions
@@ -488,6 +489,8 @@ class LicenseSequenceSerializer(serializers.HyperlinkedModelSerializer):
     )
     methods = serializers.CharField()
     last_email_sent_at = serializers.DateTimeField(read_only=True)
+    has_license_card = serializers.BooleanField(read_only=True)
+    has_permit = serializers.BooleanField(read_only=True)
 
     class Meta:
         model = LicenseSequence
@@ -501,6 +504,8 @@ class LicenseSequenceSerializer(serializers.HyperlinkedModelSerializer):
             "associate_ringer_count",
             "methods",
             "last_email_sent_at",
+            "has_license_card",
+            "has_permit",
         ]
 
     def get_history(self, obj):
@@ -554,6 +559,8 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
             "last_email_sent_at",
             "status_label",
             "report_status_label",
+            "has_license_card",
+            "has_permit",
         ]
     )
     default_ordering = ["mnr"]
@@ -562,6 +569,25 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
         queryset = super().get_queryset()
 
         search = self.request.query_params.get("search", None)
+
+        has_license_card = models.Exists(
+            LicenseDocument.objects.filter(
+                license__sequence=models.OuterRef('pk'),
+                license__version=0,
+                type=DocumentTypeChoices.LICENSE,
+                is_current=True,
+            )
+        )
+
+        has_permit = models.Exists(
+            LicenseDocument.objects.filter(
+                license__sequence=models.OuterRef('pk'),
+                license__version=0,
+                type=DocumentTypeChoices.PERMIT,
+                is_current=True,
+            )
+        )
+
 
         queryset = queryset.annotate(
             license_holder=StringAgg(
@@ -619,6 +645,8 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
             ),
             status_label=license_status_label,
             report_status_label=license_report_status_label,
+            has_license_card=has_license_card,
+            has_permit=has_permit,
         )
 
         if search is not None:
