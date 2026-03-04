@@ -289,14 +289,14 @@ class Command(BaseCommand):
         for (mnr, year), relations in sorted(grouped_relations.items(), key=lambda i: i[0][1]):
             base_license = models.LicenseSequence.objects.get(mnr=mnr).current
             year_delta = base_license.ends_at.year - base_license.starts_at.year
-            base_license.starts_at = base_license.starts_at.replace(year=year)
-            base_license.ends_at = base_license.ends_at.replace(year=year + year_delta)
+            base_license.starts_at = self._replace_year(base_license.starts_at, year)
+            base_license.ends_at = self._replace_year(base_license.ends_at, year + year_delta)
             base_license.save()
             for permission in base_license.permissions.all():
                 if permission.ends_at and permission.starts_at:
                     perm_year_delta = permission.ends_at.year - permission.starts_at.year
-                    permission.starts_at = permission.starts_at.replace(year=year)
-                    permission.ends_at = permission.ends_at.replace(year=year + perm_year_delta)
+                    permission.starts_at = self._replace_year(permission.starts_at, year)
+                    permission.ends_at = self._replace_year(permission.ends_at, year + perm_year_delta)
                     permission.save()
             (license_import, created) = models.LicenseImport.objects.get_or_commit(base_license, f"commit-{year}")
             if created:
@@ -582,6 +582,12 @@ class Command(BaseCommand):
             if license_data.get(permission_type_name, "N") == "J"
         ]
         return permission_entries
+    
+    def _replace_year(self, original: datetime.date, year: int):
+        try:
+            return original.replace(year=year)
+        except ValueError:
+            return (original - datetime.timedelta(days=1)).replace(year=year)
 
     def _parse_date_only(self, value: str | None):
         if not value:

@@ -1,6 +1,7 @@
 from django.test import TestCase
 from licensing import models
 from licensing.management.commands.load_data import Command
+import datetime
 import os
 
 
@@ -41,7 +42,7 @@ class TestLoadData(TestCase):
         statuses = ["Aktiv", "Ej aktiv", "Avslutad"]
         slutredov = ["Yes", None]
         lastredov = ["Yes", None]
-        years = ["1999", "2015", "2024", None]
+        years = ["1996", "2015", "2025", None]
         self.license_data = [
             {
                 "Mnr": str(mnr).zfill(4),
@@ -89,11 +90,12 @@ class TestLoadData(TestCase):
             s["VetKod"]
             for s in self.species_data
         ]
+
         self.permit_data = [
             {
                 "license_mnr": ld["Mnr"],
                 "type_code": permit_type_codes[index % len(permit_type_codes)],
-                "starts_at": f"{ld.get('Startyr', current_year)}-03-01",
+                "starts_at": str(datetime.date(year=int(ld.get('Startyr', current_year)), month=3, day=1) + datetime.timedelta(days=-1)),
                 "ends_at": f"{ld.get('Startyr', current_year)}-10-01",
                 "description": f"description-{ld['Mnr']}",
                 "species_codes": ";".join(species_codes),
@@ -113,7 +115,7 @@ class TestLoadData(TestCase):
             }
             for index in range(1, 10)
         ]
-        associate_ringer_years = ["<97", "1999", "2015", "2024"]
+        associate_ringer_years = ["<97", "1999", "2015", "2025"]
 
         self.associate_ringer_year_data = [
             {
