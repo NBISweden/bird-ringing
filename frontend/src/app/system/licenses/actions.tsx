@@ -7,7 +7,7 @@ import { Alert } from "@/components/Alert";
 import { downloadData } from "../utils";
 import useSWRImmutable from "swr/immutable";
 import { useTranslation } from "../internationalization";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 type BatchCreateResponse = { filenames: string[] };
 
@@ -27,8 +27,6 @@ function GenericBatchCreateBody({
   loadingText: string;
 }) {
   const client = useClient();
-
-  const mnrsKey = useMemo(() => mnrs.slice().sort().join(","), [mnrs]);
 
   const [data, setData] = useState<BatchCreateResponse | null>(null);
   const [error, setError] = useState<unknown>(null);
@@ -58,7 +56,7 @@ function GenericBatchCreateBody({
         }
       }
     })();
-  }, [client, createFn, mnrsKey]);
+  }, [client, createFn, mnrs]);
 
   return isLoading ? (
     <>
