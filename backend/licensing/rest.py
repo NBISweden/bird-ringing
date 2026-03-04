@@ -529,7 +529,7 @@ license_status_label = models.Case(
 
 license_report_status_label = models.Case(
     *[
-        models.When(instances__report_status=value, then=models.Value(label))
+        models.When(latest__report_status=value, then=models.Value(label))
         for value, label in ReportStatusChoices.choices
     ],
     output_field=models.CharField(),
@@ -578,29 +578,24 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
 
         has_license_card = models.Exists(
             LicenseDocument.objects.filter(
-                license__sequence=models.OuterRef('pk'),
-                license__version=0,
+                license=models.OuterRef('latest__id'),
                 type=DocumentTypeChoices.LICENSE,
-                is_current=True,
             )
         )
 
         has_permit = models.Exists(
             LicenseDocument.objects.filter(
-                license__sequence=models.OuterRef('pk'),
-                license__version=0,
+                license=models.OuterRef('latest__id'),
                 type=DocumentTypeChoices.PERMIT,
-                is_current=True,
             )
         )
-
 
         queryset = queryset.annotate(
             license_holder=StringAgg(
                 models.Case(
                     models.When(
-                        instances__actors__role=models.Value(LicenseRoleChoices.RINGER),
-                        then="instances__actors__actor__full_name",
+                        latest__actors__role=models.Value(LicenseRoleChoices.RINGER),
+                        then="latest__actors__actor__full_name",
                     ),
                     default=models.Value(None),
                     output_field=models.CharField(),
@@ -611,11 +606,11 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
             license_holder_type=models.Max(
                 models.Case(
                     models.When(
-                        instances__actors__role=models.Value(LicenseRoleChoices.RINGER),
+                        latest__actors__role=models.Value(LicenseRoleChoices.RINGER),
                         then=models.Case(
                             *[
                                 models.When(
-                                    instances__actors__actor__type=value,
+                                    latest__actors__actor__type=value,
                                     then=models.Value(label),
                                 )
                                 for value, label in ActorTypeChoices.choices
@@ -629,21 +624,20 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
                 )
             ),
             associate_ringer_count=models.Count(
-                "instances__actors__actor",
+                "latest__actors__actor",
                 filter=models.Q(
-                    instances__version=0,
-                    instances__actors__role=LicenseRoleChoices.ASSOCIATE_RINGER,
+                    latest__actors__role=LicenseRoleChoices.ASSOCIATE_RINGER,
                 ),
                 distinct=True,
             ),
             methods=StringAgg(
-                "instances__permissions__type__name", delimiter=", ", distinct=True
+                "latest__permissions__type__name", delimiter=", ", distinct=True
             ),
             last_email_sent_at=models.Max(
                 models.Case(
                     models.When(
-                        instances__communication__status=models.Value(1),
-                        then="instances__communication__updated_at",
+                        latest__communication__status=models.Value(1),
+                        then="latest__communication__updated_at",
                     ),
                     default=models.Value(None),
                     output_field=models.DateField(),
