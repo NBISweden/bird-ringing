@@ -91,7 +91,7 @@ export function LicenceView({ license, mnr }: LicenceViewProps) {
               <div className="col-7 col-sm-7 col-md-3 d-flex align-items-center justify-content-end">
                 <div className="form-check m-0">
                   <input
-                    className="form-check-input"
+                    className="form-check-input border border-dark"
                     type="checkbox"
                     checked={notifyRinger}
                     onChange={(e) => setNotifyRinger(e.target.checked)}
@@ -140,7 +140,7 @@ export function LicenceView({ license, mnr }: LicenceViewProps) {
                       </div>
                       <div className="col-2 col-md-2 d-flex justify-content-center">
                         <input
-                          className="form-check-input"
+                          className="form-check-input border border-dark"
                           type="checkbox"
                           checked={selectedActorIds.has(rel.actor.id)}
                           onChange={(e) => {
