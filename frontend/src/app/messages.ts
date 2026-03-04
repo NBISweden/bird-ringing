@@ -48,12 +48,12 @@ const messagesBase = {
   actorType: "Type",
   actorUpdatedAt: "Updated at {date}",
 
-  licenseActors: "Ringers / helpers",
+  licenseActors: "Ringers / associate ringers",
   licenseCommunication: "Communication",
   licenseCommunicationNote: "Note",
   licenseCreateLicenseDocuments: "Create license documents",
   licenseCreateLicenseDocumentsConfirmText:
-    "Do you want to create license cards for all ringers and helpers for selected licenses?",
+    "Do you want to create license cards for all ringers and associate ringers for selected licenses?",
   licenseCreatedAt: "Created at {date}",
   licenseCreatingLicenseDocuments: "Creating license documents",
   licenseDeactivate: "Deactivate",
@@ -72,6 +72,10 @@ const messagesBase = {
   licenseHolder: "License holder",
   licenseId: "Mnr",
   licenseLastEmailSentAt: "Last e-mail sent at",
+  licenseCardTableHeader: "Card",
+  licensePermitTableHeader: "Permit",
+  licenseCardCreated: "License card created",
+  licensePermitCreated: "Permit created",
   licenseLicenseDownloadLoading: "Preparing licenses package for download...",
   licenseLicenseDownloadSucceeded: "Downloading licenses package",
   licenseNoCommunication: "No communication",
@@ -79,7 +83,7 @@ const messagesBase = {
   licenseNoDocuments: "No documents",
   licenseNoPermissions: "No permissions",
   licenseNoPreviousVerions: "No previous versions",
-  licenseNumberOfHelpers: "Number of helpers",
+  licenseNumberOfAssociateRingers: "Number of associate ringers",
   licensePermissionPeriodClosed: "<from></from>{startsAt}<to> to </to>{endsAt}",
   licensePermissionPeriodOpenBackward: "<to>until </to>{endsAt}",
   licensePermissionPeriodOpenForward: "<from>from </from>{startsAt}",
@@ -88,7 +92,7 @@ const messagesBase = {
   licenseSelectedLicenses: "Selected licenses",
   licenseSendLicenses: "Send licenses",
   licenseSendLicensesConfirmText:
-    "Do you want to send license cards to all ringers and helpers of the selected licenses?",
+    "Do you want to send license cards to all ringers and associate ringers of the selected licenses?",
   licenseSendLicensesFailed: "Failed to send licenses. Please try again later.",
   licenseSendLicensesSucceeded: "{sent} e-mails sent successfully.",
   licenseSendingLicenses: "Sending licenses...",
@@ -101,7 +105,7 @@ const messagesBase = {
 
   permitCreateDocuments: "Create permits",
   permitCreateDocumentsConfirmText:
-    "Do you want to create permits for all ringers and helpers for selected licenses?",
+    "Do you want to create permits for all ringers and associate ringers for selected licenses?",
   permitCreatingDocuments: "Creating permit documents",
   permitDownloadLoading: "Preparing permits package for download...",
   permitDownloadSucceeded: "Downloading permits package",

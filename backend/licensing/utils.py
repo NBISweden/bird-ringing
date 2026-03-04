@@ -5,17 +5,26 @@ from licensing.models import (
 )
 import urllib.request
 import time
-
+import io
+import zipfile
 from django.conf import settings
+
+def zip_bytes_from_files(files: list[tuple[str, bytes]]) -> bytes:
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w", compression=zipfile.ZIP_DEFLATED) as zf:
+        for filename, content in files:
+            zf.writestr(filename, content)
+    buf.seek(0)
+    return buf.getvalue()
 
 def get_flattened_license_and_relations(
     licenses: Iterable[License],
-    allowed_roles: Iterable[int] = (LicenseRoleChoices.RINGER, LicenseRoleChoices.HELPER),
+    allowed_roles: Iterable[int] = (LicenseRoleChoices.RINGER, LicenseRoleChoices.ASSOCIATE_RINGER),
 ):
     for lic in licenses:
         relations = lic.actors.filter(role__in=list(allowed_roles)).select_related("actor")
         if not relations.exists():
-            raise ValueError(f"No ringers/helpers on license for mnr {lic.sequence.mnr}.")
+            raise ValueError(f"No ringers/associate ringers on license for mnr {lic.sequence.mnr}.")
         
         for relation in relations:
             yield (lic, relation)

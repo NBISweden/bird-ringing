@@ -50,8 +50,8 @@ class ReportTypeChoices(models.IntegerChoices):
 
 class LicenseRoleChoices(models.IntegerChoices):
     RINGER = (1, "ringer")
-    HELPER = (2, "helper")
-    ASSOCIATE = (3, "associate")
+    ASSOCIATE_RINGER = (2, "associate ringer")
+    AFFILIATE = (3, "affiliate")
     COMMUNICATION = (4, "communication")
 
 

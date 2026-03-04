@@ -44,7 +44,7 @@ class PermitService:
         )
         if not rel:
             raise ActorNotOnLicense(
-                "Specified actor is not registered on the license as ringer/helper."
+                "Specified actor is not registered on the license as ringer/associate ringer."
             )
         return rel
 
@@ -52,7 +52,7 @@ class PermitService:
         self,
         lic: License,
         actor: Actor,
-        allowed_roles=(LicenseRoleChoices.RINGER, LicenseRoleChoices.HELPER),
+        allowed_roles=(LicenseRoleChoices.RINGER, LicenseRoleChoices.ASSOCIATE_RINGER),
         *,
         rel=None,
     ) -> str:
@@ -61,7 +61,7 @@ class PermitService:
             rel = self._get_license_relation(lic=lic, actor=actor, allowed_roles=allowed_roles)
 
         mnr = lic.sequence.mnr
-        identifier = f"{mnr}-{rel.mednr}" if rel.role == LicenseRoleChoices.HELPER else mnr
+        identifier = f"{mnr}-{rel.mednr}" if rel.role == LicenseRoleChoices.ASSOCIATE_RINGER else mnr
         name = slugify(actor.full_name)[:40]
         return f"permit-{identifier}" + (f"-{name}.pdf" if name else ".pdf")
 
@@ -113,7 +113,7 @@ class PermitService:
         actor: Actor,
         created_by,
         updated_by,
-        allowed_roles: Iterable[int] = (LicenseRoleChoices.RINGER, LicenseRoleChoices.HELPER),
+        allowed_roles: Iterable[int] = (LicenseRoleChoices.RINGER, LicenseRoleChoices.ASSOCIATE_RINGER),
     ) -> LicenseDocument:
         if not lic:
             raise NoCurrentLicense("No license found.")
@@ -232,7 +232,7 @@ class PermitService:
         *,
         lic: License,
         actor: Actor,
-        allowed_roles: Iterable[int] = (LicenseRoleChoices.RINGER, LicenseRoleChoices.HELPER),
+        allowed_roles: Iterable[int] = (LicenseRoleChoices.RINGER, LicenseRoleChoices.ASSOCIATE_RINGER),
     ) -> Optional[LicenseDocument]:
         self._get_license_relation(lic=lic, actor=actor, allowed_roles=allowed_roles)
 
@@ -253,10 +253,10 @@ class PermitService:
         licenses: Iterable[License],
         created_by,
         updated_by,
-        allowed_roles: Iterable[int] = (LicenseRoleChoices.RINGER, LicenseRoleChoices.HELPER),
+        allowed_roles: Iterable[int] = (LicenseRoleChoices.RINGER, LicenseRoleChoices.ASSOCIATE_RINGER),
     ) -> list[LicenseDocument]:
         """
-        Batch get-or-create permit documents for all ringers/helpers on each provided license.
+        Batch get-or-create permit documents for all ringers/associate ringers on each provided license.
         """
         docs: list[LicenseDocument] = []
 
@@ -266,7 +266,7 @@ class PermitService:
 
             relations = lic.actors.filter(role__in=list(allowed_roles)).select_related("actor")
             if not relations.exists():
-                raise ValueError(f"No ringers/helpers on license for mnr {lic.sequence.mnr}.")
+                raise ValueError(f"No ringers/associate ringers on license for mnr {lic.sequence.mnr}.")
 
             for rel in relations:
                 doc = self.get_or_create_permit_document(
@@ -284,11 +284,11 @@ class PermitService:
         self,
         *,
         licenses: Iterable[License],
-        allowed_roles: Iterable[int] = (LicenseRoleChoices.RINGER, LicenseRoleChoices.HELPER),
+        allowed_roles: Iterable[int] = (LicenseRoleChoices.RINGER, LicenseRoleChoices.ASSOCIATE_RINGER),
     ) -> bytes:
         """
         Create ZIP (bytes) containing existing current permit DOCX files
-        for all ringers/helpers on each provided license.
+        for all ringers/associate ringers on each provided license.
 
         If any expected DOCX is missing, raise ValueError.
         """
@@ -301,7 +301,7 @@ class PermitService:
 
                 relations = lic.actors.filter(role__in=list(allowed_roles)).select_related("actor")
                 if not relations.exists():
-                    raise ValueError(f"No ringers/helpers on license for mnr {lic.sequence.mnr}.")
+                    raise ValueError(f"No ringers/associate ringers on license for mnr {lic.sequence.mnr}.")
 
                 for rel in relations:
                     actor = rel.actor
