@@ -7,6 +7,7 @@ import { Alert } from "@/components/Alert";
 import { downloadData } from "../utils";
 import useSWRImmutable from "swr/immutable";
 import { useTranslation } from "../internationalization";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 type BatchCreateResponse = { filenames: string[] };
 
@@ -27,12 +28,37 @@ function GenericBatchCreateBody({
 }) {
   const client = useClient();
 
-  const { data, isLoading, error } = useSWRImmutable(
-    [client, mnrs],
-    async () => {
-      return createFn(client, mnrs);
-    },
-  );
+  const mnrsKey = useMemo(() => mnrs.slice().sort().join(","), [mnrs]);
+
+  const [data, setData] = useState<BatchCreateResponse | null>(null);
+  const [error, setError] = useState<unknown>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const requestIdRef = useRef(0);
+
+  useEffect(() => {
+    const requestId = ++requestIdRef.current;
+
+    setIsLoading(true);
+    setError(null);
+    setData(null);
+
+    (async () => {
+      try {
+        const res = await createFn(client, mnrs);
+        if (requestIdRef.current === requestId) {
+          setData(res);
+        }
+      } catch (e) {
+        if (requestIdRef.current === requestId) {
+          setError(e);
+        }
+      } finally {
+        if (requestIdRef.current === requestId) {
+          setIsLoading(false);
+        }
+      }
+    })();
+  }, [client, createFn, mnrsKey]);
 
   return isLoading ? (
     <>
