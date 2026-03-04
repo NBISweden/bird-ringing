@@ -369,12 +369,12 @@ export function useSendLicenseEmailForActorsAction(client: Client) {
   const { t } = useTranslation();
 
   const sendEmails = useCallback(
-    (mnr: string, actors: SelectedActor[]) => {
+    (mnr: string, actors: SelectedActor[], notifyRinger?: boolean) => {
       modalStack.add({
         title: t("licenseSendLicenses"),
         content: (
           <ClientContext.Provider value={client}>
-            <SendLicenseForActorsModalContent mnr={mnr} actorIds={actors.map((a) => a.id)}/>
+            <SendLicenseForActorsModalContent mnr={mnr} actorIds={actors.map((a) => a.id)} notifyRinger={notifyRinger}/>
           </ClientContext.Provider>
         ),
         actions: [{ label: t("okModal"), action: () => {}, type: "primary" }],
@@ -384,7 +384,7 @@ export function useSendLicenseEmailForActorsAction(client: Client) {
   );
 
   return useCallback(
-    (mnr: string, actors: SelectedActor[]) => {
+    (mnr: string, actors: SelectedActor[], notifyRinger?: boolean) => {
       if (actors.length === 0) {
         modalStack.add({
           title: t("licenseSendLicenses"),
@@ -409,7 +409,7 @@ export function useSendLicenseEmailForActorsAction(client: Client) {
           { label: t("abortModal"), action: () => {}, type: "outline-primary" },
           {
             label: t("licenseSendLicenses"),
-            action: () => sendEmails(mnr, actors),
+            action: () => sendEmails(mnr, actors, notifyRinger),
             type: "primary",
           },
         ],

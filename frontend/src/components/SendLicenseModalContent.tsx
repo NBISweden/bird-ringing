@@ -78,11 +78,13 @@ export function SendLicenseModalContent({
 interface SendLicenseForActorsModalContentProps {
   mnr: string;
   actorIds: number[];
+  notifyRinger?: boolean;
 }
 
 export function SendLicenseForActorsModalContent({
   mnr,
   actorIds,
+  notifyRinger,
 }: SendLicenseForActorsModalContentProps) {
   const client = useClient();
   const { t } = useTranslation();
@@ -90,18 +92,17 @@ export function SendLicenseForActorsModalContent({
 
   const includeCard = true;
   const includePermit = false;
-  const notifyRinger = false;
 
   async function sendEmails(
     key: string,
-    { arg }: { arg: { client: Client; mnr: string; actorIds: number[] } },
+    { arg }: { arg: { client: Client; mnr: string; actorIds: number[]; notifyRinger?: boolean } },
   ): Promise<SendEmailResult> {
     const response = await arg.client.sendLicenseEmailsForActors(
       arg.mnr,
       arg.actorIds,
       includeCard,
       includePermit,
-      notifyRinger,
+      arg.notifyRinger,
     );
     return response;
   }
@@ -114,7 +115,7 @@ export function SendLicenseForActorsModalContent({
   useEffect(() => {
     if (hasSent.current) return;
     hasSent.current = true;
-    trigger({ client, mnr, actorIds });
+    trigger({ client, mnr, actorIds, notifyRinger });
   });
 
   return isMutating ? (

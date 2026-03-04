@@ -131,6 +131,9 @@ const messagesBase = {
     "Do you want to send license cards to the selected ringers/helpers?",
   licenseSelectedActors: "Selected ringers/helpers",
   licenseNoActorsSelected: "No ringer/helper selected.",
+  licenseNotifyRinger: "Notify ringer",
+  licenseNotifyRingerHelp:
+    "Also send a bundled e-mail to the license ringer with the selected helpers' documents.",
   licenseStatus: "License status",
   licenseTrappingMethods: "Trapping methods",
   licenseType: "Type",

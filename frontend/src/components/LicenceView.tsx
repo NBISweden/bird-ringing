@@ -6,7 +6,7 @@ import {
   LicenseInstance,
 } from "@/app/system/common";
 import { useClient } from "../app/system/contexts";
-import { useSendLicenseEmailAction, useSendLicenseEmailForActorsAction } from "../app/system/licenses/actions";
+import { useSendLicenseEmailForActorsAction } from "../app/system/licenses/actions";
 import { useTranslation } from "@/app/system/internationalization";
 import { LicensePermissionItem } from "./LicensePermissionItem";
 import { useMemo, useState } from "react";
@@ -17,15 +17,11 @@ type LicenceViewProps = {
 
 export function LicenceView({ license, mnr }: LicenceViewProps) {
   const client = useClient();
-  const sendEmailAction = useSendLicenseEmailAction(client);
   const sendEmailForActorsAction = useSendLicenseEmailForActorsAction(client);
   const { t, format } = useTranslation();
 
   const [selectedActorIds, setSelectedActorIds] = useState(new Set<number>());
-
-  const actorIds = useMemo(() => {
-    return (license.actors || []).map((rel) => rel.actor.id);
-  }, [license.actors]);
+  const [notifyRinger, setNotifyRinger] = useState(false);
 
   return (
     <>
@@ -89,25 +85,46 @@ export function LicenceView({ license, mnr }: LicenceViewProps) {
         <div className="card border-primary">
           <div className="card-body">
             <div className="row">
-              <h2 className="h3 card-title col-5 col-sm-7 col-md-10">
+              <h2 className="h3 card-title col-5 col-sm-7 col-md-7">
                 {t("licenseActors")}
               </h2>
-              <button
-                className="btn btn-secondary col-5 col-sm-5 col-md-2"
-                onClick={() =>
-                  sendEmailForActorsAction(
-                    mnr,
-                    license.actors
-                      .filter((rel) => selectedActorIds.has(rel.actor.id))
-                      .map((rel) => ({
-                        id: rel.actor.id,
-                        name: rel.actor.full_name,
-                      })),
-                  )
-                }
-              >
-                {t("licenseSendLicenses")}
-              </button>
+              <div className="col-7 col-sm-7 col-md-3 d-flex align-items-center justify-content-end">
+                <div className="form-check m-0">
+                  <input
+                    className="form-check-input"
+                    type="checkbox"
+                    checked={notifyRinger}
+                    onChange={(e) => setNotifyRinger(e.target.checked)}
+                    id="notify-ringer"
+                  />
+                  <label
+                    className="form-check-label small text-muted"
+                    htmlFor="notify-ringer"
+                    title={t("licenseNotifyRingerHelp")}
+                  >
+                    {t("licenseNotifyRinger")}
+                  </label>
+                </div>
+              </div>
+              <div className="col-5 col-sm-5 col-md-2">
+                <button
+                  className="btn btn-secondary w-100"
+                  onClick={() =>
+                    sendEmailForActorsAction(
+                      mnr,
+                      license.actors
+                        .filter((rel) => selectedActorIds.has(rel.actor.id))
+                        .map((rel) => ({
+                          id: rel.actor.id,
+                          name: rel.actor.full_name,
+                        })),
+                      notifyRinger,
+                    )
+                  }
+                >
+                  {t("licenseSendLicenses")}
+                </button>
+              </div>
             </div>
             {license.actors?.length ? (
               <ul className="list-group list-group-flush">
