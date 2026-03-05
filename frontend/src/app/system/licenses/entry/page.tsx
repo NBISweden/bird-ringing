@@ -11,6 +11,7 @@ import { LicenceView } from "@/components/LicenceView";
 import { Alert } from "@/components/Alert";
 import { useTranslation } from "../../internationalization";
 import { convertOnlyDateToLocale } from "../../common";
+import { Badge } from "@/components/Badge";
 
 async function fetchLicense([client, _ctx, entryId]: [
   Client,
@@ -24,7 +25,7 @@ function LicenseViewInner() {
   const params = useSearchParams();
   const mnr = params.get("mnr");
   const client = useClient();
-  const { t, format } = useTranslation();
+  const { t, format, formatOption } = useTranslation();
 
   const { data, isLoading, error } = useSWR(
     mnr ? [client, "license", mnr] : null,
@@ -54,7 +55,7 @@ function LicenseViewInner() {
     return (
       <div className="container">
         <h2>
-          {t("licenseView")}: {mnr}
+          {t("licenseView", {licenseId: mnr, licenseHolder: "-"})}
         </h2>
         <Spinner />
       </div>
@@ -77,11 +78,12 @@ function LicenseViewInner() {
     <div className="container">
       <div className="row ">
         <div className="col-12 col-xl-10 col-xxl-9">
-          <div>
-            <h1 className="h2 mb-1">
-              {t("licenseView")} {data.mnr}
-            </h1>
-          </div>
+          <h1 className="h2">
+            {t("licenseView", {licenseId: data.mnr, licenseHolder: data.license_holder})}
+            <Badge rounded outline color="primary" className="inline-block ms-4">
+              {formatOption(String(data.current.report_status), {"yes": "licenseReportStatusYes", "no": "licenseReportStatusNo", "incomplete": "licenseReportStatusIncomplete"})}
+            </Badge>
+          </h1>
           <LicenceView license={data.current} mnr={data.mnr} />
           {/* History */}
           <div className="py-3">

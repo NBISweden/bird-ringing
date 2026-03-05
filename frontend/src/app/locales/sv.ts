@@ -9,7 +9,7 @@ export const locale: TranslationMap = {
   dashboard: "Startskärm",
   goToSystem: "Gå till systemet",
   licenseListView: "Licenser",
-  licenseView: "Licens",
+  licenseView: "{licenseHolder} {licenseId}",
   actorListView: "Ringmärkare",
   expertsLogin: "Expertinloggning",
 
@@ -71,6 +71,7 @@ export const locale: TranslationMap = {
   licensePermitCreated: "Tillståndsdokument skapade",
   licenseLicenseDownloadLoading: "Förbereder licenssamling för nedladdning...",
   licenseLicenseDownloadSucceeded: "Laddar ned licenssamling",
+  licenseLocation: "Plats",
   licenseNoCommunication: "Ingen kommunikation kopplad till licensen.",
   licenseNoConnectedActors:
     "Inga ringmärkare eller hjälpare kopplade till licensen.",
@@ -84,6 +85,9 @@ export const locale: TranslationMap = {
   licensePermissionPeriodOpenForward: "<from>från </from>{startsAt}",
   licensePermissions: "Tillstånd",
   licenseReportStatus: "Slutrapportstatus",
+  licenseReportStatusYes: "Komplett slutrapport",
+  licenseReportStatusNo: "Ingen slutrapport",
+  licenseReportStatusIncomplete: "Inkomplett slutrapport",
   licenseSelectedLicenses: "Valda licenser",
   licenseSendLicenses: "Skicka licenser",
   licenseSendLicensesConfirmText:
@@ -92,6 +96,7 @@ export const locale: TranslationMap = {
     "Misslyckades med att skicka licenser. Försök igen senare.",
   licenseSendLicensesSucceeded: "{sent} e-postmeddelanden skickades.",
   licenseSendingLicenses: "Skickar licenser...",
+  licenseSpecies: "Arter",
   licenseStatus: "Licensstatus",
   licenseTrappingMethods: "Fångstmetoder",
   licenseType: "Typ",

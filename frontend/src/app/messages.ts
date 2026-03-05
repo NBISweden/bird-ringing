@@ -10,7 +10,7 @@ const messagesBase = {
   dashboard: "Dashboard",
 
   licenseListView: "Licenses",
-  licenseView: "License",
+  licenseView: "License {licenseHolder} {licenseId}",
   actorListView: "Ringers",
   welcomeMessageHeader: {
     defaultMessage: "Welcome to Birdy!",
@@ -78,6 +78,7 @@ const messagesBase = {
   licensePermitCreated: "Permit created",
   licenseLicenseDownloadLoading: "Preparing licenses package for download...",
   licenseLicenseDownloadSucceeded: "Downloading licenses package",
+  licenseLocation: "Location",
   licenseNoCommunication: "No communication",
   licenseNoConnectedActors: "No connected actors",
   licenseNoDocuments: "No documents",
@@ -89,6 +90,9 @@ const messagesBase = {
   licensePermissionPeriodOpenForward: "<from>from </from>{startsAt}",
   licensePermissions: "Permissions",
   licenseReportStatus: "Final report status",
+  licenseReportStatusYes: "Completed final report",
+  licenseReportStatusNo: "No final report",
+  licenseReportStatusIncomplete: "Incomplete final report",
   licenseSelectedLicenses: "Selected licenses",
   licenseSendLicenses: "Send licenses",
   licenseSendLicensesConfirmText:
@@ -96,6 +100,7 @@ const messagesBase = {
   licenseSendLicensesFailed: "Failed to send licenses. Please try again later.",
   licenseSendLicensesSucceeded: "{sent} e-mails sent successfully.",
   licenseSendingLicenses: "Sending licenses...",
+  licenseSpecies: "Species",
   licenseStatus: "License status",
   licenseTrappingMethods: "Trapping methods",
   licenseType: "Type",
