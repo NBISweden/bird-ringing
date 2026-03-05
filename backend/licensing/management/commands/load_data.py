@@ -1,4 +1,4 @@
-from licensing import models
+from licensing import models, utils
 from django.db import transaction
 from django.contrib.auth.models import User
 from django.core.management.base import BaseCommand
@@ -105,7 +105,11 @@ class Command(BaseCommand):
             self.load_relations({**ringer_map, **associate_ringer_map}, relations)
             for sequence_import in models.LicenseSequenceImport.objects.all():
                 current = sequence_import.item.current
-                (license_import, _created) = models.LicenseImport.objects.get_or_commit(current, f"commit-{datetime.datetime.now().isoformat()}")
+                (license_import, _created) = models.LicenseImport.objects.get_or_commit(
+                    current,
+                    f"commit-{datetime.datetime.now().isoformat()}",
+                    utils.default_document_copy_policy
+                )
                 self.stdout.write(f"Import: {license_import.key}")
 
     @log_action
@@ -298,7 +302,11 @@ class Command(BaseCommand):
                     permission.starts_at = self._replace_year(permission.starts_at, year)
                     permission.ends_at = self._replace_year(permission.ends_at, year + perm_year_delta)
                     permission.save()
-            (license_import, created) = models.LicenseImport.objects.get_or_commit(base_license, f"commit-{year}")
+            (license_import, created) = models.LicenseImport.objects.get_or_commit(
+                base_license,
+                f"commit-{year}",
+                utils.default_document_copy_policy
+            )
             if created:
                 lic = license_import.item
                 self._apply_relations(lic, relations)

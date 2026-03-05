@@ -1,4 +1,5 @@
 from django.db import models
+from django.db import transaction
 from django.db.models import Max
 from django.contrib.auth.models import User
 from django.core.validators import MinLengthValidator
@@ -131,19 +132,24 @@ class LicenseSequence(ChangeTracking):
     status = models.PositiveIntegerField(choices=LicenseStatusChoices)
     latest = models.ForeignKey("License", null=True, on_delete=models.SET_NULL, related_name='+')
 
-    def commit(self, current):
-        current = License.objects.get(pk=current.pk)
-        if current is None:
-            raise ValueError("No current license")
-        
-        if self.latest is None or not self.latest.is_equal(current):
-            last_version = License.objects.filter(sequence__mnr=self.mnr).aggregate(
-                last_version=Max("version", default=0)
-            )["last_version"]
-            self.latest = current.copy_to_new_version(last_version + 1)
-            self.save()
-        
-        return self.latest
+    def commit(self, current, post_commit=None):
+        with transaction.atomic():
+            if current is None:
+                raise ValueError("No current license")
+
+            current = License.objects.get(pk=current.pk)
+            previous = self.latest
+            if previous is None or not previous.is_equal(current):
+                last_version = License.objects.filter(sequence__mnr=self.mnr).aggregate(
+                    last_version=Max("version", default=0)
+                )["last_version"]
+                self.latest = current.copy_to_new_version(last_version + 1)
+                self.save()
+            
+                if callable(post_commit):
+                    post_commit(self.latest, previous)
+                
+            return self.latest
 
     @property
     def current(self):
@@ -262,9 +268,29 @@ class License(ChangeTracking):
         not change the license content.
         """
         return (
+            self.dump_state(),
+            self.dump_content()
+        )
+    
+    def dump_state(self):
+        """
+        This data should include anything that is related to the ongoing daily state
+        changes expected to be done to a license. Anything included here should not
+        be related to the interpretation of the license or permits included in
+        the license.
+        """
+        return (
+            self.report_status,
+        )
+    
+    def dump_content(self):
+        """
+        This data should include anything that can change the interpretation of the
+        license or permits included.
+        """
+        return (
             self.location,
             self.description,
-            self.report_status,
             self.starts_at,
             self.ends_at,
             set((
@@ -577,14 +603,14 @@ class LicenseSequenceImport(ImportTracking):
 
 
 class LicenseImportModelManager(ImportModelManager):
-    def get_or_commit(self, license, context):
+    def get_or_commit(self, license, context, post_commit=None):
         key = self.model.get_context_key(license, context)
         try:
             item_import = self.get(key=key)
             return (item_import, False)
         
         except self.model.DoesNotExist:
-            item = license.sequence.commit(license)
+            item = license.sequence.commit(license, post_commit)
             try:
                 item_import = self.get(item=item)
                 return (item_import, False)

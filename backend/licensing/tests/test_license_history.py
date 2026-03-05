@@ -122,16 +122,18 @@ class TestLicenseHistory(TestCase):
         self.assertEqual(
             self.license_sequence.current.dump(),
             (
-                "",
-                "",
-                1,
-                starts_at,
-                ends_at,
-                set((doc.id  for doc in self.reference_docs)),
-                {
-                    (1, "", "", starts_at, ends_at, (1, 2), (1, 2)),
-                    (2, "", "", starts_at, ends_at, (1, 2), (1, 2))
-                }
+                (1,),
+                (
+                    "",
+                    "",
+                    starts_at,
+                    ends_at,
+                    set((doc.id  for doc in self.reference_docs)),
+                    {
+                        (1, "", "", starts_at, ends_at, (1, 2), (1, 2)),
+                        (2, "", "", starts_at, ends_at, (1, 2), (1, 2))
+                    }
+                )
             )
         )
         

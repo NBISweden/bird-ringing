@@ -597,7 +597,8 @@ class TestLoadData(TestCase):
         return {} if value is None else {key: value}
     
     def _filter_license_dump(self, license_dump):
-        (location, description, report_status, _s, _e, documents, permissions) = license_dump
+        (state, content) = license_dump
+        (location, description, _s, _e, documents, permissions) = content
 
         clean_permissions = [
             self._filter_permission_dump(permission)
@@ -605,11 +606,13 @@ class TestLoadData(TestCase):
         ]
 
         return (
-            location,
-            description,
-            report_status,
-            documents,
-            clean_permissions
+            state,
+            (
+                location,
+                description,
+                documents,
+                clean_permissions
+            )
         )
     
     def _filter_permission_dump(self, permission_dump):
