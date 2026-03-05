@@ -213,7 +213,7 @@ export class Client {
     includePermit: boolean,
     notifyRinger?: boolean,
   ): Promise<SendEmailResult> {
-    const qs = new URLSearchParams({actor_ids: actorIds.join(",")});
+    const qs = new URLSearchParams({ actor_ids: actorIds.join(",") });
     if (includeCard) {
       qs.set("include_card", "1");
     }

@@ -142,7 +142,7 @@ const messagesBase = {
   licenseSkippedMessageRow: "{mnr} {actor} ({reason})",
   licenseFailedMessagesDetails: "Failed messages",
   licenseFailedMessageRow: "{to}: {details}",
-  licenseSkippedMessagesCount: "Skipped messages: {count}",
+  licenseSkippedMessagesCountByReason: "Skipped messages ({reason}): {count}",
   licenseStatus: "License status",
   licenseTrappingMethods: "Trapping methods",
   licenseType: "Type",

@@ -2,7 +2,10 @@ import { useCallback } from "react";
 import { ClientContext, useClient, useModalsContext } from "../contexts";
 import { Client } from "../client";
 import Spinner from "@/components/Spinner";
-import { SendLicenseModalContent, SendLicenseForActorsModalContent } from "@/components/SendLicenseModalContent";
+import {
+  SendLicenseModalContent,
+  SendLicenseForActorsModalContent,
+} from "@/components/SendLicenseModalContent";
 import { Alert } from "@/components/Alert";
 import { downloadData } from "../utils";
 import useSWRImmutable from "swr/immutable";

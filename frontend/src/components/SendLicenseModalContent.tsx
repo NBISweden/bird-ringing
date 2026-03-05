@@ -11,7 +11,12 @@ interface SendLicenseModalContentProps {
   mnrs: string[];
 }
 
-function SendEmailResultDetails({data, actorNames, showRingerBundleMessagesSent, showSkippedMessagesList}: {
+function SendEmailResultDetails({
+  data,
+  actorNames,
+  showRingerBundleMessagesSent,
+  showSkippedMessagesList,
+}: {
   data: SendEmailResult | undefined;
   actorNames?: Record<number, string>;
   showRingerBundleMessagesSent?: boolean;
@@ -20,18 +25,23 @@ function SendEmailResultDetails({data, actorNames, showRingerBundleMessagesSent,
   const { t } = useTranslation();
 
   if (!data) return <></>;
-  showRingerBundleMessagesSent = showRingerBundleMessagesSent === undefined ? true : showRingerBundleMessagesSent;
-  showSkippedMessagesList = showSkippedMessagesList === undefined ? true : showSkippedMessagesList;
+  showRingerBundleMessagesSent =
+    showRingerBundleMessagesSent === undefined
+      ? true
+      : showRingerBundleMessagesSent;
+  showSkippedMessagesList =
+    showSkippedMessagesList === undefined ? true : showSkippedMessagesList;
 
   return (
     <>
-      {showRingerBundleMessagesSent && typeof data.ringer_bundle_messages_sent === "number" && (
-        <div className="alert alert-info">
-          {t("licenseRingerBundleMessagesSent", {
-            count: data.ringer_bundle_messages_sent,
-          })}
-        </div>
-      )}
+      {showRingerBundleMessagesSent &&
+        typeof data.ringer_bundle_messages_sent === "number" && (
+          <div className="alert alert-info">
+            {t("licenseRingerBundleMessagesSent", {
+              count: data.ringer_bundle_messages_sent,
+            })}
+          </div>
+        )}
 
       {data.ringer_bundle_message && (
         <div className="alert alert-info">
@@ -101,9 +111,22 @@ function SendEmailResultDetails({data, actorNames, showRingerBundleMessagesSent,
               </ul>
             </>
           ) : (
-            <p className="mb-0">
-              {t("licenseSkippedMessagesCount", { count: data.skipped_messages.length })}
-            </p>
+            <>
+              {Object.entries(
+                (data.skipped_messages || []).reduce<Record<string, number>>(
+                  (acc, msg) => {
+                    const reason = msg.reason || "unknown";
+                    acc[reason] = (acc[reason] || 0) + 1;
+                    return acc;
+                  },
+                  {},
+                ),
+              ).map(([reason, count]) => (
+                <p key={reason} className="mb-0">
+                  {t("licenseSkippedMessagesCountByReason", { reason, count })}
+                </p>
+              ))}
+            </>
           )}
         </div>
       )}
@@ -161,7 +184,11 @@ export function SendLicenseModalContent({
         })}
       </div>
 
-      <SendEmailResultDetails data={data} showRingerBundleMessagesSent={false} showSkippedMessagesList={false}/>
+      <SendEmailResultDetails
+        data={data}
+        showRingerBundleMessagesSent={false}
+        showSkippedMessagesList={false}
+      />
     </>
   );
 }
@@ -188,7 +215,16 @@ export function SendLicenseForActorsModalContent({
 
   async function sendEmails(
     key: string,
-    { arg }: { arg: { client: Client; mnr: string; actorIds: number[]; notifyRinger?: boolean } },
+    {
+      arg,
+    }: {
+      arg: {
+        client: Client;
+        mnr: string;
+        actorIds: number[];
+        notifyRinger?: boolean;
+      };
+    },
   ): Promise<SendEmailResult> {
     const response = await arg.client.sendLicenseEmailsForActors(
       arg.mnr,

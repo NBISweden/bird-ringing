@@ -9,7 +9,7 @@ import { useClient } from "../app/system/contexts";
 import { useSendLicenseEmailForActorsAction } from "../app/system/licenses/actions";
 import { useTranslation } from "@/app/system/internationalization";
 import { LicensePermissionItem } from "./LicensePermissionItem";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 type LicenceViewProps = {
   license: LicenseInstance;
   mnr: string;
