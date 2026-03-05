@@ -98,16 +98,16 @@ function toLicenseTable(
       },
       methods: {
         component: (
-          <>{Array.from(new Set(item.current.permissions.flatMap((p) => p.type.name))).map((pt => (
+          <div className="table-row-max-height">{Array.from(new Set(item.current.permissions.flatMap((p) => p.type.name))).map((pt => (
             <Badge color="info" rounded outline key={pt}>{pt}</Badge>
-          )))}</>
+          )))}</div>
         ),
       },
       species: {
         component: (
-          <>{Array.from(new Set(item.current.permissions.flatMap((p) => p.species))).map((s => (
+          <div className="table-row-max-height">{Array.from(new Set(item.current.permissions.flatMap((p) => p.species))).map((s => (
             <Badge color="info" rounded outline key={s}>{s}</Badge>
-          )))}</>
+          )))}</div>
         )
       },
       final_report_status: {
