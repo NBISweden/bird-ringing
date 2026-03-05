@@ -12,6 +12,13 @@ const licenseStatusOptions = {
   licenseStatusActive: "Aktiv",
 }
 
+const licenseRoleOptions = {
+  licenseRoleCommunication: "Kommunikation",
+  licenseRoleAffiliate: "Affilierad",
+  licenseRoleAssociateRinger: "Medhjälpare",
+  licenseRoleRinger: "Ringmärkare",
+}
+
 const actorTypeOptions = {
   actorTypePerson: "Person",
   actorTypeStation: "Station",
@@ -20,6 +27,7 @@ const actorTypeOptions = {
 export const locale: TranslationMap = {
   ...licenseReportStatusOptions,
   ...licenseStatusOptions,
+  ...licenseRoleOptions,
   ...actorTypeOptions,
   birdRinging: "Ringmärkning",
   welcomeMessageHeader: "Välkommen till Birdy!",

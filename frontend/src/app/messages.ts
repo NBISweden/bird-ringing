@@ -15,6 +15,13 @@ const licenseStatusOptions = {
   licenseStatusActive: "Active",
 }
 
+const licenseRoleOptions = {
+  licenseRoleCommunication: "Communication",
+  licenseRoleAffiliate: "Affiliate",
+  licenseRoleAssociateRinger: "Associate Ringer",
+  licenseRoleRinger: "Ringer",
+}
+
 const actorTypeOptions = {
   actorTypePerson: "Person",
   actorTypeStation: "Station",
@@ -23,6 +30,7 @@ const actorTypeOptions = {
 const messagesBase = {
   ...licenseReportStatusOptions,
   ...licenseStatusOptions,
+  ...licenseRoleOptions,
   ...actorTypeOptions,
 
   birdRinging: "Bird Ringing",
