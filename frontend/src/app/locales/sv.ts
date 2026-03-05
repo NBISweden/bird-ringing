@@ -134,7 +134,7 @@ export const locale: TranslationMap = {
   licenseRingerBundleError: "Fel vid samlat utskick till ringmärkare: {error}",
   licenseRingerBundleFailedMessages: "Misslyckade samlade utskick till ringmärkare",
   licenseSkippedMessages: "Hoppade över",
-  licenseSkippedMessageRow: "{mnr} actor_id={actorId} ({reason})",
+  licenseSkippedMessageRow: "{mnr} {actor} ({reason})",
   licenseFailedMessagesDetails: "Misslyckade utskick",
   licenseFailedMessageRow: "{to}: {details}",
   licenseStatus: "Licensstatus",

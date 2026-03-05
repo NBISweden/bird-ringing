@@ -139,7 +139,7 @@ const messagesBase = {
   licenseRingerBundleError: "Ringer bundle error: {error}",
   licenseRingerBundleFailedMessages: "Ringer bundle failed messages",
   licenseSkippedMessages: "Skipped messages",
-  licenseSkippedMessageRow: "{mnr} actor_id={actorId} ({reason})",
+  licenseSkippedMessageRow: "{mnr} {actor} ({reason})",
   licenseFailedMessagesDetails: "Failed messages",
   licenseFailedMessageRow: "{to}: {details}",
   licenseStatus: "License status",

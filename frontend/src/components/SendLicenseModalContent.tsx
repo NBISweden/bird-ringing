@@ -11,7 +11,10 @@ interface SendLicenseModalContentProps {
   mnrs: string[];
 }
 
-function SendEmailResultDetails({ data }: { data: SendEmailResult | undefined }) {
+function SendEmailResultDetails({data, actorNames}: {
+  data: SendEmailResult | undefined;
+  actorNames?: Record<number, string>;
+}) {
   const { t } = useTranslation();
 
   if (!data) return <></>;
@@ -81,7 +84,10 @@ function SendEmailResultDetails({ data }: { data: SendEmailResult | undefined })
               <li key={idx}>
                 {t("licenseSkippedMessageRow", {
                   mnr: msg.mnr,
-                  actorId: msg.actor_id,
+                  actor:
+                    actorNames && msg.actor_id in actorNames
+                      ? actorNames[msg.actor_id]
+                      : String(msg.actor_id),
                   reason: msg.reason,
                 })}
               </li>
@@ -152,12 +158,14 @@ interface SendLicenseForActorsModalContentProps {
   mnr: string;
   actorIds: number[];
   notifyRinger?: boolean;
+  actorNames?: Record<number, string>;
 }
 
 export function SendLicenseForActorsModalContent({
   mnr,
   actorIds,
   notifyRinger,
+  actorNames,
 }: SendLicenseForActorsModalContentProps) {
   const client = useClient();
   const { t } = useTranslation();
@@ -208,7 +216,7 @@ export function SendLicenseForActorsModalContent({
         })}
       </div>
 
-      <SendEmailResultDetails data={data} />
+      <SendEmailResultDetails data={data} actorNames={actorNames} />
     </>
   );
 }

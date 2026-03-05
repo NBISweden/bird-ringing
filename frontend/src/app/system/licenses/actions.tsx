@@ -374,7 +374,12 @@ export function useSendLicenseEmailForActorsAction(client: Client) {
         title: t("licenseSendLicenses"),
         content: (
           <ClientContext.Provider value={client}>
-            <SendLicenseForActorsModalContent mnr={mnr} actorIds={actors.map((a) => a.id)} notifyRinger={notifyRinger}/>
+            <SendLicenseForActorsModalContent
+              mnr={mnr}
+              actorIds={actors.map((a) => a.id)}
+              notifyRinger={notifyRinger}
+              actorNames={Object.fromEntries(actors.map((a) => [a.id, a.name]))}
+            />
           </ClientContext.Provider>
         ),
         actions: [{ label: t("okModal"), action: () => {}, type: "primary" }],
