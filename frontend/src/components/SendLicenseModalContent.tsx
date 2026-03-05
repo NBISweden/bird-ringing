@@ -4,47 +4,36 @@ import { SendEmailResult } from "@/app/system/common";
 import Spinner from "./Spinner";
 import { Alert } from "./Alert";
 import { useClient } from "@/app/system/contexts";
-import { useEffect, useRef } from "react";
-import useSWRMutation from "swr/mutation";
+import useSWRImmutable from "swr/immutable";
 
 interface SendLicenseModalContentProps {
   mnrs: string[];
 }
+
+
+async function batchSendEmails([client, mnrs]: [Client, string[]]): Promise<SendEmailResult> {
+  const includeCard = true;
+  const includePermit = false;
+  return await client.batchSendLicenseEmails(
+    mnrs,
+    includeCard,
+    includePermit,
+  );
+}
+
 
 export function SendLicenseModalContent({
   mnrs,
 }: SendLicenseModalContentProps) {
   const client = useClient();
   const { t } = useTranslation();
-  const hasSent = useRef(false);
 
-  const includeCard = true;
-  const includePermit = false;
-
-  async function batchSendEmails(
-    key: string,
-    { arg }: { arg: { client: Client; mnrs: string[] } },
-  ): Promise<SendEmailResult> {
-    const response = await arg.client.batchSendLicenseEmails(
-      arg.mnrs,
-      includeCard,
-      includePermit,
-    );
-    return response;
-  }
-
-  const { data, trigger, isMutating, error } = useSWRMutation(
-    "send-license-emails",
+  const { data, isLoading, error } = useSWRImmutable(
+    [client, mnrs],
     batchSendEmails,
   );
 
-  useEffect(() => {
-    if (hasSent.current) return;
-    hasSent.current = true;
-    trigger({ client, mnrs });
-  });
-
-  return isMutating ? (
+  return isLoading ? (
     <>
       <Spinner />
       <span className="ms-3">{t("licenseSendingLicenses")}</span>
