@@ -11,17 +11,21 @@ interface SendLicenseModalContentProps {
   mnrs: string[];
 }
 
-function SendEmailResultDetails({data, actorNames}: {
+function SendEmailResultDetails({data, actorNames, showRingerBundleMessagesSent, showSkippedMessagesList}: {
   data: SendEmailResult | undefined;
   actorNames?: Record<number, string>;
+  showRingerBundleMessagesSent?: boolean;
+  showSkippedMessagesList?: boolean;
 }) {
   const { t } = useTranslation();
 
   if (!data) return <></>;
+  showRingerBundleMessagesSent = showRingerBundleMessagesSent === undefined ? true : showRingerBundleMessagesSent;
+  showSkippedMessagesList = showSkippedMessagesList === undefined ? true : showSkippedMessagesList;
 
   return (
     <>
-      {typeof data.ringer_bundle_messages_sent === "number" && (
+      {showRingerBundleMessagesSent && typeof data.ringer_bundle_messages_sent === "number" && (
         <div className="alert alert-info">
           {t("licenseRingerBundleMessagesSent", {
             count: data.ringer_bundle_messages_sent,
@@ -78,21 +82,29 @@ function SendEmailResultDetails({data, actorNames}: {
 
       {data.skipped_messages && data.skipped_messages.length > 0 && (
         <div className="alert alert-secondary">
-          <p>{t("licenseSkippedMessages")}:</p>
-          <ul>
-            {data.skipped_messages.map((msg, idx) => (
-              <li key={idx}>
-                {t("licenseSkippedMessageRow", {
-                  mnr: msg.mnr,
-                  actor:
-                    actorNames && msg.actor_id in actorNames
-                      ? actorNames[msg.actor_id]
-                      : String(msg.actor_id),
-                  reason: msg.reason,
-                })}
-              </li>
-            ))}
-          </ul>
+          {showSkippedMessagesList ? (
+            <>
+              <p>{t("licenseSkippedMessages")}:</p>
+              <ul>
+                {data.skipped_messages.map((msg, idx) => (
+                  <li key={idx}>
+                    {t("licenseSkippedMessageRow", {
+                      mnr: msg.mnr,
+                      actor:
+                        actorNames && msg.actor_id in actorNames
+                          ? actorNames[msg.actor_id]
+                          : String(msg.actor_id),
+                      reason: msg.reason,
+                    })}
+                  </li>
+                ))}
+              </ul>
+            </>
+          ) : (
+            <p className="mb-0">
+              {t("licenseSkippedMessagesCount", { count: data.skipped_messages.length })}
+            </p>
+          )}
         </div>
       )}
     </>
@@ -149,7 +161,7 @@ export function SendLicenseModalContent({
         })}
       </div>
 
-      <SendEmailResultDetails data={data} />
+      <SendEmailResultDetails data={data} showRingerBundleMessagesSent={false} showSkippedMessagesList={false}/>
     </>
   );
 }

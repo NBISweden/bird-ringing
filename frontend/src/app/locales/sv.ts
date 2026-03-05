@@ -137,6 +137,7 @@ export const locale: TranslationMap = {
   licenseSkippedMessageRow: "{mnr} {actor} ({reason})",
   licenseFailedMessagesDetails: "Misslyckade utskick",
   licenseFailedMessageRow: "{to}: {details}",
+  licenseSkippedMessagesCount: "Hoppade över: {count}",
   licenseStatus: "Licensstatus",
   licenseTrappingMethods: "Fångstmetoder",
   licenseType: "Typ",
