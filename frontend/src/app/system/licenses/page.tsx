@@ -28,13 +28,15 @@ import {
 } from "./actions";
 
 import { useTranslation, Translation } from "../internationalization";
+import { Badge } from "@/components/Badge";
 
 type LicensePropertyIds =
   | "mnr"
   | "type"
   | "license_holder"
-  | "associate_ringers"
   | "methods"
+  | "location"
+  | "species"
   | "final_report_status"
   | "license_status"
   | "last_email_sent_at"
@@ -91,11 +93,22 @@ function toLicenseTable(
       license_holder: {
         component: item.license_holder,
       },
-      associate_ringers: {
-        component: String(item.associate_ringer_count || "0"),
+      location: {
+        component: item.current.location,
       },
       methods: {
-        component: item.methods,
+        component: (
+          <>{Array.from(new Set(item.current.permissions.flatMap((p) => p.type.name))).map((pt => (
+            <Badge color="info" rounded outline key={pt}>{pt}</Badge>
+          )))}</>
+        ),
+      },
+      species: {
+        component: (
+          <>{Array.from(new Set(item.current.permissions.flatMap((p) => p.species))).map((s => (
+            <Badge color="info" rounded outline key={s}>{s}</Badge>
+          )))}</>
+        )
       },
       final_report_status: {
         component: item.current.report_status,
@@ -256,16 +269,15 @@ function BaseListView({
         reverse: "-license_holder,mnr",
       },
     },
-    associate_ringers: {
-      label: t("licenseNumberOfAssociateRingers"),
-      ordering: {
-        forward: "associate_ringer_count,mnr",
-        reverse: "-associate_ringer_count,mnr",
-      },
+    location: {
+      label: t("licenseLocation"),
     },
     methods: {
       label: t("licenseTrappingMethods"),
       ordering: { forward: "methods,mnr", reverse: "-methods,mnr" },
+    },
+    species: {
+      label: t("licenseSpecies"),
     },
     final_report_status: {
       label: t("licenseReportStatus"),
