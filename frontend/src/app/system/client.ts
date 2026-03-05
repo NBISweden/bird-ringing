@@ -146,6 +146,9 @@ export class Client {
     });
 
     if (!response.ok) {
+      if (response.status === 422) {
+        return (await response.json()) as T;
+      }
       const text = await response.text();
       throw new Error(`Request failed (${response.status}): ${text}`);
     }

@@ -208,10 +208,25 @@ export type BSColor =
 
 export type ButtonType = BSColor | "outline-primary";
 
+export type FailedMessage = {
+  to: string[];
+  details: string;
+};
+
+export type SkippedMessage = {
+  actor_id: number;
+  mnr: string;
+  reason: string;
+};
+
 export interface SendEmailResult {
   messages_sent: number;
-  messages_prepared: number;
-  failed_messages: string[];
+  failed_messages: FailedMessage[];
+  skipped_messages?: SkippedMessage[];
+  ringer_bundle_messages_sent?: number;
+  ringer_bundle_message?: string;
+  ringer_bundle_failed_messages?: FailedMessage[];
+  ringer_bundle_error?: string;
 }
 
 export function convertDateToLocale(dateStr: string) {

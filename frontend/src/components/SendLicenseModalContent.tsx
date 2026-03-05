@@ -11,6 +11,88 @@ interface SendLicenseModalContentProps {
   mnrs: string[];
 }
 
+function SendEmailResultDetails({ data }: { data: SendEmailResult | undefined }) {
+  const { t } = useTranslation();
+
+  if (!data) return <></>;
+
+  return (
+    <>
+      {typeof data.ringer_bundle_messages_sent === "number" && (
+        <div className="alert alert-info">
+          {t("licenseRingerBundleMessagesSent", {
+            count: data.ringer_bundle_messages_sent,
+          })}
+        </div>
+      )}
+
+      {data.ringer_bundle_message && (
+        <div className="alert alert-info">
+          {data.ringer_bundle_message === "sent"
+            ? t("licenseRingerBundleMessageSent")
+            : data.ringer_bundle_message}
+        </div>
+      )}
+
+      {data.ringer_bundle_error && (
+        <div className="alert alert-warning">
+          {t("licenseRingerBundleError", { error: data.ringer_bundle_error })}
+        </div>
+      )}
+
+      {data.ringer_bundle_failed_messages &&
+        data.ringer_bundle_failed_messages.length > 0 && (
+          <div className="alert alert-warning">
+            <p>{t("licenseRingerBundleFailedMessages")}:</p>
+            <ul>
+              {data.ringer_bundle_failed_messages.map((msg, idx) => (
+                <li key={idx}>
+                  {t("licenseFailedMessageRow", {
+                    to: msg.to.join(", "),
+                    details: msg.details,
+                  })}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+      {data.failed_messages && data.failed_messages.length > 0 && (
+        <div className="alert alert-warning">
+          <p>{t("licenseFailedMessagesDetails")}:</p>
+          <ul>
+            {data.failed_messages.map((msg, idx) => (
+              <li key={idx}>
+                {t("licenseFailedMessageRow", {
+                  to: msg.to.join(", "),
+                  details: msg.details,
+                })}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {data.skipped_messages && data.skipped_messages.length > 0 && (
+        <div className="alert alert-secondary">
+          <p>{t("licenseSkippedMessages")}:</p>
+          <ul>
+            {data.skipped_messages.map((msg, idx) => (
+              <li key={idx}>
+                {t("licenseSkippedMessageRow", {
+                  mnr: msg.mnr,
+                  actorId: msg.actor_id,
+                  reason: msg.reason,
+                })}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </>
+  );
+}
+
 export function SendLicenseModalContent({
   mnrs,
 }: SendLicenseModalContentProps) {
@@ -61,16 +143,7 @@ export function SendLicenseModalContent({
         })}
       </div>
 
-      {data && data.failed_messages && data.failed_messages.length > 0 && (
-        <div className="alert alert-warning">
-          <p>{t("licenseSendLicensesFailed")}:</p>
-          <ul>
-            {data?.failed_messages.map((msg, idx) => (
-              <li key={idx}>{msg}</li>
-            ))}
-          </ul>
-        </div>
-      )}
+      <SendEmailResultDetails data={data} />
     </>
   );
 }
@@ -135,16 +208,7 @@ export function SendLicenseForActorsModalContent({
         })}
       </div>
 
-      {data && data.failed_messages && data.failed_messages.length > 0 && (
-        <div className="alert alert-warning">
-          <p>{t("licenseSendLicensesFailed")}:</p>
-          <ul>
-            {data?.failed_messages.map((msg, idx) => (
-              <li key={idx}>{msg}</li>
-            ))}
-          </ul>
-        </div>
-      )}
+      <SendEmailResultDetails data={data} />
     </>
   );
 }
