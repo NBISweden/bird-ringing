@@ -9,6 +9,7 @@ import {
   useState,
   useEffect,
 } from "react";
+import { NoCacheSWR } from "./NoCacheSWR";
 
 export function ModalView() {
   const modals = useModalsContext();
@@ -82,7 +83,7 @@ export function ModalView() {
               onClick={() => handleClose()}
             ></button>
           </div>
-          <div className="modal-body">{modal?.content}</div>
+          <div className="modal-body"><NoCacheSWR>{modal.content}</NoCacheSWR></div>
           <div className="modal-footer">
             {modal.actions.map((action, index) => (
               <button
