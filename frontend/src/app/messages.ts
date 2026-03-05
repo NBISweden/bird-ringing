@@ -3,7 +3,28 @@ type Message = {
   description?: string;
 };
 
+const licenseReportStatusOptions = {
+  licenseReportStatusYes: "Completed final report",
+  licenseReportStatusNo: "No final report",
+  licenseReportStatusIncomplete: "Incomplete final report",
+}
+
+const licenseStatusOptions = {
+  licenseStatusTerminated: "Terminated",
+  licenseStatusInactive: "Inactive",
+  licenseStatusActive: "Active",
+}
+
+const actorTypeOptions = {
+  actorTypePerson: "Person",
+  actorTypeStation: "Station",
+}
+
 const messagesBase = {
+  ...licenseReportStatusOptions,
+  ...licenseStatusOptions,
+  ...actorTypeOptions,
+
   birdRinging: "Bird Ringing",
   userWelcomeHeader: "Welcome, {name}",
   userWelcomeText: "You’re successfully logged in as an expert.",
@@ -90,9 +111,6 @@ const messagesBase = {
   licensePermissionPeriodOpenForward: "<from>from </from>{startsAt}",
   licensePermissions: "Permissions",
   licenseReportStatus: "Final report status",
-  licenseReportStatusYes: "Completed final report",
-  licenseReportStatusNo: "No final report",
-  licenseReportStatusIncomplete: "Incomplete final report",
   licenseSelectedLicenses: "Selected licenses",
   licenseSendLicenses: "Send licenses",
   licenseSendLicensesConfirmText:

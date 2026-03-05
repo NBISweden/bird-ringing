@@ -183,7 +183,7 @@ export type LicenseCurrent = {
   version: number;
   location: string;
   description: string;
-  report_status: number;
+  report_status: string;
   starts_at: string;
   ends_at: string;
   created_at: string;

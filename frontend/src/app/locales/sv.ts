@@ -1,6 +1,26 @@
 import type { TranslationMap } from "@/app/messages";
 
+const licenseReportStatusOptions = {
+  licenseReportStatusYes: "Komplett slutrapport",
+  licenseReportStatusNo: "Ingen slutrapport",
+  licenseReportStatusIncomplete: "Inkomplett slutrapport",
+}
+
+const licenseStatusOptions = {
+  licenseStatusTerminated: "Avslutad",
+  licenseStatusInactive: "Inaktiv",
+  licenseStatusActive: "Aktiv",
+}
+
+const actorTypeOptions = {
+  actorTypePerson: "Person",
+  actorTypeStation: "Station",
+}
+
 export const locale: TranslationMap = {
+  ...licenseReportStatusOptions,
+  ...licenseStatusOptions,
+  ...actorTypeOptions,
   birdRinging: "Ringmärkning",
   welcomeMessageHeader: "Välkommen till Birdy!",
   welcomeMessageText: "En fantabulös plats att hantera licenser.",
@@ -85,9 +105,6 @@ export const locale: TranslationMap = {
   licensePermissionPeriodOpenForward: "<from>från </from>{startsAt}",
   licensePermissions: "Tillstånd",
   licenseReportStatus: "Slutrapportstatus",
-  licenseReportStatusYes: "Komplett slutrapport",
-  licenseReportStatusNo: "Ingen slutrapport",
-  licenseReportStatusIncomplete: "Inkomplett slutrapport",
   licenseSelectedLicenses: "Valda licenser",
   licenseSendLicenses: "Skicka licenser",
   licenseSendLicensesConfirmText:

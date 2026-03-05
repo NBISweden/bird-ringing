@@ -78,6 +78,7 @@ const emptyLicensePage: PagedResponse<LicenseListItem> = {
 function toLicenseTable(
   item: LicenseListItem,
   t: Translation["t"],
+  formatOption: Translation["formatOption"]
 ): TableItem<LicensePropertyIds> {
   return {
     id: item.mnr,
@@ -88,7 +89,10 @@ function toLicenseTable(
         ),
       },
       type: {
-        component: item.license_holder_type || "-",
+        component: item.license_holder_type && formatOption(
+          item.license_holder_type,
+          {person: "actorTypePerson", station: "actorTypeStation"}
+        ) || "-",
       },
       license_holder: {
         component: item.license_holder,
@@ -111,10 +115,16 @@ function toLicenseTable(
         )
       },
       final_report_status: {
-        component: item.current.report_status,
+        component: formatOption(
+          item.current.report_status,
+          {yes: "licenseReportStatusYes", no: "licenseReportStatusNo", incomplete: "licenseReportStatusIncomplete"}
+        ),
       },
       license_status: {
-        component: item.status,
+        component: formatOption(
+          item.status,
+          {active: "licenseStatusActive", inactive: "licenseStatusInactive", terminated: "licenseStatusTerminated"}
+        ),
       },
       has_license_card: {
         component: item.has_license_card ? (
@@ -240,11 +250,11 @@ function BaseListView({
   params: URLSearchParams;
 }) {
   const [actionIsOpen, setActionIsOpen] = useState(false);
-  const { t } = useTranslation();
+  const { t, formatOption } = useTranslation();
 
   const items = useMemo(
-    () => licenses.map<TableItem>((item) => toLicenseTable(item, t)),
-    [licenses, t],
+    () => licenses.map<TableItem>((item) => toLicenseTable(item, t, formatOption)),
+    [licenses, t, formatOption],
   );
   const { selectedItems, toggleItems, handleItemSelection, allSelected } =
     useItemSelections(new Set(items.map((r) => r.id)), "data-license-id");
