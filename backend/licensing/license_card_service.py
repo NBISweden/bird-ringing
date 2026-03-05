@@ -169,15 +169,18 @@ class LicenseCardService:
         rendered = self.render_pdf_for_license_and_actor(lic=lic, actor=actor, allowed_roles=allowed_roles)
 
         # Store new document (keep old docs for archive)
-        doc = LicenseDocument.objects.create(
-            created_by=created_by,
-            updated_by=updated_by,
+        (doc, _created) = LicenseDocument.objects.get_or_create(
+            license__sequence__mnr__icontains=lic.sequence.mnr,
             actor=actor,
             type=DocumentTypeChoices.LICENSE,
-            data=rendered.pdf_bytes,
-            reference=rendered.filename,
-            is_permanent=False,
             fingerprint=fp,
+            defaults={
+                "created_by": created_by,
+                "updated_by": updated_by,
+                "reference": rendered.filename,
+                "is_permanent": False,
+                "data": rendered.pdf_bytes,
+            }
         )
         lic.documents.add(doc)
         return doc

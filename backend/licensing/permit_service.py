@@ -137,7 +137,13 @@ class PermitService:
         payload = self._fingerprint_payload(lic=lic, actor=actor, context_fp=context_fp, template_sha256=template_sha256)
         fp = self._fingerprint(payload)
 
-        existing = self.get_permit_document(lic=lic, actor=actor, allowed_roles=allowed_roles)
+        existing = LicenseDocument.objects.filter(
+            license__sequence__mnr__icontains=lic.sequence.mnr,
+            actor=actor,
+            type=DocumentTypeChoices.PERMIT,
+            fingerprint=fp,
+        ).order_by("-created_at").first()
+
         if existing:
             lic.documents.add(existing)
             return existing
@@ -156,16 +162,18 @@ class PermitService:
         )
 
         # Create first to get created_at.date
-        doc = LicenseDocument.objects.create(
-            created_by=created_by,
-            updated_by=updated_by,
+        (doc, _created) = LicenseDocument.objects.get_or_create(
+            license__sequence__mnr__icontains=lic.sequence.mnr,
             actor=actor,
-            license=lic,
             type=DocumentTypeChoices.PERMIT,
-            reference=filename,
             fingerprint=fp,
-            is_permanent=False,
-            data=docx_to_pdf_bytes(docx_bytes)
+            defaults={
+                "created_by": created_by,
+                "updated_by": updated_by,
+                "is_permanent": False,
+                "reference": filename,
+                "data": docx_to_pdf_bytes(docx_bytes)
+            }
         )
 
         lic.documents.add(doc)
