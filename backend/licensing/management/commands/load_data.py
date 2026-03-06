@@ -296,6 +296,7 @@ class Command(BaseCommand):
             base_license.starts_at = self._replace_year(base_license.starts_at, year)
             base_license.ends_at = self._replace_year(base_license.ends_at, year + year_delta)
             base_license.save()
+            self._apply_relations(base_license, relations)
             for permission in base_license.permissions.all():
                 if permission.ends_at and permission.starts_at:
                     perm_year_delta = permission.ends_at.year - permission.starts_at.year
@@ -307,16 +308,6 @@ class Command(BaseCommand):
                 f"commit-{year}",
                 utils.default_document_copy_policy
             )
-            if created:
-                lic = license_import.item
-                self._apply_relations(lic, relations)
-
-        for sequence_import in models.LicenseSequenceImport.objects.all():
-            seq = sequence_import.item
-            lic = seq.current
-            relations = grouped_relations.get((seq.mnr, lic.starts_at.year))
-            if relations:
-                self._apply_relations(lic, relations)
 
     @log_action
     def get_relations(self, ringer_license_entries: list[dict], associate_ringer_year_entries: list[dict]):

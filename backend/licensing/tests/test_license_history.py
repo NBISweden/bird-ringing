@@ -207,12 +207,50 @@ class TestLicenseHistory(TestCase):
         # Change state and remove actors
         current.report_status = models.ReportStatusChoices.NO
         current.actors.all().delete()
-        fourth_commit = current.copy_to_new_version(200)
+        fourth_commit = self.license_sequence.commit(current, default_document_copy_policy)
         self.assertEqual(
             set(fourth_commit.documents.values_list("reference", flat=True)),
             set(third_commit.documents.filter(is_permanent=True).values_list("reference", flat=True)),
             "Expect all non permanent documents related to actors to be removed"
         )
+    
+    def test_actor_changes(self):
+        current = self.license_sequence.current
+        first_commit = self.license_sequence.commit(current, default_document_copy_policy)
+        self.assertNotEqual(current, first_commit, "Expect current and first_commit to be different objects")
+        self.assertTrue(first_commit.actors.count() != 0)
+        self.assertEqual(
+            set(first_commit.actors.values_list("actor__full_name", "mednr")),
+            set(current.actors.values_list("actor__full_name", "mednr")),
+            "Expect actor list to be the same, for first_commit, as on current"
+        )
+
+        current.actors.all().delete()
+        second_commit = self.license_sequence.commit(current, default_document_copy_policy)
+        self.assertNotEqual(current, second_commit, "Expect current and first_commit to be different objects")
+        self.assertEqual(
+            set(second_commit.actors.values_list("actor__full_name", "mednr")),
+            set(current.actors.values_list("actor__full_name", "mednr")),
+            "Expect actor list to be the same, for second_commit, as on current"
+        )
+
+        models.LicenseRelation.objects.create(
+            actor=self.actors[0],
+            license=current,
+            mednr="R001",
+            role=models.LicenseRoleChoices.RINGER,
+            created_by=self.user,
+            updated_by=self.user
+        )
+        third_commit = self.license_sequence.commit(current, default_document_copy_policy)
+        self.assertNotEqual(current, third_commit, "Expect current and first_commit to be different objects")
+        self.assertTrue(third_commit.actors.count() == 1)
+        self.assertEqual(
+            set(third_commit.actors.values_list("actor__full_name", "mednr")),
+            set(current.actors.values_list("actor__full_name", "mednr")),
+            "Expect actor list to be the same, for third_commit, as on current"
+        )
+
 
     def test_license_dump(self):
         starts_at = datetime.date(year=2026, month=2, day=1)
@@ -220,7 +258,14 @@ class TestLicenseHistory(TestCase):
         self.assertEqual(
             self.license_sequence.current.dump(),
             (
-                (1,),
+                (
+                    1,
+                    {
+                        (2, "0001", 1),
+                        (3, "0002", 1),
+                        (1, "0000", 1)
+                    }
+                ),
                 (
                     "",
                     "",

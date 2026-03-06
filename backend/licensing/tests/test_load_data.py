@@ -432,9 +432,11 @@ class TestLoadData(TestCase):
             other_instances = list(models.License.objects.exclude(starts_at__year=self.command.current_year).filter(sequence=seq))
             latest_dump = seq.latest.dump()
             for lic in other_instances:
+                (_latest_state, latest_content) = self._filter_license_dump(latest_dump)
+                (_lic_state, lic_content) = self._filter_license_dump(lic.dump())
                 self.assertEqual(
-                    self._filter_license_dump(latest_dump),
-                    self._filter_license_dump(lic.dump()),
+                    latest_content,
+                    lic_content,
                     "A licenses sharing similar data over different years should be comparable"
                 )
     

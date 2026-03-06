@@ -281,6 +281,10 @@ class License(ChangeTracking):
         """
         return (
             self.report_status,
+            set((
+                relation
+                for relation in self.actors.values_list("actor__id", "mednr", "role")
+            )),
         )
     
     def dump_content(self):
