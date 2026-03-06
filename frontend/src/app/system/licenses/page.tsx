@@ -36,7 +36,6 @@ type LicensePropertyIds =
   | "license_holder"
   | "methods"
   | "location"
-  | "species"
   | "final_report_status"
   | "license_status"
   | "last_email_sent_at"
@@ -111,19 +110,6 @@ function toLicenseTable(
             ).map((pt) => (
               <Badge color="info" rounded outline key={pt}>
                 {pt}
-              </Badge>
-            ))}
-          </div>
-        ),
-      },
-      species: {
-        component: (
-          <div className="table-row-max-height">
-            {Array.from(
-              new Set(item.current.permissions.flatMap((p) => p.species)),
-            ).map((s) => (
-              <Badge color="info" rounded outline key={s}>
-                {s}
               </Badge>
             ))}
           </div>
@@ -307,9 +293,6 @@ function BaseListView({
     methods: {
       label: t("licenseTrappingMethods"),
       ordering: { forward: "methods,mnr", reverse: "-methods,mnr" },
-    },
-    species: {
-      label: t("licenseSpecies"),
     },
     final_report_status: {
       label: t("licenseReportStatus"),
