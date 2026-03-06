@@ -121,7 +121,7 @@ export default function WelcomePage() {
         <div className="alert alert-warning" role="alert">
           A simple warning alert—check it out!
         </div>
-	<BuildInfo />
+        <BuildInfo />
       </div>
     </div>
   );
