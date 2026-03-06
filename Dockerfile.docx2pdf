@@ -1,0 +1,36 @@
+FROM debian:stable-slim
+
+ARG UID=1000
+ARG GID=1000
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
+RUN --mount=type=cache,target=/var/cache/apt,id=apt-cache \
+    --mount=type=cache,target=/var/lib/apt/lists,id=apt-lists-cache \
+	apt-get update && \
+	apt-get install -y --no-install-recommends \
+		dumb-init \
+		fonts-dejavu-core \
+		fonts-liberation \
+		libreoffice-writer \
+		netcat-openbsd \
+		python3-fastapi \
+		python3-uno \
+		uvicorn \
+		wget
+
+ENV HOME=/home/app
+
+USER "$UID:$GID"
+
+WORKDIR "$HOME"
+
+COPY --chown="$UID:$GID" --chmod=644 server.py "$HOME/server.py"
+COPY --chown="$UID:$GID" --chmod=755 docker-entrypoint.sh "$HOME/docker-entrypoint.sh"
+
+ENTRYPOINT ["/usr/bin/dumb-init", "--"]
+
+CMD ["./docker-entrypoint.sh"]

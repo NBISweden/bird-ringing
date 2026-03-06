@@ -9,7 +9,8 @@ export type ActorBase = {
   last_name: string;
   type: string;
   sex: string;
-  birth_date: string;
+  birth_date: string | null;
+  birth_year: number | null;
   language: string;
   phone_number1: string;
   phone_number2: string;
@@ -135,9 +136,11 @@ export type LicenseListItem = {
   status: string;
   license_holder: string;
   license_holder_type: string;
-  helper_count: number;
+  associate_ringer_count: number;
   methods: string;
   last_email_sent_at: string;
+  has_license_card: boolean;
+  has_permit: boolean;
 };
 export type LicensePermissionType = {
   name: string;
@@ -201,7 +204,14 @@ export type ButtonType =
   | "danger"
   | "info"
   | "light"
-  | "dark";
+  | "dark"
+  | "outline-primary";
+
+export interface SendEmailResult {
+  messages_sent: number;
+  messages_prepared: number;
+  failed_messages: string[];
+}
 
 export function convertDateToLocale(dateStr: string) {
   if (dateStr) {
@@ -218,14 +228,13 @@ export function convertDateToLocale(dateStr: string) {
   }
 }
 
-export function convertOnlyDateToLocale(dateStr: string) {
+export function convertOnlyDateToLocale(dateStr: string | null | undefined) {
   if (dateStr) {
     return new Date(dateStr).toLocaleString("sv-SE", {
       year: "numeric",
       month: "2-digit",
       day: "2-digit",
     });
-  } else {
-    return "-";
   }
+  return "";
 }

@@ -39,10 +39,10 @@ services:
       dockerfile: ../Dockerfile.frontend
       target: prod
       args:
-        UID: "${UID:-1000}"
-        GID: "${GID:-1000}"
+        BUILD_ID: "${BUILD_ID:-6000:6000}"
+        RUNTIME_ID: "${RUNTIME_ID:-6001:6001}"
     volumes:
-      - frontend-vol:/vol
+      - frontend-vol:/vol:ro
     depends_on:
       database:
         condition: service_healthy
@@ -53,8 +53,8 @@ services:
       dockerfile: ../Dockerfile.backend
       target: prod
       args:
-        UID: "${UID:-1000}"
-        GID: "${GID:-1000}"
+        BUILD_ID: "${BUILD_ID:-6000:6000}"
+        RUNTIME_ID: "${RUNTIME_ID:-6001:6001}"
     environment:
       POSTGRES_USER: db_admin
       SERVICE_MODE: production-init
@@ -73,8 +73,8 @@ services:
       dockerfile: ../Dockerfile.backend
       target: prod
       args:
-        UID: "${UID:-1000}"
-        GID: "${GID:-1000}"
+        BUILD_ID: "${BUILD_ID:-6000:6000}"
+        RUNTIME_ID: "${RUNTIME_ID:-6001:6001}"
     environment:
       POSTGRES_USER: db_user
       SERVICE_MODE: production
@@ -82,10 +82,11 @@ services:
       DJANGO_SECRET_FILE: /run/secrets/django-secret-key
       DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-}
       LICENSE_CARD_FILE: ${LICENSE_CARD_FILE:-}
-      LICENSE_CARD_FILE_BACK: ${LICENSE_CARD_FILE_BACK:-}
+      LICENSE_CARD_BACK_FILE: ${LICENSE_CARD_BACK_FILE:-}
+      PERMIT_TEMPLATE_FILE: ${PERMIT_TEMPLATE_FILE:-}
+      DOCX2PDF_URL: http://docx2pdf:8000/convert/docx-to-pdf
     volumes:
-      - backend-vol:/vol
-      - ./secrets/card_templates:/card_templates
+      - backend-vol:/vol:ro
     healthcheck:
       test: ["CMD", "wget", "--spider", "--timeout=5", "http://backend:8000/api/system/health/"]
       interval: 10s
@@ -95,9 +96,26 @@ services:
     depends_on:
       backend-init:
         condition: service_completed_successfully
+      docx2pdf:
+        condition: service_healthy
     secrets:
       - db-user-pass
       - django-secret-key
+      - django-email-password
+
+  docx2pdf:
+    build:
+      context: ./docx2pdf
+      dockerfile: ../Dockerfile.docx2pdf
+    tmpfs:
+      - /tmp
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "--timeout=5", "http://docx2pdf:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    restart: unless-stopped
 
   proxy:
     image: caddy:2-alpine
@@ -105,8 +123,8 @@ services:
       - 127.0.0.1:3210:80
     volumes:
       - ./caddy:/etc/caddy:ro
-      - frontend-vol:/frontend:ro
-      - backend-vol:/backend:ro
+      - frontend-vol:/srv/frontend:ro
+      - backend-vol:/srv/backend:ro
       - proxy-vol:/data
     healthcheck:
       test: ["CMD", "wget", "--spider", "--timeout=5", "http://proxy/health"]
@@ -135,3 +153,5 @@ secrets:
     file: ./secrets/db-user-pass.txt
   django-secret-key:
     file: ./secrets/django-secret-key.txt
+  django-email-password:
+    file: ./secrets/django-email-password.txt
