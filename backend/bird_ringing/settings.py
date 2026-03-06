@@ -16,6 +16,7 @@ from os import getenv
 from bird_ringing.helpers import get_secret_from_file, parse_csv_from_env
 from bird_ringing.helpers import strtobool
 from django.core.management.utils import get_random_secret_key
+import sys
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -32,8 +33,20 @@ if not SECRET_KEY:
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = strtobool(getenv("DJANGO_DEBUG_MODE", False))
 
-ALLOWED_HOSTS = parse_csv_from_env("DJANGO_ALLOWED_HOSTS", ["localhost", "backend"])
+# Get the list of allowed hosts from the DJANGO_ALLOWED_HOSTS
+# environment variable, or use a default list if not set.  These are
+# domain names or IP addresses that the Django application can serve.
+# We typically need two entries here: "backend", and the publicly
+# accessible domain name of the hosting server.
+ALLOWED_HOSTS = parse_csv_from_env("DJANGO_ALLOWED_HOSTS", ["backend", "localhost"])
 
+# Get the list of trusted origins for CSRF protection from the
+# DJANGO_CSRF_TRUSTED_ORIGINS environment variable, or use an empty list
+# if not set.  These are the origins that are allowed to make cross-site
+# requests to the Django application.  We typically need to include the
+# publicly accessible URL of the hosting server here, including the
+# scheme (e.g. "https://").  For example, "https://example.edu".
+CSRF_TRUSTED_ORIGINS = parse_csv_from_env("DJANGO_CSRF_TRUSTED_ORIGINS", [])
 
 # Application definition
 
@@ -60,10 +73,12 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = "bird_ringing.urls"
 
+TEMPLATES_DIR = getenv("DJANGO_TEMPLATES_DIR")
+
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [],
+        "DIRS": [TEMPLATES_DIR],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -116,7 +131,9 @@ GROUP_NAMES = {
 }
 
 LICENSING_CARD_TEMPLATE = getenv("LICENSE_CARD_FILE","")
-LICENSING_CARD_TEMPLATE_BACK = getenv("LICENSE_CARD_FILE_BACK","")
+LICENSING_CARD_TEMPLATE_BACK = getenv("LICENSE_CARD_BACK_FILE","")
+LICENSING_PERMIT_TEMPLATE_DOCX = getenv("PERMIT_TEMPLATE_FILE","")
+DOCX2PDF_URL = getenv("DOCX2PDF_URL", "")
 
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
@@ -129,14 +146,62 @@ USE_I18N = True
 
 USE_TZ = True
 
-
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = "static/"
-STATIC_ROOT = "static"
+STATIC_ROOT = "/vol"
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# Licensing email configuration
+
+DEFAULT_FROM_EMAIL = getenv("DJANGO_DEFAULT_FROM_EMAIL")
+EMAIL_BACKEND = getenv("DJANGO_EMAIL_BACKEND", "django.core.mail.backends.smtp.EmailBackend")
+EMAIL_HOST = getenv("DJANGO_EMAIL_HOST")
+EMAIL_PORT = getenv("DJANGO_EMAIL_PORT")
+EMAIL_TIMEOUT = int(getenv("DJANGO_EMAIL_TIMEOUT", "30"))
+EMAIL_HOST_USER = getenv("DJANGO_EMAIL_HOST_USER")
+EMAIL_USE_TLS = strtobool(getenv("DJANGO_EMAIL_USE_TLS", "false"))
+EMAIL_USE_SSL = strtobool(getenv("DJANGO_EMAIL_USE_SSL", "false"))
+EMAIL_HOST_PASSWORD = get_secret_from_file("DJANGO_EMAIL_HOST_PASSWORD_FILE")
+EMAIL_SSL_KEYFILE = get_secret_from_file("DJANGO_EMAIL_SSL_KEYFILE")
+EMAIL_SSL_CERTFILE = get_secret_from_file("DJANGO_EMAIL_SSL_CERTFILE")
+
+LICENSING_EMAIL_SUBJECT = getenv("LICENSING_EMAIL_SUBJECT")
+LICENSING_EMAIL_TEMPLATE = getenv("LICENSING_EMAIL_TEMPLATE")
+LICENSING_EMAIL_FROM_ADDR = getenv("LICENSING_EMAIL_FROM_ADDR")
+LICENSING_EMAIL_HTML_TEMPLATE = getenv("LICENSING_EMAIL_HTML_TEMPLATE")
+
+
+if "test" in sys.argv or "test_coverage" in sys.argv:
+    DATABASES["default"]["ENGINE"] = "django.db.backends.sqlite3"
+    EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
+    LICENSING_EMAIL_SUBJECT = "Test email {{name|safe}}"
+    LICENSING_EMAIL_HTML_TEMPLATE = "email_template.html"
+    LICENSING_EMAIL_TEMPLATE = "email_template.txt"
+    LICENSING_EMAIL_FROM_ADDR = "webmaster@bird-ringing.local"
+    TEMPLATES = [
+        {
+            "BACKEND": "django.template.backends.django.DjangoTemplates",
+            "OPTIONS": {
+                "loaders": [
+                    (
+                        "django.template.loaders.locmem.Loader",
+                        {
+                            "email_template.html": '<em>{{mnr}}</em> <em>{{name|safe}}</em> <em>{{date}}</em><ul>{%for document_type, filename in attachments%}<li>{{document_type}}: {{filename}}{%endfor%}</li></ul>',
+                            "email_template.txt": '{{mnr}} {{name|safe}} {{date}} {%for document_type, filename in attachments%} {{document_type}}: {{filename}}{%endfor%}',
+                        },
+                    ),
+                ],
+                "context_processors": [
+                    "django.template.context_processors.request",
+                    "django.contrib.auth.context_processors.auth",
+                    "django.contrib.messages.context_processors.messages",
+                ],
+            },
+        }
+    ]

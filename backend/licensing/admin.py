@@ -14,6 +14,7 @@ from .models import (
     ActorImport,
     LicenseSequenceImport,
     LicenseImport,
+    PermitDnr,
 )
 import datetime
 
@@ -133,3 +134,8 @@ class LicenseImportAdmin(admin.ModelAdmin):
 @admin.register(SpeciesImport)
 class SpeciesImportAdmin(admin.ModelAdmin):
     pass
+
+
+@admin.register(PermitDnr)
+class PermitDnrAdmin(ModelAdminWithChangeTracking):
+    exclude = COMMON_EXCLUDES

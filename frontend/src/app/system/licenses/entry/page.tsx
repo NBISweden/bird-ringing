@@ -82,7 +82,7 @@ function LicenseViewInner() {
               {t("licenseView")} {data.mnr}
             </h1>
           </div>
-          <LicenceView license={data.current} />
+          <LicenceView license={data.current} mnr={data.mnr} />
           {/* History */}
           <div className="py-3">
             <h3 className="h2">{t("licenseHistory")}</h3>

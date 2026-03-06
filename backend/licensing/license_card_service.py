@@ -51,19 +51,19 @@ class RenderedPdf:
 class LicenseCardService:
     """
     Logic for producing a license card PDF from a License for a specific Actor.
-    Supports both RINGER and HELPER (and can be extended). Since this is using License, it could be extended
+    Supports both RINGER and ASSOCIATE RINGER (and can be extended). Since this is using License, it could be extended
     to historical licenses in the future if needed.
     """
 
     def __init__(self, renderer: Optional[LicenseCardRenderer] = None):
         self.renderer = renderer or LicenseCardRenderer()
 
-    def make_license_card_filename(self, lic, actor, allowed_roles=(LicenseRoleChoices.RINGER, LicenseRoleChoices.HELPER),
+    def make_license_card_filename(self, lic, actor, allowed_roles=(LicenseRoleChoices.RINGER, LicenseRoleChoices.ASSOCIATE_RINGER),
     ) -> str:
         rel = self._get_license_relation(lic=lic, actor=actor, allowed_roles=allowed_roles)
 
         mnr = lic.sequence.mnr
-        identifier = f"{mnr}-{rel.mednr}" if rel.role == LicenseRoleChoices.HELPER else f"{mnr}"
+        identifier = f"{mnr}-{rel.mednr}" if rel.role == LicenseRoleChoices.ASSOCIATE_RINGER else f"{mnr}"
         name = slugify(actor.full_name)[:40]
 
         return f"license-card-{identifier}" + (f"-{name}.pdf" if name else ".pdf")
@@ -73,7 +73,7 @@ class LicenseCardService:
         *,
         lic: License,
         actor: Actor,
-        allowed_roles: Iterable[int] = (LicenseRoleChoices.RINGER, LicenseRoleChoices.HELPER),
+        allowed_roles: Iterable[int] = (LicenseRoleChoices.RINGER, LicenseRoleChoices.ASSOCIATE_RINGER),
     ) -> RenderedPdf:
 
         rel = self._get_license_relation(
@@ -87,7 +87,7 @@ class LicenseCardService:
 
         mnr = lic.sequence.mnr
         mnr_line = mnr
-        if rel.role == LicenseRoleChoices.HELPER:
+        if rel.role == LicenseRoleChoices.ASSOCIATE_RINGER:
             mnr_line = f"{mnr}: {rel.mednr}"
 
         lines_info = [valid_to, mnr_line, holder_name]
@@ -141,7 +141,7 @@ class LicenseCardService:
         actor: Actor,
         created_by,
         updated_by,
-        allowed_roles: Iterable[int] = (LicenseRoleChoices.RINGER, LicenseRoleChoices.HELPER),
+        allowed_roles: Iterable[int] = (LicenseRoleChoices.RINGER, LicenseRoleChoices.ASSOCIATE_RINGER),
     ) -> LicenseDocument:
         """
         Returns the current LicenseDocument for this actor and license.
@@ -199,10 +199,10 @@ class LicenseCardService:
         licenses: Iterable[License],
         created_by,
         updated_by,
-        allowed_roles: Iterable[int] = (LicenseRoleChoices.RINGER, LicenseRoleChoices.HELPER),
+        allowed_roles: Iterable[int] = (LicenseRoleChoices.RINGER, LicenseRoleChoices.ASSOCIATE_RINGER),
     ) -> list[LicenseDocument]:
         """
-        Batch get-or-create license card documents for all ringers/helpers on each provided license.
+        Batch get-or-create license card documents for all ringers/associate ringers on each provided license.
         """
         docs: list[LicenseDocument] = []
 
@@ -212,7 +212,7 @@ class LicenseCardService:
 
             relations = lic.actors.filter(role__in=list(allowed_roles)).select_related("actor")
             if not relations.exists():
-                raise ValueError(f"No ringers/helpers on license for mnr {lic.sequence.mnr}.")
+                raise ValueError(f"No ringers/associate ringers on license for mnr {lic.sequence.mnr}.")
 
             for rel in relations:
                 doc = self.get_or_create_license_card_document(
@@ -230,11 +230,11 @@ class LicenseCardService:
         self,
         *,
         licenses: Iterable[License],
-        allowed_roles: Iterable[int] = (LicenseRoleChoices.RINGER, LicenseRoleChoices.HELPER),
+        allowed_roles: Iterable[int] = (LicenseRoleChoices.RINGER, LicenseRoleChoices.ASSOCIATE_RINGER),
     ) -> bytes:
         """
         Create ZIP (bytes) containing existing current license-card PDFs
-        for all ringers/helpers on each provided license.
+        for all ringers/associate ringers on each provided license.
         If any expected PDF is missing, raise a ValueError.
         """
         zip_buffer = io.BytesIO()
@@ -246,7 +246,7 @@ class LicenseCardService:
 
                 relations = lic.actors.filter(role__in=list(allowed_roles)).select_related("actor")
                 if not relations.exists():
-                    raise ValueError(f"No ringers/helpers on license for mnr {lic.sequence.mnr}.")
+                    raise ValueError(f"No ringers/associate ringers on license for mnr {lic.sequence.mnr}.")
 
                 for rel in relations:
                     actor = rel.actor
@@ -277,7 +277,7 @@ class LicenseCardService:
         *,
         lic: License,
         actor: Actor,
-        allowed_roles: Iterable[int] = (LicenseRoleChoices.RINGER, LicenseRoleChoices.HELPER),
+        allowed_roles: Iterable[int] = (LicenseRoleChoices.RINGER, LicenseRoleChoices.ASSOCIATE_RINGER),
     ) -> Optional[LicenseDocument]:
         self._get_license_relation(
             lic=lic,
@@ -310,7 +310,7 @@ class LicenseCardService:
         )
         if not rel:
             raise ActorNotOnLicense(
-                "Specified actor is not registered on the license as ringer/helper."
+                "Specified actor is not registered on the license as ringer/associate ringer."
             )
 
         return rel

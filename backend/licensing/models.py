@@ -50,8 +50,8 @@ class ReportTypeChoices(models.IntegerChoices):
 
 class LicenseRoleChoices(models.IntegerChoices):
     RINGER = (1, "ringer")
-    HELPER = (2, "helper")
-    ASSOCIATE = (3, "associate")
+    ASSOCIATE_RINGER = (2, "associate ringer")
+    AFFILIATE = (3, "affiliate")
     COMMUNICATION = (4, "communication")
 
 
@@ -64,6 +64,7 @@ class LicenseStatusChoices(models.IntegerChoices):
 class DocumentTypeChoices(models.IntegerChoices):
     DOCUMENT = (1, "document")
     LICENSE = (2, "license")
+    PERMIT = (3, "permit")
 
 
 class CommunicationTypeChoices(models.IntegerChoices):
@@ -75,6 +76,7 @@ class CommunicationStatusChoices(models.IntegerChoices):
     SENT = (1, "sent")
     RECEIVED = (2, "received")
     BOUNCED = (3, "bounced")
+    FAILED = (4, "failed")
 
 
 class Actor(ChangeTracking):
@@ -89,6 +91,7 @@ class Actor(ChangeTracking):
     type = models.PositiveIntegerField(choices=ActorTypeChoices)
     sex = models.PositiveIntegerField(choices=SexChoices)
     birth_date = models.DateField(blank=True, null=True)
+    birth_year = models.PositiveIntegerField(blank=True, null=True)
     language = models.PositiveIntegerField(
         choices=LanguageChoices, default=LanguageChoices.UNKNOWN
     )
@@ -487,9 +490,10 @@ class ActorImport(ImportTracking):
     @staticmethod
     def get_key(**actor):
         birth_date = actor.get("birth_date")
+        birth_year = actor.get("birth_year")
         type = actor["type"]
         full_name = actor["full_name"]
-        year = birth_date.year if birth_date else None
+        year = birth_year or (birth_date.year if birth_date else None)
         return slugify(f"{type} {full_name} {year}")
 
 
@@ -519,3 +523,32 @@ class LicenseImport(ImportTracking):
     def get_key(**license):
         sequence = license["sequence"]
         return slugify(sequence.mnr)
+
+class PermitDnr(ChangeTracking):
+    """
+    Stores the DNR (diarienummer) value used for permit rendering.
+    Selection logic:
+      - choose a row where starts_at <= date <= ends_at and is_active=True
+      - if multiple match, pick the most recent (largest starts_at, then created_at)
+      - if none match: error (permit must not be created)
+    """
+
+    dnr_number = models.CharField(max_length=64)  # keep it generic for now
+    starts_at = models.DateField()
+    ends_at = models.DateField()
+    is_active = models.BooleanField(default=True, db_index=True)
+
+    class Meta:
+        constraints = [
+            # ensure starts_at itself is unique to avoid ambiguity
+            models.UniqueConstraint(
+                fields=["starts_at"],
+                name="unique_permit_dnr_starts_at",
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["is_active", "starts_at", "ends_at"]),
+        ]
+
+    def __str__(self):
+        return f"{self.dnr_number} ({self.starts_at}-{self.ends_at})"

@@ -3,10 +3,18 @@
 # The "backend-init" service will apply any pending migrations and then
 # terminate.
 case $SERVICE_MODE in (*-init)
-	case $SERVICE_MODE in (development*)
-		pip install uv &&
-		uv sync --frozen &&
-		python manage.py makemigrations || exit
+	case $SERVICE_MODE in 
+		development*)
+			pip install uv &&
+			uv sync --frozen &&
+			python manage.py makemigrations || exit
+			;;
+		production*)
+			: # Do nothing.
+			;;
+		*)
+			printf "Unknown SERVICE_MODE: %s\n" "$SERVICE_MODE" >&2
+			exit 1
 	esac
 
 	python manage.py migrate
@@ -16,12 +24,14 @@ esac
 # The main "backend" service runs here.
 
 # In development mode, run the Django development server.
-case $SERVICE_MODE in (development*)
-	exec python manage.py runserver 0.0.0.0:8000
+case $SERVICE_MODE in
+	development*)
+		exec python manage.py runserver 0.0.0.0:8000
+		;;
+	production*)
+		exec gunicorn --bind 0.0.0.0:8000 bird_ringing.wsgi
+		;;
+	*)
+		printf "Unknown SERVICE_MODE: %s\n" "$SERVICE_MODE" >&2
+		exit 1
 esac
-
-# In production mode, copy static content from "$HOME/static" to
-# the persistent volume at "/vol", then run Gunicorn.
-find /vol ! -path /vol -delete &&
-tar -c -f - -C "$HOME/static" . | tar -x -f - -C /vol &&
-exec gunicorn --bind 0.0.0.0:8000 bird_ringing.wsgi

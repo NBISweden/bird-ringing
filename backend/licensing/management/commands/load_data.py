@@ -7,10 +7,15 @@ import datetime
 from django.utils.timezone import make_aware
 import csv
 import logging
-
+import re
+from dataclasses import dataclass
 
 logger = logging.getLogger(__name__)
 
+@dataclass(frozen=True)
+class BirthParsed:
+    birth_date: datetime.date | None
+    birth_year: int | None
 
 class CSVLoader:
     """
@@ -72,7 +77,7 @@ class Command(BaseCommand):
             self.load_permit_types(loader.get_dict_list("TillstTyp"))
             self.load_permit_properties(loader.get_dict_list("TillstProp"))
             self.load_license_permits(loader.get_dict_list("Tillstand"))
-            self.load_helpers(
+            self.load_associate_ringers(
                 loader.get_dict_list("MarkAss"), loader.get_dict_list("MarkAssYr")
             )
 
@@ -129,7 +134,7 @@ class Command(BaseCommand):
         roles_and_keys = [
             (models.LicenseRoleChoices.RINGER, "Mnr", "R000"),
             *[
-                (models.LicenseRoleChoices.ASSOCIATE, ass_id, f"A00{i}")
+                (models.LicenseRoleChoices.AFFILIATE, ass_id, f"A00{i}")
                 for i, ass_id in enumerate(["AssMnr1", "AssMnr2", "AssMnr3"])
             ],
             (models.LicenseRoleChoices.COMMUNICATION, "AdrMnr", "ADRM"),
@@ -158,7 +163,7 @@ class Command(BaseCommand):
             if type == models.ActorTypeChoices.STATION
             else sex_choice
         )
-        birth_date = self._parse_birth_date(ringer_data.get("Fyr"))
+        birth_info = self._parse_birth_date_or_year(ringer_data.get("Fyr"))
         first_name = ringer_data.get("Fnamn", "")
         last_name = ringer_data.get("Enamn", "")
         language = self._parse_language(ringer_data.get("Spr"))
@@ -170,7 +175,8 @@ class Command(BaseCommand):
             last_name=last_name,
             type=type,
             sex=sex,
-            birth_date=birth_date,
+            birth_date=birth_info.birth_date,
+            birth_year=birth_info.birth_year,
             language=language,
             phone_number1=ringer_data.get("Telhem", ""),
             phone_number2=ringer_data.get("Telarb", ""),
@@ -287,29 +293,29 @@ class Command(BaseCommand):
                 scientific_name=s["VetNamn"],
             )
 
-    def load_helpers(self, helper_entries: list[dict], helper_year_entries: list[dict]):
+    def load_associate_ringers(self, associate_ringer_entries: list[dict], associate_ringer_year_entries: list[dict]):
         year_dict = dict()
-        for helper_year in helper_year_entries:
-            year_str = helper_year["Ar"]
+        for associate_ringer_year in associate_ringer_year_entries:
+            year_str = associate_ringer_year["Ar"]
             year_str = "1996" if year_str == "<97" else year_str
-            key = self._get_helper_key(helper_year)
+            key = self._get_associate_ringer_key(associate_ringer_year)
             year_list = year_dict.get(key, [])
             year_list.append(int(year_str))
             year_dict[key] = year_list
 
-        helper_map = {
-            self._get_helper_key(helper_data): self.load_helper(helper_data)
-            for helper_data in helper_entries
+        associate_ringer_map = {
+            self._get_associate_ringer_key(associate_ringer_data): self.load_associate_ringer(associate_ringer_data)
+            for associate_ringer_data in associate_ringer_entries
         }
 
-        helper_relations = sorted(
-            list(self.get_helper_relations(helper_year_entries)), key=lambda e: e[1]
+        associate_ringer_relations = sorted(
+            list(self.get_associate_ringer_relations(associate_ringer_year_entries)), key=lambda e: e[1]
         )
 
         current_user = self.get_current_user()
-        for helper_key, year in helper_relations:
-            (mnr, mednr) = helper_key
-            helper = helper_map[helper_key]
+        for associate_ringer_key, year in associate_ringer_relations:
+            (mnr, mednr) = associate_ringer_key
+            associate_ringer = associate_ringer_map[associate_ringer_key]
 
             base_license = models.License.objects.get(sequence__mnr=mnr, version=0)
             last_version = models.License.objects.filter(sequence__mnr=mnr).aggregate(
@@ -329,41 +335,42 @@ class Command(BaseCommand):
                     last_version + 1,
                     include_documents=False,
                 )
-            if not license.actors.filter(actor=helper).exists():
+            if not license.actors.filter(actor=associate_ringer).exists():
                 models.LicenseRelation.objects.get_or_create(
                     created_by=current_user,
                     updated_by=current_user,
                     license=license,
-                    actor=helper,
+                    actor=associate_ringer,
                     mednr=mednr,
-                    role=models.LicenseRoleChoices.HELPER,
+                    role=models.LicenseRoleChoices.ASSOCIATE_RINGER,
                 )
 
-    def get_helper_relations(self, helper_year_entries: list[dict]):
-        for helper_year in helper_year_entries:
-            year_str = helper_year["Ar"]
+    def get_associate_ringer_relations(self, associate_ringer_year_entries: list[dict]):
+        for associate_ringer_year in associate_ringer_year_entries:
+            year_str = associate_ringer_year["Ar"]
             year_str = "1996" if year_str == "<97" else year_str
-            yield (self._get_helper_key(helper_year), int(year_str))
+            yield (self._get_associate_ringer_key(associate_ringer_year), int(year_str))
 
-    def load_helper(self, helper_data: dict):
+    def load_associate_ringer(self, associate_ringer_data: dict):
         current_user = self.get_current_user()
-        birth_date = self._parse_birth_date(helper_data.get("Fyr"))
-        first_name = helper_data["FNamn"]
-        last_name = helper_data["ENamn"]
+        birth_info = self._parse_birth_date_or_year(associate_ringer_data.get("Fyr"))
+        first_name = associate_ringer_data["FNamn"]
+        last_name = associate_ringer_data["ENamn"]
         sex = {
             "F": models.SexChoices.FEMALE,
             "M": models.SexChoices.MALE,
-        }.get(helper_data.get("Sex"), models.SexChoices.UNDISCLOSED)
+        }.get(associate_ringer_data.get("Sex"), models.SexChoices.UNDISCLOSED)
         (actor, _created) = models.ActorImport.objects.get_or_create_item(
             created_by=current_user,
             updated_by=current_user,
             type=models.ActorTypeChoices.PERSON,
-            birth_date=birth_date,
+            birth_date=birth_info.birth_date,
+            birth_year=birth_info.birth_year,
             full_name=" ".join([first_name, last_name]),
             first_name=first_name,
             last_name=last_name,
             sex=sex,
-            description=helper_data.get("Fritext", ""),
+            description=associate_ringer_data.get("Fritext", ""),
         )
         return actor.item
 
@@ -376,11 +383,40 @@ class Command(BaseCommand):
             value, models.LanguageChoices.UNKNOWN
         )
 
-    def _parse_birth_date(self, value: str | None):
-        return datetime.date(year=int(value), day=1, month=1) if value else None
+    def _parse_birth_date_or_year(self, value: str | None) -> BirthParsed:
+        """
+        Accepts:
+          - "YYYY" (year only)
+          - common date variants with separators: '-', '/', ':', '.', whitespace
+        """
+        if not value:
+            return BirthParsed(None, None)
 
-    def _get_helper_key(self, helper_data: dict):
-        return (helper_data["Mnr"], helper_data["Mednr"])
+        s = str(value).strip()
+        if not s:
+            return BirthParsed(None, None)
+
+        # year only
+        if re.fullmatch(r"\d{4}", s):
+            return BirthParsed(birth_date=None, birth_year=int(s))
+
+        # normalize separators to "-"
+        s = re.sub(r"[./:\s]+", "-", s).strip("-")
+
+        allowed_formats = ["%Y-%m-%d", "%d-%m-%Y"]
+
+        last_err: Exception | None = None
+        for fmt in allowed_formats:
+            try:
+                dt = datetime.datetime.strptime(s, fmt).date()
+                return BirthParsed(birth_date=dt, birth_year=dt.year)
+            except ValueError as e:
+                last_err = e
+
+        raise ValueError(f"Invalid Fyr format: {value!r} (normalized={s!r}).") from last_err
+
+    def _get_associate_ringer_key(self, associate_ringer_data: dict):
+        return (associate_ringer_data["Mnr"], associate_ringer_data["Mednr"])
 
     def _parse_date(self, date_str: str):
         # Ex. 1999-03-15 00:00:00.000

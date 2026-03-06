@@ -19,20 +19,28 @@ import {
 } from "../common";
 import { Client } from "../client";
 import { useClient } from "../contexts";
+import {
+  useBatchCreateLicenseCardsAction,
+  useDownloadLicenseCardsZipAction,
+  useBatchCreatePermitsAction,
+  useDownloadPermitsZipAction,
+  useSendLicenseEmailAction,
+} from "./actions";
 
-import { useBatchCreateLicenseCardsAction } from "./actions";
-import { useDownloadLicenseCardsZipAction } from "./actions";
-import { useTranslation } from "../internationalization";
+import { useTranslation, Translation } from "../internationalization";
 
 type LicensePropertyIds =
   | "mnr"
   | "type"
   | "license_holder"
-  | "helpers"
+  | "associate_ringers"
   | "methods"
   | "final_report_status"
   | "license_status"
-  | "last_email_sent_at";
+  | "last_email_sent_at"
+  | "has_license_card"
+  | "has_permit";
+
 type ColumnProperties = {
   ordering?: {
     forward: string;
@@ -65,7 +73,10 @@ const emptyLicensePage: PagedResponse<LicenseListItem> = {
   count: 0,
 };
 
-function toLicenseTable(item: LicenseListItem): TableItem<LicensePropertyIds> {
+function toLicenseTable(
+  item: LicenseListItem,
+  t: Translation["t"],
+): TableItem<LicensePropertyIds> {
   return {
     id: item.mnr,
     properties: {
@@ -80,8 +91,8 @@ function toLicenseTable(item: LicenseListItem): TableItem<LicensePropertyIds> {
       license_holder: {
         component: item.license_holder,
       },
-      helpers: {
-        component: String(item.helper_count || "0"),
+      associate_ringers: {
+        component: String(item.associate_ringer_count || "0"),
       },
       methods: {
         component: item.methods,
@@ -91,6 +102,28 @@ function toLicenseTable(item: LicenseListItem): TableItem<LicensePropertyIds> {
       },
       license_status: {
         component: item.status,
+      },
+      has_license_card: {
+        component: item.has_license_card ? (
+          <i
+            className="bi bi-check-circle-fill"
+            title={t("licenseCardCreated")}
+            aria-label={t("licenseCardCreated")}
+          />
+        ) : (
+          "-"
+        ),
+      },
+      has_permit: {
+        component: item.has_permit ? (
+          <i
+            className="bi bi-check-circle-fill"
+            title={t("licensePermitCreated")}
+            aria-label={t("licensePermitCreated")}
+          />
+        ) : (
+          "-"
+        ),
       },
       last_email_sent_at: {
         component: convertDateToLocale(item.last_email_sent_at),
@@ -130,14 +163,23 @@ function ConnectedListView() {
 
   const createDocsAction = useBatchCreateLicenseCardsAction(client);
   const downloadZipAction = useDownloadLicenseCardsZipAction(client);
+  const createPermitDocsAction = useBatchCreatePermitsAction(client);
+  const downloadPermitsZipAction = useDownloadPermitsZipAction(client);
+  const sendEmailAction = useSendLicenseEmailAction(client);
 
   const batchActions: (BatchAction | { type: "divider" })[] = [
     {
       label: t("licenseCreateLicenseDocuments"),
       action: createDocsAction,
     },
-    { type: "divider" },
     { label: t("licenseDownloadLicenses"), action: downloadZipAction },
+
+    { type: "divider" },
+    { label: t("permitCreateDocuments"), action: createPermitDocsAction },
+    { label: t("permitDownloadZip"), action: downloadPermitsZipAction },
+
+    { type: "divider" },
+    { label: t("licenseSendLicenses"), action: sendEmailAction },
     { type: "divider" },
     {
       label: t("actorDeactivate"),
@@ -188,8 +230,8 @@ function BaseListView({
   const { t } = useTranslation();
 
   const items = useMemo(
-    () => licenses.map<TableItem>(toLicenseTable),
-    [licenses],
+    () => licenses.map<TableItem>((item) => toLicenseTable(item, t)),
+    [licenses, t],
   );
   const { selectedItems, toggleItems, handleItemSelection, allSelected } =
     useItemSelections(new Set(items.map((r) => r.id)), "data-license-id");
@@ -214,9 +256,12 @@ function BaseListView({
         reverse: "-license_holder,mnr",
       },
     },
-    helpers: {
-      label: t("licenseNumberOfHelpers"),
-      ordering: { forward: "helper_count,mnr", reverse: "-helper_count,mnr" },
+    associate_ringers: {
+      label: t("licenseNumberOfAssociateRingers"),
+      ordering: {
+        forward: "associate_ringer_count,mnr",
+        reverse: "-associate_ringer_count,mnr",
+      },
     },
     methods: {
       label: t("licenseTrappingMethods"),
@@ -232,6 +277,20 @@ function BaseListView({
     license_status: {
       label: t("licenseStatus"),
       ordering: { forward: "status_label,mnr", reverse: "-status_label,mnr" },
+    },
+    has_license_card: {
+      label: t("licenseCardTableHeader"),
+      ordering: {
+        forward: "has_license_card,mnr",
+        reverse: "-has_license_card,mnr",
+      },
+    },
+    has_permit: {
+      label: t("licensePermitTableHeader"),
+      ordering: {
+        forward: "has_permit,mnr",
+        reverse: "-has_permit,mnr",
+      },
     },
     last_email_sent_at: {
       label: t("licenseLastEmailSentAt"),
