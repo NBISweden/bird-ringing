@@ -41,9 +41,8 @@ services:
       args:
         BUILD_ID: "${BUILD_ID:-6000:6000}"
         RUNTIME_ID: "${RUNTIME_ID:-6001:6001}"
-        BUILD_DATE: "${BUILD_DATE:-undefined}"
-        BUILD_GIT_COMMIT: "${BUILD_GIT_COMMIT:-undefined}"
-        BUILD_GIT_BRANCH: "${BUILD_GIT_BRANCH:-undefined}"
+        BUILD_GIT_COMMIT: "${BUILD_GIT_COMMIT:-}"
+        BUILD_GIT_BRANCH: "${BUILD_GIT_BRANCH:-}"
     volumes:
       - frontend-vol:/vol:ro
     depends_on:
