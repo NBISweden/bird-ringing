@@ -5,6 +5,14 @@ ARG RUNTIME_ID=1000:1000
 ARG UID=${BUILD_ID%:*}
 ARG GID=${BUILD_ID#*:}
 
+ARG BUILD_DATE
+ARG BUILD_GIT_COMMIT
+ARG BUILD_GIT_BRANCH
+
+ENV NEXT_PUBLIC_BUILD_DATE="$BUILD_DATE" \
+    NEXT_PUBLIC_BUILD_GIT_COMMIT="$BUILD_GIT_COMMIT" \
+    NEXT_PUBLIC_BUILD_GIT_BRANCH="$BUILD_GIT_BRANCH"
+
 RUN --mount=type=cache,id=apk-cache,target=/var/cache/apk \
 	apk --cache-dir=/var/cache/apk add \
 		dumb-init
