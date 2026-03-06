@@ -6,8 +6,8 @@ docker build \
 	--file ../Dockerfile.backend \
 	--target dev \
 	--tag backend-update-lock \
-	--build-arg UID="$(id -u)" \
-	--build-arg GID="$(id -g)" \
+	--build-arg RUNTIME_ID="$(id -u):$(id -g)" \
+	--build-arg BUILD_ID="$(id -u):$(id -g)" \
 	. &&
 docker run \
 	--rm \
