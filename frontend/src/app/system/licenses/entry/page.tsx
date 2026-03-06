@@ -54,9 +54,7 @@ function LicenseViewInner() {
   if (isLoading || !data) {
     return (
       <div className="container">
-        <h2>
-          {t("licenseView", {licenseId: mnr, licenseHolder: "-"})}
-        </h2>
+        <h2>{t("licenseView", { licenseId: mnr, licenseHolder: "-" })}</h2>
         <Spinner />
       </div>
     );
@@ -79,9 +77,21 @@ function LicenseViewInner() {
       <div className="row ">
         <div className="col-12 col-xl-10 col-xxl-9">
           <h1 className="h2">
-            {t("licenseView", {licenseId: data.mnr, licenseHolder: data.license_holder})}
-            <Badge rounded outline color="primary" className="inline-block ms-4">
-              {formatOption(String(data.current.report_status), {"yes": "licenseReportStatusYes", "no": "licenseReportStatusNo", "incomplete": "licenseReportStatusIncomplete"})}
+            {t("licenseView", {
+              licenseId: data.mnr,
+              licenseHolder: data.license_holder,
+            })}
+            <Badge
+              rounded
+              outline
+              color="primary"
+              className="inline-block ms-4"
+            >
+              {formatOption(String(data.current.report_status), {
+                yes: "licenseReportStatusYes",
+                no: "licenseReportStatusNo",
+                incomplete: "licenseReportStatusIncomplete",
+              })}
             </Badge>
           </h1>
           <LicenceView license={data.current} mnr={data.mnr} />

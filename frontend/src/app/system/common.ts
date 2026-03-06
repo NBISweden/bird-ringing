@@ -196,7 +196,7 @@ export type LicenseActorRelation = {
   mednr?: string;
 };
 
-export type BSColor = 
+export type BSColor =
   | "primary"
   | "secondary"
   | "success"
@@ -204,11 +204,9 @@ export type BSColor =
   | "danger"
   | "info"
   | "light"
-  | "dark"
+  | "dark";
 
-export type ButtonType =
-  BSColor
-  | "outline-primary";
+export type ButtonType = BSColor | "outline-primary";
 
 export interface SendEmailResult {
   messages_sent: number;

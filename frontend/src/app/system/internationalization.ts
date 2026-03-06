@@ -22,29 +22,23 @@ export interface Translation {
     mapping: Record<T, keyof TranslationMap>,
     values?: Record<string, PrimitiveType>,
   ): string;
-};
+}
 
 export function useTranslation() {
   const intl = useIntl();
 
   const translation = useMemo<Translation>(() => {
     return {
-      t: (
-        messageId,
-        values,
-      ) => {
+      t: (messageId, values) => {
         return intl.formatMessage(messages[messageId], values);
       },
-      format: (
-        messageId,
-        values
-      ) => {
+      format: (messageId, values) => {
         return intl.formatMessage(messages[messageId], values);
       },
       formatOption: (value, mapping, values) => {
         const messageId = mapping[value];
         return intl.formatMessage(messages[messageId], values);
-      }
+      },
     };
   }, [intl]);
   return translation;

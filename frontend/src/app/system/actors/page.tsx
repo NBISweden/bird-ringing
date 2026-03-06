@@ -65,7 +65,10 @@ const emptyActorPage: PagedResponse<ActorListItem> = {
   count: 0,
 };
 
-function toActorTable(item: ActorListItem, formatOption: Translation["formatOption"]): TableItem<ActorPropertyIds> {
+function toActorTable(
+  item: ActorListItem,
+  formatOption: Translation["formatOption"],
+): TableItem<ActorPropertyIds> {
   const licenses: ActorLicenseRelation[] = item.current_license_relations;
   const roles = new Set<Role>(licenses.map((l) => l.role));
   return {
@@ -79,18 +82,25 @@ function toActorTable(item: ActorListItem, formatOption: Translation["formatOpti
         ),
       },
       type: {
-        component: formatOption(
-          item.type,
-          {person: "actorTypePerson", station: "actorTypeStation"}
-        ),
+        component: formatOption(item.type, {
+          person: "actorTypePerson",
+          station: "actorTypeStation",
+        }),
       },
       roles: {
         component: (
-          <div className="table-row-max-height">{Array.from(roles).map((r => (
-            <Badge color="info" rounded outline key={r}>{
-              formatOption(r, {"affiliate": "licenseRoleAffiliate", "associate ringer": "licenseRoleAssociateRinger", "communication": "licenseRoleCommunication", "ringer": "licenseRoleRinger"})
-            }</Badge>
-          )))}</div>
+          <div className="table-row-max-height">
+            {Array.from(roles).map((r) => (
+              <Badge color="info" rounded outline key={r}>
+                {formatOption(r, {
+                  affiliate: "licenseRoleAffiliate",
+                  "associate ringer": "licenseRoleAssociateRinger",
+                  communication: "licenseRoleCommunication",
+                  ringer: "licenseRoleRinger",
+                })}
+              </Badge>
+            ))}
+          </div>
         ),
       },
       licenses: {
@@ -113,7 +123,7 @@ function toActorTable(item: ActorListItem, formatOption: Translation["formatOpti
         component: item.city,
       },
       updated_at: {
-        component: convertDateToLocale(item.updated_at)
+        component: convertDateToLocale(item.updated_at),
       },
     },
   };
@@ -203,7 +213,10 @@ function BaseListView({
   const { t, formatOption } = useTranslation();
   const [actionIsOpen, setActionIsOpen] = useState(false);
 
-  const items = useMemo(() => actors.map<TableItem>((actor) => toActorTable(actor, formatOption)), [actors, formatOption]);
+  const items = useMemo(
+    () => actors.map<TableItem>((actor) => toActorTable(actor, formatOption)),
+    [actors, formatOption],
+  );
   const { selectedItems, toggleItems, handleItemSelection, allSelected } =
     useItemSelections(new Set(items.map((r) => r.id)), "data-actor-id");
   const ordering = params.get("ordering");

@@ -78,7 +78,7 @@ const emptyLicensePage: PagedResponse<LicenseListItem> = {
 function toLicenseTable(
   item: LicenseListItem,
   t: Translation["t"],
-  formatOption: Translation["formatOption"]
+  formatOption: Translation["formatOption"],
 ): TableItem<LicensePropertyIds> {
   return {
     id: item.mnr,
@@ -89,10 +89,13 @@ function toLicenseTable(
         ),
       },
       type: {
-        component: item.license_holder_type && formatOption(
-          item.license_holder_type,
-          {person: "actorTypePerson", station: "actorTypeStation"}
-        ) || "-",
+        component:
+          (item.license_holder_type &&
+            formatOption(item.license_holder_type, {
+              person: "actorTypePerson",
+              station: "actorTypeStation",
+            })) ||
+          "-",
       },
       license_holder: {
         component: item.license_holder,
@@ -102,29 +105,43 @@ function toLicenseTable(
       },
       methods: {
         component: (
-          <div className="table-row-max-height">{Array.from(new Set(item.current.permissions.flatMap((p) => p.type.name))).map((pt => (
-            <Badge color="info" rounded outline key={pt}>{pt}</Badge>
-          )))}</div>
+          <div className="table-row-max-height">
+            {Array.from(
+              new Set(item.current.permissions.flatMap((p) => p.type.name)),
+            ).map((pt) => (
+              <Badge color="info" rounded outline key={pt}>
+                {pt}
+              </Badge>
+            ))}
+          </div>
         ),
       },
       species: {
         component: (
-          <div className="table-row-max-height">{Array.from(new Set(item.current.permissions.flatMap((p) => p.species))).map((s => (
-            <Badge color="info" rounded outline key={s}>{s}</Badge>
-          )))}</div>
-        )
+          <div className="table-row-max-height">
+            {Array.from(
+              new Set(item.current.permissions.flatMap((p) => p.species)),
+            ).map((s) => (
+              <Badge color="info" rounded outline key={s}>
+                {s}
+              </Badge>
+            ))}
+          </div>
+        ),
       },
       final_report_status: {
-        component: formatOption(
-          item.current.report_status,
-          {yes: "licenseReportStatusYes", no: "licenseReportStatusNo", incomplete: "licenseReportStatusIncomplete"}
-        ),
+        component: formatOption(item.current.report_status, {
+          yes: "licenseReportStatusYes",
+          no: "licenseReportStatusNo",
+          incomplete: "licenseReportStatusIncomplete",
+        }),
       },
       license_status: {
-        component: formatOption(
-          item.status,
-          {active: "licenseStatusActive", inactive: "licenseStatusInactive", terminated: "licenseStatusTerminated"}
-        ),
+        component: formatOption(item.status, {
+          active: "licenseStatusActive",
+          inactive: "licenseStatusInactive",
+          terminated: "licenseStatusTerminated",
+        }),
       },
       has_license_card: {
         component: item.has_license_card ? (
@@ -253,7 +270,8 @@ function BaseListView({
   const { t, formatOption } = useTranslation();
 
   const items = useMemo(
-    () => licenses.map<TableItem>((item) => toLicenseTable(item, t, formatOption)),
+    () =>
+      licenses.map<TableItem>((item) => toLicenseTable(item, t, formatOption)),
     [licenses, t, formatOption],
   );
   const { selectedItems, toggleItems, handleItemSelection, allSelected } =

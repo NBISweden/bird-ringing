@@ -4,25 +4,25 @@ const licenseReportStatusOptions = {
   licenseReportStatusYes: "Komplett slutrapport",
   licenseReportStatusNo: "Ingen slutrapport",
   licenseReportStatusIncomplete: "Inkomplett slutrapport",
-}
+};
 
 const licenseStatusOptions = {
   licenseStatusTerminated: "Avslutad",
   licenseStatusInactive: "Inaktiv",
   licenseStatusActive: "Aktiv",
-}
+};
 
 const licenseRoleOptions = {
   licenseRoleCommunication: "Kommunikation",
   licenseRoleAffiliate: "Affilierad",
   licenseRoleAssociateRinger: "Medhjälpare",
   licenseRoleRinger: "Ringmärkare",
-}
+};
 
 const actorTypeOptions = {
   actorTypePerson: "Person",
   actorTypeStation: "Station",
-}
+};
 
 export const locale: TranslationMap = {
   ...licenseReportStatusOptions,

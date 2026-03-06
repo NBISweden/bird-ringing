@@ -7,25 +7,25 @@ const licenseReportStatusOptions = {
   licenseReportStatusYes: "Completed final report",
   licenseReportStatusNo: "No final report",
   licenseReportStatusIncomplete: "Incomplete final report",
-}
+};
 
 const licenseStatusOptions = {
   licenseStatusTerminated: "Terminated",
   licenseStatusInactive: "Inactive",
   licenseStatusActive: "Active",
-}
+};
 
 const licenseRoleOptions = {
   licenseRoleCommunication: "Communication",
   licenseRoleAffiliate: "Affiliate",
   licenseRoleAssociateRinger: "Associate Ringer",
   licenseRoleRinger: "Ringer",
-}
+};
 
 const actorTypeOptions = {
   actorTypePerson: "Person",
   actorTypeStation: "Station",
-}
+};
 
 const messagesBase = {
   ...licenseReportStatusOptions,
