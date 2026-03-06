@@ -561,6 +561,7 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
             "report_status_label",
             "has_license_card",
             "has_permit",
+            "location",
         ]
     )
     default_ordering = ["mnr"]
@@ -643,6 +644,9 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
                     output_field=models.DateField(),
                 )
             ),
+            location=models.Subquery(
+                License.objects.filter(sequence=models.OuterRef('pk'), version=0).values("location")[:1]
+            ),
             status_label=license_status_label,
             report_status_label=license_report_status_label,
             has_license_card=has_license_card,
@@ -660,6 +664,7 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
                     | models.Q(status_label__icontains=term)
                     | models.Q(report_status_label__icontains=term)
                     | models.Q(license_holder_type__icontains=term)
+                    | models.Q(location__icontains=term)
                 )
 
         return queryset

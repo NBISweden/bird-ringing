@@ -299,6 +299,10 @@ function BaseListView({
     },
     location: {
       label: t("licenseLocation"),
+      ordering: {
+        forward: "location,mnr",
+        reverse: "-location,mnr",
+      },
     },
     methods: {
       label: t("licenseTrappingMethods"),
