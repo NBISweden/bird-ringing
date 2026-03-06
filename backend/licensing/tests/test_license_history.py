@@ -2,6 +2,7 @@ from django.test import TestCase
 from .utils import create_user, create_permission
 from licensing import models
 import datetime
+from licensing.utils import default_document_copy_policy
 
 
 class TestLicenseHistory(TestCase):
@@ -58,6 +59,27 @@ class TestLicenseHistory(TestCase):
             for species in ["species-a", "species-b"]
         ]
 
+        self.actors = [
+            models.Actor.objects.create(
+                full_name=f"{actor} actor",
+                email=f"{actor.lower()}@example.com",
+                sex=models.SexChoices.NOT_APPLICABLE,
+                type=models.ActorTypeChoices.STATION,
+                created_by=self.user,
+                updated_by=self.user
+            )
+            for actor in ["a", "b", "c"]
+        ]
+        for index, actor in enumerate(self.actors):
+            models.LicenseRelation.objects.create(
+                actor=actor,
+                license=current,
+                mednr=str(index).zfill(4),
+                role=models.LicenseRoleChoices.RINGER,
+                created_by=self.user,
+                updated_by=self.user
+            )
+
         self.permissions = [
             create_permission(
                 current,
@@ -83,16 +105,29 @@ class TestLicenseHistory(TestCase):
         license_docs = [
             models.LicenseDocument.objects.create(
                 type=models.DocumentTypeChoices.LICENSE,
-                reference=ref,
+                reference=f"license-{actor.full_name}",
                 is_permanent=False,
                 created_by=self.user,
                 updated_by=self.user,
+                actor=actor
             )
-            for ref in ["a", "b", "c"]
+            for actor in self.actors
+        ]
+        permit_docs = [
+            models.LicenseDocument.objects.create(
+                type=models.DocumentTypeChoices.PERMIT,
+                reference=f"permit-{actor.full_name}",
+                is_permanent=False,
+                created_by=self.user,
+                updated_by=self.user,
+                actor=actor
+            )
+            for actor in self.actors
         ]
         current.documents.set([
             *self.reference_docs,
             *license_docs,
+            *permit_docs,
         ])
 
     def test_commit_initial_latest(self):
@@ -115,6 +150,69 @@ class TestLicenseHistory(TestCase):
         current.save()
         latest = self.license_sequence.commit(current)
         self.assertNotEqual(previous.version, latest.version)
+    
+    def test_post_commit(self):
+        current = self.license_sequence.current
+        current.documents.set(list(current.documents.filter(is_permanent=True)))
+
+        first_commit = self.license_sequence.commit(current, default_document_copy_policy)
+
+        license_docs = [
+            models.LicenseDocument.objects.create(
+                type=models.DocumentTypeChoices.LICENSE,
+                reference=f"l1-{actor.full_name}",
+                is_permanent=False,
+                created_by=self.user,
+                updated_by=self.user,
+                actor=actor
+            )
+            for actor in self.actors
+        ]
+        permit_docs = [
+            models.LicenseDocument.objects.create(
+                type=models.DocumentTypeChoices.PERMIT,
+                reference=f"p1-{actor.full_name}",
+                is_permanent=False,
+                created_by=self.user,
+                updated_by=self.user,
+                actor=actor
+            )
+            for actor in self.actors
+        ]
+        first_commit.documents.add(*license_docs, *permit_docs)
+
+        # Change only state
+        current.report_status = models.ReportStatusChoices.NO
+        current.save()
+
+        second_commit = self.license_sequence.commit(current, default_document_copy_policy)
+        self.assertEqual(
+            set(second_commit.documents.values_list("id", flat=True)),
+            set(first_commit.documents.values_list("id", flat=True)),
+            "Expect all documents to be carried over from previous version"
+        )
+
+        # Change content
+        current.description = current.description + "-change"
+        current.save()
+        third_commit = self.license_sequence.commit(current, default_document_copy_policy)
+        self.assertEqual(
+            set(third_commit.documents.values_list("id", flat=True)),
+            set(second_commit.documents.filter(
+                type__in={models.DocumentTypeChoices.LICENSE, models.DocumentTypeChoices.DOCUMENT}
+            ).values_list("id", flat=True)),
+            "Expect only permanent and LICENSE documents to be carried over from previous version"
+        )
+
+        # Change state and remove actors
+        current.report_status = models.ReportStatusChoices.NO
+        current.actors.all().delete()
+        fourth_commit = current.copy_to_new_version(200)
+        self.assertEqual(
+            set(fourth_commit.documents.values_list("reference", flat=True)),
+            set(third_commit.documents.filter(is_permanent=True).values_list("reference", flat=True)),
+            "Expect all non permanent documents related to actors to be removed"
+        )
 
     def test_license_dump(self):
         starts_at = datetime.date(year=2026, month=2, day=1)
