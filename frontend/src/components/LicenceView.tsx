@@ -23,6 +23,9 @@ export function LicenceView({ license, mnr }: LicenceViewProps) {
   const [selectedActorIds, setSelectedActorIds] = useState(new Set<number>());
   const [notifyRinger, setNotifyRinger] = useState(false);
 
+  const isSelectableRole = (role: string) =>
+  role === "ringer" || role === "associate ringer";
+
   return (
     <>
       <div className="mb-4">
@@ -113,6 +116,7 @@ export function LicenceView({ license, mnr }: LicenceViewProps) {
                     sendEmailForActorsAction(
                       mnr,
                       license.actors
+                        .filter((rel) => isSelectableRole(rel.role))
                         .filter((rel) => selectedActorIds.has(rel.actor.id))
                         .map((rel) => ({
                           id: rel.actor.id,
@@ -139,24 +143,23 @@ export function LicenceView({ license, mnr }: LicenceViewProps) {
                         {rel.actor.full_name}({rel.mednr})
                       </div>
                       <div className="col-2 col-md-2 d-flex justify-content-center">
-                        <input
-                          className="form-check-input border border-dark"
-                          type="checkbox"
-                          checked={selectedActorIds.has(rel.actor.id)}
-                          onChange={(e) => {
-                            const checked = e.target.checked;
-                            const id = rel.actor.id;
-                            setSelectedActorIds((prev) => {
-                              const next = new Set(prev);
-                              if (checked) {
-                                next.add(id);
-                              } else {
-                                next.delete(id);
-                              }
-                              return next;
-                            });
-                          }}
-                        />
+                        {isSelectableRole(rel.role) ? (
+                          <input
+                            className="form-check-input border border-dark"
+                            type="checkbox"
+                            checked={selectedActorIds.has(rel.actor.id)}
+                            onChange={(e) => {
+                              const checked = e.target.checked;
+                              const id = rel.actor.id;
+                              setSelectedActorIds((prev) => {
+                                const next = new Set(prev);
+                                if (checked) next.add(id);
+                                else next.delete(id);
+                                return next;
+                              });
+                            }}
+                          />
+                        ) : null}
                       </div>
                     </div>
                   </li>
