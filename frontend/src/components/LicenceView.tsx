@@ -10,6 +10,7 @@ import { useSendLicenseEmailForActorsAction } from "../app/system/licenses/actio
 import { useTranslation } from "@/app/system/internationalization";
 import { LicensePermissionItem } from "./LicensePermissionItem";
 import { useState } from "react";
+
 type LicenceViewProps = {
   license: LicenseInstance;
   mnr: string;
@@ -24,7 +25,13 @@ export function LicenceView({ license, mnr }: LicenceViewProps) {
   const [notifyRinger, setNotifyRinger] = useState(false);
 
   const isSelectableRole = (role: string) =>
-  role === "ringer" || role === "associate ringer";
+    role === "ringer" || role === "associate ringer";
+
+  const hasSelectedAssociateRinger = license.actors.some(
+    (rel) =>
+      rel.role === "associate ringer" && selectedActorIds.has(rel.actor.id),
+  );
+  const effectiveNotifyRinger = notifyRinger && hasSelectedAssociateRinger;
 
   return (
     <>
@@ -96,12 +103,13 @@ export function LicenceView({ license, mnr }: LicenceViewProps) {
                   <input
                     className="form-check-input border border-dark"
                     type="checkbox"
-                    checked={notifyRinger}
+                    checked={effectiveNotifyRinger}
+                    disabled={!hasSelectedAssociateRinger}
                     onChange={(e) => setNotifyRinger(e.target.checked)}
                     id="notify-ringer"
                   />
                   <label
-                    className="form-check-label small text-muted"
+                    className={`form-check-label small text-muted ${!hasSelectedAssociateRinger ? "opacity-50" : ""}`}
                     htmlFor="notify-ringer"
                     title={t("licenseNotifyRingerHelp")}
                   >
@@ -122,7 +130,7 @@ export function LicenceView({ license, mnr }: LicenceViewProps) {
                           id: rel.actor.id,
                           name: rel.actor.full_name,
                         })),
-                      notifyRinger,
+                      effectiveNotifyRinger,
                     )
                   }
                 >
