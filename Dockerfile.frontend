@@ -43,6 +43,14 @@ COPY --chown="$UID:$GID" ./tsconfig.json .
 COPY --chown="$UID:$GID" ./next*.ts .
 COPY --chown="$UID:$GID" ./src ./src
 
+ARG BUILD_DATE
+ARG BUILD_GIT_COMMIT
+ARG BUILD_GIT_BRANCH
+
+ENV NEXT_PUBLIC_BUILD_DATE="$BUILD_DATE" \
+    NEXT_PUBLIC_BUILD_GIT_COMMIT="$BUILD_GIT_COMMIT" \
+    NEXT_PUBLIC_BUILD_GIT_BRANCH="$BUILD_GIT_BRANCH"
+
 RUN mkdir .next
 ### Export static site into "$HOME/out".
 RUN --mount=type=cache,id=npm-cache,uid="$UID",target="$npm_config_cache" \
@@ -85,6 +93,14 @@ CMD ["./docker-entrypoint.sh"]
 
 ## Development stage
 FROM base AS dev
+
+ARG BUILD_DATE
+ARG BUILD_GIT_COMMIT
+ARG BUILD_GIT_BRANCH
+
+ENV NEXT_PUBLIC_BUILD_DATE="$BUILD_DATE" \
+    NEXT_PUBLIC_BUILD_GIT_COMMIT="$BUILD_GIT_COMMIT" \
+    NEXT_PUBLIC_BUILD_GIT_BRANCH="$BUILD_GIT_BRANCH"
 
 ENV SERVICE_MODE=development
 

@@ -2,6 +2,7 @@
 
 import { useModalsContext, useAuth } from "../contexts";
 import { useTranslation } from "../internationalization";
+import BuildInfo from "@/components/BuildInfo";
 
 export default function WelcomePage() {
   const user = useAuth();
@@ -120,6 +121,7 @@ export default function WelcomePage() {
         <div className="alert alert-warning" role="alert">
           A simple warning alert—check it out!
         </div>
+        <BuildInfo />
       </div>
     </div>
   );

@@ -18,4 +18,8 @@ docker volume rm \
 	"${project_name}_backend-vol" \
 	"${project_name}_frontend-vol" 2>/dev/null || true
 
+# Set environment variables for build info.
+export BUILD_GIT_COMMIT="$(git rev-parse --short HEAD 2>/dev/null || true)"
+export BUILD_GIT_BRANCH="$(git symbolic-ref --short -q HEAD 2>/dev/null || true)"
+
 exec docker compose -f docker-compose.yml "$@"
