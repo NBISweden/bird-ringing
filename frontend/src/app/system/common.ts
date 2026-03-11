@@ -183,7 +183,7 @@ export type LicenseCurrent = {
   version: number;
   location: string;
   description: string;
-  report_status: number;
+  report_status: string;
   starts_at: string;
   ends_at: string;
   created_at: string;
@@ -196,7 +196,7 @@ export type LicenseActorRelation = {
   mednr?: string;
 };
 
-export type ButtonType =
+export type BSColor =
   | "primary"
   | "secondary"
   | "success"
@@ -204,8 +204,9 @@ export type ButtonType =
   | "danger"
   | "info"
   | "light"
-  | "dark"
-  | "outline-primary";
+  | "dark";
+
+export type ButtonType = BSColor | "outline-primary";
 
 export interface SendEmailResult {
   messages_sent: number;

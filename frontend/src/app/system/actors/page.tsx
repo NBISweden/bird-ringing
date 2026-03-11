@@ -17,12 +17,14 @@ import {
   Page,
   ActorListItem,
   TableItem,
+  convertDateToLocale,
 } from "../common";
 import { Client } from "../client";
 import { useClient } from "../contexts";
 import Icon from "@/components/Icon";
 import { useFetchEmailAddressesAction } from "./actions";
-import { useTranslation } from "../internationalization";
+import { Translation, useTranslation } from "../internationalization";
+import { Badge } from "@/components/Badge";
 
 type ActorPropertyIds =
   | "name"
@@ -63,7 +65,10 @@ const emptyActorPage: PagedResponse<ActorListItem> = {
   count: 0,
 };
 
-function toActorTable(item: ActorListItem): TableItem<ActorPropertyIds> {
+function toActorTable(
+  item: ActorListItem,
+  formatOption: Translation["formatOption"],
+): TableItem<ActorPropertyIds> {
   const licenses: ActorLicenseRelation[] = item.current_license_relations;
   const roles = new Set<Role>(licenses.map((l) => l.role));
   return {
@@ -77,20 +82,35 @@ function toActorTable(item: ActorListItem): TableItem<ActorPropertyIds> {
         ),
       },
       type: {
-        component: item.type,
+        component: formatOption(item.type, {
+          person: "actorTypePerson",
+          station: "actorTypeStation",
+        }),
       },
       roles: {
-        component: Array.from(roles).join(", "),
+        component: (
+          <div className="table-row-max-height">
+            {Array.from(roles).map((r) => (
+              <Badge color="info" rounded outline key={r}>
+                {formatOption(r, {
+                  affiliate: "licenseRoleAffiliate",
+                  "associate ringer": "licenseRoleAssociateRinger",
+                  communication: "licenseRoleCommunication",
+                  ringer: "licenseRoleRinger",
+                })}
+              </Badge>
+            ))}
+          </div>
+        ),
       },
       licenses: {
         component: (
           <>
-            {licenses.map((l, index, list) => {
+            {licenses.map((l, index) => {
               return (
-                <Fragment key={index}>
+                <Badge color="info" rounded outline key={index}>
                   {l.mednr ? `${l.mnr}:${l.mednr}` : l.mnr}
-                  {index < list.length - 1 ? ", " : <></>}
-                </Fragment>
+                </Badge>
               );
             })}
           </>
@@ -103,7 +123,7 @@ function toActorTable(item: ActorListItem): TableItem<ActorPropertyIds> {
         component: item.city,
       },
       updated_at: {
-        component: item.updated_at,
+        component: convertDateToLocale(item.updated_at),
       },
     },
   };
@@ -190,10 +210,13 @@ function BaseListView({
   params,
   batchActions,
 }: ListViewProps) {
-  const { t } = useTranslation();
+  const { t, formatOption } = useTranslation();
   const [actionIsOpen, setActionIsOpen] = useState(false);
 
-  const items = useMemo(() => actors.map<TableItem>(toActorTable), [actors]);
+  const items = useMemo(
+    () => actors.map<TableItem>((actor) => toActorTable(actor, formatOption)),
+    [actors, formatOption],
+  );
   const { selectedItems, toggleItems, handleItemSelection, allSelected } =
     useItemSelections(new Set(items.map((r) => r.id)), "data-actor-id");
   const ordering = params.get("ordering");

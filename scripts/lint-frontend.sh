@@ -4,4 +4,4 @@ set -e
 docker compose \
   -f docker-compose.yml \
   -f docker-compose.dev.yml \
-  run --rm frontend sh -c "npm run lint"
+  run --rm frontend sh -c "npm run lint && npm run format"

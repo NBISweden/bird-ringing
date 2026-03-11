@@ -1,6 +1,34 @@
 import type { TranslationMap } from "@/app/messages";
 
+const licenseReportStatusOptions = {
+  licenseReportStatusYes: "Komplett slutrapport",
+  licenseReportStatusNo: "Ingen slutrapport",
+  licenseReportStatusIncomplete: "Inkomplett slutrapport",
+};
+
+const licenseStatusOptions = {
+  licenseStatusTerminated: "Avslutad",
+  licenseStatusInactive: "Inaktiv",
+  licenseStatusActive: "Aktiv",
+};
+
+const licenseRoleOptions = {
+  licenseRoleCommunication: "Kommunikation",
+  licenseRoleAffiliate: "Affilierad",
+  licenseRoleAssociateRinger: "Medhjälpare",
+  licenseRoleRinger: "Ringmärkare",
+};
+
+const actorTypeOptions = {
+  actorTypePerson: "Person",
+  actorTypeStation: "Station",
+};
+
 export const locale: TranslationMap = {
+  ...licenseReportStatusOptions,
+  ...licenseStatusOptions,
+  ...licenseRoleOptions,
+  ...actorTypeOptions,
   birdRinging: "Ringmärkning",
   welcomeMessageHeader: "Välkommen till Birdy!",
   welcomeMessageText: "En fantabulös plats att hantera licenser.",
@@ -9,7 +37,7 @@ export const locale: TranslationMap = {
   dashboard: "Startskärm",
   goToSystem: "Gå till systemet",
   licenseListView: "Licenser",
-  licenseView: "Licens",
+  licenseView: "{licenseHolder} {licenseId}",
   actorListView: "Ringmärkare",
   expertsLogin: "Expertinloggning",
 
@@ -71,6 +99,7 @@ export const locale: TranslationMap = {
   licensePermitCreated: "Tillståndsdokument skapade",
   licenseLicenseDownloadLoading: "Förbereder licenssamling för nedladdning...",
   licenseLicenseDownloadSucceeded: "Laddar ned licenssamling",
+  licenseLocation: "Plats",
   licenseNoCommunication: "Ingen kommunikation kopplad till licensen.",
   licenseNoConnectedActors:
     "Inga ringmärkare eller hjälpare kopplade till licensen.",
@@ -92,6 +121,7 @@ export const locale: TranslationMap = {
     "Misslyckades med att skicka licenser. Försök igen senare.",
   licenseSendLicensesSucceeded: "{sent} e-postmeddelanden skickades.",
   licenseSendingLicenses: "Skickar licenser...",
+  licenseSpecies: "Arter",
   licenseStatus: "Licensstatus",
   licenseTrappingMethods: "Fångstmetoder",
   licenseType: "Typ",

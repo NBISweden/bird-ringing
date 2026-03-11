@@ -75,30 +75,6 @@ export function LicenceView({ license, mnr }: LicenceViewProps) {
           </div>
         </div>
       </div>
-      {/* Permissions */}
-      <div className="mb-4">
-        <div className="row g-1">
-          <div className="mb-3 mb-sm-0 card border-primary">
-            <div className="card-body">
-              <h2 className="h3 card-title">{t("licensePermissions")}</h2>
-              <p className="card-text"></p>
-              {license.permissions?.length ? (
-                <ul className="list-group list-group-flush">
-                  {license.permissions.map((p, i) => (
-                    <li className="list-group-item mb-3" key={i}>
-                      <LicensePermissionItem permission={p} />
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="text-muted fst-italic">
-                  {t("licenseNoPermissions")}
-                </p>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
       <div className="row g-1 mb-4">
         {/* Actors */}
         <div className="card border-primary">
@@ -135,6 +111,30 @@ export function LicenceView({ license, mnr }: LicenceViewProps) {
                 {t("licenseNoConnectedActors")}
               </p>
             )}
+          </div>
+        </div>
+      </div>
+      {/* Permissions */}
+      <div className="mb-4">
+        <div className="row g-1">
+          <div className="mb-3 mb-sm-0 card border-primary">
+            <div className="card-body">
+              <h2 className="h3 card-title">{t("licensePermissions")}</h2>
+              <p className="card-text"></p>
+              {license.permissions?.length ? (
+                <ul className="list-group list-group-flush">
+                  {license.permissions.map((p, i) => (
+                    <li className="list-group-item mb-3" key={i}>
+                      <LicensePermissionItem permission={p} />
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-muted fst-italic">
+                  {t("licenseNoPermissions")}
+                </p>
+              )}
+            </div>
           </div>
         </div>
       </div>

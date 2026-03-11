@@ -92,3 +92,8 @@ body {
 .modal {
   background-color: rgba(0, 0, 0, 0.8);
 }
+
+.table-row-max-height {
+  max-height: 7rem;
+  overflow: auto;
+}

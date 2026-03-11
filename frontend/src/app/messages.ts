@@ -3,14 +3,43 @@ type Message = {
   description?: string;
 };
 
+const licenseReportStatusOptions = {
+  licenseReportStatusYes: "Completed final report",
+  licenseReportStatusNo: "No final report",
+  licenseReportStatusIncomplete: "Incomplete final report",
+};
+
+const licenseStatusOptions = {
+  licenseStatusTerminated: "Terminated",
+  licenseStatusInactive: "Inactive",
+  licenseStatusActive: "Active",
+};
+
+const licenseRoleOptions = {
+  licenseRoleCommunication: "Communication",
+  licenseRoleAffiliate: "Affiliate",
+  licenseRoleAssociateRinger: "Associate Ringer",
+  licenseRoleRinger: "Ringer",
+};
+
+const actorTypeOptions = {
+  actorTypePerson: "Person",
+  actorTypeStation: "Station",
+};
+
 const messagesBase = {
+  ...licenseReportStatusOptions,
+  ...licenseStatusOptions,
+  ...licenseRoleOptions,
+  ...actorTypeOptions,
+
   birdRinging: "Bird Ringing",
   userWelcomeHeader: "Welcome, {name}",
   userWelcomeText: "You’re successfully logged in as an expert.",
   dashboard: "Dashboard",
 
   licenseListView: "Licenses",
-  licenseView: "License",
+  licenseView: "License {licenseHolder} {licenseId}",
   actorListView: "Ringers",
   welcomeMessageHeader: {
     defaultMessage: "Welcome to Birdy!",
@@ -78,6 +107,7 @@ const messagesBase = {
   licensePermitCreated: "Permit created",
   licenseLicenseDownloadLoading: "Preparing licenses package for download...",
   licenseLicenseDownloadSucceeded: "Downloading licenses package",
+  licenseLocation: "Location",
   licenseNoCommunication: "No communication",
   licenseNoConnectedActors: "No connected actors",
   licenseNoDocuments: "No documents",
@@ -96,6 +126,7 @@ const messagesBase = {
   licenseSendLicensesFailed: "Failed to send licenses. Please try again later.",
   licenseSendLicensesSucceeded: "{sent} e-mails sent successfully.",
   licenseSendingLicenses: "Sending licenses...",
+  licenseSpecies: "Species",
   licenseStatus: "License status",
   licenseTrappingMethods: "Trapping methods",
   licenseType: "Type",

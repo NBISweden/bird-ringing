@@ -28,13 +28,14 @@ import {
 } from "./actions";
 
 import { useTranslation, Translation } from "../internationalization";
+import { Badge } from "@/components/Badge";
 
 type LicensePropertyIds =
   | "mnr"
   | "type"
   | "license_holder"
-  | "associate_ringers"
   | "methods"
+  | "location"
   | "final_report_status"
   | "license_status"
   | "last_email_sent_at"
@@ -76,6 +77,7 @@ const emptyLicensePage: PagedResponse<LicenseListItem> = {
 function toLicenseTable(
   item: LicenseListItem,
   t: Translation["t"],
+  formatOption: Translation["formatOption"],
 ): TableItem<LicensePropertyIds> {
   return {
     id: item.mnr,
@@ -86,22 +88,46 @@ function toLicenseTable(
         ),
       },
       type: {
-        component: item.license_holder_type || "-",
+        component:
+          (item.license_holder_type &&
+            formatOption(item.license_holder_type, {
+              person: "actorTypePerson",
+              station: "actorTypeStation",
+            })) ||
+          "-",
       },
       license_holder: {
         component: item.license_holder,
       },
-      associate_ringers: {
-        component: String(item.associate_ringer_count || "0"),
+      location: {
+        component: item.current.location,
       },
       methods: {
-        component: item.methods,
+        component: (
+          <div className="table-row-max-height">
+            {Array.from(
+              new Set(item.current.permissions.flatMap((p) => p.type.name)),
+            ).map((pt) => (
+              <Badge color="info" rounded outline key={pt}>
+                {pt}
+              </Badge>
+            ))}
+          </div>
+        ),
       },
       final_report_status: {
-        component: item.current.report_status,
+        component: formatOption(item.current.report_status, {
+          yes: "licenseReportStatusYes",
+          no: "licenseReportStatusNo",
+          incomplete: "licenseReportStatusIncomplete",
+        }),
       },
       license_status: {
-        component: item.status,
+        component: formatOption(item.status, {
+          active: "licenseStatusActive",
+          inactive: "licenseStatusInactive",
+          terminated: "licenseStatusTerminated",
+        }),
       },
       has_license_card: {
         component: item.has_license_card ? (
@@ -227,11 +253,12 @@ function BaseListView({
   params: URLSearchParams;
 }) {
   const [actionIsOpen, setActionIsOpen] = useState(false);
-  const { t } = useTranslation();
+  const { t, formatOption } = useTranslation();
 
   const items = useMemo(
-    () => licenses.map<TableItem>((item) => toLicenseTable(item, t)),
-    [licenses, t],
+    () =>
+      licenses.map<TableItem>((item) => toLicenseTable(item, t, formatOption)),
+    [licenses, t, formatOption],
   );
   const { selectedItems, toggleItems, handleItemSelection, allSelected } =
     useItemSelections(new Set(items.map((r) => r.id)), "data-license-id");
@@ -256,11 +283,11 @@ function BaseListView({
         reverse: "-license_holder,mnr",
       },
     },
-    associate_ringers: {
-      label: t("licenseNumberOfAssociateRingers"),
+    location: {
+      label: t("licenseLocation"),
       ordering: {
-        forward: "associate_ringer_count,mnr",
-        reverse: "-associate_ringer_count,mnr",
+        forward: "location,mnr",
+        reverse: "-location,mnr",
       },
     },
     methods: {
