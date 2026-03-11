@@ -2,7 +2,10 @@ import { useCallback } from "react";
 import { ClientContext, useClient, useModalsContext } from "../contexts";
 import { Client } from "../client";
 import Spinner from "@/components/Spinner";
-import { SendLicenseModalContent } from "@/components/SendLicenseModalContent";
+import {
+  SendLicenseModalContent,
+  SendLicenseForActorsModalContent,
+} from "@/components/SendLicenseModalContent";
 import { Alert } from "@/components/Alert";
 import { downloadData } from "../utils";
 import useSWRImmutable from "swr/immutable";
@@ -15,6 +18,8 @@ type BatchCreateFn = (
   mnrs: string[],
 ) => Promise<BatchCreateResponse>;
 type DownloadZipFn = (client: Client, mnrs: string[]) => Promise<Blob>;
+
+type SelectedActor = { id: number; name: string };
 
 function GenericBatchCreateBody({
   mnrs,
@@ -353,6 +358,66 @@ export function useSendLicenseEmailAction(client: Client) {
           {
             label: t("licenseSendLicenses"),
             action: () => sendEmails(itemIds),
+            type: "primary",
+          },
+        ],
+      });
+    },
+    [modalStack, t, sendEmails],
+  );
+}
+
+export function useSendLicenseEmailForActorsAction(client: Client) {
+  const modalStack = useModalsContext();
+  const { t } = useTranslation();
+
+  const sendEmails = useCallback(
+    (mnr: string, actors: SelectedActor[], notifyRinger?: boolean) => {
+      modalStack.add({
+        title: t("licenseSendLicenses"),
+        content: (
+          <ClientContext.Provider value={client}>
+            <SendLicenseForActorsModalContent
+              mnr={mnr}
+              actorIds={actors.map((a) => a.id)}
+              notifyRinger={notifyRinger}
+              actorNames={Object.fromEntries(actors.map((a) => [a.id, a.name]))}
+            />
+          </ClientContext.Provider>
+        ),
+        actions: [{ label: t("okModal"), action: () => {}, type: "primary" }],
+      });
+    },
+    [modalStack, client, t],
+  );
+
+  return useCallback(
+    (mnr: string, actors: SelectedActor[], notifyRinger?: boolean) => {
+      if (actors.length === 0) {
+        modalStack.add({
+          title: t("licenseSendLicenses"),
+          content: <p>{t("licenseNoActorsSelected")}</p>,
+          actions: [{ label: t("okModal"), action: () => {}, type: "primary" }],
+        });
+        return;
+      }
+
+      modalStack.add({
+        title: t("licenseSendLicenses"),
+        content: (
+          <>
+            <p>{t("licenseSendLicensesSelectedActorsConfirmText")}</p>
+            <p>
+              <strong>{t("licenseSelectedActors")}:</strong>{" "}
+              {actors.map((a) => a.name).join(", ")}
+            </p>
+          </>
+        ),
+        actions: [
+          { label: t("abortModal"), action: () => {}, type: "outline-primary" },
+          {
+            label: t("licenseSendLicenses"),
+            action: () => sendEmails(mnr, actors, notifyRinger),
             type: "primary",
           },
         ],

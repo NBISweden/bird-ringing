@@ -6,9 +6,11 @@ import {
   LicenseInstance,
 } from "@/app/system/common";
 import { useClient } from "../app/system/contexts";
-import { useSendLicenseEmailAction } from "../app/system/licenses/actions";
+import { useSendLicenseEmailForActorsAction } from "../app/system/licenses/actions";
 import { useTranslation } from "@/app/system/internationalization";
 import { LicensePermissionItem } from "./LicensePermissionItem";
+import { useState } from "react";
+
 type LicenceViewProps = {
   license: LicenseInstance;
   mnr: string;
@@ -16,8 +18,21 @@ type LicenceViewProps = {
 
 export function LicenceView({ license, mnr }: LicenceViewProps) {
   const client = useClient();
-  const sendEmailAction = useSendLicenseEmailAction(client);
+  const sendEmailForActorsAction = useSendLicenseEmailForActorsAction(client);
   const { t, format } = useTranslation();
+
+  const [selectedActorIds, setSelectedActorIds] = useState(new Set<number>());
+  const [notifyRinger, setNotifyRinger] = useState(false);
+
+  const isSelectableRole = (role: string) =>
+    role === "ringer" || role === "associate ringer";
+
+  const hasSelectedAssociateRinger = license.actors.some(
+    (rel) =>
+      rel.role === "associate ringer" && selectedActorIds.has(rel.actor.id),
+  );
+  const effectiveNotifyRinger = notifyRinger && hasSelectedAssociateRinger;
+
   return (
     <>
       <div className="mb-4">
@@ -80,15 +95,48 @@ export function LicenceView({ license, mnr }: LicenceViewProps) {
         <div className="card border-primary">
           <div className="card-body">
             <div className="row">
-              <h2 className="h3 card-title col-5 col-sm-7 col-md-10">
+              <h2 className="h3 card-title col-5 col-sm-7 col-md-7">
                 {t("licenseActors")}
               </h2>
-              <button
-                className="btn btn-secondary col-5 col-sm-5 col-md-2"
-                onClick={() => sendEmailAction(new Set([mnr]))}
-              >
-                {t("licenseSendLicenses")}
-              </button>
+              <div className="col-7 col-sm-7 col-md-3 d-flex align-items-center justify-content-end">
+                <div className="form-check m-0">
+                  <input
+                    className="form-check-input border border-dark"
+                    type="checkbox"
+                    checked={effectiveNotifyRinger}
+                    disabled={!hasSelectedAssociateRinger}
+                    onChange={(e) => setNotifyRinger(e.target.checked)}
+                    id="notify-ringer"
+                  />
+                  <label
+                    className={`form-check-label small text-muted ${!hasSelectedAssociateRinger ? "opacity-50" : ""}`}
+                    htmlFor="notify-ringer"
+                    title={t("licenseNotifyRingerHelp")}
+                  >
+                    {t("licenseNotifyRinger")}
+                  </label>
+                </div>
+              </div>
+              <div className="col-5 col-sm-5 col-md-2">
+                <button
+                  className="btn btn-secondary w-100"
+                  onClick={() =>
+                    sendEmailForActorsAction(
+                      mnr,
+                      license.actors
+                        .filter((rel) => isSelectableRole(rel.role))
+                        .filter((rel) => selectedActorIds.has(rel.actor.id))
+                        .map((rel) => ({
+                          id: rel.actor.id,
+                          name: rel.actor.full_name,
+                        })),
+                      effectiveNotifyRinger,
+                    )
+                  }
+                >
+                  {t("licenseSendLicenses")}
+                </button>
+              </div>
             </div>
             {license.actors?.length ? (
               <ul className="list-group list-group-flush">
@@ -98,9 +146,28 @@ export function LicenceView({ license, mnr }: LicenceViewProps) {
                       <div className="col-12 col-md-3 fw-semibold text-capitalize">
                         {rel.role}
                       </div>
-                      <div className="col-12 col-md-9">
+                      <div className="col-10 col-md-7">
                         <i className="bi bi-person text-primary me-1" />
                         {rel.actor.full_name}({rel.mednr})
+                      </div>
+                      <div className="col-2 col-md-2 d-flex justify-content-center">
+                        {isSelectableRole(rel.role) ? (
+                          <input
+                            className="form-check-input border border-dark"
+                            type="checkbox"
+                            checked={selectedActorIds.has(rel.actor.id)}
+                            onChange={(e) => {
+                              const checked = e.target.checked;
+                              const id = rel.actor.id;
+                              setSelectedActorIds((prev) => {
+                                const next = new Set(prev);
+                                if (checked) next.add(id);
+                                else next.delete(id);
+                                return next;
+                              });
+                            }}
+                          />
+                        ) : null}
                       </div>
                     </div>
                   </li>

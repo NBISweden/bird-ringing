@@ -120,8 +120,27 @@ export const locale: TranslationMap = {
   licenseSendLicensesFailed:
     "Misslyckades med att skicka licenser. Försök igen senare.",
   licenseSendLicensesSucceeded: "{sent} e-postmeddelanden skickades.",
+  licenseSendLicensesSelectedActorsConfirmText:
+    "Vill du skicka licensdokument till de valda ringmärkarna/hjälparna?",
+  licenseSelectedActors: "Valda ringmärkare/hjälpare",
+  licenseNoActorsSelected: "Ingen ringmärkare/hjälpare vald.",
+  licenseNotifyRinger: "Meddela ringmärkare",
+  licenseNotifyRingerHelp:
+    "Skickar även ett samlat e-postmeddelande till ringmärkaren med de valda hjälparnas dokument.",
   licenseSendingLicenses: "Skickar licenser...",
   licenseSpecies: "Arter",
+  licenseRingerBundleMessagesSent:
+    "Samlade e-postmeddelanden skickade till ringmärkare: {count}",
+  licenseRingerBundleMessageSent:
+    "Samlat e-postmeddelande till ringmärkare skickades.",
+  licenseRingerBundleError: "Fel vid samlat utskick till ringmärkare: {error}",
+  licenseRingerBundleFailedMessages:
+    "Misslyckade samlade utskick till ringmärkare",
+  licenseSkippedMessages: "Hoppade över",
+  licenseSkippedMessageRow: "{mnr} {actor} ({reason})",
+  licenseFailedMessagesDetails: "Misslyckade utskick",
+  licenseFailedMessageRow: "{to}: {details}",
+  licenseSkippedMessagesCountByReason: "Hoppade över ({reason}): {count}",
   licenseStatus: "Licensstatus",
   licenseTrappingMethods: "Fångstmetoder",
   licenseType: "Typ",
