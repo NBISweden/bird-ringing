@@ -100,13 +100,13 @@ function toLicenseTable(
         component: item.license_holder,
       },
       location: {
-        component: item.current.location,
+        component: item.latest.location,
       },
       methods: {
         component: (
           <div className="table-row-max-height">
             {Array.from(
-              new Set(item.current.permissions.flatMap((p) => p.type.name)),
+              new Set(item.latest.permissions.flatMap((p) => p.type.name)),
             ).map((pt) => (
               <Badge color="info" rounded outline key={pt}>
                 {pt}
@@ -116,7 +116,7 @@ function toLicenseTable(
         ),
       },
       final_report_status: {
-        component: formatOption(item.current.report_status, {
+        component: formatOption(item.latest.report_status, {
           yes: "licenseReportStatusYes",
           no: "licenseReportStatusNo",
           incomplete: "licenseReportStatusIncomplete",

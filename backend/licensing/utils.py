@@ -2,7 +2,9 @@ from typing import Iterable
 from licensing.models import (
     License,
     LicenseRoleChoices,
+    DocumentTypeChoices,
 )
+from django.db.models import Q
 import urllib.request
 import time
 import io
@@ -58,3 +60,24 @@ def docx_to_pdf_bytes(docx_bytes: bytes) -> bytes:
             time.sleep(0.2)
     raise last_err
 
+def default_document_copy_policy(latest: License, previous: License | None):
+    if previous is None or latest == previous:
+        return
+
+    document_query = previous.documents.filter(
+        is_permanent=False,
+    ).filter(
+        Q(actor__isnull=True) |
+        Q(actor__id__in=set(latest.actors.values_list("actor__id", flat=True)))
+    )
+
+    has_content_diff = latest.dump_content() != previous.dump_content()
+
+    document_query = (
+        document_query.filter(type=DocumentTypeChoices.LICENSE)
+        if has_content_diff
+        else document_query
+    )
+
+    documents_to_copy = list(document_query)
+    latest.documents.add(*documents_to_copy)

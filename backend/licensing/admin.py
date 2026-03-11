@@ -32,11 +32,6 @@ class LicenseRelationAdmin(admin.TabularInline):
     model = LicenseRelation
 
 
-class LicenseDocumentAdmin(admin.TabularInline):
-    exclude = COMMON_EXCLUDES
-    model = LicenseDocument
-
-
 class LicensePermissionAdmin(admin.TabularInline):
     exclude = COMMON_EXCLUDES
     model = LicensePermission
@@ -95,7 +90,6 @@ class LicenseAdmin(ModelAdminWithChangeTracking):
     inlines = [
         LicensePermissionAdmin,
         LicenseRelationAdmin,
-        LicenseDocumentAdmin,
         LicenseCommunicationAdmin,
     ]
 

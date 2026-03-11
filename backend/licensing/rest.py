@@ -10,12 +10,12 @@ from django.core.mail import EmailMessage
 
 from licensing.license_card_service import (
     LicenseCardService,
-    NoCurrentLicense as CardNoCurrentLicense,
+    NoLicense as CardNoLicense,
     ActorNotOnLicense as CardActorNotOnLicense,
 )
 from licensing.permit_service import (
     PermitService,
-    NoCurrentLicense as PermitNoCurrentLicense,
+    NoLicense as PermitNoLicense,
     ActorNotOnLicense as PermitActorNotOnLicense,
 )
 
@@ -56,7 +56,20 @@ logger = logging.getLogger(__name__)
 def parse_csv_string(csv_str: str):
     return [v.strip() for v in csv_str.split(",")]
 
-def get_current_licenses(mnrs: list[str]) -> list[License]:
+
+def get_latest_licenses(mnrs: list[str]) -> list[License]:
+    sequences = get_sequences(mnrs)
+    licenses = []
+    for seq in sequences:
+        lic = seq.latest
+        if not lic:
+            raise serializers.ValidationError({"mnrs": f"No latest license for mnr {seq.mnr}."})
+        licenses.append(lic)
+
+    return licenses
+
+
+def get_sequences(mnrs: list[str]) -> list[LicenseSequence]:
     if not mnrs:
         raise serializers.ValidationError({"mnrs": "mnrs is required (comma-separated)."})
 
@@ -71,15 +84,7 @@ def get_current_licenses(mnrs: list[str]) -> list[License]:
     if missing_mnrs:
         raise serializers.ValidationError({"mnrs": f"Unknown mnr(s): {', '.join(missing_mnrs)}"})
 
-    sequences = [seqs_by_mnr[m] for m in mnrs]
-    licenses = []
-    for seq in sequences:
-        lic = seq.current
-        if not lic:
-            raise serializers.ValidationError({"mnrs": f"No current license for mnr {seq.mnr}."})
-        licenses.append(lic)
-
-    return licenses
+    return [seqs_by_mnr[m] for m in mnrs]
 
 def _send_license_emails_for_relations(
     *,
@@ -479,7 +484,7 @@ class LicenseHistoryItemSerializer(serializers.ModelSerializer):
 
 
 class LicenseSequenceSerializer(serializers.HyperlinkedModelSerializer):
-    current = LicenseSerializer(read_only=True)
+    latest = LicenseSerializer(read_only=True)
     history = serializers.SerializerMethodField()
     license_holder = serializers.CharField(read_only=True)
     license_holder_type = serializers.CharField(read_only=True)
@@ -496,7 +501,7 @@ class LicenseSequenceSerializer(serializers.HyperlinkedModelSerializer):
         model = LicenseSequence
         fields = [
             "mnr",
-            "current",
+            "latest",
             "history",
             "status",
             "license_holder",
@@ -524,7 +529,7 @@ license_status_label = models.Case(
 
 license_report_status_label = models.Case(
     *[
-        models.When(instances__report_status=value, then=models.Value(label))
+        models.When(latest__report_status=value, then=models.Value(label))
         for value, label in ReportStatusChoices.choices
     ],
     output_field=models.CharField(),
@@ -542,7 +547,7 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
     permission_classes = [DjangoProtectedModelPermissions]
 
     lookup_field = "mnr"
-    queryset = LicenseSequence.objects.all().distinct()
+    queryset = LicenseSequence.objects.filter(latest__isnull=False).all().distinct()
     serializer_class = LicenseSequenceSerializer
     pagination_class = StandardResultsSetPagination
 
@@ -573,29 +578,24 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
 
         has_license_card = models.Exists(
             LicenseDocument.objects.filter(
-                license__sequence=models.OuterRef('pk'),
-                license__version=0,
+                license=models.OuterRef('latest__id'),
                 type=DocumentTypeChoices.LICENSE,
-                is_current=True,
             )
         )
 
         has_permit = models.Exists(
             LicenseDocument.objects.filter(
-                license__sequence=models.OuterRef('pk'),
-                license__version=0,
+                license=models.OuterRef('latest__id'),
                 type=DocumentTypeChoices.PERMIT,
-                is_current=True,
             )
         )
-
 
         queryset = queryset.annotate(
             license_holder=StringAgg(
                 models.Case(
                     models.When(
-                        instances__actors__role=models.Value(LicenseRoleChoices.RINGER),
-                        then="instances__actors__actor__full_name",
+                        latest__actors__role=models.Value(LicenseRoleChoices.RINGER),
+                        then="latest__actors__actor__full_name",
                     ),
                     default=models.Value(None),
                     output_field=models.CharField(),
@@ -606,11 +606,11 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
             license_holder_type=models.Max(
                 models.Case(
                     models.When(
-                        instances__actors__role=models.Value(LicenseRoleChoices.RINGER),
+                        latest__actors__role=models.Value(LicenseRoleChoices.RINGER),
                         then=models.Case(
                             *[
                                 models.When(
-                                    instances__actors__actor__type=value,
+                                    latest__actors__actor__type=value,
                                     then=models.Value(label),
                                 )
                                 for value, label in ActorTypeChoices.choices
@@ -624,21 +624,20 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
                 )
             ),
             associate_ringer_count=models.Count(
-                "instances__actors__actor",
+                "latest__actors__actor",
                 filter=models.Q(
-                    instances__version=0,
-                    instances__actors__role=LicenseRoleChoices.ASSOCIATE_RINGER,
+                    latest__actors__role=LicenseRoleChoices.ASSOCIATE_RINGER,
                 ),
                 distinct=True,
             ),
             methods=StringAgg(
-                "instances__permissions__type__name", delimiter=", ", distinct=True
+                "latest__permissions__type__name", delimiter=", ", distinct=True
             ),
             last_email_sent_at=models.Max(
                 models.Case(
                     models.When(
-                        instances__communication__status=models.Value(1),
-                        then="instances__communication__updated_at",
+                        latest__communication__status=models.Value(1),
+                        then="latest__communication__updated_at",
                     ),
                     default=models.Value(None),
                     output_field=models.DateField(),
@@ -676,9 +675,9 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
 
         service = LicenseCardService()
         try:
-            lic = seq.current
+            lic = seq.latest
             if not lic:
-                raise CardNoCurrentLicense("No current license found.")
+                raise CardNoLicense("No current license found.")
 
             doc = service.get_or_create_license_card_document(
                 lic=lic,
@@ -686,7 +685,7 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
                 created_by=request.user,
                 updated_by=request.user,
             )
-        except CardNoCurrentLicense as e:
+        except CardNoLicense as e:
             return Response({"detail": str(e)}, status=404)
         except CardActorNotOnLicense as e:
             return Response({"detail": str(e)}, status=400)
@@ -703,12 +702,9 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
 
         service = LicenseCardService()
         try:
-            lic = seq.current
-            if not lic:
-                raise CardNoCurrentLicense("No current license found.")
-
+            lic = seq.latest
             doc = service.get_license_card_document(lic=lic, actor=actor)
-        except CardNoCurrentLicense as e:
+        except CardNoLicense as e:
             return Response({"detail": str(e)}, status=404)
         except CardActorNotOnLicense as e:
             return Response({"detail": str(e)}, status=400)
@@ -732,7 +728,7 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
             return Actor.objects.get(pk=actor_id)
         except Actor.DoesNotExist:
             raise serializers.ValidationError({"actor_id": "Actor not found"})
-
+    
     def _pdf_http_response(self, *, lic: License, actor: Actor, doc) -> HttpResponse:
         service = LicenseCardService()
         filename = doc.reference or service.make_license_card_filename(lic, actor)
@@ -746,7 +742,7 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
         mnrs = [m for m in parse_csv_string(raw) if m]
 
         try:
-            licenses = get_current_licenses(mnrs)
+            licenses = get_latest_licenses(mnrs)
         except serializers.ValidationError as e:
             return Response(e.detail, status=400)
 
@@ -756,7 +752,7 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
                 licenses=licenses,
                 allowed_roles=(LicenseRoleChoices.RINGER, LicenseRoleChoices.ASSOCIATE_RINGER),
             )
-        except CardNoCurrentLicense as e:
+        except CardNoLicense as e:
             return Response({"detail": str(e)}, status=404)
         except CardActorNotOnLicense as e:
             return Response({"detail": str(e)}, status=400)
@@ -773,7 +769,7 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
         mnrs = [m for m in parse_csv_string(raw) if m]
 
         try:
-            licenses = get_current_licenses(mnrs)
+            licenses = get_latest_licenses(mnrs)
         except serializers.ValidationError as e:
             return Response(e.detail, status=400)
 
@@ -785,7 +781,7 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
                 updated_by=request.user,
                 allowed_roles=(LicenseRoleChoices.RINGER, LicenseRoleChoices.ASSOCIATE_RINGER),
             )
-        except CardNoCurrentLicense as e:
+        except CardNoLicense as e:
             return Response({"detail": str(e)}, status=404)
         except CardActorNotOnLicense as e:
             return Response({"detail": str(e)}, status=400)
@@ -805,7 +801,7 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
         mnrs = [m for m in parse_csv_string(raw) if m]
 
         try:
-            licenses = get_current_licenses(mnrs)
+            licenses = get_latest_licenses(mnrs)
         except serializers.ValidationError as e:
             return Response(e.detail, status=400)
 
@@ -861,7 +857,7 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
 
         actor_id_set = set(actor_ids)
 
-        license = self.get_object().current
+        license = self.get_object().latest
         if not license:
             return Response({"detail": "No current license found."}, status=404)
 
@@ -922,9 +918,9 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
 
         service = PermitService()
         try:
-            lic = seq.current
+            lic = seq.latest
             if not lic:
-                raise PermitNoCurrentLicense("No current license found.")
+                raise PermitNoLicense("No current license found.")
 
             doc = service.get_or_create_permit_document(
                 lic=lic,
@@ -932,7 +928,7 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
                 created_by=request.user,
                 updated_by=request.user,
             )
-        except PermitNoCurrentLicense as e:
+        except PermitNoLicense as e:
             return Response({"detail": str(e)}, status=404)
         except PermitActorNotOnLicense as e:
             return Response({"detail": str(e)}, status=400)
@@ -949,12 +945,12 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
 
         service = PermitService()
         try:
-            lic = seq.current
+            lic = seq.latest
             if not lic:
-                raise PermitNoCurrentLicense("No current license found.")
+                raise PermitNoLicense("No current license found.")
 
             doc = service.get_permit_document(lic=lic, actor=actor)
-        except PermitNoCurrentLicense as e:
+        except PermitNoLicense as e:
             return Response({"detail": str(e)}, status=404)
         except PermitActorNotOnLicense as e:
             return Response({"detail": str(e)}, status=400)
@@ -976,7 +972,7 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
         mnrs = [m for m in parse_csv_string(raw) if m]
 
         try:
-            licenses = get_current_licenses(mnrs)
+            licenses = get_latest_licenses(mnrs)
         except serializers.ValidationError as e:
             return Response(e.detail, status=400)
 
@@ -988,7 +984,7 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
                 updated_by=request.user,
                 allowed_roles=(LicenseRoleChoices.RINGER, LicenseRoleChoices.ASSOCIATE_RINGER),
             )
-        except PermitNoCurrentLicense as e:
+        except PermitNoLicense as e:
             return Response({"detail": str(e)}, status=404)
         except PermitActorNotOnLicense as e:
             return Response({"detail": str(e)}, status=400)
@@ -1003,7 +999,7 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
         mnrs = [m for m in parse_csv_string(raw) if m]
 
         try:
-            licenses = get_current_licenses(mnrs)
+            licenses = get_latest_licenses(mnrs)
         except serializers.ValidationError as e:
             return Response(e.detail, status=400)
 
@@ -1013,7 +1009,7 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
                 licenses=licenses,
                 allowed_roles=(LicenseRoleChoices.RINGER, LicenseRoleChoices.ASSOCIATE_RINGER),
             )
-        except PermitNoCurrentLicense as e:
+        except PermitNoLicense as e:
             return Response({"detail": str(e)}, status=404)
         except PermitActorNotOnLicense as e:
             return Response({"detail": str(e)}, status=400)
