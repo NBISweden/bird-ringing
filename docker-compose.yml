@@ -87,6 +87,7 @@ services:
       LICENSE_CARD_BACK_FILE: ${LICENSE_CARD_BACK_FILE:-}
       PERMIT_TEMPLATE_FILE: ${PERMIT_TEMPLATE_FILE:-}
       DOCX2PDF_URL: http://docx2pdf:8000/convert/docx-to-pdf
+      DJANGO_EMAIL_HOST_PASSWORD_FILE: /run/secrets/django-email-password
     volumes:
       - backend-vol:/vol:ro
     healthcheck:
