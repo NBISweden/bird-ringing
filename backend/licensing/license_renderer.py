@@ -9,9 +9,6 @@ from lxml import etree
 import cairosvg
 import logging
 
-from io import BytesIO
-import pikepdf
-
 logger = logging.getLogger(__name__)
 
 SVG_NS = "http://www.w3.org/2000/svg"
@@ -19,8 +16,6 @@ XML_NS = "http://www.w3.org/XML/1998/namespace"
 NS = {"svg": SVG_NS}
 
 DEFAULT_INFO_LABEL_ID = "text4"
-
-_BACK_PDF_CACHE: bytes | None = None
 
 
 @dataclass(frozen=True)
@@ -32,14 +27,8 @@ class RenderRequest:
 
 class LicenseCardRenderer:
     def render_pdf_bytes(self, req: RenderRequest) -> bytes:
-        # page 1: front (modified)
-        front_svg_bytes = self._render_svg_bytes(req)
-        front_pdf = cairosvg.svg2pdf(bytestring=front_svg_bytes)
-
-        # page 2: back (static)
-        back_pdf = _get_back_pdf_bytes()
-
-        return _merge_two_single_page_pdfs(front_pdf, back_pdf)
+        svg_bytes = self._render_svg_bytes(req)
+        return cairosvg.svg2pdf(bytestring=svg_bytes)
 
     def _render_svg_bytes(self, req: RenderRequest) -> bytes:
         if len(req.lines_info) != 3:
@@ -110,27 +99,3 @@ def get_template_path(setting_name: str) -> Path:
         raise ImproperlyConfigured(f"{setting_name} is not a file: {p}")
 
     return p
-
-def _merge_two_single_page_pdfs(front_pdf: bytes, back_pdf: bytes) -> bytes:
-    out = BytesIO()
-    with pikepdf.Pdf.open(BytesIO(front_pdf)) as f, pikepdf.Pdf.open(BytesIO(back_pdf)) as b:
-        merged = pikepdf.Pdf.new()
-        merged.pages.append(f.pages[0])
-        merged.pages.append(b.pages[0])
-        merged.save(out)
-    return out.getvalue()
-
-def _get_back_pdf_bytes() -> bytes:
-    """
-    Add caching for the back-side of the pdf card. This works per-process.
-    """
-    global _BACK_PDF_CACHE
-    if _BACK_PDF_CACHE is not None:
-        return _BACK_PDF_CACHE
-
-    back_svg_path = get_template_path("LICENSING_CARD_TEMPLATE_BACK")
-    back_svg = back_svg_path.read_text(encoding="utf-8")
-    back_svg = back_svg.replace("font-family:'Segoe UI'", "font-family:'Noto Sans Light'")
-
-    _BACK_PDF_CACHE = cairosvg.svg2pdf(bytestring=back_svg.encode("utf-8"))
-    return _BACK_PDF_CACHE
