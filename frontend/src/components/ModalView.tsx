@@ -21,9 +21,14 @@ export function ModalView() {
     (action?: () => void) => {
       action = action ? action : modal && modal.closeAction;
       const currentRef = modalRef.current;
+      const prefersReducedMotion = matchMedia(
+        "(prefers-reduced-motion: reduce)",
+      ).matches;
       if (currentRef) {
         const handleStack = () => {
-          currentRef.removeEventListener("transitionend", handleStack);
+          if (!prefersReducedMotion) {
+            currentRef.removeEventListener("transitionend", handleStack);
+          }
           if (modal) {
             if (action) {
               action();
@@ -32,7 +37,11 @@ export function ModalView() {
           }
         };
         setIsOpen(false);
-        currentRef.addEventListener("transitionend", handleStack);
+        if (prefersReducedMotion) {
+          handleStack();
+        } else {
+          currentRef.addEventListener("transitionend", handleStack);
+        }
       }
     },
     [modal, modals, setIsOpen, modalRef],
