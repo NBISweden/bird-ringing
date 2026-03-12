@@ -69,7 +69,7 @@ function toActorTable(
   item: ActorListItem,
   formatOption: Translation["formatOption"],
 ): TableItem<ActorPropertyIds> {
-  const licenses: ActorLicenseRelation[] = item.current_license_relations;
+  const licenses: ActorLicenseRelation[] = item.license_relations;
   const roles = new Set<Role>(licenses.map((l) => l.role));
   return {
     id: String(item.id),

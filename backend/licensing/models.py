@@ -1,6 +1,6 @@
 from django.db import models
 from django.db import transaction
-from django.db.models import Max
+from django.db.models import Max, F
 from django.contrib.auth.models import User
 from django.core.validators import MinLengthValidator
 from django.template.defaultfilters import slugify
@@ -111,8 +111,8 @@ class Actor(ChangeTracking):
     description = models.TextField(blank=True, default="")
 
     @property
-    def current_license_relations(self):
-        return LicenseRelation.objects.filter(actor=self, license__version=0)
+    def license_relations(self):
+        return LicenseRelation.objects.filter(actor=self, license__sequence__latest=F("license"))
 
     def __str__(self):
         return self.full_name

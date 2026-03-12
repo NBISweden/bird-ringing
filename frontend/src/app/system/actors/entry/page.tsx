@@ -60,7 +60,7 @@ function ActorViewBase() {
     return <LoadingActor />;
   }
 
-  const licenses: ActorLicenseRelation[] = data.current_license_relations;
+  const licenses: ActorLicenseRelation[] = data.license_relations;
   licenses.sort((a: ActorLicenseRelation, b: ActorLicenseRelation) => {
     return new Date(b.ends_at).getTime() - new Date(a.ends_at).getTime();
   });
