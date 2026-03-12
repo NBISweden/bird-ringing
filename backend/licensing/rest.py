@@ -380,6 +380,19 @@ class ActorSerializer(serializers.ModelSerializer):
         ]
 
 
+class ActorDetailSerializer(ActorSerializer):
+    previous_license_relations = ActorLicenseRelationSerializer(
+        many=True, read_only=True
+    )
+
+    class Meta:
+        model = Actor
+        fields = [
+            *ActorSerializer.Meta.fields,
+            "previous_license_relations",
+        ]
+
+
 class LicenseActorSerializer(serializers.ModelSerializer):
     type = serializers.ChoiceField(choices=ActorTypeChoices, source="get_type_display")
     sex = serializers.ChoiceField(choices=SexChoices, source="get_sex_display")
@@ -1096,6 +1109,11 @@ class ActorViewSet(viewsets.ModelViewSet):
         ]
     )
     default_ordering = ["full_name", "city", "country"]
+
+    def get_serializer_class(self):
+        if self.action == "retrieve":
+            return ActorDetailSerializer
+        return super().get_serializer_class()
 
 router = routers.DefaultRouter()
 router.register(r"license_sequence", LicenseSequenceViewSet)

@@ -1,6 +1,6 @@
-from django.db import models
-from django.db import transaction
-from django.db.models import Max, F
+from django.db import models, transaction
+from django.db.models import Max, F, Window
+from django.db.models.functions import RowNumber
 from django.contrib.auth.models import User
 from django.core.validators import MinLengthValidator
 from django.template.defaultfilters import slugify
@@ -113,6 +113,15 @@ class Actor(ChangeTracking):
     @property
     def license_relations(self):
         return LicenseRelation.objects.filter(actor=self, license__sequence__latest=F("license"))
+    
+    def previous_license_relations(self):
+        return LicenseRelation.objects.filter(actor=self).exclude(license__sequence__latest=F("license")).annotate(
+            row_number=Window(
+                expression=RowNumber(),
+                partition_by=[F("license__starts_at__year"), F("license__sequence")],
+                order_by=F("license__version").asc()
+            )
+        ).filter(row_number=1)
 
     def __str__(self):
         return self.full_name
