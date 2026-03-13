@@ -149,6 +149,7 @@ const messagesBase = {
   licenseUpdatedAt: "Updated at {date}",
   licenseValidityPeriod:
     "<from>Valid from </from>{startsAt}<to> to </to>{endsAt}",
+  buttonCreateDocuments: "Create documents",
 
   permitCreateDocuments: "Create permits",
   permitCreateDocumentsConfirmText:

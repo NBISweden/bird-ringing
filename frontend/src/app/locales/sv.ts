@@ -147,7 +147,7 @@ export const locale: TranslationMap = {
   licenseUpdatedAt: "Uppdaterad {date}",
   licenseValidityPeriod:
     "<from>Giltig från </from>{startsAt}<to> till </to>{endsAt}",
-
+  buttonCreateDocuments: "Create documents",
   permitCreateDocuments: "Skapa tillstånd",
   permitCreateDocumentsConfirmText:
     "Vill du skapa tillstånd för alla ringmärkare och hjälpare för valda licenser?",

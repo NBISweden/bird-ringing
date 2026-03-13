@@ -111,7 +111,7 @@ function useBatchCreateAction({
         actions: [
           { label: t("abortModal"), action: () => {}, type: "outline-primary" },
           {
-            label: t("licenseCreateLicenseDocuments"),
+            label: t("buttonCreateDocuments"),
             action: () => runCreate(itemIds),
             type: "primary",
           },
