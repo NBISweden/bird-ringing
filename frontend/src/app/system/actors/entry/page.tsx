@@ -106,6 +106,14 @@ function ActorViewBase() {
   previousLicenses.sort((a: ActorLicenseRelation, b: ActorLicenseRelation) => {
     return new Date(b.ends_at).getTime() - new Date(a.ends_at).getTime();
   });
+  const previousLicenseGroups = previousLicenses.reduce<
+    Record<string, ActorLicenseRelation[]>
+  >((acc, l) => {
+    const key = `${l.mnr}:${l.mednr}:${l.role}`;
+    acc[key] = acc[key] || [];
+    acc[key].push(l);
+    return acc;
+  }, {});
 
   const roles = new Set<Role>(licenses.map((l) => l.role));
 
@@ -198,13 +206,13 @@ function ActorViewBase() {
         <div className="col-12 col-xxl-9">
           <h3 className="pt-4 fw-bold">{t("actorLicenses")}</h3>
           <ul className="list-group list-group-flush">
-            <PaginatedLicenses items={licenses} />
+            <PaginatedLicenses items={licenses.map((l) => [l])} />
           </ul>
         </div>
         <div className="col-12 col-xxl-9">
           <h3 className="pt-4 fw-bold">{t("actorPreviousLicenses")}</h3>
           <ul className="list-group list-group-flush">
-            <PaginatedLicenses items={previousLicenses} />
+            <PaginatedLicenses items={Object.values(previousLicenseGroups)} />
           </ul>
         </div>
       </div>
@@ -212,7 +220,11 @@ function ActorViewBase() {
   );
 }
 
-function PaginatedLicenses({ items }: { items: ActorLicenseRelation[] }) {
+function getLicenseGroupKey(licenses: ActorLicenseRelation[]) {
+  return licenses.map((l) => `${l.starts_at}${l.mnr}-${l.mednr}`).join(";");
+}
+
+function PaginatedLicenses({ items }: { items: ActorLicenseRelation[][] }) {
   const { t } = useTranslation();
   const pagination = usePagination(items, 10, { disableForSinglePage: true });
   return items.length > 0 ? (
@@ -222,11 +234,12 @@ function PaginatedLicenses({ items }: { items: ActorLicenseRelation[] }) {
         currentPage={pagination.currentPage}
       />
       {pagination.items.map((l) => (
-        <li
-          className="list-group-item"
-          key={`${l.starts_at}${l.mnr}-${l.mednr}`}
-        >
-          <LicenseEntry license={l} />
+        <li className="list-group-item" key={getLicenseGroupKey(l)}>
+          {l.length > 1 ? (
+            <LicenseGroup licenseGroup={l} />
+          ) : (
+            <LicenseEntry license={l[0]} />
+          )}
         </li>
       ))}
       <Pagination
@@ -236,6 +249,23 @@ function PaginatedLicenses({ items }: { items: ActorLicenseRelation[] }) {
     </>
   ) : (
     <p className="text-muted fst-italic">{t("actorNoCurrentLicenses")}</p>
+  );
+}
+
+function LicenseGroup({
+  licenseGroup,
+}: {
+  licenseGroup: ActorLicenseRelation[];
+}) {
+  return (
+    <details>
+      <summary>
+        <LicenseEntry license={licenseGroup[0]} />
+      </summary>
+      {licenseGroup.slice(1).map((l) => (
+        <LicenseEntry key={getLicenseGroupKey([l])} license={l} />
+      ))}
+    </details>
   );
 }
 
@@ -252,48 +282,46 @@ function LicenseEntry({ license }: { license: ActorLicenseRelation }) {
   } = license;
   const licenseIsActive = isLicenseActive(license);
   return (
-    <>
-      <div className="row">
-        <div className="py-2 col-3 text-nowrap d-flex flex-column justify-content-center">
-          <span>
-            <Link href={`/system/licenses/entry?mnr=${mnr}`}>
-              {mnr}-{mednr}
-            </Link>
-          </span>
-          <span className="text-secondary small">{role}</span>
+    <div className="row">
+      <div className="py-2 col-3 text-nowrap d-flex flex-column justify-content-center">
+        <span>
+          <Link href={`/system/licenses/entry?mnr=${mnr}`}>
+            {mnr}-{mednr}
+          </Link>
+        </span>
+        <span className="text-secondary small">{role}</span>
+      </div>
+      <div className="py-2 col-5 d-flex flex-column flex-md-row align-items-center ">
+        <div>
+          {format("actorLicenseValidityPeriod", {
+            startsAt: convertOnlyDateToLocale(starts_at),
+            endsAt: convertOnlyDateToLocale(ends_at),
+            from: (chunks: React.ReactNode) => (
+              <p className="m-0 text-end">{chunks}</p>
+            ),
+            to: (chunks) => <p className="m-0">{chunks}</p>,
+            muted: (chunks) => (
+              <span className="text-muted small">{chunks}</span>
+            ),
+          })}
         </div>
-        <div className="py-2 col-5 d-flex flex-column flex-md-row align-items-center ">
-          <div>
-            {format("actorLicenseValidityPeriod", {
-              startsAt: convertOnlyDateToLocale(starts_at),
-              endsAt: convertOnlyDateToLocale(ends_at),
-              from: (chunks: React.ReactNode) => (
-                <p className="m-0 text-end">{chunks}</p>
-              ),
-              to: (chunks) => <p className="m-0">{chunks}</p>,
-              muted: (chunks) => (
-                <span className="text-muted small">{chunks}</span>
-              ),
-            })}
-          </div>
-          <div className="ms-3">
-            <span
-              className={`badge rounded-pill ms-2 ${licenseIsActive ? "text-success-emphasis bg-success-subtle" : "text-dark-emphasis bg-body-secondary"}`}
-            >
-              {licenseIsActive
-                ? t("actorLicenseActive")
-                : t("actorLicenseInactive")}
-            </span>
-          </div>
-        </div>
-        <div className="py-2 col-4 d-flex align-items-center fw-semibold text-capitalize">
-          {communication_type}
-          <span className="badge rounded-pill text-primary border border-primary ms-2">
-            {communication_status}
+        <div className="ms-3">
+          <span
+            className={`badge rounded-pill ms-2 ${licenseIsActive ? "text-success-emphasis bg-success-subtle" : "text-dark-emphasis bg-body-secondary"}`}
+          >
+            {licenseIsActive
+              ? t("actorLicenseActive")
+              : t("actorLicenseInactive")}
           </span>
         </div>
       </div>
-    </>
+      <div className="py-2 col-4 d-flex align-items-center fw-semibold text-capitalize">
+        {communication_type}
+        <span className="badge rounded-pill text-primary border border-primary ms-2">
+          {communication_status}
+        </span>
+      </div>
+    </div>
   );
 }
 
