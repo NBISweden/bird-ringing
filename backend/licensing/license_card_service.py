@@ -12,6 +12,7 @@ import zipfile
 from django.db import transaction
 
 from licensing.models import (
+    ActorTypeChoices,
     License,
     LicenseRoleChoices,
     Actor,
@@ -81,19 +82,40 @@ class LicenseCardService:
             allowed_roles=allowed_roles,
         )
 
+        # valid to line
         holder_name = actor.full_name
-        valid_to = format_date(lic.ends_at)
+        valid_to = "Giltig t.o.m " + format_date(lic.ends_at)
 
+        # actor line
         mnr = lic.sequence.mnr
         mnr_line = mnr
+        mnr_label = "Märkare nr. "
         if rel.role == LicenseRoleChoices.ASSOCIATE_RINGER:
             mnr_line = f"{mnr}: {rel.mednr}"
 
-        lines_info = [valid_to, mnr_line, holder_name]
+            # if main ringer on this license is a station, use the station name as label
+            ringer_rel = (lic.actors.filter(role=LicenseRoleChoices.RINGER).select_related("actor").first())
+            ringer_actor = ringer_rel.actor if ringer_rel else None
+
+            if ringer_actor and ringer_actor.type == ActorTypeChoices.STATION:
+                station_name = (ringer_actor.full_name or "").strip() or "Station"
+                mnr_label = f"{station_name} nr. "
+
+        # birthdate/birthyear line
+        birthdate = ""
+        if actor.birth_date:
+            birthdate = actor.birth_date.isoformat()
+        elif actor.birth_year:
+            birthdate = str(actor.birth_year)
 
         req = RenderRequest(
             template_svg_path=get_template_path("LICENSING_CARD_TEMPLATE"),
-            lines_info=lines_info,
+            context={
+                "valid_to": valid_to,
+                "mnr_line": mnr_label + mnr_line,
+                "holder_name": holder_name,
+                "date": birthdate,
+            },
         )
 
         pdf_bytes = self.renderer.render_pdf_bytes(req)
@@ -118,6 +140,8 @@ class LicenseCardService:
             "sequence_mnr": lic.sequence.mnr,
             "actor_id": actor.id,
             "actor_full_name": actor.full_name,
+            "actor_birth_date": actor.birth_date.isoformat() if actor.birth_date else "",
+            "actor_birth_year": int(actor.birth_year) if actor.birth_year else "",
 
             "starts_at": lic.starts_at.isoformat(),
             "ends_at": lic.ends_at.isoformat(),

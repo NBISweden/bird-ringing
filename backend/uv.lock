@@ -31,7 +31,6 @@ dependencies = [
     { name = "docxcompose" },
     { name = "docxtpl" },
     { name = "gunicorn" },
-    { name = "lxml" },
     { name = "psycopg", extra = ["c"] },
 ]
 
@@ -48,7 +47,6 @@ requires-dist = [
     { name = "docxcompose", specifier = ">=2.0.0" },
     { name = "docxtpl", specifier = ">=0.20.2" },
     { name = "gunicorn", specifier = ">=23.0.0" },
-    { name = "lxml" },
     { name = "psycopg", extras = ["c"], specifier = ">=3.2.11" },
 ]
 
