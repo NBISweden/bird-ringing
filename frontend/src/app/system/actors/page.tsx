@@ -183,7 +183,6 @@ function ConnectedListView() {
       setQuery={setQuery}
       params={params}
       currentPage={currentPage}
-      pageCount={actorPage.num_pages}
       batchActions={batchActions}
     />
   );
@@ -194,7 +193,6 @@ type ListViewProps = {
   count: number;
   pages: Page[];
   currentPage: string;
-  pageCount: number;
   query: string;
   setQuery: (q: string) => void;
   isLoading?: boolean;
@@ -207,7 +205,6 @@ function BaseListView({
   count,
   pages,
   currentPage,
-  pageCount,
   query,
   setQuery,
   isLoading,
@@ -336,11 +333,7 @@ function BaseListView({
         </ul>
       </div>
       <div className="d-flex flex-row align-items-center gap-3">
-        <Pagination
-          pages={pages}
-          currentPage={currentPage}
-          pageCount={pageCount}
-        />
+        <Pagination pages={pages} currentPage={currentPage} />
         {isLoading ? <Spinner className="mb-3" /> : <></>}
       </div>
       <table className="table">
@@ -405,11 +398,7 @@ function BaseListView({
           })}
         </tbody>
       </table>
-      <Pagination
-        pages={pages}
-        currentPage={currentPage}
-        pageCount={pageCount}
-      />
+      <Pagination pages={pages} currentPage={currentPage} />
     </div>
   );
 }
@@ -425,7 +414,6 @@ export default function ListView() {
           count={0}
           pages={[]}
           currentPage=""
-          pageCount={0}
           params={new URLSearchParams()}
           batchActions={[]}
         />
