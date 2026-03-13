@@ -106,13 +106,17 @@ function toActorTable(
       licenses: {
         component: (
           <>
-            {licenses.map((l, index) => {
-              return (
-                <Badge color="info" rounded outline key={index}>
+            {licenses.map((l, index) => (
+              <Link
+                key={index}
+                href={`/system/licenses/entry?mnr=${l.mnr}`}
+                className="text-decoration-none"
+              >
+                <Badge color="info" rounded outline>
                   {l.mednr ? `${l.mnr}:${l.mednr}` : l.mnr}
                 </Badge>
-              );
-            })}
+              </Link>
+            ))}
           </>
         ),
       },

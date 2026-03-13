@@ -1,5 +1,6 @@
 "use Client";
 
+import Link from "next/link";
 import {
   convertDateToLocale,
   convertOnlyDateToLocale,
@@ -148,7 +149,7 @@ export function LicenceView({ license, mnr }: LicenceViewProps) {
                       </div>
                       <div className="col-10 col-md-7">
                         <i className="bi bi-person text-primary me-1" />
-                        {rel.actor.full_name}({rel.mednr})
+                        <Link href={`/system/actors/entry?entryId=${rel.actor.id}`}>{rel.actor.full_name}</Link>({rel.mednr})
                       </div>
                       <div className="col-2 col-md-2 d-flex justify-content-center">
                         {isSelectableRole(rel.role) ? (
