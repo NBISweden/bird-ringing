@@ -251,7 +251,7 @@ class LicenseCardService:
 
                     if not doc:
                         raise ValueError(
-                            f"License card PDF(s) missing for mnr {lic.sequence.mnr} {lic.version}. "
+                            f"License card PDF(s) missing for mnr {lic.sequence.mnr}. "
                             "Generate all license cards for your selected MNRs before creating ZIP."
                         )
 
