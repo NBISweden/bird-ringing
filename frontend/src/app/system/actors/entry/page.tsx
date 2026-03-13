@@ -15,6 +15,7 @@ import { Client } from "../../client";
 import Spinner from "@/components/Spinner";
 import { useTranslation } from "../../internationalization";
 import { Alert } from "@/components/Alert";
+import { Pagination, usePagination } from "@/components/Pagination";
 
 async function fetchActor([client, _ctx, entryId]: [Client, "actor", string]) {
   return client.fetchActorById(entryId);
@@ -197,43 +198,44 @@ function ActorViewBase() {
         <div className="col-12 col-xxl-9">
           <h3 className="pt-4 fw-bold">{t("actorLicenses")}</h3>
           <ul className="list-group list-group-flush">
-            {licenses.length > 0 ? (
-              licenses.map((l) => (
-                <li
-                  className="list-group-item"
-                  key={`${l.starts_at}${l.mnr}-${l.mednr}`}
-                >
-                  <LicenseEntry license={l} />
-                </li>
-              ))
-            ) : (
-              <p className="text-muted fst-italic">
-                {t("actorNoCurrentLicenses")}
-              </p>
-            )}
+            <PaginatedLicenses items={licenses} />
           </ul>
         </div>
         <div className="col-12 col-xxl-9">
           <h3 className="pt-4 fw-bold">{t("actorPreviousLicenses")}</h3>
           <ul className="list-group list-group-flush">
-            {previousLicenses.length > 0 ? (
-              previousLicenses.map((l) => (
-                <li
-                  className="list-group-item"
-                  key={`${l.starts_at}${l.mnr}-${l.mednr}`}
-                >
-                  <LicenseEntry license={l} />
-                </li>
-              ))
-            ) : (
-              <p className="text-muted fst-italic">
-                {t("actorNoCurrentLicenses")}
-              </p>
-            )}
+            <PaginatedLicenses items={previousLicenses} />
           </ul>
         </div>
       </div>
     </div>
+  );
+}
+
+function PaginatedLicenses({ items }: { items: ActorLicenseRelation[] }) {
+  const { t } = useTranslation();
+  const pagination = usePagination(items, 10, { disableForSinglePage: true });
+  return items.length > 0 ? (
+    <>
+      <Pagination
+        pages={pagination.pages}
+        currentPage={pagination.currentPage}
+      />
+      {pagination.items.map((l) => (
+        <li
+          className="list-group-item"
+          key={`${l.starts_at}${l.mnr}-${l.mednr}`}
+        >
+          <LicenseEntry license={l} />
+        </li>
+      ))}
+      <Pagination
+        pages={pagination.pages}
+        currentPage={pagination.currentPage}
+      />
+    </>
+  ) : (
+    <p className="text-muted fst-italic">{t("actorNoCurrentLicenses")}</p>
   );
 }
 
