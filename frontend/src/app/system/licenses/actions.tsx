@@ -8,8 +8,8 @@ import {
 } from "@/components/SendLicenseModalContent";
 import { Alert } from "@/components/Alert";
 import { downloadData } from "../utils";
-import useSWRImmutable from "swr/immutable";
 import { useTranslation } from "../internationalization";
+import { useActionWithoutCache } from "../hooks";
 
 type BatchCreateResponse = { filenames: string[] };
 
@@ -32,8 +32,8 @@ function GenericBatchCreateBody({
 }) {
   const client = useClient();
 
-  const { data, isLoading, error } = useSWRImmutable(
-    [client, mnrs],
+  const { data, isLoading, error } = useActionWithoutCache(
+    "Batch actions: " + mnrs.join(","),
     async () => {
       return createFn(client, mnrs);
     },
@@ -111,7 +111,7 @@ function useBatchCreateAction({
         actions: [
           { label: t("abortModal"), action: () => {}, type: "outline-primary" },
           {
-            label: t("licenseCreateLicenseDocuments"),
+            label: t("buttonCreateDocuments"),
             action: () => runCreate(itemIds),
             type: "primary",
           },
@@ -137,17 +137,12 @@ function DownloadModal<T>({
 }) {
   const client = useClient();
 
-  const downloadExec = useCallback(
-    async ([c, filename, p]: [Client, string, T]) => {
-      const blob = await downloadFunc([c, p]);
+  const { isLoading, error } = useActionWithoutCache(
+    "Download: " + filename,
+    async () => {
+      const blob = await downloadFunc([client, params]);
       downloadData(blob, filename);
     },
-    [downloadFunc],
-  );
-
-  const { isLoading, error } = useSWRImmutable(
-    [client, filename, params],
-    downloadExec,
   );
 
   return (

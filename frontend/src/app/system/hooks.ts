@@ -5,6 +5,7 @@ import {
   useRef,
   useEffect,
 } from "react";
+import useSWRMutation from "swr/mutation";
 
 export function useItemSelections(
   currentSubSet: Set<string>,
@@ -64,4 +65,22 @@ export function useDebouncedValue<T>(value: T, timeout: number = 5000) {
     }, timeout);
   }, [value, setActiveValue, timeout, timerRef]);
   return activeValue;
+}
+
+export function useActionWithoutCache<T>(
+  SWRKey: string,
+  action: () => Promise<T>,
+) {
+  const hasSent = useRef(false);
+  const { data, isMutating, trigger, error } = useSWRMutation(SWRKey, action, {
+    populateCache: false,
+    revalidate: false,
+  });
+  useEffect(() => {
+    if (hasSent.current) return;
+    hasSent.current = true;
+    trigger();
+  });
+
+  return { data, isLoading: isMutating, error };
 }
