@@ -1,9 +1,8 @@
 from django.test import TestCase
-from .utils import create_user, create_permission
+from .utils import create_user, create_permission, get_fingerprint
 from licensing import models
 import datetime
 from licensing.utils import default_document_copy_policy
-
 
 class TestLicenseHistory(TestCase):
     def setUp(self):
@@ -94,6 +93,7 @@ class TestLicenseHistory(TestCase):
         ]
         self.reference_docs = [
             models.LicenseDocument.objects.create(
+                license_sequence=self.license_sequence,
                 type=models.DocumentTypeChoices.DOCUMENT,
                 reference=ref,
                 created_by=self.user,
@@ -104,23 +104,27 @@ class TestLicenseHistory(TestCase):
         ]
         license_docs = [
             models.LicenseDocument.objects.create(
+                license_sequence=self.license_sequence,
                 type=models.DocumentTypeChoices.LICENSE,
                 reference=f"license-{actor.full_name}",
                 is_permanent=False,
                 created_by=self.user,
                 updated_by=self.user,
-                actor=actor
+                actor=actor,
+                fingerprint=get_fingerprint(actor.id, current.id)
             )
             for actor in self.actors
         ]
         permit_docs = [
             models.LicenseDocument.objects.create(
+                license_sequence=self.license_sequence,
                 type=models.DocumentTypeChoices.PERMIT,
                 reference=f"permit-{actor.full_name}",
                 is_permanent=False,
                 created_by=self.user,
                 updated_by=self.user,
-                actor=actor
+                actor=actor,
+                fingerprint=get_fingerprint(actor.id, current.id)
             )
             for actor in self.actors
         ]
@@ -159,23 +163,27 @@ class TestLicenseHistory(TestCase):
 
         license_docs = [
             models.LicenseDocument.objects.create(
+                license_sequence=self.license_sequence,
                 type=models.DocumentTypeChoices.LICENSE,
                 reference=f"l1-{actor.full_name}",
                 is_permanent=False,
                 created_by=self.user,
                 updated_by=self.user,
-                actor=actor
+                actor=actor,
+                fingerprint=get_fingerprint("post", actor.id, first_commit.id)
             )
             for actor in self.actors
         ]
         permit_docs = [
             models.LicenseDocument.objects.create(
+                license_sequence=self.license_sequence,
                 type=models.DocumentTypeChoices.PERMIT,
                 reference=f"p1-{actor.full_name}",
                 is_permanent=False,
                 created_by=self.user,
                 updated_by=self.user,
-                actor=actor
+                actor=actor,
+                fingerprint=get_fingerprint("post", actor.id, first_commit.id)
             )
             for actor in self.actors
         ]

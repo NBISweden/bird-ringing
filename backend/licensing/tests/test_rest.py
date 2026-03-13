@@ -16,7 +16,7 @@ from licensing.models import (
     LicenseCommunication,
     CommunicationStatusChoices,
 )
-from .utils import create_user
+from .utils import create_user, get_fingerprint
 import datetime
 from django.core import mail
 from unittest.mock import patch
@@ -108,6 +108,7 @@ class _EmailTestBase(TestCase):
         for (actor, lic) in zip(actors, licenses):
             lic.documents.add(
                 LicenseDocument.objects.create(
+                    license_sequence=lic.sequence,
                     actor=actor,
                     reference=self._license_name(lic, actor),
                     data=b"b44df00d",
@@ -115,19 +116,21 @@ class _EmailTestBase(TestCase):
                     created_by=self.user_with_access,
                     updated_by=self.user_with_access,
                     is_permanent=False,
+                    fingerprint=get_fingerprint(actor.id, lic.id)
                 )
             )
         for (actor, lic) in zip(actors, reversed(licenses)):
             lic.documents.add(
                 LicenseDocument.objects.create(
+                    license_sequence=lic.sequence,
                     actor=actor,
-                    license=lic,
                     reference=self._license_name(lic, actor),
                     data=b"b44df00d",
                     type=DocumentTypeChoices.LICENSE,
                     created_by=self.user_with_access,
                     updated_by=self.user_with_access,
                     is_permanent=False,
+                    fingerprint=get_fingerprint(actor.id, lic.id)
                 )
             )
 

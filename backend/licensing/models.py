@@ -177,6 +177,9 @@ class LicenseDocument(ChangeTracking):
     as long as they belong to the active license instance.
     """
 
+    license_sequence = models.ForeignKey(
+        LicenseSequence, null=True, on_delete=models.PROTECT, related_name='+'
+    )
     is_permanent = models.BooleanField()
     actor = models.ForeignKey(
         Actor, on_delete=models.PROTECT, related_name="documents", null=True
@@ -188,6 +191,15 @@ class LicenseDocument(ChangeTracking):
     reference = models.CharField(max_length=2048, blank=True, default="")
 
     fingerprint = models.CharField(max_length=64, blank=True, default="", db_index=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["license_sequence", "actor", "type", "fingerprint"],
+                condition=models.Q(is_permanent=False), # Only apply unique constraints on generated documents
+                name="unique_document_per_license_sequence__actor__type__fingerprint",
+            ),
+        ]
 
     def copy(self):
         self.pk = None
