@@ -84,9 +84,10 @@ body {
 
 .batch-action-menu {
   position: absolute;
-  inset: 0px 0px auto auto;
-  margin: 0px;
+  inset: 0 0 auto auto;
+  margin: 0;
   transform: translate(0px, 40px);
+  cursor: pointer;
 }
 
 .modal {
