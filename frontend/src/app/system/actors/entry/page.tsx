@@ -15,7 +15,7 @@ import { Client } from "../../client";
 import Spinner from "@/components/Spinner";
 import { useTranslation } from "../../internationalization";
 import { Alert } from "@/components/Alert";
-import { Pagination, usePagination } from "@/components/Pagination";
+import { PaginationContainer, usePagination } from "@/components/Pagination";
 
 async function fetchActor([client, _ctx, entryId]: [Client, "actor", string]) {
   return client.fetchActorById(entryId);
@@ -228,11 +228,10 @@ function PaginatedLicenses({ items }: { items: ActorLicenseRelation[][] }) {
   const { t } = useTranslation();
   const pagination = usePagination(items, 10, { disableForSinglePage: true });
   return items.length > 0 ? (
-    <>
-      <Pagination
-        pages={pagination.pages}
-        currentPage={pagination.currentPage}
-      />
+    <PaginationContainer
+      pages={pagination.pages}
+      currentPage={pagination.currentPage}
+    >
       {pagination.items.map((l) => (
         <li className="list-group-item" key={getLicenseGroupKey(l)}>
           {l.length > 1 ? (
@@ -242,11 +241,7 @@ function PaginatedLicenses({ items }: { items: ActorLicenseRelation[][] }) {
           )}
         </li>
       ))}
-      <Pagination
-        pages={pagination.pages}
-        currentPage={pagination.currentPage}
-      />
-    </>
+    </PaginationContainer>
   ) : (
     <p className="text-muted fst-italic">{t("actorNoCurrentLicenses")}</p>
   );

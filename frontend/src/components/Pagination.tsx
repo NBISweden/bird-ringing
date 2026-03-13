@@ -95,15 +95,13 @@ export function usePagination<T>(
   };
 }
 
-export const Pagination = ({
-  pages,
-  currentPage,
-  label,
-}: {
+type PaginationProps = {
   pages: Page[];
   currentPage?: string;
   label?: string;
-}) => {
+};
+
+export const Pagination = ({ pages, currentPage, label }: PaginationProps) => {
   const hidden = pages.length === 0;
   return hidden ? (
     <></>
@@ -130,5 +128,18 @@ export const Pagination = ({
         ))}
       </ul>
     </nav>
+  );
+};
+
+export const PaginationContainer = ({
+  children,
+  ...props
+}: React.PropsWithChildren<PaginationProps>) => {
+  return (
+    <>
+      <Pagination {...props} />
+      {children}
+      <Pagination {...props} />
+    </>
   );
 };
