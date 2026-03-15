@@ -19,8 +19,13 @@ type LicenceViewProps = {
 
 export function LicenceView({ license, mnr }: LicenceViewProps) {
   const client = useClient();
+
   const sendEmailForActorsAction = useSendLicenseEmailForActorsAction(client);
   const { t, format } = useTranslation();
+
+  const actorIdByName = Object.fromEntries(
+    license.actors.map((rel) => [rel.actor.full_name, rel.actor.id]),
+  );
 
   const [selectedActorIds, setSelectedActorIds] = useState(new Set<number>());
   const [notifyRinger, setNotifyRinger] = useState(false);
@@ -225,9 +230,20 @@ export function LicenceView({ license, mnr }: LicenceViewProps) {
                     <span className="text-muted small me-2">
                       {t("licenseDocumentReference")}
                     </span>
-                    <span className="badge rounded-pill border border-primary text-primary">
-                      {doc.reference}
-                    </span>
+                    {(doc.type === "license" || doc.type === "permit") && actorIdByName[doc.actor] != null ? (
+                      <a
+                        href={`/api/license_sequence/${mnr}/${doc.type === "license" ? "card-pdf" : "permit-pdf"}/?actor_id=${actorIdByName[doc.actor]}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="badge rounded-pill border border-primary text-primary text-decoration-none"
+                      >
+                        {doc.reference}
+                      </a>
+                    ) : (
+                      <span className="badge rounded-pill border border-primary text-primary">
+                        {doc.reference}
+                      </span>
+                    )}
                   </div>
                 </div>
               </li>
