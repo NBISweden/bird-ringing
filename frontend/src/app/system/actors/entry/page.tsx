@@ -196,7 +196,9 @@ function ActorViewBase() {
                   <div className="row">
                     <div className="py-2 col-3 text-nowrap d-flex flex-column justify-content-center">
                       <span>
-                        <Link href={`/system/licenses/entry?mnr=${l.mnr}`}>{l.mnr}-{l.mednr}</Link>
+                        <Link href={`/system/licenses/entry?mnr=${l.mnr}`}>
+                          {l.mnr}-{l.mednr}
+                        </Link>
                       </span>
                       <span className="text-secondary small">{l.role}</span>
                     </div>

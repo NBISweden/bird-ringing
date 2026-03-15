@@ -154,7 +154,12 @@ export function LicenceView({ license, mnr }: LicenceViewProps) {
                       </div>
                       <div className="col-10 col-md-7">
                         <i className="bi bi-person text-primary me-1" />
-                        <Link href={`/system/actors/entry?entryId=${rel.actor.id}`}>{rel.actor.full_name}</Link>({rel.mednr})
+                        <Link
+                          href={`/system/actors/entry?entryId=${rel.actor.id}`}
+                        >
+                          {rel.actor.full_name}
+                        </Link>
+                        ({rel.mednr})
                       </div>
                       <div className="col-2 col-md-2 d-flex justify-content-center">
                         {isSelectableRole(rel.role) ? (
@@ -230,7 +235,8 @@ export function LicenceView({ license, mnr }: LicenceViewProps) {
                     <span className="text-muted small me-2">
                       {t("licenseDocumentReference")}
                     </span>
-                    {(doc.type === "license" || doc.type === "permit") && actorIdByName[doc.actor] != null ? (
+                    {(doc.type === "license" || doc.type === "permit") &&
+                    actorIdByName[doc.actor] != null ? (
                       <a
                         href={`/api/license_sequence/${mnr}/${doc.type === "license" ? "card-pdf" : "permit-pdf"}/?actor_id=${actorIdByName[doc.actor]}`}
                         target="_blank"

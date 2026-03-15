@@ -98,7 +98,9 @@ function toLicenseTable(
       },
       license_holder: {
         component: (() => {
-          const licenseHolder = item.latest.actors.find((a) => a.role === "ringer");
+          const licenseHolder = item.latest.actors.find(
+            (a) => a.role === "ringer",
+          );
           return licenseHolder ? (
             <Link href={`actors/entry?entryId=${licenseHolder.actor.id}`}>
               {licenseHolder.actor.full_name}
