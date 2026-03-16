@@ -23,10 +23,6 @@ export function LicenceView({ license, mnr }: LicenceViewProps) {
   const sendEmailForActorsAction = useSendLicenseEmailForActorsAction(client);
   const { t, format } = useTranslation();
 
-  const actorIdByName = Object.fromEntries(
-    license.actors.map((rel) => [rel.actor.full_name, rel.actor.id]),
-  );
-
   const [selectedActorIds, setSelectedActorIds] = useState(new Set<number>());
   const [notifyRinger, setNotifyRinger] = useState(false);
 
@@ -229,16 +225,17 @@ export function LicenceView({ license, mnr }: LicenceViewProps) {
                   </div>
                   <div className="col-12 col-md-3 text-nowrap">
                     <i className="bi bi-person text-primary me-1" />
-                    {doc.actor}
+                    <Link href={`/system/actors/entry?entryId=${doc.actor_id}`}>
+                      {doc.actor}
+                    </Link>
                   </div>
                   <div className="col-12 col-md-5">
                     <span className="text-muted small me-2">
                       {t("licenseDocumentReference")}
                     </span>
-                    {(doc.type === "license" || doc.type === "permit") &&
-                    actorIdByName[doc.actor] != null ? (
+                    {doc.type === "license" || doc.type === "permit" ? (
                       <a
-                        href={`/api/license_sequence/${mnr}/${doc.type === "license" ? "card-pdf" : "permit-pdf"}/?actor_id=${actorIdByName[doc.actor]}`}
+                        href={`/api/license_sequence/${mnr}/${doc.type === "license" ? "card-pdf" : "permit-pdf"}/?actor_id=${doc.actor_id}`}
                         target="_blank"
                         rel="noreferrer"
                         className="badge rounded-pill border border-primary text-primary text-decoration-none"
@@ -272,7 +269,11 @@ export function LicenceView({ license, mnr }: LicenceViewProps) {
                   </div>
                   <div className="col-12 col-md-3 text-nowrap">
                     <i className="bi bi-person text-primary me-1" />
-                    {item.actor}
+                    <Link
+                      href={`/system/actors/entry?entryId=${item.actor_id}`}
+                    >
+                      {item.actor}
+                    </Link>
                   </div>
                   <div className="col-12 col-md-2">
                     <span className="badge rounded-pill border border-primary text-primary text-capitalize">
