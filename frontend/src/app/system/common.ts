@@ -25,7 +25,8 @@ export type ActorBase = {
 };
 
 export type ActorListItem = ActorBase & {
-  current_license_relations: ActorLicenseRelation[];
+  license_relations: ActorLicenseRelation[];
+  previous_license_relations?: ActorLicenseRelation[];
 };
 
 export type ActorLicenseRelation = {
