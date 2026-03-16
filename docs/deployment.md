@@ -67,10 +67,8 @@ services:
     environment:
       DJANGO_ALLOWED_HOSTS: "backend, localhost, bird-ringing.deployment.example"
       DJANGO_CSRF_TRUSTED_ORIGINS: "https://bird-ringing.deployment.example"
-      LICENSE_CARD_FILE: /templates/Licenskort_105x72,25mm_2025-12-11_1.svg
-      LICENSE_CARD_BACK_FILE: /templates/Licenskort_105x72,25mm_2025-12-11_2.svg
-    volumes:
-      - ./resources/templates:/templates:ro
+      LICENSE_CARD_FILE: /resources/templates/Licenskort_105x72,25mm_2025-12-11_1.svg
+      LICENSE_CARD_BACK_FILE: /resources/templates/Licenskort_105x72,25mm_2025-12-11_2.svg
 ```
 
 ### Docker Options
@@ -93,10 +91,8 @@ services:
     environment:
       DJANGO_ALLOWED_HOSTS: "backend, localhost, bird-ringing.deployment.example"
       DJANGO_CSRF_TRUSTED_ORIGINS: "https://bird-ringing.deployment.example"
-      LICENSE_CARD_FILE: /templates/Licenskort_105x72,25mm_2025-12-11_1.svg
-      LICENSE_CARD_BACK_FILE: /templates/Licenskort_105x72,25mm_2025-12-11_2.svg
-    volumes:
-      - ./resources/templates:/templates:ro
+      LICENSE_CARD_FILE: /resources/templates/Licenskort_105x72,25mm_2025-12-11_1.svg
+      LICENSE_CARD_BACK_FILE: /resources/templates/Licenskort_105x72,25mm_2025-12-11_2.svg
 
   database:
     restart: always
@@ -198,10 +194,8 @@ services:
       POSTGRES_PORT: 5432
       DJANGO_ALLOWED_HOSTS: "backend, localhost, bird-ringing.deployment.example"
       DJANGO_CSRF_TRUSTED_ORIGINS: "https://bird-ringing.deployment.example"
-      LICENSE_CARD_FILE: /templates/Licenskort_105x72,25mm_2025-12-11_1.svg
-      LICENSE_CARD_BACK_FILE: /templates/Licenskort_105x72,25mm_2025-12-11_2.svg
-    volumes:
-      - ./resources/templates:/templates:ro
+      LICENSE_CARD_FILE: /resources/templates/Licenskort_105x72,25mm_2025-12-11_1.svg
+      LICENSE_CARD_BACK_FILE: /resources/templates/Licenskort_105x72,25mm_2025-12-11_2.svg
 
   database:
     restart: always

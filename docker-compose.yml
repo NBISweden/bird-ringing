@@ -90,6 +90,7 @@ services:
       DJANGO_EMAIL_HOST_PASSWORD_FILE: /run/secrets/django-email-password
     volumes:
       - backend-vol:/vol:ro
+      - ./resources:/resources:ro
     healthcheck:
       test: ["CMD", "wget", "--spider", "--timeout=5", "http://backend:8000/api/system/health/"]
       interval: 10s
