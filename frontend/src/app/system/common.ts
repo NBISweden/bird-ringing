@@ -164,12 +164,14 @@ export type LicensePermission = {
 
 export type LicenseDocument = {
   actor: string;
+  actor_id: number;
   type: string;
   reference: string;
 };
 
 export type LicenceCommunication = {
   actor: string;
+  actor_id: number;
   type: string;
   status: string;
   note: string;

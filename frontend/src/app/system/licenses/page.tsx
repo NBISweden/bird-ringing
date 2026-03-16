@@ -97,7 +97,18 @@ function toLicenseTable(
           "-",
       },
       license_holder: {
-        component: item.license_holder,
+        component: (() => {
+          const licenseHolder = item.latest.actors.find(
+            (a) => a.role === "ringer",
+          );
+          return licenseHolder ? (
+            <Link href={`actors/entry?entryId=${licenseHolder.actor.id}`}>
+              {licenseHolder.actor.full_name}
+            </Link>
+          ) : (
+            <>{item.license_holder}</>
+          );
+        })(),
       },
       location: {
         component: item.latest.location,

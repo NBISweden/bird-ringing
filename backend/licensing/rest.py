@@ -446,20 +446,22 @@ class LicenseLicensePermissionSerializer(serializers.ModelSerializer):
 
 class LicenseDocumentSerializer(serializers.ModelSerializer):
     actor = serializers.CharField(source="actor.full_name", read_only=True)
+    actor_id = serializers.IntegerField(source="actor.id", read_only=True)
     type = serializers.CharField(source="get_type_display", read_only=True)
 
     class Meta:
         model = LicenseDocument
-        fields = ["actor", "type", "reference"]
+        fields = ["actor", "actor_id", "type", "reference"]
 
 class LicenseCommunicationSerializer(serializers.ModelSerializer):
     actor = serializers.CharField(source="actor.full_name", read_only=True)
+    actor_id = serializers.IntegerField(source="actor.id", read_only=True)
     type = serializers.CharField(source="get_type_display", read_only=True)
     status = serializers.CharField(source="get_status_display", read_only=True)
 
     class Meta:
         model = LicenseCommunication
-        fields = ["actor", "type", "status", "note"]
+        fields = ["actor", "actor_id", "type", "status", "note"]
 
 
 class LicenseSerializer(serializers.ModelSerializer):

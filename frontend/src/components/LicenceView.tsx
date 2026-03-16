@@ -1,5 +1,6 @@
 "use Client";
 
+import Link from "next/link";
 import {
   convertDateToLocale,
   convertOnlyDateToLocale,
@@ -18,6 +19,7 @@ type LicenceViewProps = {
 
 export function LicenceView({ license, mnr }: LicenceViewProps) {
   const client = useClient();
+
   const sendEmailForActorsAction = useSendLicenseEmailForActorsAction(client);
   const { t, format } = useTranslation();
 
@@ -148,7 +150,12 @@ export function LicenceView({ license, mnr }: LicenceViewProps) {
                       </div>
                       <div className="col-10 col-md-7">
                         <i className="bi bi-person text-primary me-1" />
-                        {rel.actor.full_name}({rel.mednr})
+                        <Link
+                          href={`/system/actors/entry?entryId=${rel.actor.id}`}
+                        >
+                          {rel.actor.full_name}
+                        </Link>
+                        ({rel.mednr})
                       </div>
                       <div className="col-2 col-md-2 d-flex justify-content-center">
                         {isSelectableRole(rel.role) ? (
@@ -218,15 +225,28 @@ export function LicenceView({ license, mnr }: LicenceViewProps) {
                   </div>
                   <div className="col-12 col-md-3 text-nowrap">
                     <i className="bi bi-person text-primary me-1" />
-                    {doc.actor}
+                    <Link href={`/system/actors/entry?entryId=${doc.actor_id}`}>
+                      {doc.actor}
+                    </Link>
                   </div>
                   <div className="col-12 col-md-5">
                     <span className="text-muted small me-2">
                       {t("licenseDocumentReference")}
                     </span>
-                    <span className="badge rounded-pill border border-primary text-primary">
-                      {doc.reference}
-                    </span>
+                    {doc.type === "license" || doc.type === "permit" ? (
+                      <a
+                        href={`/api/license_sequence/${mnr}/${doc.type === "license" ? "card-pdf" : "permit-pdf"}/?actor_id=${doc.actor_id}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="badge rounded-pill border border-primary text-primary text-decoration-none"
+                      >
+                        {doc.reference}
+                      </a>
+                    ) : (
+                      <span className="badge rounded-pill border border-primary text-primary">
+                        {doc.reference}
+                      </span>
+                    )}
                   </div>
                 </div>
               </li>
@@ -249,7 +269,11 @@ export function LicenceView({ license, mnr }: LicenceViewProps) {
                   </div>
                   <div className="col-12 col-md-3 text-nowrap">
                     <i className="bi bi-person text-primary me-1" />
-                    {item.actor}
+                    <Link
+                      href={`/system/actors/entry?entryId=${item.actor_id}`}
+                    >
+                      {item.actor}
+                    </Link>
                   </div>
                   <div className="col-12 col-md-2">
                     <span className="badge rounded-pill border border-primary text-primary text-capitalize">
