@@ -114,6 +114,8 @@ export const locale: TranslationMap = {
   licensePermissions: "Tillstånd",
   licenseReportStatus: "Slutrapportstatus",
   licenseSelectedLicenses: "Valda licenser",
+  licenseNoLicensesSelected:
+    "Välj minst en licens från listan för att slutföra den här åtgärden.",
   licenseSendLicenses: "Skicka licenser",
   licenseSendLicensesConfirmText:
     "Vill du skicka licensdokument till alla ringmärkare och hjälpare för valda licenser?",

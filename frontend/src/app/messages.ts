@@ -120,6 +120,8 @@ const messagesBase = {
   licensePermissions: "Permissions",
   licenseReportStatus: "Final report status",
   licenseSelectedLicenses: "Selected licenses",
+  licenseNoLicensesSelected:
+    "Please choose at least one license from the list to complete this action",
   licenseSendLicenses: "Send licenses",
   licenseSendLicensesConfirmText:
     "Do you want to send license cards to all ringers and associate ringers of the selected licenses?",
