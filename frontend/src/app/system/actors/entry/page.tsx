@@ -226,7 +226,7 @@ function getLicenseGroupKey(licenses: ActorLicenseRelation[]) {
 
 function PaginatedLicenses({ items }: { items: ActorLicenseRelation[][] }) {
   const { t } = useTranslation();
-  const pagination = usePagination(items, 10, { disableForSinglePage: true });
+  const pagination = usePagination(items, 5, { disableForSinglePage: true });
   return items.length > 0 ? (
     <PaginationContainer
       pages={pagination.pages}
