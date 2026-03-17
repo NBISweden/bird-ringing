@@ -216,6 +216,20 @@ export type FailedMessage = {
   details: string;
 };
 
+// eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
+export type MenuAction<T extends Function> =
+  | {
+      label: string;
+      action: T;
+    }
+  | {
+      label: string;
+      disabled: true;
+    }
+  | {
+      type: "divider";
+    };
+
 export type SkippedMessage = {
   actor_id: number;
   mnr: string;

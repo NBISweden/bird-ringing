@@ -1,19 +1,9 @@
+import { MenuAction } from "@/app/system/common";
+
 type DropDownMenuProps = {
   isOpen: boolean;
   setIsOpen: (o: boolean) => void;
-  actions: (
-    | {
-        label: string;
-        action: () => void;
-      }
-    | {
-        label: string;
-        disabled: true;
-      }
-    | {
-        type: "divider";
-      }
-  )[];
+  actions: MenuAction<() => void>[];
 };
 
 export function DropDownMenu({
