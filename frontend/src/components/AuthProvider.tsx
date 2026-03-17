@@ -60,6 +60,19 @@ async function authenticate(
   return result;
 }
 
+async function signOut(authUrl: string) {
+  const csrftoken = getCookie("csrftoken");
+  await fetch(authUrl, {
+    method: "DELETE",
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json",
+      "X-CSRFToken": csrftoken || "",
+    },
+    credentials: "same-origin",
+  });
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const { authUrl: baseUrl } = useConfig();
   const authUrl = parseCompleteUrl(baseUrl);
@@ -76,6 +89,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         ...auth,
         signIn: (username: string, password: string) =>
           authenticate(authUrl, username, password),
+        signOut: () => signOut(authUrl),
       };
     }
     return auth;

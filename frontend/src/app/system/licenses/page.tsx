@@ -16,6 +16,7 @@ import {
   LicenseListItem,
   TableItem,
   convertDateToLocale,
+  MenuAction,
 } from "../common";
 import { Client } from "../client";
 import { useClient } from "../contexts";
@@ -29,6 +30,7 @@ import {
 
 import { useTranslation, Translation } from "../internationalization";
 import { Badge } from "@/components/Badge";
+import { DropDownMenu } from "@/components/DropDownMenu";
 
 type LicensePropertyIds =
   | "mnr"
@@ -50,11 +52,7 @@ type ColumnProperties = {
   label: string;
 };
 
-type BatchAction = {
-  label: string;
-  action: (itemIds: Set<string>) => void;
-  disabled?: boolean;
-};
+type BatchAction = MenuAction<(itemIds: Set<string>) => void>;
 
 async function fetchLicensePage([client, _ctx, page, search, ordering]: [
   Client,
@@ -204,7 +202,7 @@ function ConnectedListView() {
   const downloadPermitsZipAction = useDownloadPermitsZipAction(client);
   const sendEmailAction = useSendLicenseEmailAction(client);
 
-  const batchActions: (BatchAction | { type: "divider" })[] = [
+  const batchActions: BatchAction[] = [
     {
       label: t("licenseCreateLicenseDocuments"),
       action: createDocsAction,
@@ -380,30 +378,18 @@ function BaseListView({
         >
           {t("batchActions")}
         </button>
-        <ul
-          className={`dropdown-menu batch-action-menu ${actionIsOpen ? "show" : ""}`}
-          data-open={actionIsOpen}
-          onClick={() => setActionIsOpen(false)}
-        >
-          {batchActions.map((action, index) =>
-            "type" in action ? (
-              <li key={index}>
-                <hr className="dropdown-divider" />
-              </li>
-            ) : (
-              <li key={index}>
-                <span
-                  className={`dropdown-item ${action.disabled ? "disabled" : ""}`}
-                  onClick={() =>
-                    !action.disabled && action.action(selectedItems)
-                  }
-                >
-                  {action.label}
-                </span>
-              </li>
-            ),
+        <DropDownMenu
+          isOpen={actionIsOpen}
+          setIsOpen={setActionIsOpen}
+          actions={batchActions.map((action) =>
+            "action" in action
+              ? {
+                  label: action.label,
+                  action: () => action.action(selectedItems),
+                }
+              : action,
           )}
-        </ul>
+        />
       </div>
       <div className="d-flex flex-row align-items-center gap-3">
         <Pagination pages={pages} currentPage={currentPage} />
