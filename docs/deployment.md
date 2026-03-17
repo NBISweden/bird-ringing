@@ -7,9 +7,10 @@ In order to get the service up and running you will need to go through the follo
 1. [Create docker-compose.override.yml](#configuring-the-service)
 2. [Create secrets](#docker-secrets)
 3. [Configure environment variables](#docker-environment-variables)
-4. [Start the service](#starting-the-service)
-5. [Create super user and groups](#enable-service-admin)
-6. [Load data](#load-data)
+4. [Validate the configuration](#validating-the-configuration)
+5. [Start the service](#starting-the-service)
+6. [Create super user and groups](#enable-service-admin)
+7. [Load data](#load-data)
 
 ## Prerequisites
 
@@ -26,23 +27,35 @@ Configuration of the service is expected to be provided in a Docker Compose file
 
 Some configuration options of the service use Docker secrets to add an extra layer of security (more details about Docker secrets can be found [here](https://docs.docker.com/compose/how-tos/use-secrets/)). These options are primarily passwords and other values that are important to protect. The current secrets are presented in the following table. The `Secret ID` refers to the ID used in the Docker Compose file, the `Source Path` refers to a path relative to the `docker-compose.yml` file, and `Expected Content` describes the expected content of the secret file.
 
-| Secret ID         | Source Path                     | Expected Content                                                                                                                                                                                                                                                              |
-| :---------------- | :------------------------------ | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| postgres-pass     | `secrets/postgres-pass.txt`     | A file containing the root password for the targeted PostgreSQL instance.                                                                                                                                                                                                     |
-| db-admin-pass     | `secrets/db-admin-pass.txt`     | A file containing the PostgreSQL admin password.                                                                                                                                                                                                                              |
-| db-user-pass      | `secrets/db-user-pass.txt`      | A file containing the PostgreSQL user password.                                                                                                                                                                                                                               |
-| django-secret-key | `secrets/django-secret-key.txt` | A file containing the Django secret key. It can be generated using the following command: `./compose-dev.sh run --rm backend-init python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())" > secrets/django-secret-key.txt` |
+| Secret ID             | Source Path                         | Expected Content                                                                                                                                                                                                                                                              |
+| :-------------------- | :---------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| postgres-pass         | `secrets/postgres-pass.txt`         | A file containing the root password for the targeted PostgreSQL instance.                                                                                                                                                                                                     |
+| db-admin-pass         | `secrets/db-admin-pass.txt`         | A file containing the PostgreSQL admin password.                                                                                                                                                                                                                              |
+| db-user-pass          | `secrets/db-user-pass.txt`          | A file containing the PostgreSQL user password.                                                                                                                                                                                                                               |
+| django-secret-key     | `secrets/django-secret-key.txt`     | A file containing the Django secret key. It can be generated using the following command: `./compose-dev.sh run --rm backend-init python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())" > secrets/django-secret-key.txt` |
+| django-email-password | `secrets/django-email-password.txt` ||
 
 ### Docker Environment Variables
 
 Some configuration options are supplied as environment variables using Docker Compose. These options should be included in the `docker-compose.override.yml`, they are less sensitive and describe properties related to the deployed instance and its host.
 
-| Relevant Container | Variable Name               | Expected Value                                                                                                                                                                                              |
-| :----------------- | :-------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| backend            | DJANGO_ALLOWED_HOSTS        | A CSV string that includes `backend` and any aliases from which the site should be accessible (`backend` must be included since it is used for internal routing within the Docker Compose container setup). |
-| backend            | DJANGO_CSRF_TRUSTED_ORIGINS | A CSV string that includes all origins from which the Django admin should be accessible.                                                                                                                    |
-| backend            | LICENSE_CARD_FILE           | The path (within the container) to the license card template file.                                                                                                                                          |
-| backend            | LICENSE_CARD_BACK_FILE      | The path (within the container) to the license card back template file.                                                                                                                                     |
+| Relevant Container | Variable Name                   | Expected Value                                                                                                                                                                                                                                                               |
+| :----------------- | :------------------------------ | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| backend            | DJANGO_ALLOWED_HOSTS            | A CSV string that includes `backend` and any aliases from which the site should be accessible (`backend` must be included since it is used for internal routing within the Docker Compose container setup).                                                                  |
+| backend            | DJANGO_CSRF_TRUSTED_ORIGINS     | A CSV string that includes all origins from which the Django admin should be accessible.                                                                                                                                                                                     |
+| backend            | LICENSE_CARD_FILE               | A path (within the container) to the license card template file.                                                                                                                                                                                                             |
+| backend            | LICENSE_CARD_BACK_FILE          | A path (within the container) to the license card back template file.                                                                                                                                                                                                        |
+| backend            | PERMIT_TEMPLATE_FILE            | A path (within the container) to the permit document template file-                                                                                                                                                                                                          |
+| backend            | DJANGO_EMAIL_BACKEND            | For production instances, use `django.core.mail.backends.smtp.EmailBackend` and for test instances you may use `django.core.mail.backends.console.EmailBackend`. See [django documentation](https://docs.djangoproject.com/en/6.0/topics/email/#email-backends) for details. |
+| backend            | DJANGO_EMAIL_HOST               | The SMTP host.                                                                                                                                                                                                                                                               |
+| backend            | DJANGO_EMAIL_PORT               | The SMTP port.                                                                                                                                                                                                                                                               |
+| backend            | DJANGO_EMAIL_HOST_USER          | The SMTP user.                                                                                                                                                                                                                                                               |
+| backend            | DJANGO_TEMPLATES_DIR            | A path (within the container) to the directory holding email templates.                                                                                                                                                                                                      |
+| backend            | LICENSING_EMAIL_TEMPLATE        | A path relative to the `DJANGO_TEMPLATES_DIR` from which to load the email template.                                                                                                                                                                                         |
+| backend            | LICENSING_EMAIL_FROM_ADDR       | An email address from which the licensing emails should be sent.                                                                                                                                                                                                             |
+| backend            | LICENSING_EMAIL_SUBJECT         | A template string using the [django template language](https://docs.djangoproject.com/en/5.2/ref/templates/language/) where the variables `mnr` and `name` are available. The variable `name` contains the name of the receiving actor.                                      |
+| backend            | LICENSING_EMAIL_HTML_TEMPLATE   | (Optional) A path relative to the `DJANGO_TEMPLATES_DIR` from which to load the html email template.                                                                                                                                                                         |
+
 
 > **Note:** The `LICENSE_CARD_FILE` and `LICENSE_CARD_BACK_FILE` require you to configure Docker Compose to include the targeted template files. This can be done using the `volumes` option on the `backend` container.
 
@@ -54,10 +67,8 @@ services:
     environment:
       DJANGO_ALLOWED_HOSTS: "backend, localhost, bird-ringing.deployment.example"
       DJANGO_CSRF_TRUSTED_ORIGINS: "https://bird-ringing.deployment.example"
-      LICENSE_CARD_FILE: /templates/Licenskort_105x72,25mm_2025-12-11_1.svg
-      LICENSE_CARD_BACK_FILE: /templates/Licenskort_105x72,25mm_2025-12-11_2.svg
-    volumes:
-      - ./resources/templates:/templates:ro
+      LICENSE_CARD_FILE: /resources/templates/Licenskort_105x72,25mm_2025-12-11_1.svg
+      LICENSE_CARD_BACK_FILE: /resources/templates/Licenskort_105x72,25mm_2025-12-11_2.svg
 ```
 
 ### Docker Options
@@ -80,13 +91,20 @@ services:
     environment:
       DJANGO_ALLOWED_HOSTS: "backend, localhost, bird-ringing.deployment.example"
       DJANGO_CSRF_TRUSTED_ORIGINS: "https://bird-ringing.deployment.example"
-      LICENSE_CARD_FILE: /templates/Licenskort_105x72,25mm_2025-12-11_1.svg
-      LICENSE_CARD_BACK_FILE: /templates/Licenskort_105x72,25mm_2025-12-11_2.svg
-    volumes:
-      - ./resources/templates:/templates:ro
+      LICENSE_CARD_FILE: /resources/templates/Licenskort_105x72,25mm_2025-12-11_1.svg
+      LICENSE_CARD_BACK_FILE: /resources/templates/Licenskort_105x72,25mm_2025-12-11_2.svg
 
   database:
     restart: always
+```
+
+## Validating the configuration
+
+Before starting the service you can test your configuration by running the following script.
+
+```sh
+./compose-prod.sh build
+./compose-prod.sh run --rm backend ./manage.py validate_settings
 ```
 
 ## Starting the Service
@@ -176,10 +194,8 @@ services:
       POSTGRES_PORT: 5432
       DJANGO_ALLOWED_HOSTS: "backend, localhost, bird-ringing.deployment.example"
       DJANGO_CSRF_TRUSTED_ORIGINS: "https://bird-ringing.deployment.example"
-      LICENSE_CARD_FILE: /templates/Licenskort_105x72,25mm_2025-12-11_1.svg
-      LICENSE_CARD_BACK_FILE: /templates/Licenskort_105x72,25mm_2025-12-11_2.svg
-    volumes:
-      - ./resources/templates:/templates:ro
+      LICENSE_CARD_FILE: /resources/templates/Licenskort_105x72,25mm_2025-12-11_1.svg
+      LICENSE_CARD_BACK_FILE: /resources/templates/Licenskort_105x72,25mm_2025-12-11_2.svg
 
   database:
     restart: always
