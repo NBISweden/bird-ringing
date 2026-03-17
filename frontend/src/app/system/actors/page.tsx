@@ -105,7 +105,7 @@ function toActorTable(
       },
       licenses: {
         component: (
-          <>
+          <div className="table-row-max-height">
             {licenses.map((l, index) => (
               <Link
                 key={index}
@@ -117,7 +117,7 @@ function toActorTable(
                 </Badge>
               </Link>
             ))}
-          </>
+          </div>
         ),
       },
       email: {
