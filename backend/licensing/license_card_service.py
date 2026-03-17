@@ -24,6 +24,7 @@ from licensing.license_renderer import (
     LicenseCardRenderer,
     RenderRequest,
     get_template_path,
+    split_into_two_lines_textwrap,
 )
 
 from django.utils import translation
@@ -88,10 +89,10 @@ class LicenseCardService:
 
         # actor line
         mnr = lic.sequence.mnr
-        mnr_line = mnr
-        mnr_label = "Märkare nr. "
+        mnr_line = f"nr. {mnr}"
+        mnr_label = "Märkare "
         if rel.role == LicenseRoleChoices.ASSOCIATE_RINGER:
-            mnr_line = f"{mnr}: {rel.mednr}"
+            mnr_line = f"nr. {mnr}: {rel.mednr}"
 
             # if main ringer on this license is a station, use the station name as label
             ringer_rel = (lic.actors.filter(role=LicenseRoleChoices.RINGER).select_related("actor").first())
@@ -99,7 +100,7 @@ class LicenseCardService:
 
             if ringer_actor and ringer_actor.type == ActorTypeChoices.STATION:
                 station_name = (ringer_actor.full_name or "").strip() or "Station"
-                mnr_label = f"{station_name} nr. "
+                mnr_label = f"{station_name} "
 
         # birthdate/birthyear line
         birthdate = ""
@@ -108,14 +109,21 @@ class LicenseCardService:
         elif actor.birth_year:
             birthdate = str(actor.birth_year)
 
+        mnr1, mnr2 = split_into_two_lines_textwrap(mnr_label + mnr_line, mnr_line=mnr_line)
+        name1, name2 = split_into_two_lines_textwrap(holder_name)
+
+        lines = [
+            valid_to,
+            mnr1,
+            mnr2,      # in case we need to split the MNR line into two lines (e.g. for long station names)
+            name1,
+            name2,     # in case we need to split the holder name into two lines
+            birthdate,
+        ]
+
         req = RenderRequest(
             template_svg_path=get_template_path("LICENSING_CARD_TEMPLATE"),
-            context={
-                "valid_to": valid_to,
-                "mnr_line": mnr_label + mnr_line,
-                "holder_name": holder_name,
-                "date": birthdate,
-            },
+            lines=lines,
         )
 
         pdf_bytes = self.renderer.render_pdf_bytes(req)
