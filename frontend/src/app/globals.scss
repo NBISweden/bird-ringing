@@ -48,6 +48,7 @@ body {
 
 .sidebar {
   width: 15rem;
+  flex-shrink: 0;
   transition: width 0.3s ease;
 }
 
