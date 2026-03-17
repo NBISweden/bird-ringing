@@ -58,6 +58,7 @@ export const locale: TranslationMap = {
     "<from>{startsAt}</from><to><muted>till</muted> {endsAt}</to>",
   actorLicenses: "Licenser",
   actorLoadingEmailAddresses: "Laddar e-postadresser",
+  actorNoEmailAddressesFound: "Inga e-postadresser fanns ",
   actorName: "Namn",
   actorNoAddress: "ingen adress",
   actorNoCity: "ingen stad",

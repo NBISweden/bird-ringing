@@ -66,6 +66,7 @@ const messagesBase = {
     "<from>{startsAt}</from><to><muted>to</muted> {endsAt}</to>",
   actorLicenses: "Licenses",
   actorLoadingEmailAddresses: "Loading e-mail addresses",
+  actorNoEmailAddressesFound: "No e-mail addresses were found",
   actorName: "Name",
   actorNoAddress: "no address",
   actorNoCity: "no city",
