@@ -69,7 +69,7 @@ function toActorTable(
   item: ActorListItem,
   formatOption: Translation["formatOption"],
 ): TableItem<ActorPropertyIds> {
-  const licenses: ActorLicenseRelation[] = item.current_license_relations;
+  const licenses: ActorLicenseRelation[] = item.license_relations;
   const roles = new Set<Role>(licenses.map((l) => l.role));
   return {
     id: String(item.id),
@@ -105,15 +105,19 @@ function toActorTable(
       },
       licenses: {
         component: (
-          <>
-            {licenses.map((l, index) => {
-              return (
-                <Badge color="info" rounded outline key={index}>
+          <div className="table-row-max-height">
+            {licenses.map((l, index) => (
+              <Link
+                key={index}
+                href={`/system/licenses/entry?mnr=${l.mnr}`}
+                className="text-decoration-none"
+              >
+                <Badge color="info" rounded outline>
                   {l.mednr ? `${l.mnr}:${l.mednr}` : l.mnr}
                 </Badge>
-              );
-            })}
-          </>
+              </Link>
+            ))}
+          </div>
         ),
       },
       email: {
@@ -179,7 +183,6 @@ function ConnectedListView() {
       setQuery={setQuery}
       params={params}
       currentPage={currentPage}
-      pageCount={actorPage.num_pages}
       batchActions={batchActions}
     />
   );
@@ -190,7 +193,6 @@ type ListViewProps = {
   count: number;
   pages: Page[];
   currentPage: string;
-  pageCount: number;
   query: string;
   setQuery: (q: string) => void;
   isLoading?: boolean;
@@ -203,7 +205,6 @@ function BaseListView({
   count,
   pages,
   currentPage,
-  pageCount,
   query,
   setQuery,
   isLoading,
@@ -332,11 +333,7 @@ function BaseListView({
         </ul>
       </div>
       <div className="d-flex flex-row align-items-center gap-3">
-        <Pagination
-          pages={pages}
-          currentPage={currentPage}
-          pageCount={pageCount}
-        />
+        <Pagination pages={pages} currentPage={currentPage} />
         {isLoading ? <Spinner className="mb-3" /> : <></>}
       </div>
       <table className="table">
@@ -401,11 +398,7 @@ function BaseListView({
           })}
         </tbody>
       </table>
-      <Pagination
-        pages={pages}
-        currentPage={currentPage}
-        pageCount={pageCount}
-      />
+      <Pagination pages={pages} currentPage={currentPage} />
     </div>
   );
 }
@@ -421,7 +414,6 @@ export default function ListView() {
           count={0}
           pages={[]}
           currentPage=""
-          pageCount={0}
           params={new URLSearchParams()}
           batchActions={[]}
         />

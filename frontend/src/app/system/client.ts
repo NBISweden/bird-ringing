@@ -149,10 +149,21 @@ export class Client {
       if (response.status === 422) {
         return (await response.json()) as T;
       }
-      const text = await response.text();
-      throw new Error(`Request failed (${response.status}): ${text}`);
-    }
 
+      const contentType = response.headers.get("content-type") || "";
+      if (contentType.includes("application/json")) {
+        const data = await response.json().catch(() => null);
+        const detail =
+          data?.detail ??
+          (data && typeof data === "object" ? JSON.stringify(data) : null) ??
+          `Request failed (${response.status})`;
+
+        throw new Error(detail);
+      }
+
+      const text = await response.text().catch(() => "");
+      throw new Error(text || `Request failed (${response.status})`);
+    }
     return (await response.json()) as T;
   }
 

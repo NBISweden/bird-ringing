@@ -73,6 +73,7 @@ const messagesBase = {
   actorNoCurrentLicenses: "No current licenses",
   actorNoEmailAddress: "no e-mail address",
   actorNoPhoneNumber: "no phone number",
+  actorPreviousLicenses: "Previous licenses",
   actorRoles: "Roles",
   actorSendLicenses: "Send licenses",
   actorType: "Type",

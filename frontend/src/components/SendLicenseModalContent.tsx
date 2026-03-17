@@ -175,6 +175,9 @@ export function SendLicenseModalContent({
   ) : error ? (
     <Alert type="danger">
       <p>{t("licenseSendLicensesFailed")}</p>
+      <p className="mb-0">
+        {error instanceof Error ? error.message : String(error)}
+      </p>
     </Alert>
   ) : (
     <>
@@ -255,6 +258,9 @@ export function SendLicenseForActorsModalContent({
   ) : error ? (
     <Alert type="danger">
       <p>{t("licenseSendLicensesFailed")}</p>
+      <p className="mb-0">
+        {error instanceof Error ? error.message : String(error)}
+      </p>
     </Alert>
   ) : (
     <>

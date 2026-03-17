@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense } from "react";
+import Link from "next/link";
 import useSWR from "swr";
 import { notFound, useSearchParams } from "next/navigation";
 import { useClient } from "../../contexts";
@@ -14,6 +15,7 @@ import { Client } from "../../client";
 import Spinner from "@/components/Spinner";
 import { useTranslation } from "../../internationalization";
 import { Alert } from "@/components/Alert";
+import { PaginationContainer, usePagination } from "@/components/Pagination";
 
 async function fetchActor([client, _ctx, entryId]: [Client, "actor", string]) {
   return client.fetchActorById(entryId);
@@ -27,11 +29,46 @@ function LoadingActor() {
   );
 }
 
+function isLicenseActive(license: ActorLicenseRelation): boolean {
+  const today = new Date();
+  const startDate = new Date(license.starts_at);
+  const endDate = new Date(license.ends_at);
+  if (startDate <= today && endDate >= today) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
+function getActorIcon(type: string): string {
+  switch (type) {
+    case "person":
+      return "person";
+    case "station":
+      return "buildings";
+    default:
+      return "";
+  }
+}
+
+function getGenderIcon(sex: string): string {
+  switch (sex) {
+    case "female":
+      return "gender-female";
+    case "male":
+      return "gender-male";
+    case "undisclosed":
+      return "gender-ambiguous";
+    default:
+      return "";
+  }
+}
+
 function ActorViewBase() {
   const searchParams = useSearchParams();
   const actorId = searchParams.get("entryId");
   const client = useClient();
-  const { t, format } = useTranslation();
+  const { t } = useTranslation();
 
   const { data, isLoading, error } = useSWR(
     actorId ? [client, "actor", actorId] : null,
@@ -59,52 +96,32 @@ function ActorViewBase() {
     return <LoadingActor />;
   }
 
-  const licenses: ActorLicenseRelation[] = data.current_license_relations;
+  const licenses: ActorLicenseRelation[] = data.license_relations;
   licenses.sort((a: ActorLicenseRelation, b: ActorLicenseRelation) => {
     return new Date(b.ends_at).getTime() - new Date(a.ends_at).getTime();
   });
 
-  const roles = new Set<Role>(licenses.map((l) => l.role));
+  const previousLicenses: ActorLicenseRelation[] =
+    data.previous_license_relations || [];
+  previousLicenses.sort((a: ActorLicenseRelation, b: ActorLicenseRelation) => {
+    return new Date(b.ends_at).getTime() - new Date(a.ends_at).getTime();
+  });
+  const previousLicenseGroups = previousLicenses.reduce<
+    Record<string, ActorLicenseRelation[]>
+  >((acc, l) => {
+    const key = `${l.mnr}:${l.mednr}:${l.role}`;
+    acc[key] = acc[key] || [];
+    acc[key].push(l);
+    return acc;
+  }, {});
 
-  const is_license_active = (license: ActorLicenseRelation): boolean => {
-    const today = new Date();
-    const startDate = new Date(license.starts_at);
-    const endDate = new Date(license.ends_at);
-    if (startDate <= today && endDate >= today) {
-      return true;
-    } else {
-      return false;
-    }
-  };
-  const get_actor_icon = (type: string): string => {
-    if (type == "person") {
-      return "person";
-    }
-    if (type == "station") {
-      return "buildings";
-    } else {
-      return "";
-    }
-  };
-  const get_gender_icon = (sex: string): string => {
-    if (sex == "female") {
-      return "gender-female";
-    }
-    if (sex == "male") {
-      return "gender-male";
-    }
-    if (sex == "undisclosed") {
-      return "gender-ambiguous";
-    } else {
-      return "";
-    }
-  };
+  const roles = new Set<Role>(licenses.map((l) => l.role));
 
   return (
     <div className="container">
       <div className="row">
         <h2 className="fw-bold">
-          <i className={`bi bi-${get_actor_icon(data.type)} me-3`} />
+          <i className={`bi bi-${getActorIcon(data.type)} me-3`} />
           {data.full_name}
         </h2>
         <div className="col-12 col-xl-6">
@@ -112,7 +129,7 @@ function ActorViewBase() {
             <div className="card-header d-flex justify-content-between">
               <div>
                 <span className="m-0">{Array.from(roles).join(", ")}</span>
-                <i className={`bi bi-${get_gender_icon(data.sex)} ms-1`} />
+                <i className={`bi bi-${getGenderIcon(data.sex)} ms-1`} />
               </div>
               {data.birth_date ? (
                 <p className="fst-italic m-0">
@@ -189,56 +206,115 @@ function ActorViewBase() {
         <div className="col-12 col-xxl-9">
           <h3 className="pt-4 fw-bold">{t("actorLicenses")}</h3>
           <ul className="list-group list-group-flush">
-            {licenses.length > 0 ? (
-              licenses.map((l) => (
-                <li className="list-group-item" key={`${l.mnr}-${l.mednr}`}>
-                  <div className="row">
-                    <div className="py-2 col-3 text-nowrap d-flex flex-column justify-content-center">
-                      <span>
-                        {l.mnr}-{l.mednr}
-                      </span>
-                      <span className="text-secondary small">{l.role}</span>
-                    </div>
-                    <div className="py-2 col-5 d-flex flex-column flex-md-row align-items-center ">
-                      <div>
-                        {format("actorLicenseValidityPeriod", {
-                          startsAt: convertOnlyDateToLocale(l.starts_at),
-                          endsAt: convertOnlyDateToLocale(l.ends_at),
-                          from: (chunks: React.ReactNode) => (
-                            <p className="m-0 text-end">{chunks}</p>
-                          ),
-                          to: (chunks) => <p className="m-0">{chunks}</p>,
-                          muted: (chunks) => (
-                            <span className="text-muted small">{chunks}</span>
-                          ),
-                        })}
-                      </div>
-                      <div className="ms-3">
-                        <span
-                          className={`badge rounded-pill ms-2 ${is_license_active(l) ? "text-success-emphasis bg-success-subtle" : "text-dark-emphasis bg-body-secondary"}`}
-                        >
-                          {is_license_active(l)
-                            ? t("actorLicenseActive")
-                            : t("actorLicenseInactive")}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="py-2 col-4 d-flex align-items-center fw-semibold text-capitalize">
-                      {l.communication_type}
-                      <span className="badge rounded-pill text-primary border border-primary ms-2">
-                        {l.communication_status}
-                      </span>
-                    </div>
-                  </div>
-                </li>
-              ))
-            ) : (
-              <p className="text-muted fst-italic">
-                {t("actorNoCurrentLicenses")}
-              </p>
-            )}
+            <PaginatedLicenses items={licenses.map((l) => [l])} />
           </ul>
         </div>
+        <div className="col-12 col-xxl-9">
+          <h3 className="pt-4 fw-bold">{t("actorPreviousLicenses")}</h3>
+          <ul className="list-group list-group-flush">
+            <PaginatedLicenses items={Object.values(previousLicenseGroups)} />
+          </ul>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function getLicenseGroupKey(licenses: ActorLicenseRelation[]) {
+  return licenses.map((l) => `${l.starts_at}${l.mnr}-${l.mednr}`).join(";");
+}
+
+function PaginatedLicenses({ items }: { items: ActorLicenseRelation[][] }) {
+  const { t } = useTranslation();
+  const pagination = usePagination(items, 5, { disableForSinglePage: true });
+  return items.length > 0 ? (
+    <PaginationContainer
+      pages={pagination.pages}
+      currentPage={pagination.currentPage}
+    >
+      {pagination.items.map((l) => (
+        <li className="list-group-item" key={getLicenseGroupKey(l)}>
+          {l.length > 1 ? (
+            <LicenseGroup licenseGroup={l} />
+          ) : (
+            <LicenseEntry license={l[0]} />
+          )}
+        </li>
+      ))}
+    </PaginationContainer>
+  ) : (
+    <p className="text-muted fst-italic">{t("actorNoCurrentLicenses")}</p>
+  );
+}
+
+function LicenseGroup({
+  licenseGroup,
+}: {
+  licenseGroup: ActorLicenseRelation[];
+}) {
+  return (
+    <details>
+      <summary>
+        <LicenseEntry license={licenseGroup[0]} />
+      </summary>
+      {licenseGroup.slice(1).map((l) => (
+        <LicenseEntry key={getLicenseGroupKey([l])} license={l} />
+      ))}
+    </details>
+  );
+}
+
+function LicenseEntry({ license }: { license: ActorLicenseRelation }) {
+  const { t, format } = useTranslation();
+  const {
+    starts_at,
+    ends_at,
+    role,
+    communication_type,
+    communication_status,
+    mnr,
+    mednr,
+  } = license;
+  const licenseIsActive = isLicenseActive(license);
+  return (
+    <div className="row">
+      <div className="py-2 col-3 text-nowrap d-flex flex-column justify-content-center">
+        <span>
+          <Link href={`/system/licenses/entry?mnr=${mnr}`}>
+            {mnr}-{mednr}
+          </Link>
+        </span>
+        <span className="text-secondary small">{role}</span>
+      </div>
+      <div className="py-2 col-5 d-flex flex-column flex-md-row align-items-center ">
+        <div>
+          {format("actorLicenseValidityPeriod", {
+            startsAt: convertOnlyDateToLocale(starts_at),
+            endsAt: convertOnlyDateToLocale(ends_at),
+            from: (chunks: React.ReactNode) => (
+              <p className="m-0 text-end">{chunks}</p>
+            ),
+            to: (chunks) => <p className="m-0">{chunks}</p>,
+            muted: (chunks) => (
+              <span className="text-muted small">{chunks}</span>
+            ),
+          })}
+        </div>
+        <div className="ms-3">
+          <span
+            className={`badge rounded-pill ms-2 ${licenseIsActive ? "text-success-emphasis bg-success-subtle" : "text-dark-emphasis bg-body-secondary"}`}
+          >
+            {licenseIsActive
+              ? t("actorLicenseActive")
+              : t("actorLicenseInactive")}
+          </span>
+        </div>
+      </div>
+      <div className="py-2 col-4 d-flex align-items-center fw-semibold text-capitalize">
+        {communication_type}
+        <span className="badge rounded-pill text-primary border border-primary ms-2">
+          {communication_status}
+        </span>
       </div>
     </div>
   );

@@ -65,6 +65,7 @@ export const locale: TranslationMap = {
   actorNoCurrentLicenses: "Inga nuvarande licenser",
   actorNoEmailAddress: "ingen e-postadress",
   actorNoPhoneNumber: "inget telefonnummer",
+  actorPreviousLicenses: "Previous licenses",
   actorRoles: "Roller",
   actorSendLicenses: "Skicka licenser",
   actorType: "Typ",

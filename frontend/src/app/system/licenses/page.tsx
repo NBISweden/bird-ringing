@@ -97,7 +97,18 @@ function toLicenseTable(
           "-",
       },
       license_holder: {
-        component: item.license_holder,
+        component: (() => {
+          const licenseHolder = item.latest.actors.find(
+            (a) => a.role === "ringer",
+          );
+          return licenseHolder ? (
+            <Link href={`actors/entry?entryId=${licenseHolder.actor.id}`}>
+              {licenseHolder.actor.full_name}
+            </Link>
+          ) : (
+            <>{item.license_holder}</>
+          );
+        })(),
       },
       location: {
         component: item.latest.location,
@@ -162,7 +173,7 @@ function ConnectedListView() {
   const params = useSearchParams();
   const page = params.get("page") || 1;
   const search = params.get("search") || "";
-  const ordering = params.get("ordering") || "mnr";
+  const ordering = params.get("ordering") || "";
   const [query, setQuery] = useState<string>(search);
   const activeQuery = useDebouncedValue(query, 1000);
   const router = useRouter();
@@ -222,7 +233,6 @@ function ConnectedListView() {
       query={query}
       setQuery={setQuery}
       currentPage={currentPage}
-      pageCount={LicensePage.num_pages}
       batchActions={batchActions}
       params={params}
     />
@@ -234,7 +244,6 @@ function BaseListView({
   count,
   pages,
   currentPage,
-  pageCount,
   query,
   setQuery,
   isLoading,
@@ -245,7 +254,6 @@ function BaseListView({
   count: number;
   pages: Page[];
   currentPage: string;
-  pageCount: number;
   query: string;
   setQuery: (q: string) => void;
   isLoading?: boolean;
@@ -398,11 +406,7 @@ function BaseListView({
         </ul>
       </div>
       <div className="d-flex flex-row align-items-center gap-3">
-        <Pagination
-          pages={pages}
-          currentPage={currentPage}
-          pageCount={pageCount}
-        />
+        <Pagination pages={pages} currentPage={currentPage} />
         {isLoading ? <Spinner className="mb-3" /> : <></>}
       </div>
       <table className="table">
@@ -471,11 +475,7 @@ function BaseListView({
           })}
         </tbody>
       </table>
-      <Pagination
-        pages={pages}
-        currentPage={currentPage}
-        pageCount={pageCount}
-      />
+      <Pagination pages={pages} currentPage={currentPage} />
     </div>
   );
 }
@@ -492,7 +492,6 @@ export default function ListView() {
           params={new URLSearchParams()}
           pages={[]}
           currentPage=""
-          pageCount={0}
           batchActions={[]}
         />
       }

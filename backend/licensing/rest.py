@@ -350,7 +350,7 @@ class ActorSerializer(serializers.ModelSerializer):
     language = serializers.ChoiceField(
         choices=LanguageChoices, source="get_language_display"
     )
-    current_license_relations = ActorLicenseRelationSerializer(
+    license_relations = ActorLicenseRelationSerializer(
         many=True, read_only=True
     )
 
@@ -375,8 +375,21 @@ class ActorSerializer(serializers.ModelSerializer):
             "postal_code",
             "city",
             "country",
-            "current_license_relations",
+            "license_relations",
             "updated_at",
+        ]
+
+
+class ActorDetailSerializer(ActorSerializer):
+    previous_license_relations = ActorLicenseRelationSerializer(
+        many=True, read_only=True
+    )
+
+    class Meta:
+        model = Actor
+        fields = [
+            *ActorSerializer.Meta.fields,
+            "previous_license_relations",
         ]
 
 
@@ -446,20 +459,22 @@ class LicenseLicensePermissionSerializer(serializers.ModelSerializer):
 
 class LicenseDocumentSerializer(serializers.ModelSerializer):
     actor = serializers.CharField(source="actor.full_name", read_only=True)
+    actor_id = serializers.IntegerField(source="actor.id", read_only=True)
     type = serializers.CharField(source="get_type_display", read_only=True)
 
     class Meta:
         model = LicenseDocument
-        fields = ["actor", "type", "reference"]
+        fields = ["actor", "actor_id", "type", "reference"]
 
 class LicenseCommunicationSerializer(serializers.ModelSerializer):
     actor = serializers.CharField(source="actor.full_name", read_only=True)
+    actor_id = serializers.IntegerField(source="actor.id", read_only=True)
     type = serializers.CharField(source="get_type_display", read_only=True)
     status = serializers.CharField(source="get_status_display", read_only=True)
 
     class Meta:
         model = LicenseCommunication
-        fields = ["actor", "type", "status", "note"]
+        fields = ["actor", "actor_id", "type", "status", "note"]
 
 
 class LicenseSerializer(serializers.ModelSerializer):
@@ -514,7 +529,7 @@ class LicenseSequenceSerializer(serializers.HyperlinkedModelSerializer):
         ]
 
     def get_history(self, obj):
-        qs = obj.instances.exclude(version=0).order_by("-version")
+        qs = obj.instances.exclude(pk=models.F("sequence__latest__pk")).order_by("-version")
         return LicenseHistoryItemSerializer(qs, many=True).data
 
 
@@ -644,7 +659,10 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
                 )
             ),
             location=models.Subquery(
-                License.objects.filter(sequence=models.OuterRef('pk'), version=0).values("location")[:1]
+                License.objects.filter(
+                    sequence=models.OuterRef('pk'),
+                    pk=models.F("sequence__latest__pk")
+                ).values("location")[:1]
             ),
             status_label=license_status_label,
             report_status_label=license_report_status_label,
@@ -1030,27 +1048,18 @@ actor_type_label = models.Case(
 )
 
 
+latest_license_relation = LicenseRelation.objects.filter(
+    license__sequence__latest=models.F("license"),
+    actor=models.OuterRef("pk"),
+)
+
 license_role_label = models.Case(
     *[
-        models.When(
-            models.Q(licenses__role=value, licenses__license__version=0),
-            then=models.Value(label),
-        )
+        models.When(role=value, then=models.Value(label))
         for value, label in LicenseRoleChoices.choices
     ],
-    output_field=models.CharField(),
-    default=models.Value(""),
+    output_field=models.CharField()
 )
-
-license_mnr = models.Case(
-    models.When(
-        models.Q(licenses__license__version=0),
-        then=models.F("licenses__license__sequence__mnr"),
-    ),
-    output_field=models.CharField(),
-    default=models.Value(""),
-)
-
 
 class ActorViewSet(viewsets.ModelViewSet):
     authentication_classes = [SessionAuthentication, BasicAuthentication]
@@ -1058,15 +1067,17 @@ class ActorViewSet(viewsets.ModelViewSet):
 
     queryset = Actor.objects.annotate(
         type_label=actor_type_label,
-        license_role_label=StringAgg(
-            license_role_label,
-            delimiter=", ",
-            distinct=True,
+        license_role_label=models.Subquery(
+            latest_license_relation.annotate(
+                role_label=license_role_label
+            ).values("actor").annotate(
+                roles_string=StringAgg("role_label", delimiter=", ")
+            ).values("roles_string")[:1]
         ),
-        license_mnr=StringAgg(
-            license_mnr,
-            delimiter=", ",
-            distinct=True,
+        license_mnr=models.Subquery(
+            latest_license_relation.values("actor").annotate(
+                license_mnrs=StringAgg("license__sequence__mnr", delimiter=', ')
+            ).values("license_mnrs")[:1]
         ),
     ).all()
     serializer_class = ActorSerializer
@@ -1098,6 +1109,11 @@ class ActorViewSet(viewsets.ModelViewSet):
         ]
     )
     default_ordering = ["full_name", "city", "country"]
+
+    def get_serializer_class(self):
+        if self.action == "retrieve":
+            return ActorDetailSerializer
+        return super().get_serializer_class()
 
 router = routers.DefaultRouter()
 router.register(r"license_sequence", LicenseSequenceViewSet)

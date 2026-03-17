@@ -25,7 +25,8 @@ export type ActorBase = {
 };
 
 export type ActorListItem = ActorBase & {
-  current_license_relations: ActorLicenseRelation[];
+  license_relations: ActorLicenseRelation[];
+  previous_license_relations?: ActorLicenseRelation[];
 };
 
 export type ActorLicenseRelation = {
@@ -164,12 +165,14 @@ export type LicensePermission = {
 
 export type LicenseDocument = {
   actor: string;
+  actor_id: number;
   type: string;
   reference: string;
 };
 
 export type LicenceCommunication = {
   actor: string;
+  actor_id: number;
   type: string;
   status: string;
   note: string;
