@@ -1,32 +1,54 @@
 "use client";
 
+import { useCallback } from "react";
 import { useModalsContext, useAuth } from "../contexts";
 import { useTranslation } from "../internationalization";
 import BuildInfo from "@/components/BuildInfo";
+import { useActionWithoutCache } from "../hooks";
+import Spinner from "@/components/Spinner";
+import { Alert } from "@/components/Alert";
+
+function SignOutModal() {
+  const auth = useAuth();
+  const { t } = useTranslation();
+  const { isLoading, error } = useActionWithoutCache("signout", async () => {
+    if (auth.signOut) await auth.signOut();
+  });
+
+  return isLoading ? (
+    <>
+      <Spinner />
+      <span className="ms-3">{t("userSigningOut")}</span>
+    </>
+  ) : error ? (
+    <Alert type="danger">{String(error)}</Alert>
+  ) : (
+    <p>{t("userSignedOut")}</p>
+  );
+}
 
 export default function WelcomePage() {
   const user = useAuth();
   const modals = useModalsContext();
   const { t } = useTranslation();
 
-  const handleButtonPress = () => {
+  const closeAction = () => {
+    window.location.reload(); // Reload page after signout
+  };
+  const signOutAction = useCallback(() => {
     modals.add({
-      title: "This is a demo modal",
-      content: "This is the content of the demo modal",
-      closeAction: () => console.log("close action"),
+      title: t("userSigningOut"),
+      content: <SignOutModal />,
+      closeAction: closeAction,
       actions: [
         {
-          label: "Accept",
-          action: () => console.log("accept action"),
+          label: t("okModal"),
+          action: closeAction,
           type: "success",
-        },
-        {
-          label: "Reject",
-          action: () => console.log("reject action"),
         },
       ],
     });
-  };
+  }, [modals, t]);
 
   return (
     <div className="container">
@@ -41,60 +63,12 @@ export default function WelcomePage() {
         <button
           type="button"
           className="btn btn-primary"
-          onClick={handleButtonPress}
+          onClick={signOutAction}
         >
-          Primary
-        </button>
-        <button
-          type="button"
-          className="btn btn-secondary"
-          onClick={handleButtonPress}
-        >
-          Secondary
-        </button>
-        <button
-          type="button"
-          className="btn btn-success"
-          onClick={handleButtonPress}
-        >
-          Success
-        </button>
-        <button
-          type="button"
-          className="btn btn-danger"
-          onClick={handleButtonPress}
-        >
-          Danger
-        </button>
-        <button
-          type="button"
-          className="btn btn-warning"
-          onClick={handleButtonPress}
-        >
-          Warning
-        </button>
-        <button
-          type="button"
-          className="btn btn-info"
-          onClick={handleButtonPress}
-        >
-          Info
-        </button>
-        <button
-          type="button"
-          className="btn btn-light"
-          onClick={handleButtonPress}
-        >
-          Light
-        </button>
-        <button
-          type="button"
-          className="btn btn-dark"
-          onClick={handleButtonPress}
-        >
-          Dark
+          {t("userSignOut")}
         </button>
       </div>
+      <h2>{t("userPermissions")}</h2>
       <div className="table-responsive">
         <table className="table table-striped table-bordered align-middle">
           <thead className="table-success">
@@ -111,18 +85,8 @@ export default function WelcomePage() {
           </tbody>
         </table>
       </div>
-      <div className="d-flex flex-column gap-2 mb-3">
-        <div className="alert alert-success" role="alert">
-          A simple success alert—check it out!
-        </div>
-        <div className="alert alert-danger" role="alert">
-          A simple danger alert—check it out!
-        </div>
-        <div className="alert alert-warning" role="alert">
-          A simple warning alert—check it out!
-        </div>
-        <BuildInfo />
-      </div>
+      <hr />
+      <BuildInfo />
     </div>
   );
 }
