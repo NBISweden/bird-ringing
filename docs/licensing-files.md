@@ -28,7 +28,7 @@ Maerkare is a table combining license and main ringer information.
 
 | Column | Required | Description |
 | :----- | :------- | :---------- |
-| AdrMnr | required | An communication role referenced through `Mnr`. |
+| AdrMnr | required | A communication role referenced through `Mnr`. |
 | Adress1 | optional | Address line 1. Loaded into ringer `address`. |
 | Adress2 | optional | Address line 2. Loaded into ringer `address`. |
 | Adress3 | optional | Address line 3. Loaded into ringer `co_address`. |
@@ -59,6 +59,7 @@ Maerkare is a table combining license and main ringer information.
 | Telarb | optional | The work phone number of the ringer. |
 | Telhem | optional | The home phone number of the ringer. |
 | Trap | conditional | Indicates if the license has the Trap permission. Only if `--include_legacy_permissions` is included in `load_data`. |
+
 
 ## MarkAss
 MarkAss is a table of associate ringers, name and relation information.
