@@ -13,6 +13,7 @@ class TestConcurrentCreateRequests(unittest.TestCase):
         self.root = "http://localhost:3210/api"
         self.username = "user"
         self.password = "test"
+        self.request_timeout = 20
 
     def tearDown(self):
         """
@@ -25,7 +26,8 @@ class TestConcurrentCreateRequests(unittest.TestCase):
         response = requests.put(
             url,
             data=data,
-            auth=(self.username, self.password)
+            auth=(self.username, self.password),
+            timeout=self.request_timeout
         )
         
         queue.put((response.status_code, response.json()))
