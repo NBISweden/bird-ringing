@@ -156,7 +156,7 @@ class LicenseCardService:
 
         # If current doc already exists with same fingerprint -> reuse it
         existing = LicenseDocument.objects.filter(
-            license__sequence__mnr__icontains=lic.sequence.mnr,
+            license_sequence=lic.sequence,
             actor=actor,
             type=DocumentTypeChoices.LICENSE,
             fingerprint=fp,
@@ -170,7 +170,7 @@ class LicenseCardService:
 
         # Store new document (keep old docs for archive)
         (doc, _created) = LicenseDocument.objects.get_or_create(
-            license__sequence__mnr__icontains=lic.sequence.mnr,
+            license_sequence=lic.sequence,
             actor=actor,
             type=DocumentTypeChoices.LICENSE,
             fingerprint=fp,
@@ -182,6 +182,7 @@ class LicenseCardService:
                 "data": rendered.pdf_bytes,
             }
         )
+
         lic.documents.add(doc)
         return doc
 
