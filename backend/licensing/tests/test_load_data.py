@@ -49,7 +49,8 @@ class TestLoadData(TestCase):
                 "Licdatum": "1999-01-01",
                 "Status": statuses[mnr % len(statuses)],
                 "Noteringar": f"notes-{mnr}",
-                "Greenwich": f"location-{mnr}",
+                "Kommunnamn": f"kommun-{mnr}",
+                "LnNamn": f"lan-{mnr}",
                 "Mappnamn": f"ref-{mnr}",
                 **self._dict_if_value("Slutredov", slutredov[mnr % len(slutredov)]),
                 **self._dict_if_value("Lastredov", lastredov[mnr % len(lastredov)]),
@@ -180,7 +181,7 @@ class TestLoadData(TestCase):
                 (
                     0,
                     lic["Mnr"],
-                    lic.get("Greenwich", ""),
+                    f'{lic.get("Kommunnamn", "")}, {lic.get("LnNamn", "")}',
                     lic.get("Noteringar", ""),
                     (lic["Mappnamn"],),
                 )
