@@ -1,7 +1,9 @@
 from django.test import TestCase
+from django.db.utils import IntegrityError
 from .utils import create_user, create_permission, get_fingerprint
 from licensing import models
 import datetime
+import itertools
 from licensing.utils import default_document_copy_policy
 
 class TestLicenseHistory(TestCase):
@@ -288,3 +290,101 @@ class TestLicenseHistory(TestCase):
             )
         )
         
+
+class TestDocumentManagement(TestCase):
+    def setUp(self):
+        self.user = create_user(
+            "user",
+            "pwd",
+        )
+
+        self.license_sequence = models.LicenseSequence.objects.create(
+            mnr="0001",
+            status=models.LicenseStatusChoices.ACTIVE,
+            created_by=self.user,
+            updated_by=self.user,
+        )
+
+        self.actor = models.Actor.objects.create(
+            full_name="actor",
+            email="actor@example.com",
+            sex=models.SexChoices.NOT_APPLICABLE,
+            type=models.ActorTypeChoices.STATION,
+            created_by=self.user,
+            updated_by=self.user
+        )
+
+    def test_conflicting_documents_are_not_allowed(self):
+        models.LicenseDocument.objects.create(
+            license_sequence=self.license_sequence,
+            actor=self.actor,
+            type=models.DocumentTypeChoices.LICENSE,
+            fingerprint="b44df00d",
+            is_permanent=False,
+            created_by=self.user,
+            updated_by=self.user,
+        )
+
+        with self.assertRaises(IntegrityError):
+            models.LicenseDocument.objects.create(
+                license_sequence=self.license_sequence,
+                actor=self.actor,
+                type=models.DocumentTypeChoices.LICENSE,
+                fingerprint="b44df00d",
+                is_permanent=False,
+                created_by=self.user,
+                updated_by=self.user,
+            )
+    
+    def test_no_conflict_between_documents(self):
+        license_sequence_a = self.license_sequence
+        license_sequence_b = models.LicenseSequence.objects.create(
+            mnr="0002",
+            status=models.LicenseStatusChoices.ACTIVE,
+            created_by=self.user,
+            updated_by=self.user,
+        )
+        license_sequences = [
+            license_sequence_a,
+            license_sequence_b,
+        ]
+        actor_a = self.actor
+        actor_b = models.Actor.objects.create(
+            full_name="actor_b",
+            email="actor_b@example.com",
+            sex=models.SexChoices.NOT_APPLICABLE,
+            type=models.ActorTypeChoices.STATION,
+            created_by=self.user,
+            updated_by=self.user
+        )
+        actors = [
+            actor_a,
+            actor_b,
+        ]
+        fingerprints = [
+            "b44df00d",
+            "13371337",
+        ]
+        types = [
+            models.DocumentTypeChoices.PERMIT,
+            models.DocumentTypeChoices.LICENSE,
+        ]
+
+        # A list of unique permutations
+        permutations = list(itertools.product(
+            license_sequences,
+            actors,
+            fingerprints,
+            types,
+        ))
+
+        for (seq, actor, fp, tp) in permutations:
+            models.LicenseDocument.objects.create(
+                license_sequence=seq,
+                actor=actor,
+                type=tp,
+                fingerprint=fp,
+                is_permanent=False,
+                created_by=self.user,
+                updated_by=self.user,
+            )
