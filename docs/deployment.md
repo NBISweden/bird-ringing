@@ -136,7 +136,7 @@ Additional users can be created by the super user using the `Django` admin secti
 
 ### Load data
 
-In order to populate the service with data it is necessary to execute a management command in the `backend` container. This command requires a data export from the the original Bird Ringing database. It expects a folder containing the following CSV formatted files:
+In order to populate the service with data it is necessary to execute a management command in the `backend` container. This command requires a data export from the the original Bird Ringing database. It expects a folder containing a collection of CSV formatted files that are described in detail [here](./licensing-files.md).
 
 | File Name      | Expected Content                                                               |
 | :------------- | :----------------------------------------------------------------------------- |
