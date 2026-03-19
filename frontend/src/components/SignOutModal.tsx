@@ -43,7 +43,7 @@ export function useSignOutAction() {
         {
           label: t("okModal"),
           action: closeAction,
-          type: "success",
+          type: "primary",
         },
       ],
     });
