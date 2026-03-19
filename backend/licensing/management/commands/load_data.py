@@ -52,17 +52,9 @@ def log_action(func):
     return _func
 
 
-class DataValidationError(Exception):
-    pass
-
 class RowValidator:
     required_columns = set()
 
-    def validate(self, row):
-        errors = self.get_errors(row)
-        if len(errors) > 0:
-            raise DataValidationError(" ".join(errors))
-    
     def get_errors(self, row):
         missing_columns = self.get_missing_columns(row, self.required_columns)
 
@@ -79,7 +71,6 @@ class RowValidator:
     
     def get_missing_columns(self, row, columns):
         return set(columns) - set(row.keys())
-
 
 
 class ArtlistaRowValidator(RowValidator):
