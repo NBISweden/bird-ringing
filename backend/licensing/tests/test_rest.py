@@ -145,8 +145,10 @@ class LicenseDocumentEmailTests(_EmailTestBase):
         url = self._send_mail_url([test_mnr], True)
         response = self.client.put(url)
         self.assertEqual(response.status_code, 400)
+        sequence = LicenseSequence.objects.filter(mnr=test_mnr).get()
+        actor_relation = sequence.latest.actors.filter(actor=self.actors[2]).get()
         self.assertEqual(
-            {"detail": f"Missing license card document for bundle: mnr {test_mnr}, actor {self.actors[2].id}."},
+            {"detail": f"No license card document available for: {test_mnr}:{actor_relation.mednr}"},
             response.json(),
             "The action fails if there are missing documents"
         )
@@ -598,10 +600,11 @@ class LicenseDocumentEmailNotifyRingerTests(_EmailTestBase):
         with patch.object(LicenseSequenceViewSet, "get_queryset", self._plain_licensesequence_queryset):
             resp = self.client.put(url)
 
+        helper_actor_relation = license_obj.actors.filter(actor=helper_actor).get()
         self.assertEqual(resp.status_code, 400)
         self.assertEqual(
             {
-                "detail": f"Missing license card document for bundle: mnr {license_obj.sequence.mnr}, actor {helper_actor.id}.",
+                "detail": f"No license card document available for: {license_obj.sequence.mnr}:{helper_actor_relation.mednr}",
             },
             resp.json(),
         )
