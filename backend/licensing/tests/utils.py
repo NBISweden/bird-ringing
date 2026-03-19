@@ -1,5 +1,6 @@
 from django.contrib.auth.models import User, Permission
 from licensing import models
+import hashlib
 
 
 def create_user(username: str, password: str, permissions: list[str] = []):
@@ -36,3 +37,8 @@ def create_permission(
     permission.species_list.set(species)
 
     return permission
+
+
+def get_fingerprint(*args):
+    fp_str = ":".join([str(arg) for arg in args])
+    return hashlib.sha256(fp_str.encode()).hexdigest()

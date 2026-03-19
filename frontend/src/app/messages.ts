@@ -34,6 +34,10 @@ const messagesBase = {
   ...actorTypeOptions,
 
   birdRinging: "Bird Ringing",
+  userPermissions: "User permissions",
+  userSignedOut: "You have been signed out.",
+  userSignOut: "Sign out",
+  userSigningOut: "Signing out",
   userWelcomeHeader: "Welcome, {name}",
   userWelcomeText: "You’re successfully logged in as an expert.",
   dashboard: "Dashboard",

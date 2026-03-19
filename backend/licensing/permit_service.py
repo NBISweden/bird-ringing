@@ -138,7 +138,7 @@ class PermitService:
         fp = self._fingerprint(payload)
 
         existing = LicenseDocument.objects.filter(
-            license__sequence__mnr__icontains=lic.sequence.mnr,
+            license_sequence=lic.sequence,
             actor=actor,
             type=DocumentTypeChoices.PERMIT,
             fingerprint=fp,
@@ -163,7 +163,7 @@ class PermitService:
 
         # Create first to get created_at.date
         (doc, _created) = LicenseDocument.objects.get_or_create(
-            license__sequence__mnr__icontains=lic.sequence.mnr,
+            license_sequence=lic.sequence,
             actor=actor,
             type=DocumentTypeChoices.PERMIT,
             fingerprint=fp,

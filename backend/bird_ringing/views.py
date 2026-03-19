@@ -9,7 +9,7 @@ from django.db import connection
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from django.contrib.auth import authenticate, login
+from django.contrib.auth import authenticate, login, logout
 from rest_framework.parsers import JSONParser
 from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import ensure_csrf_cookie
@@ -89,6 +89,10 @@ class LoginView(APIView):
                 {"detail": "Incorrect user or password"},
                 status=status.HTTP_401_UNAUTHORIZED,
             )
+    
+    def delete(self, request):
+        logout(request)
+        return Response({"success": "Log out successful"})
 
     def get_user_info(self, user):
         user_permissions = {perm.codename for perm in user.user_permissions.all()}

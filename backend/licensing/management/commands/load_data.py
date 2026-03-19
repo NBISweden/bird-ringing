@@ -243,6 +243,7 @@ class Command(BaseCommand):
         document_reference = license_data.get("Mappnamn")
         if document_reference:
             (document, _created) = models.LicenseDocument.objects.get_or_create(
+                license_sequence=seq.item,
                 created_by=current_user,
                 updated_by=current_user,
                 actor=None,
