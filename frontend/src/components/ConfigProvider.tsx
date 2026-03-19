@@ -1,5 +1,5 @@
 "use client";
-import { Config, ConfigContext } from "@/app/system/contexts";
+import { Config, ConfigContext } from "@/app/(system)/contexts";
 import React from "react";
 import useSWRImmutable from "swr/immutable";
 

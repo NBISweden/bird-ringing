@@ -1,4 +1,4 @@
-import { BSColor } from "@/app/system/common";
+import { BSColor } from "@/app/(system)/common";
 
 type BadgeProps = {
   color?: BSColor;

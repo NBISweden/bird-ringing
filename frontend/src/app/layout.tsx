@@ -7,7 +7,7 @@ import { ModalView } from "@/components/ModalView";
 import { AuthProvider } from "@/components/AuthProvider";
 import { ConfigProvider } from "@/components/ConfigProvider";
 import { Alert } from "@/components/Alert";
-import { Config } from "./system/contexts";
+import { Config } from "./(system)/contexts";
 import { LocaleProvider } from "@/components/LocaleProvider";
 
 function ConfigError() {

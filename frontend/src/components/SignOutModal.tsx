@@ -1,9 +1,9 @@
 "use client";
 
 import { useCallback } from "react";
-import { useModalsContext, useAuth } from "@/app/system/contexts";
-import { useTranslation } from "@/app/system/internationalization";
-import { useActionWithoutCache } from "@/app/system/hooks";
+import { useModalsContext, useAuth } from "@/app/(system)/contexts";
+import { useTranslation } from "@/app/(system)/internationalization";
+import { useActionWithoutCache } from "@/app/(system)/hooks";
 import Spinner from "@/components/Spinner";
 import { Alert } from "@/components/Alert";
 

@@ -280,7 +280,7 @@ function LicenseEntry({ license }: { license: ActorLicenseRelation }) {
     <div className="row">
       <div className="py-2 col-3 text-nowrap d-flex flex-column justify-content-center">
         <span>
-          <Link href={`/system/licenses/entry?mnr=${mnr}`}>
+          <Link href={`/licenses/entry?mnr=${mnr}`}>
             {mnr}-{mednr}
           </Link>
         </span>

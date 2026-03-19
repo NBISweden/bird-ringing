@@ -1,5 +1,5 @@
 "use client";
-import { useModalsContext } from "@/app/system/contexts";
+import { useModalsContext } from "@/app/(system)/contexts";
 import {
   DetailedHTMLProps,
   HTMLAttributes,

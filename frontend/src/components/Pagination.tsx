@@ -1,4 +1,4 @@
-import { useTranslation } from "@/app/system/internationalization";
+import { useTranslation } from "@/app/(system)/internationalization";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 

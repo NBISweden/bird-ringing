@@ -1,7 +1,7 @@
 "use client";
 
-import { LicensePermission } from "@/app/system/common";
-import { useTranslation } from "@/app/system/internationalization";
+import { LicensePermission } from "@/app/(system)/common";
+import { useTranslation } from "@/app/(system)/internationalization";
 type LicensePermissionItemProps = {
   permission: LicensePermission;
 };

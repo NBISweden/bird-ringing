@@ -1,9 +1,9 @@
 "use client";
 import { useEffect, useContext, useMemo } from "react";
-import { Auth, AuthContext, useConfig } from "../app/system/contexts";
+import { Auth, AuthContext, useConfig } from "../app/(system)/contexts";
 import { usePathname, useRouter } from "next/navigation";
 import useSWR from "swr";
-import { getCookie, parseCompleteUrl } from "../app/system/utils";
+import { getCookie, parseCompleteUrl } from "../app/(system)/utils";
 
 async function fetchUser([url]: [string]): Promise<Auth> {
   const response = await fetch(url, {
