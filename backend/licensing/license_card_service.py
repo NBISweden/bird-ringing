@@ -35,7 +35,6 @@ def format_date(d) -> str:
     with translation.override("sv"):
         day_month = date_format(d, format="j F", use_l10n=True)
     day, month = day_month.split(" ", 1)
-    month = month[:1].upper() + month[1:]
     return f"{day} {month} år {d.year}"
 
 class NoLicense(Exception):
@@ -84,23 +83,27 @@ class LicenseCardService:
         )
 
         # valid to line
-        holder_name = actor.full_name
         valid_to = "Giltig t.o.m " + format_date(lic.ends_at)
 
         # actor line
         mnr = lic.sequence.mnr
-        mnr_line = f"nr. {mnr}"
-        mnr_label = "Märkare "
+        mnr_line = f"Märkare nr. {mnr}"
         if rel.role == LicenseRoleChoices.ASSOCIATE_RINGER:
-            mnr_line = f"nr. {mnr}: {rel.mednr}"
+            mnr_line = f"Märkare nr. {mnr}: {rel.mednr}"
 
-            # if main ringer on this license is a station, use the station name as label
+        # station name line (empty if ringer is a person, will be filtered out in renderer if empty)
+        station_lines = ("", "")
+        if rel.role == LicenseRoleChoices.ASSOCIATE_RINGER:
             ringer_rel = (lic.actors.filter(role=LicenseRoleChoices.RINGER).select_related("actor").first())
             ringer_actor = ringer_rel.actor if ringer_rel else None
 
             if ringer_actor and ringer_actor.type == ActorTypeChoices.STATION:
                 station_name = (ringer_actor.full_name or "").strip() or "Station"
-                mnr_label = f"{station_name} "
+                station_lines = split_into_two_lines_textwrap(station_name)
+
+        # holder name
+        holder_name = actor.full_name
+        name_lines = split_into_two_lines_textwrap(holder_name)
 
         # birthdate/birthyear line
         birthdate = ""
@@ -109,15 +112,13 @@ class LicenseCardService:
         elif actor.birth_year:
             birthdate = str(actor.birth_year)
 
-        mnr1, mnr2 = split_into_two_lines_textwrap(mnr_label + mnr_line, mnr_line=mnr_line)
-        name1, name2 = split_into_two_lines_textwrap(holder_name)
-
         lines = [
             valid_to,
-            mnr1,
-            mnr2,      # in case we need to split the MNR line into two lines (e.g. for long station names)
-            name1,
-            name2,     # in case we need to split the holder name into two lines
+            mnr_line,
+            station_lines[0], # in case of stations, will be filtered out if empty
+            station_lines[1], # in case of stations, will be filtered out if empty
+            name_lines[0],
+            name_lines[1],     # in case we need to split the holder name into two lines
             birthdate,
         ]
 
