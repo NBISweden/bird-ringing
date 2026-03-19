@@ -225,7 +225,11 @@ class Command(BaseCommand):
                 else models.ReportStatusChoices.NO
             )
         )
-        location = license_data.get("Greenwich", "")
+        location_parts = [
+            license_data.get(part_id)
+            for part_id in ["Kommunnamn", "LnNamn"]
+        ]
+        location = ", ".join([part for part in location_parts if part])
         (license, _l_created) = models.LicenseImport.objects.get_updated_or_create_item(
             created_at=created_at,
             updated_at=created_at,
