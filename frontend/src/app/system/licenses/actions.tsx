@@ -389,7 +389,7 @@ export function useSendLicenseEmailAction(client: Client) {
       if (itemIds.size === 0) {
         showNoSelectionModal({
           title: t("licenseSendLicenses"),
-          message:  t("licenseNoLicensesSelected"),
+          message: t("licenseNoLicensesSelected"),
         });
         return;
       }
