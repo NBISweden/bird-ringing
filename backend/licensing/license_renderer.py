@@ -166,7 +166,7 @@ def get_template_path(setting_name: str) -> Path:
 
     return p
 
-def split_into_two_lines_textwrap(text: str, mnr_line: str = "") -> tuple[str, str]:
+def split_into_two_lines_textwrap(text: str) -> tuple[str, str]:
     # adjust width as needed based on template design and typical name lengths
     width = 42
 
@@ -188,26 +188,6 @@ def split_into_two_lines_textwrap(text: str, mnr_line: str = "") -> tuple[str, s
     remainder = s[len(line1) :].lstrip()
     if not remainder:
         return (line1, "")
-
-    # If we have a fixed suffix that must remain intact on line2, only truncate the prefix part.
-    suffix = (mnr_line or "")
-    if suffix:
-        # Ensure line2 ends with suffix; if not, fall back to normal truncation.
-        if remainder.endswith(suffix):
-            prefix = remainder[: -len(suffix)].rstrip()
-
-            # We want the final line2 length to be <= width, where the suffix is preserved.
-            # Reserve space for suffix and a separating space (if prefix is non-empty).
-            sep = " " if prefix else ""
-            available = width - (len(sep) + len(suffix))
-
-            # If suffix alone doesn't fit, we can't preserve it within width; just do the old behavior.
-            if available < 0:
-                return (line1, _truncate_with_dots(remainder, width))
-
-            truncated_prefix = _truncate_with_dots(prefix, available) if prefix else ""
-            line2 = (truncated_prefix + (" " if truncated_prefix else "") + suffix).strip()
-            return (line1, line2)
 
     # default behavior (no suffix preservation)
     return (line1, _truncate_with_dots(remainder, width))
