@@ -58,6 +58,28 @@ function GenericBatchCreateBody({
   );
 }
 
+function useShowNoSelectionModal() {
+  const modalStack = useModalsContext();
+  const { t } = useTranslation();
+
+  return useCallback(
+    ({ title, message }: { title: string; message: string }) => {
+      modalStack.add({
+        title,
+        content: <Alert type="secondary">{message}</Alert>,
+        actions: [
+          {
+            label: t("okModal"),
+            action: () => {},
+            type: "primary",
+          },
+        ],
+      });
+    },
+    [modalStack, t],
+  );
+}
+
 function useBatchCreateAction({
   client,
   title,
@@ -75,6 +97,7 @@ function useBatchCreateAction({
 }) {
   const modalStack = useModalsContext();
   const { t } = useTranslation();
+  const showNoSelectionModal = useShowNoSelectionModal();
 
   const runCreate = useCallback(
     (itemIds: Set<string>) => {
@@ -97,7 +120,14 @@ function useBatchCreateAction({
 
   return useCallback(
     (itemIds: Set<string>) => {
-      if (itemIds.size === 0) return;
+      if (itemIds.size === 0) {
+        showNoSelectionModal({
+          title,
+          message: t("licenseNoLicensesSelected"),
+        });
+        return;
+      }
+
       modalStack.add({
         title,
         content: (
@@ -109,7 +139,11 @@ function useBatchCreateAction({
           </>
         ),
         actions: [
-          { label: t("abortModal"), action: () => {}, type: "outline-primary" },
+          {
+            label: t("abortModal"),
+            action: () => {},
+            type: "outline-primary",
+          },
           {
             label: t("buttonCreateDocuments"),
             action: () => runCreate(itemIds),
@@ -118,7 +152,15 @@ function useBatchCreateAction({
         ],
       });
     },
-    [modalStack, runCreate, title, confirmText, selectedLabel, t],
+    [
+      modalStack,
+      runCreate,
+      title,
+      confirmText,
+      selectedLabel,
+      t,
+      showNoSelectionModal,
+    ],
   );
 }
 
@@ -182,6 +224,7 @@ function useDownloadZipAction({
 }) {
   const modalStack = useModalsContext();
   const { t } = useTranslation();
+  const showNoSelectionModal = useShowNoSelectionModal();
 
   // adapter to match DownloadModal signature
   const downloadFunc = useCallback(
@@ -192,7 +235,13 @@ function useDownloadZipAction({
   return useCallback(
     (itemIds: Set<string>) => {
       const mnrs = Array.from(itemIds);
-      if (mnrs.length === 0) return;
+      if (mnrs.length === 0) {
+        showNoSelectionModal({
+          title,
+          message: t("licenseNoLicensesSelected"),
+        });
+        return;
+      }
 
       modalStack.add({
         title,
@@ -228,6 +277,7 @@ function useDownloadZipAction({
       successMessage,
       downloadFunc,
       t,
+      showNoSelectionModal,
     ],
   );
 }
@@ -317,6 +367,7 @@ export function useDownloadPermitsZipAction(client: Client) {
 export function useSendLicenseEmailAction(client: Client) {
   const modalStack = useModalsContext();
   const { t } = useTranslation();
+  const showNoSelectionModal = useShowNoSelectionModal();
 
   const sendEmails = useCallback(
     (itemIds: Set<string>) => {
@@ -335,7 +386,13 @@ export function useSendLicenseEmailAction(client: Client) {
 
   return useCallback(
     (itemIds: Set<string>) => {
-      if (itemIds.size === 0) return;
+      if (itemIds.size === 0) {
+        showNoSelectionModal({
+          title: t("licenseSendLicenses"),
+          message: t("licenseNoLicensesSelected"),
+        });
+        return;
+      }
 
       modalStack.add({
         title: t("licenseSendLicenses"),
@@ -358,7 +415,7 @@ export function useSendLicenseEmailAction(client: Client) {
         ],
       });
     },
-    [modalStack, t, sendEmails],
+    [modalStack, t, sendEmails, showNoSelectionModal],
   );
 }
 
