@@ -165,12 +165,6 @@ function ConnectedListView() {
       label: t("actorFetchEmailAddresses"),
       action: fetchEmailAddressesAction,
     },
-    { type: "divider" },
-    {
-      label: t("actorDeactivate"),
-      action: () => {},
-      disabled: true,
-    },
   ];
   return (
     <BaseListView
