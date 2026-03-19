@@ -215,12 +215,6 @@ function ConnectedListView() {
 
     { type: "divider" },
     { label: t("licenseSendLicenses"), action: sendEmailAction },
-    { type: "divider" },
-    {
-      label: t("actorDeactivate"),
-      action: () => {},
-      disabled: true,
-    },
   ];
   return (
     <BaseListView
