@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import UserInfo from "./UserInfo";
-import { useTranslation } from "@/app/system/internationalization";
+import { useTranslation } from "@/app/(system)/internationalization";
 
 export default function Header() {
   const { t } = useTranslation();

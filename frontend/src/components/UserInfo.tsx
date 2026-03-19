@@ -1,6 +1,6 @@
 "use client";
-import { AuthContext } from "@/app/system/contexts";
-import { useTranslation } from "@/app/system/internationalization";
+import { AuthContext } from "@/app/(system)/contexts";
+import { useTranslation } from "@/app/(system)/internationalization";
 import { useContext, useState } from "react";
 import { useSignOutAction } from "./SignOutModal";
 import { DropDownMenu } from "./DropDownMenu";

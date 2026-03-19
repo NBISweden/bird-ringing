@@ -14,14 +14,14 @@ export default function SystemLayout({
     {
       type: "item",
       label: t("dashboard"),
-      href: "/system/welcome",
+      href: "/welcome",
       id: "dashboard",
       icon: "bi-speedometer",
     },
     {
       type: "item",
       label: t("licenseListView"),
-      href: "/system/licenses",
+      href: "/licenses",
       id: "licenses",
       icon: "bi-journal-check",
       permissions: ["view_licensesequence"],
@@ -29,7 +29,7 @@ export default function SystemLayout({
     {
       type: "item",
       label: t("actorListView"),
-      href: "/system/actors",
+      href: "/actors",
       id: "ringare",
       icon: "bi-person-lines-fill",
       permissions: ["view_actor"],

@@ -1,6 +1,6 @@
 "use client";
 
-import { AuthContext } from "@/app/system/contexts";
+import { AuthContext } from "@/app/(system)/contexts";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useContext, useState } from "react";

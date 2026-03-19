@@ -5,10 +5,10 @@ import {
   convertDateToLocale,
   convertOnlyDateToLocale,
   LicenseInstance,
-} from "@/app/system/common";
-import { useClient } from "../app/system/contexts";
-import { useSendLicenseEmailForActorsAction } from "../app/system/licenses/actions";
-import { useTranslation } from "@/app/system/internationalization";
+} from "@/app/(system)/common";
+import { useClient } from "../app/(system)/contexts";
+import { useSendLicenseEmailForActorsAction } from "../app/(system)/licenses/actions";
+import { useTranslation } from "@/app/(system)/internationalization";
 import { LicensePermissionItem } from "./LicensePermissionItem";
 import { useState } from "react";
 
@@ -150,9 +150,7 @@ export function LicenceView({ license, mnr }: LicenceViewProps) {
                       </div>
                       <div className="col-10 col-md-7">
                         <i className="bi bi-person text-primary me-1" />
-                        <Link
-                          href={`/system/actors/entry?entryId=${rel.actor.id}`}
-                        >
+                        <Link href={`/actors/entry?entryId=${rel.actor.id}`}>
                           {rel.actor.full_name}
                         </Link>
                         ({rel.mednr})
@@ -225,7 +223,7 @@ export function LicenceView({ license, mnr }: LicenceViewProps) {
                   </div>
                   <div className="col-12 col-md-3 text-nowrap">
                     <i className="bi bi-person text-primary me-1" />
-                    <Link href={`/system/actors/entry?entryId=${doc.actor_id}`}>
+                    <Link href={`/actors/entry?entryId=${doc.actor_id}`}>
                       {doc.actor}
                     </Link>
                   </div>
@@ -269,9 +267,7 @@ export function LicenceView({ license, mnr }: LicenceViewProps) {
                   </div>
                   <div className="col-12 col-md-3 text-nowrap">
                     <i className="bi bi-person text-primary me-1" />
-                    <Link
-                      href={`/system/actors/entry?entryId=${item.actor_id}`}
-                    >
+                    <Link href={`/actors/entry?entryId=${item.actor_id}`}>
                       {item.actor}
                     </Link>
                   </div>

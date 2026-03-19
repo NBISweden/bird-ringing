@@ -75,7 +75,7 @@ function toActorTable(
     properties: {
       name: {
         component: (
-          <Link href={`/system/actors/entry/?entryId=${item.id}`}>
+          <Link href={`/actors/entry/?entryId=${item.id}`}>
             {item.full_name}
           </Link>
         ),
@@ -108,7 +108,7 @@ function toActorTable(
             {licenses.map((l, index) => (
               <Link
                 key={index}
-                href={`/system/licenses/entry?mnr=${l.mnr}`}
+                href={`/licenses/entry?mnr=${l.mnr}`}
                 className="text-decoration-none"
               >
                 <Badge color="info" rounded outline>

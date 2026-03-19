@@ -2,10 +2,10 @@
 
 import "./page.scss";
 import { useContext } from "react";
-import { AuthContext } from "./system/contexts";
+import { AuthContext } from "./(system)/contexts";
 import Link from "next/link";
 import { AuthProvider } from "@/components/AuthProvider";
-import { useTranslation } from "./system/internationalization";
+import { useTranslation } from "./(system)/internationalization";
 
 export default function Home() {
   return (
@@ -27,7 +27,7 @@ function HomeCore() {
       </div>
       <div className="mt-4">
         {auth && auth.isAuthenticated ? (
-          <Link className="btn btn-primary" href="/system/welcome">
+          <Link className="btn btn-primary" href="/welcome">
             <i className="bi bi-twitter"></i> {t("goToSystem")}
           </Link>
         ) : (

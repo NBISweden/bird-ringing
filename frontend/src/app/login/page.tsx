@@ -2,12 +2,12 @@
 
 import { Suspense, useContext, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { AuthContext, Auth } from "../system/contexts";
+import { AuthContext, Auth } from "../(system)/contexts";
 
 function ConnectedLoginPage() {
   const params = useSearchParams();
   const auth = useContext(AuthContext);
-  const target = params.get("target") || "/system/welcome";
+  const target = params.get("target") || "/welcome";
   return <BaseLoginPage target={target} auth={auth} />;
 }
 
@@ -103,7 +103,7 @@ function BaseLoginPage({
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={<BaseLoginPage target="/system/welcome" auth={null} />}>
+    <Suspense fallback={<BaseLoginPage target="/welcome" auth={null} />}>
       <ConnectedLoginPage />
     </Suspense>
   );

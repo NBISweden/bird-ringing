@@ -1,9 +1,9 @@
-import { useTranslation } from "../app/system/internationalization";
-import { Client } from "./../app/system/client";
-import { SendEmailResult } from "@/app/system/common";
+import { useTranslation } from "../app/(system)/internationalization";
+import { Client } from "../app/(system)/client";
+import { SendEmailResult } from "@/app/(system)/common";
 import Spinner from "./Spinner";
 import { Alert } from "./Alert";
-import { useClient } from "@/app/system/contexts";
+import { useClient } from "@/app/(system)/contexts";
 import { useEffect, useRef } from "react";
 import useSWRMutation from "swr/mutation";
 

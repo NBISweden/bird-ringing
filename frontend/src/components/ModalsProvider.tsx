@@ -1,5 +1,5 @@
 "use client";
-import { ModalsContext, useModalStack } from "@/app/system/contexts";
+import { ModalsContext, useModalStack } from "@/app/(system)/contexts";
 import React from "react";
 
 export function ModalsProvider({ children }: { children: React.ReactNode }) {

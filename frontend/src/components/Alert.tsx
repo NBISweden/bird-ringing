@@ -1,4 +1,4 @@
-import { ButtonType } from "@/app/system/common";
+import { ButtonType } from "@/app/(system)/common";
 
 export function Alert({
   children,

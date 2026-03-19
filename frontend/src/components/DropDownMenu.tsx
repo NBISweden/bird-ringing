@@ -1,4 +1,4 @@
-import { MenuAction } from "@/app/system/common";
+import { MenuAction } from "@/app/(system)/common";
 
 type DropDownMenuProps = {
   isOpen: boolean;
