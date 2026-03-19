@@ -70,6 +70,7 @@ const messagesBase = {
     "<from>{startsAt}</from><to><muted>to</muted> {endsAt}</to>",
   actorLicenses: "Licenses",
   actorLoadingEmailAddresses: "Loading e-mail addresses",
+  actorNoEmailAddressesFound: "No e-mail addresses were found",
   actorName: "Name",
   actorNoAddress: "no address",
   actorNoCity: "no city",
@@ -125,6 +126,8 @@ const messagesBase = {
   licensePermissions: "Permissions",
   licenseReportStatus: "Final report status",
   licenseSelectedLicenses: "Selected licenses",
+  licenseNoLicensesSelected:
+    "Please choose at least one license from the list to complete this action",
   licenseSendLicenses: "Send licenses",
   licenseSendLicensesConfirmText:
     "Do you want to send license cards to all ringers and associate ringers of the selected licenses?",

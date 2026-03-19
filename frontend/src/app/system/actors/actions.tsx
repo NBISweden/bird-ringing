@@ -62,7 +62,9 @@ function ActorEmailList({ ids }: { ids: string[] }) {
     </>
   ) : error ? (
     <Alert type="danger">{String(error)}</Alert>
+  ) : data && data.length > 0 ? (
+    <>{data.join("; ")}</>
   ) : (
-    <>{data?.join("; ") || ""}</>
+    <Alert type="secondary">{t("actorNoEmailAddressesFound")}</Alert>
   );
 }

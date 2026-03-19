@@ -62,6 +62,7 @@ export const locale: TranslationMap = {
     "<from>{startsAt}</from><to><muted>till</muted> {endsAt}</to>",
   actorLicenses: "Licenser",
   actorLoadingEmailAddresses: "Laddar e-postadresser",
+  actorNoEmailAddressesFound: "Inga e-postadresser fanns ",
   actorName: "Namn",
   actorNoAddress: "ingen adress",
   actorNoCity: "ingen stad",
@@ -119,6 +120,8 @@ export const locale: TranslationMap = {
   licensePermissions: "Tillstånd",
   licenseReportStatus: "Slutrapportstatus",
   licenseSelectedLicenses: "Valda licenser",
+  licenseNoLicensesSelected:
+    "Välj minst en licens från listan för att slutföra den här åtgärden.",
   licenseSendLicenses: "Skicka licenser",
   licenseSendLicensesConfirmText:
     "Vill du skicka licensdokument till alla ringmärkare och hjälpare för valda licenser?",
