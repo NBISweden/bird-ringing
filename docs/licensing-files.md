@@ -28,13 +28,13 @@ Maerkare is a table combining license and main ringer information.
 
 | Column | Required | Description |
 | :----- | :------- | :---------- |
-| AdrMnr | required | A communication role referenced through `Mnr`. |
+| AdrMnr | optional | A communication role referenced through `Mnr`. |
 | Adress1 | optional | Address line 1. Loaded into ringer `address`. |
 | Adress2 | optional | Address line 2. Loaded into ringer `address`. |
 | Adress3 | optional | Address line 3. Loaded into ringer `co_address`. |
-| AssMnr1 | required | An affiliate referenced through `Mnr`. |
-| AssMnr2 | required | An affiliate referenced through `Mnr`. |
-| AssMnr3 | required | An affiliate referenced through `Mnr`. |
+| AssMnr1 | optional | An affiliate referenced through `Mnr`. |
+| AssMnr2 | optional | An affiliate referenced through `Mnr`. |
+| AssMnr3 | optional | An affiliate referenced through `Mnr`. |
 | Email | optional | The e-mail address of the ringer. |
 | Enamn | optional | The last name of the ringer. |
 | Fnamn | optional | The first name of the ringer. |
@@ -66,12 +66,14 @@ MarkAss is a table of associate ringers, name and relation information.
 
 | Column | Required | Description |
 | :----- | :------- | :---------- |
+| E-post | optional | E-mail address |
 | ENamn | required | Last name. |
 | FNamn | required | First name.  |
 | Fritext | optional | Notes. |
-| Fyr | optional | Birth year. |
+| Fyr | optional | Birth date or year. |
 | Mednr | required | A license Mnr local associate ringer 4 character alphanumerical id. |
 | Mnr | required | Currently related Mnr. |
+| Role | optional | Role of the associate. All roles other than "A" are ignored. Defaults to "A" if Role is not included or NULL. |
 | Sex | optional | Sex. |
 
 ## MarkAssYr
@@ -104,8 +106,8 @@ TillstProp is a table describing permission properties, intended to add structur
 | Column | Required | Description |
 | :----- | :------- | :---------- |
 | description | optional | A description of the current permission property. Meant for details. |
-| name | optional | The name of a permission property. Meant for simplified presentation or listing. |
-| property_code | optional | A reference to the current property. |
+| name | required | The name of a permission property. Meant for simplified presentation or listing. |
+| property_code | required | A reference to the current property. |
 | related_type_code | optional | A reference to a permission type `TillstTyp.type_code`. |
 
 ## TillstTyp
@@ -114,8 +116,8 @@ TillstTyp is a table describing permission types, intended to describe the main 
 | Column | Required | Description |
 | :----- | :------- | :---------- |
 | description | optional | A description intended for detailed information about the permission type. |
-| name | optional | A name intended for presentation or listing of a permission type.  |
-| type_code | optional | A referece to the current permission type. |
+| name | required | A name intended for presentation or listing of a permission type.  |
+| type_code | required | A referece to the current permission type. |
 
 
 
