@@ -10,7 +10,6 @@ import { Alert } from "@/components/Alert";
 import { downloadData } from "../utils";
 import { useTranslation } from "../internationalization";
 import { useActionWithoutCache } from "../hooks";
-import { TranslationMap } from "@/app/messages";
 
 type BatchCreateResponse = { filenames: string[] };
 
@@ -64,10 +63,10 @@ function useShowNoSelectionModal() {
   const { t } = useTranslation();
 
   return useCallback(
-    ({ title, message }: { title: string; message: keyof TranslationMap }) => {
+    ({ title, message }: { title: string; message: string }) => {
       modalStack.add({
         title,
-        content: <Alert type="secondary">{t(message)}</Alert>,
+        content: <Alert type="secondary">{message}</Alert>,
         actions: [
           {
             label: t("okModal"),
@@ -124,7 +123,7 @@ function useBatchCreateAction({
       if (itemIds.size === 0) {
         showNoSelectionModal({
           title,
-          message: "licenseNoLicensesSelected",
+          message: t("licenseNoLicensesSelected"),
         });
         return;
       }
@@ -239,7 +238,7 @@ function useDownloadZipAction({
       if (mnrs.length === 0) {
         showNoSelectionModal({
           title,
-          message: "licenseNoLicensesSelected",
+          message: t("licenseNoLicensesSelected"),
         });
         return;
       }
@@ -390,7 +389,7 @@ export function useSendLicenseEmailAction(client: Client) {
       if (itemIds.size === 0) {
         showNoSelectionModal({
           title: t("licenseSendLicenses"),
-          message: "licenseNoLicensesSelected",
+          message:  t("licenseNoLicensesSelected"),
         });
         return;
       }
