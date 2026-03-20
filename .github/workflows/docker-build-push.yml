@@ -1,0 +1,105 @@
+name: Docker Build and Push
+
+on:
+  push:
+    branches:
+      - develop
+      - main
+      # while testing:
+      - 177-build-action
+
+env:
+  REGISTRY: ghcr.io
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Get short SHA for frontend
+        id: sha
+        run: echo "SHORT_SHA=${GITHUB_SHA::7}" >>$GITHUB_OUTPUT
+
+      - name: Get date tag
+        id: date
+        run: echo "DATE_TAG=$(date +%Y%m%d-%H%M)" >>$GITHUB_OUTPUT
+
+      - name: Extract metadata for frontend
+        id: meta-frontend
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ github.repository }}-frontend
+          tags: &tags |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=sha
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+            type=raw,value=${{ steps.date.outputs.DATE_TAG }}
+
+      - name: Extract metadata for backend
+        id: meta-backend
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ github.repository }}-backend
+          tags: *tags
+
+      - name: Extract metadata for docx2pdf
+        id: meta-docx2pdf
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ github.repository }}-docx2pdf
+          tags: *tags
+
+      - name: Build and push frontend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          file: ./Dockerfile.frontend
+          target: prod
+          push: true
+          tags: ${{ steps.meta-frontend.outputs.tags }}
+          labels: ${{ steps.meta-frontend.outputs.labels }}
+          build-args: |
+            BUILD_ID=6000:6000
+            RUNTIME_ID=6001:6001
+            BUILD_GIT_COMMIT=${{ steps.sha.outputs.SHORT_SHA }}
+            BUILD_GIT_BRANCH=${{ github.ref_name }}
+
+      - name: Build and push backend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          file: ./Dockerfile.backend
+          target: prod
+          push: true
+          tags: ${{ steps.meta-backend.outputs.tags }}
+          labels: ${{ steps.meta-backend.outputs.labels }}
+          build-args: |
+            BUILD_ID=6000:6000
+            RUNTIME_ID=6001:6001
+
+      - name: Build and push docx2pdf
+        uses: docker/build-push-action@v5
+        with:
+          context: ./docx2pdf
+          file: ./Dockerfile.docx2pdf
+          push: true
+          tags: ${{ steps.meta-docx2pdf.outputs.tags }}
+          labels: ${{ steps.meta-docx2pdf.outputs.labels }}
