@@ -108,7 +108,8 @@ export function RequireAuth({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   useEffect(() => {
     if (user && !user.isAuthenticated) {
-      router.push(`/login/?target=${pathname}`);
+      const fullPath = pathname + window.location.search;
+      router.push(`/login/?target=${encodeURIComponent(fullPath)}`);
     }
   }, [user, pathname, router]);
 
