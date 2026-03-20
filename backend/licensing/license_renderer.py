@@ -1,16 +1,16 @@
 from __future__ import annotations
-
+from functools import cache
 from dataclasses import dataclass
 from pathlib import Path
+from typing import NamedTuple
 
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
-from lxml import etree
+
 import cairosvg
 import logging
-
-from io import BytesIO
-import pikepdf
+import textwrap
+from lxml import etree
 
 logger = logging.getLogger(__name__)
 
@@ -18,81 +18,132 @@ SVG_NS = "http://www.w3.org/2000/svg"
 XML_NS = "http://www.w3.org/XML/1998/namespace"
 NS = {"svg": SVG_NS}
 
-DEFAULT_INFO_LABEL_ID = "text4"
 
-_BACK_PDF_CACHE: bytes | None = None
-
+class _AnchorInfo(NamedTuple):
+    x: float
+    y: float
+    style: str
+    transform: str
+    anchor_xpath: str
 
 @dataclass(frozen=True)
 class RenderRequest:
     template_svg_path: Path
-    lines_info: list[str]
-    info_label_id: str = DEFAULT_INFO_LABEL_ID
+    lines: list[str]
+
+    placeholder_key: str = "text_placeholder"
+    box_id: str = "info_box"
+    line_height: float = 20.18522
 
 
 class LicenseCardRenderer:
     def render_pdf_bytes(self, req: RenderRequest) -> bytes:
-        # page 1: front (modified)
-        front_svg_bytes = self._render_svg_bytes(req)
-        front_pdf = cairosvg.svg2pdf(bytestring=front_svg_bytes)
-
-        # page 2: back (static)
-        back_pdf = _get_back_pdf_bytes()
-
-        return _merge_two_single_page_pdfs(front_pdf, back_pdf)
+        svg_bytes = self._render_svg_bytes(req)
+        return cairosvg.svg2pdf(bytestring=svg_bytes)
 
     def _render_svg_bytes(self, req: RenderRequest) -> bytes:
-        if len(req.lines_info) != 3:
-            raise ValueError("lines_info must contain exactly 3 strings")
+        if not req.lines:
+            raise ValueError("RenderRequest.lines must not be empty")
 
-        # This is added here to ensure compatibility with linux fonts
-        svg = req.template_svg_path.read_text(encoding="utf-8")
-        svg = svg.replace("font-family:'Segoe UI'", "font-family:'Noto Sans Light'")
+        template_bytes, anchor = _get_cached_template_and_anchor(req.template_svg_path, req.placeholder_key)
+        root = etree.fromstring(template_bytes)
 
-        root = etree.fromstring(svg.encode("utf-8"))
+        anchor_nodes = root.xpath(anchor.anchor_xpath)
+        if not anchor_nodes:
+            raise ValueError("Anchor node not found (cache mismatch?)")
+        anchor_node = anchor_nodes[0]
 
-        self._add_info_box_above_label(root, label_id=req.info_label_id, lines_info=req.lines_info)
+        box = etree.Element(f"{{{SVG_NS}}}text", id=req.box_id)
+        box.set(f"{{{XML_NS}}}space", "preserve")
 
-        return etree.tostring(root, xml_declaration=True, encoding="UTF-8", pretty_print=True)
+        if anchor.transform:
+            box.set("transform", anchor.transform)
 
-    def _add_info_box_above_label(self, root, *, label_id: str, lines_info: list[str]) -> None:
-        label = root.xpath(f"//svg:text[@id='{label_id}']", namespaces=NS)
-        if not label:
-            raise ValueError(f"Missing <text id='{label_id}'>")
-        label = label[0]
+        style = anchor.style
+        if style and not style.endswith(";"):
+            style += ";"
+        style += "text-anchor:middle;text-align:center;"
 
-        ts = label.xpath(".//svg:tspan", namespaces=NS)
-        if not ts:
-            raise ValueError(f"<text id='{label_id}'> has no <tspan>")
-        ts = ts[0]
+        lines = [ln.strip() for ln in req.lines if ln and ln.strip()]
+        for i, line in enumerate(lines):
+            tspan = etree.SubElement(box, f"{{{SVG_NS}}}tspan")
+            tspan.set("x", str(anchor.x))
+            tspan.set("y", str(anchor.y + i * req.line_height))
+            if style:
+                tspan.set("style", style)
+            tspan.text = line
 
-        box_id = "info_box"
-        if root.xpath(f"//*[@id='{box_id}']"):
-            raise ValueError(f"ID already exists: {box_id}")
+        parent = anchor_node.getparent()
+        if parent is None:
+            raise ValueError("Anchor <text> has no parent")
+        parent.replace(anchor_node, box)
 
-        box_text = etree.Element(f"{{{SVG_NS}}}text", id=box_id)
-        box_text.set(f"{{{XML_NS}}}space", "preserve")
+        return etree.tostring(root, encoding="utf-8")
 
-        orig_transform = label.get("transform") or ""
-        box_text.set("transform", f"{orig_transform} translate(0,-90)".strip())
+def _get_cached_template_and_anchor(template_path: Path, placeholder_key: str) -> tuple[bytes, _AnchorInfo]:
+    return _get_cached_template_and_anchor_cached(str(template_path), placeholder_key)
 
-        x0 = float(ts.get("x") or label.get("x") or "0") + 125.0
-        y0 = float(ts.get("y") or label.get("y") or "0")
+@cache
+def _get_cached_template_and_anchor_cached(template_path_str: str, placeholder_key: str) -> tuple[bytes, _AnchorInfo]:
+    template_path = Path(template_path_str)
 
-        style = ts.get("style") or ""
-        style = (style + ";fill:#000000;font-size:12px;text-anchor:middle;text-align:center;").strip(";")
-        prefixes = ["Giltig t.o.m ", "Märkare nr. ", ""]
-        line_height = 14.0
+    svg = template_path.read_text(encoding="utf-8")
 
-        for i, (prefix, line) in enumerate(zip(prefixes, lines_info, strict=True)):
-            t = etree.SubElement(box_text, f"{{{SVG_NS}}}tspan")
-            t.set("x", str(x0))
-            t.set("y", str(y0 + i * line_height))
-            t.set("style", style)
-            t.text = prefix + line
+    # Font replacements for Linux compatibility
+    svg = svg.replace("font-family:'Segoe UI'", "font-family:'Noto Sans'")
+    svg = svg.replace("font-family:'Segoe UI Symbol'", "font-family:'Noto Sans'")
 
-        parent = label.getparent()
-        parent.insert(parent.index(label), box_text)
+    token = "{{ " + placeholder_key + " }}"
+    root = etree.fromstring(svg.encode("utf-8"))
+
+    # Find the <text> node that contains the placeholder somewhere inside.
+    anchor = None
+    for text_node in root.xpath("//svg:text", namespaces=NS):
+        blob = "".join(text_node.itertext())
+        if token in blob:
+            anchor = text_node
+            break
+    if anchor is None:
+        raise ValueError(f"Could not find <text> containing placeholder '{{{{ {placeholder_key} }}}}' in {template_path}")
+
+    ref = None
+    for tspan in anchor.xpath(".//svg:tspan", namespaces=NS):
+        blob = "".join(tspan.itertext())
+        if token in blob:
+            ref = tspan
+            break
+
+    if ref is None:
+        tspans = anchor.xpath(".//svg:tspan", namespaces=NS)
+        ref = tspans[0] if tspans else anchor
+
+    def fattr(node: etree._Element, name: str) -> float:
+        v = node.get(name)
+        if not v:
+            return 0.0
+        try:
+            return float(v)
+        except ValueError:
+            return 0.0
+
+    x0 = fattr(ref, "x") or fattr(anchor, "x")
+    y0 = fattr(ref, "y") or fattr(anchor, "y")
+
+    style = (ref.get("style") or anchor.get("style") or "").strip()
+    transform = (anchor.get("transform") or "").strip()
+
+    anchor_xpath = root.getroottree().getpath(anchor)
+
+    template_bytes = etree.tostring(root, encoding="utf-8")
+    info = _AnchorInfo(
+        x=x0,
+        y=y0,
+        style=style,
+        transform=transform,
+        anchor_xpath=anchor_xpath,
+    )
+
+    return template_bytes, info
 
 def get_template_path(setting_name: str) -> Path:
     configured = getattr(settings, setting_name, None)
@@ -111,26 +162,36 @@ def get_template_path(setting_name: str) -> Path:
 
     return p
 
-def _merge_two_single_page_pdfs(front_pdf: bytes, back_pdf: bytes) -> bytes:
-    out = BytesIO()
-    with pikepdf.Pdf.open(BytesIO(front_pdf)) as f, pikepdf.Pdf.open(BytesIO(back_pdf)) as b:
-        merged = pikepdf.Pdf.new()
-        merged.pages.append(f.pages[0])
-        merged.pages.append(b.pages[0])
-        merged.save(out)
-    return out.getvalue()
+def split_into_two_lines_textwrap(text: str) -> tuple[str, str]:
+    # adjust width as needed based on template design and typical name lengths
+    width = 42
 
-def _get_back_pdf_bytes() -> bytes:
-    """
-    Add caching for the back-side of the pdf card. This works per-process.
-    """
-    global _BACK_PDF_CACHE
-    if _BACK_PDF_CACHE is not None:
-        return _BACK_PDF_CACHE
+    # normalize whitespace and trim
+    s = " ".join((text or "").split())
+    if not s:
+        return ("", "")
 
-    back_svg_path = get_template_path("LICENSING_CARD_TEMPLATE_BACK")
-    back_svg = back_svg_path.read_text(encoding="utf-8")
-    back_svg = back_svg.replace("font-family:'Segoe UI'", "font-family:'Noto Sans Light'")
+    # do not wrap if it already fits
+    if len(s) <= width:
+        return (s, "")
 
-    _BACK_PDF_CACHE = cairosvg.svg2pdf(bytestring=back_svg.encode("utf-8"))
-    return _BACK_PDF_CACHE
+    # wrap without breaking words if possible, but if the first word is too long, allow breaking it in the second pass
+    lines = textwrap.wrap(s, width=width,break_long_words=False, break_on_hyphens=False)
+    if lines and len(lines[0]) > width:
+        lines = textwrap.wrap(s, width=width, break_long_words=True, break_on_hyphens=False)
+
+    line1 = lines[0] if lines else ""
+    remainder = s[len(line1) :].lstrip()
+    if not remainder:
+        return (line1, "")
+
+    # default behavior (no suffix preservation)
+    return (line1, _truncate_with_dots(remainder, width))
+
+def _truncate_with_dots(s: str, max_len: int) -> str:
+    s = (s or "").strip()
+    if len(s) <= max_len:
+        return s
+    if max_len <= 1:
+        return "."
+    return s[: max_len - 1].rstrip() + "."

@@ -11,8 +11,6 @@ dependencies = [
     "docxcompose>=2.0.0",
     "docxtpl>=0.20.2",
     "gunicorn>=23.0.0",
-    "lxml",
-    "pikepdf>=10.2.0",
     "psycopg[c]>=3.2.11",
 ]
 

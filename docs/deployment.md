@@ -43,8 +43,7 @@ Some configuration options are supplied as environment variables using Docker Co
 | :----------------- | :------------------------------ | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | backend            | DJANGO_ALLOWED_HOSTS            | A CSV string that includes `backend` and any aliases from which the site should be accessible (`backend` must be included since it is used for internal routing within the Docker Compose container setup).                                                                  |
 | backend            | DJANGO_CSRF_TRUSTED_ORIGINS     | A CSV string that includes all origins from which the Django admin should be accessible.                                                                                                                                                                                     |
-| backend            | LICENSE_CARD_FILE               | A path (within the container) to the license card template file.                                                                                                                                                                                                             |
-| backend            | LICENSE_CARD_BACK_FILE          | A path (within the container) to the license card back template file.                                                                                                                                                                                                        |
+| backend            | LICENSE_CARD_FILE               | The path (within the container) to the license card template  file.                                                                                                                                                                                                             |
 | backend            | PERMIT_TEMPLATE_FILE            | A path (within the container) to the permit document template file-                                                                                                                                                                                                          |
 | backend            | DJANGO_EMAIL_BACKEND            | For production instances, use `django.core.mail.backends.smtp.EmailBackend` and for test instances you may use `django.core.mail.backends.console.EmailBackend`. See [django documentation](https://docs.djangoproject.com/en/6.0/topics/email/#email-backends) for details. |
 | backend            | DJANGO_EMAIL_HOST               | The SMTP host.                                                                                                                                                                                                                                                               |
@@ -56,9 +55,6 @@ Some configuration options are supplied as environment variables using Docker Co
 | backend            | LICENSING_EMAIL_SUBJECT         | A template string using the [django template language](https://docs.djangoproject.com/en/5.2/ref/templates/language/) where the variables `mnr` and `name` are available. The variable `name` contains the name of the receiving actor.                                      |
 | backend            | LICENSING_EMAIL_HTML_TEMPLATE   | (Optional) A path relative to the `DJANGO_TEMPLATES_DIR` from which to load the html email template.                                                                                                                                                                         |
 
-
-> **Note:** The `LICENSE_CARD_FILE` and `LICENSE_CARD_BACK_FILE` require you to configure Docker Compose to include the targeted template files. This can be done using the `volumes` option on the `backend` container.
-
 An example configuration for the above properties:
 
 ```yml
@@ -67,8 +63,7 @@ services:
     environment:
       DJANGO_ALLOWED_HOSTS: "backend, localhost, bird-ringing.deployment.example"
       DJANGO_CSRF_TRUSTED_ORIGINS: "https://bird-ringing.deployment.example"
-      LICENSE_CARD_FILE: /resources/templates/Licenskort_105x72,25mm_2025-12-11_1.svg
-      LICENSE_CARD_BACK_FILE: /resources/templates/Licenskort_105x72,25mm_2025-12-11_2.svg
+      LICENSE_CARD_FILE: /resources/Licenskort_för_ringmärkning-2026.svg
 ```
 
 ### Docker Options
@@ -91,8 +86,7 @@ services:
     environment:
       DJANGO_ALLOWED_HOSTS: "backend, localhost, bird-ringing.deployment.example"
       DJANGO_CSRF_TRUSTED_ORIGINS: "https://bird-ringing.deployment.example"
-      LICENSE_CARD_FILE: /resources/templates/Licenskort_105x72,25mm_2025-12-11_1.svg
-      LICENSE_CARD_BACK_FILE: /resources/templates/Licenskort_105x72,25mm_2025-12-11_2.svg
+      LICENSE_CARD_FILE: /resources/Licenskort_för_ringmärkning-2026.svg
 
   database:
     restart: always
@@ -194,8 +188,7 @@ services:
       POSTGRES_PORT: 5432
       DJANGO_ALLOWED_HOSTS: "backend, localhost, bird-ringing.deployment.example"
       DJANGO_CSRF_TRUSTED_ORIGINS: "https://bird-ringing.deployment.example"
-      LICENSE_CARD_FILE: /resources/templates/Licenskort_105x72,25mm_2025-12-11_1.svg
-      LICENSE_CARD_BACK_FILE: /resources/templates/Licenskort_105x72,25mm_2025-12-11_2.svg
+      LICENSE_CARD_FILE: /resources/Licenskort_för_ringmärkning-2026.svg
 
   database:
     restart: always
