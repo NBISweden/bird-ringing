@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional, Iterable
+from typing import Optional, Iterable, Callable
 
 from django.http import HttpResponse
 
@@ -18,6 +18,7 @@ from licensing.models import (
     Actor,
     LicenseDocument,
     DocumentTypeChoices,
+    LicenseRelation,
 )
 from licensing.serializers import json_serialize
 from licensing.license_renderer import (
@@ -31,6 +32,11 @@ from django.utils import translation
 from django.utils.text import slugify
 from django.utils.formats import date_format
 
+def skip_station_ringer_card(lic: License, actor: Actor, rel: LicenseRelation) -> bool:
+    return rel.role == LicenseRoleChoices.RINGER and actor.type == ActorTypeChoices.STATION
+
+ShouldSkipPolicy = Callable[[License, Actor, LicenseRelation], bool]
+
 def format_date(d) -> str:
     with translation.override("sv"):
         day_month = date_format(d, format="j F", use_l10n=True)
@@ -41,6 +47,9 @@ class NoLicense(Exception):
     pass
 
 class ActorNotOnLicense(Exception):
+    pass
+
+class CardCreationSkipped(Exception):
     pass
 
 @dataclass(frozen=True)
@@ -172,6 +181,7 @@ class LicenseCardService:
         created_by,
         updated_by,
         allowed_roles: Iterable[int] = (LicenseRoleChoices.RINGER, LicenseRoleChoices.ASSOCIATE_RINGER),
+        should_skip: ShouldSkipPolicy | None = None,
     ) -> LicenseDocument:
         """
         Returns the current LicenseDocument for this actor and license.
@@ -183,6 +193,9 @@ class LicenseCardService:
             actor=actor,
             allowed_roles=allowed_roles,
         )
+
+        if should_skip is not None and should_skip(lic, actor, rel):
+            raise CardCreationSkipped("License cards are not created for station ringers.")
 
         payload = self._build_fingerprint_payload(lic=lic, actor=actor, rel=rel)
         fp = self._fingerprint(payload)
@@ -226,6 +239,7 @@ class LicenseCardService:
         created_by,
         updated_by,
         allowed_roles: Iterable[int] = (LicenseRoleChoices.RINGER, LicenseRoleChoices.ASSOCIATE_RINGER),
+        should_skip: ShouldSkipPolicy | None = None,
     ) -> list[LicenseDocument]:
         """
         Batch get-or-create license card documents for all ringers/associate ringers on each provided license.
@@ -241,12 +255,16 @@ class LicenseCardService:
                 raise ValueError(f"No ringers/associate ringers on license for mnr {lic.sequence.mnr}.")
 
             for rel in relations:
+                if should_skip is not None and should_skip(lic, rel.actor, rel):
+                    continue
+
                 doc = self.get_or_create_license_card_document(
                     lic=lic,
                     actor=rel.actor,
                     created_by=created_by,
                     updated_by=updated_by,
                     allowed_roles=allowed_roles,
+                    should_skip=should_skip,
                 )
                 docs.append(doc)
 
