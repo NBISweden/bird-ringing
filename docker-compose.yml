@@ -34,6 +34,7 @@ services:
         condition: service_completed_successfully
 
   frontend:
+    image: ghcr.io/nbisweden/bird-ringing-frontend:${TAG:-latest}
     build:
       context: ./frontend
       dockerfile: ../Dockerfile.frontend
@@ -50,7 +51,8 @@ services:
         condition: service_healthy
 
   backend-init:
-    build:
+    image: &backund-image ghcr.io/nbisweden/bird-ringing-backend:${TAG:-latest}
+    build: &backend-build
       context: ./backend
       dockerfile: ../Dockerfile.backend
       target: prod
@@ -70,13 +72,8 @@ services:
       - django-secret-key
 
   backend:
-    build:
-      context: ./backend
-      dockerfile: ../Dockerfile.backend
-      target: prod
-      args:
-        BUILD_ID: "${BUILD_ID:-6000:6000}"
-        RUNTIME_ID: "${RUNTIME_ID:-6001:6001}"
+    image: *backund-image
+    build: *backend-build
     environment:
       POSTGRES_USER: db_user
       SERVICE_MODE: production
@@ -107,6 +104,7 @@ services:
       - django-email-password
 
   docx2pdf:
+    image: ghcr.io/nbisweden/bird-ringing-docx2pdf:${TAG:-latest}
     build:
       context: ./docx2pdf
       dockerfile: ../Dockerfile.docx2pdf
