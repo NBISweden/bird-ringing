@@ -8,7 +8,7 @@ The following table contains the required files with their id, description and a
 |:------- | :-------- | :---------- |
 | Artlista | `/bird-ringing-data/Artlista.csv` | A list of species entries. |
 | Maerkare | `/bird-ringing-data/Maerkare.csv` | A list of ringers, stations and affiliate ringers. |
-| MarkAss | `/bird-ringing-data/MarkAss.csv` | A list of associate ringers. |
+| Medhj | `/bird-ringing-data/Medhj.csv` | A list of associate ringers. |
 | MarkAssYr | `/bird-ringing-data/MarkAssYr.csv` | A list of years of activity for associate ringers. |
 | Tillstand | `/bird-ringing-data/Tillstand.csv` | A table describing permissions assigned to a specific license. |
 | TillstProp | `/bird-ringing-data/TillstProp.csv` | A table describing permission properties to be used when describing a permission. |
@@ -61,8 +61,8 @@ Maerkare is a table combining license and main ringer information.
 | Trap | conditional | Indicates if the license has the Trap permission. Only if `--include_legacy_permissions` is included in `load_data`. |
 
 
-## MarkAss
-MarkAss is a table of associate ringers, name and relation information.
+## Medhj
+Medhj is a table of associate ringers, name and relation information.
 
 | Column | Required | Description |
 | :----- | :------- | :---------- |

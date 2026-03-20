@@ -594,7 +594,7 @@ class TestLoadData(TestCase):
             ],
             "TillstTyp": self.permit_type_data,
             "TillstProp": self.permit_property_data,
-            "MarkAss": self.associate_ringer_data,
+            "Medhj": self.associate_ringer_data,
             "MarkAssYr": self.associate_ringer_year_data,
             "Tillstand": self.permit_data,
             **data,

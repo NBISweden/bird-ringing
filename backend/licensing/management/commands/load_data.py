@@ -100,7 +100,7 @@ class Command(BaseCommand):
                 self.permit_type_map,
                 self.permit_property_map
             )
-            associate_ringer_map = self.load_associate_ringers(loader.get_dict_list("MarkAss"))
+            associate_ringer_map = self.load_associate_ringers(loader.get_dict_list("Medhj"))
             relations = self.get_relations(ringer_license_entries, loader.get_dict_list("MarkAssYr"))
             self.load_relations({**ringer_map, **associate_ringer_map}, relations)
             for sequence_import in models.LicenseSequenceImport.objects.all():
