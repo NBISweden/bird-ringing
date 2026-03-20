@@ -45,7 +45,6 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ github.repository }}-frontend
           tags: &tags |
             type=ref,event=branch
-            type=ref,event=pr
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
