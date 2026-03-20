@@ -221,7 +221,7 @@ export function LicenceView({ license, mnr }: LicenceViewProps) {
                   <div className="col-12 col-md-2 fw-semibold text-capitalize">
                     {doc.type}
                   </div>
-                  <div className="col-12 col-md-3 text-nowrap">
+                  <div className="col-12 col-md-3">
                     <i className="bi bi-person text-primary me-1" />
                     <Link href={`/actors/entry?entryId=${doc.actor_id}`}>
                       {doc.actor}
@@ -265,7 +265,7 @@ export function LicenceView({ license, mnr }: LicenceViewProps) {
                   <div className="col-12 col-md-2 fw-semibold text-capitalize">
                     {item.type}
                   </div>
-                  <div className="col-12 col-md-3 text-nowrap">
+                  <div className="col-12 col-md-3">
                     <i className="bi bi-person text-primary me-1" />
                     <Link href={`/actors/entry?entryId=${item.actor_id}`}>
                       {item.actor}
