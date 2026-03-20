@@ -1,5 +1,5 @@
 from __future__ import annotations
-
+from functools import cache
 from dataclasses import dataclass
 from pathlib import Path
 from typing import NamedTuple
@@ -25,10 +25,6 @@ class _AnchorInfo(NamedTuple):
     style: str
     transform: str
     anchor_xpath: str
-
-# to be used as a cache for parsed templates and anchor info in an attempt for speed up
-_TEMPLATE_CACHE: dict[tuple[str, str], tuple[bytes, _AnchorInfo]] = {}
-
 
 @dataclass(frozen=True)
 class RenderRequest:
@@ -85,10 +81,11 @@ class LicenseCardRenderer:
         return etree.tostring(root, encoding="utf-8")
 
 def _get_cached_template_and_anchor(template_path: Path, placeholder_key: str) -> tuple[bytes, _AnchorInfo]:
-    cache_key = (str(template_path), placeholder_key)
-    cached = _TEMPLATE_CACHE.get(cache_key)
-    if cached is not None:
-        return cached
+    return _get_cached_template_and_anchor_cached(str(template_path), placeholder_key)
+
+@cache
+def _get_cached_template_and_anchor_cached(template_path_str: str, placeholder_key: str) -> tuple[bytes, _AnchorInfo]:
+    template_path = Path(template_path_str)
 
     svg = template_path.read_text(encoding="utf-8")
 
@@ -146,7 +143,6 @@ def _get_cached_template_and_anchor(template_path: Path, placeholder_key: str) -
         anchor_xpath=anchor_xpath,
     )
 
-    _TEMPLATE_CACHE[cache_key] = (template_bytes, info)
     return template_bytes, info
 
 def get_template_path(setting_name: str) -> Path:
