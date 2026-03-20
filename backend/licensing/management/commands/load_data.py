@@ -8,6 +8,7 @@ import csv
 import logging
 import re
 from dataclasses import dataclass
+from licensing.data_loading_validation import get_collection_validator
 
 
 logger = logging.getLogger(__name__)
@@ -52,162 +53,6 @@ def log_action(func):
     return _func
 
 
-class RowValidator:
-    required_columns = set()
-
-    def get_errors(self, row):
-        missing_columns = self.get_missing_columns(row, self.required_columns)
-
-        return [
-            f"Missing column: {column}."
-            for column in missing_columns
-        ]
-    
-    def get_references(self, row):
-        return []
-    
-    def get_required_references(self, row):
-        return []
-    
-    def get_missing_columns(self, row, columns):
-        return set(columns) - set(row.keys())
-
-
-class ArtlistaRowValidator(RowValidator):
-    required_columns = {
-        "SVnamn",
-        "VetKod",
-        "VetNamn"
-    }
-
-    def get_references(self, row):
-        return [("species", row["VetKod"])]
-
-
-class MaerkareRowValidator(RowValidator):
-    required_columns = {
-        "Mnr",
-        "PriSta",
-    }
-
-    def get_references(self, row):
-        return [("mnr", row["Mnr"])]
-    
-    def get_required_references(self, row):
-        return [
-            (ref, ("mnr", row[ref]))
-            for ref in ["AdrMnr", "AssMnr1", "AssMnr2", "AssMnr3"]
-            if ref in row
-        ]
-
-
-class MarkAssRowValidator(RowValidator):
-    required_columns = {
-        "ENamn",
-        "FNamn",
-        "Mednr",
-        "Mnr",
-    }
-
-    def get_references(self, row):
-        return [("markass", row["Mnr"], row["Mednr"])]
-
-    def get_required_references(self, row):
-        return [("Mnr", ("mnr", row["Mnr"]))]
-
-
-class MarkAssYrRowValidator(RowValidator):
-    required_columns = {
-        "Ar",
-        "Mednr",
-        "Mnr",
-    }
-
-    def get_required_references(self, row):
-        return [
-            ("Mnr", ("mnr", row["Mnr"])),
-            (("Mnr", "Mednr"), ("markass", row["Mnr"], row["Mednr"]))
-        ]
-
-
-class TillstandRowValidator(RowValidator):
-    required_columns = {
-        "license_mnr",
-        "type_code",
-    }
-
-    def get_required_references(self, row):
-        species_refs = [
-            ("species_codes", ("species", code))
-            for code in row.get("species_codes").split(";")
-        ]
-        property_refs = [
-            ("property_codes", ("permission_property", code))
-            for code in row.get("property_codes").split(";")
-        ]
-        return [
-            ("license_mnr", ("mnr", row["license_mnr"])),
-            *species_refs,
-            *property_refs,
-        ]
-
-
-class TillstPropRowValidator(RowValidator):
-    required_columns = {
-        "name",
-        "property_code",
-    }
-
-    def get_references(self, row):
-        return [("permission_property", row["property_code"])]
-
-    def get_required_references(self, row):
-        return [
-            *(
-                [("related_type_code", ("permission_type", row["related_type_code"]))]
-                if "related_type_code" in row else []
-            ),
-        ]
-
-
-class TillstTypRowValidator(RowValidator):
-    required_columns = {
-        "name",
-        "type_code",
-    }
-
-    def get_references(self, row):
-        return [("permission_type", row["type_code"])]
-
-
-class CollectionValidator:
-    def __init__(self, table_validators):
-        self._table_validators = table_validators
-    
-    def get_errors(self, tables):
-        errors = []
-        references = set()
-        required_references = []
-        for (key, validator) in self._table_validators.items():
-            table = tables[key]
-            for index, entry in enumerate(table):
-                errors.extend([
-                    (key, index, error)
-                    for error in validator.get_errors(entry)
-                ])
-                references.update(validator.get_references(entry))
-                required_references.extend([
-                    (key, index, reference)
-                    for reference in validator.get_required_references(entry)
-                ])
-
-        for (key, index, (context, reference)) in required_references:
-            if reference not in references:
-                errors.append((key, index, f"Missing reference {reference} for {context}."))
-
-        return errors
-
-
 class Command(BaseCommand):
     help = "Load data from CSV"
 
@@ -235,20 +80,14 @@ class Command(BaseCommand):
         )
         self.current_year = options.get("current_year")
 
-        validator = CollectionValidator({
-            "Artlista": ArtlistaRowValidator(),
-            "Maerkare": MaerkareRowValidator(),
-            "MarkAss": MarkAssRowValidator(),
-            "MarkAssYr": MarkAssYrRowValidator(),
-            "Tillstand": TillstandRowValidator(),
-            "TillstProp": TillstPropRowValidator(),
-            "TillstTyp": TillstTypRowValidator(),
-        })
+        validator = get_collection_validator()
 
-        errors = validator.get_errors(loader)
-        for (key, index, error) in errors:
-            print(f"Error in {key} on line {index}: {error}")
-
+        if validator is not None:
+            errors = validator.get_errors(loader)
+            for (key, index, column, error) in errors:
+                print(f"Error in {key} on line {index} in column {column}: {error}")
+            if len(errors) > 0:
+                exit()
         exit()
 
         # default skip legacy permissions unless explicitly included (can be refactored later)
