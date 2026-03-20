@@ -55,8 +55,6 @@ Some configuration options are supplied as environment variables using Docker Co
 | backend            | LICENSING_EMAIL_SUBJECT         | A template string using the [django template language](https://docs.djangoproject.com/en/5.2/ref/templates/language/) where the variables `mnr` and `name` are available. The variable `name` contains the name of the receiving actor.                                      |
 | backend            | LICENSING_EMAIL_HTML_TEMPLATE   | (Optional) A path relative to the `DJANGO_TEMPLATES_DIR` from which to load the html email template.                                                                                                                                                                         |
 
-> **Note:** The `LICENSE_CARD_FILE` requires you to configure Docker Compose to include the targeted template file. This can be done using the `volumes` option on the `backend` container.
-
 An example configuration for the above properties:
 
 ```yml
@@ -65,9 +63,7 @@ services:
     environment:
       DJANGO_ALLOWED_HOSTS: "backend, localhost, bird-ringing.deployment.example"
       DJANGO_CSRF_TRUSTED_ORIGINS: "https://bird-ringing.deployment.example"
-      LICENSE_CARD_FILE: /templates/Licenskort_105x72,25mm_2025-12-11_1.svg
-    volumes:
-      - ./resources/templates:/templates:ro
+      LICENSE_CARD_FILE: /resources/Licenskort_för_ringmärkning-2026.svg
 ```
 
 ### Docker Options
@@ -90,9 +86,7 @@ services:
     environment:
       DJANGO_ALLOWED_HOSTS: "backend, localhost, bird-ringing.deployment.example"
       DJANGO_CSRF_TRUSTED_ORIGINS: "https://bird-ringing.deployment.example"
-      LICENSE_CARD_FILE: /templates/Licenskort_105x72,25mm_2025-12-11_1.svg
-    volumes:
-      - ./resources/templates:/templates:ro
+      LICENSE_CARD_FILE: /resources/Licenskort_för_ringmärkning-2026.svg
 
   database:
     restart: always
@@ -194,9 +188,7 @@ services:
       POSTGRES_PORT: 5432
       DJANGO_ALLOWED_HOSTS: "backend, localhost, bird-ringing.deployment.example"
       DJANGO_CSRF_TRUSTED_ORIGINS: "https://bird-ringing.deployment.example"
-      LICENSE_CARD_FILE: /templates/Licenskort_105x72,25mm_2025-12-11_1.svg
-    volumes:
-      - ./resources/templates:/templates:ro
+      LICENSE_CARD_FILE: /resources/Licenskort_för_ringmärkning-2026.svg
 
   database:
     restart: always
