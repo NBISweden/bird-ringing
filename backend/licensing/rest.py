@@ -912,6 +912,9 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
                     status=400,
                 )
 
+            if include_card and not filtered_pairs_for_individual and filtered_pairs_for_bundle:
+                return Response({"detail": "Selected ringers are skipped by card policy."}, status=400)
+
             notify_ringer = request.query_params.get("notify_ringer") is not None
 
             bundle_messages: list[tuple[License, Actor, EmailMessage]] = []
