@@ -100,7 +100,7 @@ class Command(BaseCommand):
                 self.permit_type_map,
                 self.permit_property_map
             )
-            associate_ringer_map = self.load_associate_ringers(loader.get_dict_list("MarkAss"))
+            associate_ringer_map = self.load_associate_ringers(loader.get_dict_list("Medhj"))
             relations = self.get_relations(ringer_license_entries, loader.get_dict_list("MarkAssYr"))
             self.load_relations({**ringer_map, **associate_ringer_map}, relations)
             for sequence_import in models.LicenseSequenceImport.objects.all():
@@ -282,6 +282,7 @@ class Command(BaseCommand):
         associate_ringer_map = {
             self._get_associate_ringer_key(associate_ringer_data): self.load_associate_ringer(associate_ringer_data)
             for associate_ringer_data in associate_ringer_entries
+            if associate_ringer_data.get("Role", "A") == "A"
         }
         return associate_ringer_map
 
@@ -367,6 +368,7 @@ class Command(BaseCommand):
         birth_info = self._parse_birth_date_or_year(associate_ringer_data.get("Fyr"))
         first_name = associate_ringer_data["FNamn"]
         last_name = associate_ringer_data["ENamn"]
+        email = associate_ringer_data.get("E-post", "")
         sex = {
             "F": models.SexChoices.FEMALE,
             "M": models.SexChoices.MALE,
@@ -381,6 +383,7 @@ class Command(BaseCommand):
             first_name=first_name,
             last_name=last_name,
             sex=sex,
+            email=email,
             description=associate_ringer_data.get("Fritext", ""),
         )
         return actor.item

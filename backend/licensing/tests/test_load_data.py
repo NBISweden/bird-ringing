@@ -111,10 +111,12 @@ class TestLoadData(TestCase):
                 "FNamn": f"associate-ringer-fnamn-{index}",
                 "ENamn": f"associate-ringer-enamn-{index}",
                 "Fritext": f"associate-ringer-{index}-fritext",
+                "E-post": f"ringer-{index}@ringer.local",
+                "Role": ["O", "R"][index % 2] if index >= 10 else "A",
                 **self._dict_if_value("Fyr", years[index % len(years)]),
                 **self._dict_if_value("Sex", sex[index % len(sex)]),
             }
-            for index in range(1, 10)
+            for index in range(1, 16)
         ]
         associate_ringer_years = ["<97", "1999", "2015", "2025"]
 
@@ -126,6 +128,7 @@ class TestLoadData(TestCase):
             }
             for associate_ringer in self.associate_ringer_data
             for year in associate_ringer_years
+            if associate_ringer["Role"] == "A"
         ]
     
     def test_load_species_data(self):
@@ -285,8 +288,9 @@ class TestLoadData(TestCase):
                 for r in models.Actor.objects.all().order_by("id")
             ],
             [
-                (r['FNamn'], r['ENamn'])
+                (r["FNamn"], r["ENamn"])
                 for r in self.associate_ringer_data
+                if r["Role"] == "A"
             ]
         )
     
@@ -590,7 +594,7 @@ class TestLoadData(TestCase):
             ],
             "TillstTyp": self.permit_type_data,
             "TillstProp": self.permit_property_data,
-            "MarkAss": self.associate_ringer_data,
+            "Medhj": self.associate_ringer_data,
             "MarkAssYr": self.associate_ringer_year_data,
             "Tillstand": self.permit_data,
             **data,
