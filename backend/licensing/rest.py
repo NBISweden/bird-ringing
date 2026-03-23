@@ -12,6 +12,8 @@ from licensing.license_card_service import (
     LicenseCardService,
     NoLicense as CardNoLicense,
     ActorNotOnLicense as CardActorNotOnLicense,
+    skip_station_ringer_card,
+    CardCreationSkipped,
 )
 from licensing.permit_service import (
     PermitService,
@@ -702,7 +704,10 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
                 actor=actor,
                 created_by=request.user,
                 updated_by=request.user,
+                should_skip=skip_station_ringer_card,
             )
+        except CardCreationSkipped as e:
+            return Response({"detail": str(e)}, status=400)
         except CardNoLicense as e:
             return Response({"detail": str(e)}, status=404)
         except CardActorNotOnLicense as e:
@@ -798,6 +803,7 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
                 created_by=request.user,
                 updated_by=request.user,
                 allowed_roles=(LicenseRoleChoices.RINGER, LicenseRoleChoices.ASSOCIATE_RINGER),
+                should_skip=skip_station_ringer_card,
             )
         except CardNoLicense as e:
             return Response({"detail": str(e)}, status=404)
@@ -825,9 +831,16 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
 
         # Always build bundle messages first (validation), then send actor mails, then send bundles.
         try:
-            lic_rel_pairs = list(get_flattened_license_and_relations(licenses))
+            # For bundle e-mails: include ALL relations (including station ringer),
+            # because the bundle is sent to the ringer and should still go out.
+            lic_rel_pairs_for_bundle = list(get_flattened_license_and_relations(licenses))
+
+            # For individual e-mails: when include_card=True, skip station ringers
+            # (because we don't create cards for station ringers).
+            lic_rel_pairs_for_individual = list(get_flattened_license_and_relations(licenses, should_skip=skip_station_ringer_card if include_card else None))
+
             bundle_messages = _build_ringer_bundle_messages(
-                lic_rel_pairs=lic_rel_pairs,
+                lic_rel_pairs=lic_rel_pairs_for_bundle,
                 include_card=include_card,
                 include_permit=include_permit,
             )
@@ -836,7 +849,7 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
 
         resp = _send_license_emails_for_relations(
             request=request,
-            lic_rel_iter=iter(lic_rel_pairs),
+            lic_rel_iter=iter(lic_rel_pairs_for_individual),
             include_card=include_card,
             include_permit=include_permit,
         )
@@ -880,10 +893,18 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
             return Response({"detail": "No current license found."}, status=404)
 
         try:
-            all_pairs = list(get_flattened_license_and_relations([license])) # reuse existing helper
-            filtered_pairs = [(lic, rel) for (lic, rel) in all_pairs if rel.actor.id in actor_id_set]
+            all_pairs_for_bundle = list(get_flattened_license_and_relations([license]))
 
-            found_ids = {rel.actor.id for (_lic, rel) in filtered_pairs}
+            all_pairs_for_individual = list(get_flattened_license_and_relations(
+                [license],
+                should_skip=skip_station_ringer_card if include_card else None,
+            ))
+
+            filtered_pairs_for_bundle = [(lic, rel) for (lic, rel) in all_pairs_for_bundle if rel.actor.id in actor_id_set]
+            filtered_pairs_for_individual = [(lic, rel) for (lic, rel) in all_pairs_for_individual if rel.actor.id in actor_id_set]
+
+            # Validate actor ids against the full license membership (bundle list has no skipping)
+            found_ids = {rel.actor.id for (_lic, rel) in filtered_pairs_for_bundle}
             missing = sorted(actor_id_set - found_ids)
             if missing:
                 return Response(
@@ -891,13 +912,16 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
                     status=400,
                 )
 
+            if include_card and not filtered_pairs_for_individual and filtered_pairs_for_bundle:
+                return Response({"detail": "Selected ringers are skipped by card policy."}, status=400)
+
             notify_ringer = request.query_params.get("notify_ringer") is not None
 
             bundle_messages: list[tuple[License, Actor, EmailMessage]] = []
             if notify_ringer:
                 try:
                     bundle_messages = _build_ringer_bundle_messages(
-                        lic_rel_pairs=filtered_pairs,
+                        lic_rel_pairs=filtered_pairs_for_bundle,
                         include_card=include_card,
                         include_permit=include_permit,
                     )
@@ -906,7 +930,7 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
 
             resp = _send_license_emails_for_relations(
                 request=request,
-                lic_rel_iter=iter(filtered_pairs),
+                lic_rel_iter=iter(filtered_pairs_for_individual),
                 include_card=include_card,
                 include_permit=include_permit,
             )

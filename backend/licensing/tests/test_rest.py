@@ -48,8 +48,8 @@ class _EmailTestBase(TestCase):
             Actor.objects.create(
                 full_name=name,
                 email=f"{name.lower()}@example.com",
-                sex=SexChoices.NOT_APPLICABLE,
-                type=ActorTypeChoices.STATION,
+                sex=SexChoices.UNDISCLOSED,
+                type=ActorTypeChoices.PERSON,
                 created_by=self.user_with_access,
                 updated_by=self.user_with_access
             )
@@ -384,6 +384,50 @@ class LicenseDocumentEmailTests(_EmailTestBase):
                     CommunicationStatusChoices.SENT
                 )
 
+    def test_batch_include_card_skips_station_ringer_individual_but_sends_bundle(self):
+        self._with_access()
+        self._add_license_documents(self.actors, self.licenses)
+
+        # Pick one license and make its ringer a STATION
+        license = next(lic for lic in self.licenses if lic.sequence.mnr == "0002")
+        ringer_rel = license.actors.filter(role=LicenseRoleChoices.RINGER).select_related("actor").get()
+        ringer_actor = ringer_rel.actor
+        ringer_actor.type = ActorTypeChoices.STATION
+        ringer_actor.sex = SexChoices.NOT_APPLICABLE
+        ringer_actor.save(update_fields=["type", "sex"])
+
+        url = self._send_mail_url(["0002"], include_card=True)
+        resp = self.client.put(url)
+        self.assertEqual(resp.status_code, 200)
+
+        body = resp.json()
+        # License 0002 has two relations (ringer + associate)
+        # Individual emails should be 1 (associate only) if station ringer is skipped.
+        self.assertEqual(1, body["messages_sent"])
+        self.assertEqual([], body["failed_messages"])
+        self.assertEqual([], body["skipped_messages"])
+
+        # Bundle should still be sent
+        self.assertEqual(1, body["ringer_bundle_messages_sent"])
+
+        # Verify station ringer did NOT receive an individual email (PDF attachment),
+        # but did receive a bundle email (ZIP attachment)
+        bundle_suffix = "-helpers-documents.zip"
+        bundle_msgs = [
+            m for m in mail.outbox
+            if any(fn.endswith(bundle_suffix) for (fn, _data, _mime) in m.attachments)
+        ]
+        self.assertEqual(1, len(bundle_msgs))
+        self.assertEqual([ringer_actor.email], bundle_msgs[0].to)
+
+        individual_msgs = [
+            m for m in mail.outbox
+            if not any(fn.endswith(bundle_suffix) for (fn, _data, _mime) in m.attachments)
+        ]
+        # Only the associate should get an individual message in this request
+        self.assertEqual(1, len(individual_msgs))
+        self.assertNotEqual([ringer_actor.email], individual_msgs[0].to)
+
     def _send_mail_url(self, mnrs: list[str], include_card: bool = False, include_permit = False):
         params = [
             *(["include_card"] if include_card else []),
@@ -453,6 +497,30 @@ class LicenseDocumentEmailSelectedActorsTests(_EmailTestBase):
 
         self.assertEqual(resp.status_code, 400)
         self.assertEqual({"actor_ids": "actor_ids is required (comma-separated)."}, resp.json())
+
+    def test_selected_only_station_ringer_is_rejected_when_include_card(self):
+        self._with_access()
+        self._add_license_documents(self.actors, self.licenses)
+
+        license_obj = next(lic for lic in self.licenses if lic.sequence.mnr == "0002")
+
+        # Make the ringer on this license a STATION
+        ringer_rel = license_obj.actors.filter(role=LicenseRoleChoices.RINGER).select_related("actor").get()
+        ringer_actor = ringer_rel.actor
+        ringer_actor.type = ActorTypeChoices.STATION
+        ringer_actor.sex = SexChoices.NOT_APPLICABLE
+        ringer_actor.save(update_fields=["type", "sex"])
+
+        url = self._send_mail_url_for_actors(
+            mnr=license_obj.sequence.mnr,
+            actor_ids=[ringer_actor.id],
+            include_card=True,
+        )
+        with patch.object(LicenseSequenceViewSet, "get_queryset", self._plain_licensesequence_queryset):
+            resp = self.client.put(url)
+
+        self.assertEqual(resp.status_code, 400)
+        self.assertEqual({"detail": "Selected ringers are skipped by card policy."}, resp.json())
 
     def _send_mail_url_for_actors(self, *, mnr: str, actor_ids: list[int],
         include_card: bool = False,
@@ -611,6 +679,50 @@ class LicenseDocumentEmailNotifyRingerTests(_EmailTestBase):
 
         self.assertEqual(0, len(mail.outbox))
         self.assertEqual(0, LicenseCommunication.objects.filter(license=license_obj).count())
+
+    def test_notify_ringer_sends_bundle_to_station_ringer(self):
+        self._with_access()
+
+        license_obj = next(lic for lic in self.licenses if lic.sequence.mnr == "0002")
+        helper_actor = self.actors[2]
+
+        # Ensure helper has a card doc (bundle needs it)
+        card_service = LicenseCardService()
+        card_service.get_or_create_license_card_document(
+            lic=license_obj,
+            actor=helper_actor,
+            created_by=self.user_with_access,
+            updated_by=self.user_with_access
+        )
+
+        # Make ringer a STATION (but keep email)
+        ringer_rel = license_obj.actors.filter(role=LicenseRoleChoices.RINGER).select_related("actor").get()
+        ringer_actor = ringer_rel.actor
+        ringer_actor.type = ActorTypeChoices.STATION
+        ringer_actor.sex = SexChoices.NOT_APPLICABLE
+        ringer_actor.save(update_fields=["type", "sex"])
+
+        url = self._send_mail_url_for_actors(
+            mnr=license_obj.sequence.mnr,
+            actor_ids=[helper_actor.id],
+            include_card=True,
+            notify_ringer=True,
+        )
+
+        with patch.object(LicenseSequenceViewSet, "get_queryset", self._plain_licensesequence_queryset):
+            resp = self.client.put(url)
+
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual("sent", resp.json()["ringer_bundle_message"])
+
+        # Ensure the bundle went to the (station) ringer
+        bundle_suffix = "-helpers-documents.zip"
+        bundle_msgs = [
+            m for m in mail.outbox
+            if any(fn.endswith(bundle_suffix) for (fn, _data, _mime) in m.attachments)
+        ]
+        self.assertEqual(1, len(bundle_msgs))
+        self.assertEqual([ringer_actor.email], bundle_msgs[0].to)
 
     def _send_mail_url_for_actors(self, *, mnr: str, actor_ids: list[int], include_card: bool = False, include_permit: bool = False, notify_ringer: bool = False) -> str:
         params = [

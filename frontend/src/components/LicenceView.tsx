@@ -26,8 +26,15 @@ export function LicenceView({ license, mnr }: LicenceViewProps) {
   const [selectedActorIds, setSelectedActorIds] = useState(new Set<number>());
   const [notifyRinger, setNotifyRinger] = useState(false);
 
-  const isSelectableRole = (role: string) =>
-    role === "ringer" || role === "associate ringer";
+  const isSelectableRelation = (rel: LicenseInstance["actors"][number]) => {
+    const roleOk = rel.role === "ringer" || rel.role === "associate ringer";
+    if (!roleOk) return false;
+
+    // Do not allow selecting the ringer if the ringer is a station
+    if (rel.role === "ringer" && rel.actor.type === "station") return false;
+
+    return true;
+  };
 
   const hasSelectedAssociateRinger = license.actors.some(
     (rel) =>
@@ -126,7 +133,7 @@ export function LicenceView({ license, mnr }: LicenceViewProps) {
                     sendEmailForActorsAction(
                       mnr,
                       license.actors
-                        .filter((rel) => isSelectableRole(rel.role))
+                        .filter((rel) => isSelectableRelation(rel))
                         .filter((rel) => selectedActorIds.has(rel.actor.id))
                         .map((rel) => ({
                           id: rel.actor.id,
@@ -156,7 +163,7 @@ export function LicenceView({ license, mnr }: LicenceViewProps) {
                         ({rel.mednr})
                       </div>
                       <div className="col-2 col-md-2 d-flex justify-content-center">
-                        {isSelectableRole(rel.role) ? (
+                        {isSelectableRelation(rel) ? (
                           <input
                             className="form-check-input border border-dark"
                             type="checkbox"

@@ -1,8 +1,10 @@
-from typing import Iterable
+from typing import Iterable, Callable
 from licensing.models import (
     License,
     LicenseRoleChoices,
     DocumentTypeChoices,
+    Actor,
+    LicenseRelation,
 )
 from django.db.models import Q
 import urllib.request
@@ -10,6 +12,10 @@ import time
 import io
 import zipfile
 from django.conf import settings
+
+# A callable type for determining whether to skip license card creation for a given license/actor/relation.
+# This is redefined here to avoid circular imports between utils and license_card_service.
+ShouldSkipRelationPolicy = Callable[[License, Actor, LicenseRelation], bool]
 
 def zip_bytes_from_files(files: list[tuple[str, bytes]]) -> bytes:
     buf = io.BytesIO()
@@ -22,6 +28,7 @@ def zip_bytes_from_files(files: list[tuple[str, bytes]]) -> bytes:
 def get_flattened_license_and_relations(
     licenses: Iterable[License],
     allowed_roles: Iterable[int] = (LicenseRoleChoices.RINGER, LicenseRoleChoices.ASSOCIATE_RINGER),
+    should_skip: ShouldSkipRelationPolicy | None = None,
 ):
     for lic in licenses:
         relations = lic.actors.filter(role__in=list(allowed_roles)).select_related("actor")
@@ -29,6 +36,8 @@ def get_flattened_license_and_relations(
             raise ValueError(f"No ringers/associate ringers on license for mnr {lic.sequence.mnr}.")
         
         for relation in relations:
+            if should_skip is not None and should_skip(lic, relation.actor, relation):
+                continue
             yield (lic, relation)
 
 def docx_to_pdf_bytes(docx_bytes: bytes) -> bytes:
