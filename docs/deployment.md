@@ -136,7 +136,7 @@ In order to populate the service with data it is necessary to execute a manageme
 | :------------- | :----------------------------------------------------------------------------- |
 | Artlista.csv   | A table of species.                                                            |
 | Maerkare.csv   | A table of bird ringers combined with some license information.                |
-| MarkAss.csv    | A table of bird ringing associate ringers mapped to licenses.                  |
+| Medhj.csv      | A table of bird ringing associate ringers mapped to licenses.                  |
 | MarkAssYr.csv  | A table relating bird ringing associate ringers to licenses on specific years. |
 | TillstTyp.csv  | A table of permission types.                                                   |
 | TillstProp.csv | A table of permission properties.                                              |
