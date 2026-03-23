@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style type="text/css">
+        body {
+            font-family: Arial, sans-serif;
+        }
+        .container {
+            width: 80%;
+            margin: auto;
+        }        
+        .header, .footer {
+            background-color: #f8f8f8;
+            padding: 20px;
+            text-align: center;
+            color: #333;
+        }
+        .body-content {
+            margin: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h2>License {{mnr}} related to {{name|safe}} at {{date}}</h2>
+        </div>
+        <div class="body-content">
+            <p>Dear {{name|safe}},</p>
+            <p>This e-mail includes your license card.</p>
+            <ul>
+                {%for document_type, filename in attachments%}<li>{{document_type}}: {{filename}}</li>{%endfor%}
+            </ul>
+        </div>
+        <div class="footer">
+            <p>The Bird Ringing Experts</p>
+        </div>
+    </div>
+</body>
+
+</html>
