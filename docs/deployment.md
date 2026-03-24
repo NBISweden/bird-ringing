@@ -116,7 +116,7 @@ Before starting the service you can test your configuration by running the follo
 
 ```sh
 ./compose-prod.sh build
-./compose-prod.sh run --rm backend ./manage.py validate_settings
+./compose-prod.sh run --rm --no-deps backend ./manage.py validate_settings
 ```
 
 ## Starting the Service
