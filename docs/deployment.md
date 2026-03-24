@@ -96,6 +96,22 @@ services:
     restart: always
 ```
 
+A file tree, covering the configuration files, where the `docker-compose.yml` is located on the root level should look as follows:
+- docker-compose.yml
+- docker-compose.override.yml
+- resources:
+  - templates:
+    - email_template.html
+    - email_template.txt
+  - Licenskort_för_ringmärkning-2026.svg
+  - permit.docx
+- secrets:
+  - postgres-pass.txt
+  - db-admin-pass.txt
+  - db-user-pass.txt
+  - django-secret-key.txt
+  - django-email-password.txt
+
 ## Validating the configuration
 
 Before starting the service you can test your configuration by running the following script.
