@@ -68,7 +68,7 @@ To completely configure the service for your host, it is important to decide whi
 
 ### A Complete Example Config
 
-Using the file `docker-compose.override.yml`:
+A complete example configuration requires a `docker-compose.override.yml` file and a set of files following a structure described in this section.
 
 ```yml
 services:
@@ -84,7 +84,7 @@ services:
       DJANGO_CSRF_TRUSTED_ORIGINS: "https://bird-ringing.deployment.example"
       LICENSE_CARD_FILE: /resources/Licenskort_för_ringmärkning-2026.svg
       PERMIT_TEMPLATE_FILE: /resources/permit.docx
-      DJANGO_EMAIL_HOST_USER: 
+      DJANGO_EMAIL_HOST_USER: user
       DJANGO_EMAIL_HOST: email.example.com
       DJANGO_EMAIL_PORT: 465
       LICENSING_EMAIL_FROM_ADDR: user@email.example.com
@@ -96,11 +96,9 @@ services:
     restart: always
 ```
 
-A file tree, covering the configuration files, where the `docker-compose.yml` is located on the root level should look as follows:
-- docker-compose.yml
-- docker-compose.override.yml
-- resources:
-  - templates:
+The expected file structure for this configuration file will look as follows:
+- resources
+  - templates
     - email_template.html
     - email_template.txt
   - Licenskort_för_ringmärkning-2026.svg
@@ -211,7 +209,7 @@ services:
       DJANGO_CSRF_TRUSTED_ORIGINS: "https://bird-ringing.deployment.example"
       LICENSE_CARD_FILE: /resources/Licenskort_för_ringmärkning-2026.svg
       PERMIT_TEMPLATE_FILE: /resources/permit.docx
-      DJANGO_EMAIL_HOST_USER: 
+      DJANGO_EMAIL_HOST_USER: user
       DJANGO_EMAIL_HOST: email.example.com
       DJANGO_EMAIL_PORT: 465
       LICENSING_EMAIL_FROM_ADDR: user@email.example.com
