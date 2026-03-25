@@ -1,0 +1,119 @@
+FROM python:3.12-alpine AS base
+
+ARG BUILD_ID=1000:1000
+ARG RUNTIME_ID=1000:1000
+ARG UID=${BUILD_ID%:*}
+ARG GID=${BUILD_ID#*:}
+
+RUN --mount=type=cache,id=apk-cache,target=/var/cache/apk \
+    apk --cache-dir=/var/cache/apk add \
+	build-base \
+	ccache \
+	dumb-init \
+	libpq \
+	libpq-dev \
+	cairo \
+	fontconfig \
+	font-noto
+RUN fc-cache -f
+
+ENV HOME=/app
+ENV XDG_CACHE_HOME="$HOME/.cache"
+ENV UV_CACHE_DIR="$XDG_CACHE_HOME/uv"
+ENV PIP_CACHE_DIR="$XDG_CACHE_HOME/pip"
+ENV CCACHE_DIR="$XDG_CACHE_HOME/ccache"
+ENV CC="ccache cc" \
+    CXX="ccache c++"
+
+RUN install -d -o "$UID" -g "$GID" "$HOME"
+
+USER "$UID:$GID"
+
+WORKDIR "$HOME"
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
+ENV UV_LINK_MODE=copy
+
+RUN --mount=type=cache,id=pip-cache,uid="$UID",target="$PIP_CACHE_DIR" \
+	pip install uv
+
+ENV PATH="$HOME/.local/bin:$PATH"
+
+COPY --chown="$UID:$GID" docker-entrypoint.sh .
+
+ENTRYPOINT ["/usr/bin/dumb-init", "--"]
+
+CMD ["./docker-entrypoint.sh"]
+
+# ----
+
+## Production build stage
+FROM base AS prod-build
+
+RUN --mount=type=cache,id=uv-cache,uid="$UID",target="$UV_CACHE_DIR" \
+    --mount=type=cache,id=cc-cache,uid="$UID",target="$CCACHE_DIR" \
+    --mount=type=bind,source=uv.lock,target=uv.lock \
+    --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
+	uv sync --frozen --no-install-project
+
+COPY --chown="$UID:$GID" pyproject.toml .
+COPY --chown="$UID:$GID" uv.lock .
+COPY --chown="$UID:$GID" manage.py .
+COPY --chown="$UID:$GID" bird_ringing ./bird_ringing
+COPY --chown="$UID:$GID" licensing ./licensing
+
+RUN --mount=type=cache,id=uv-cache,uid="$UID",target="$UV_CACHE_DIR" \
+	uv sync --frozen
+
+# ----
+
+## Production stage
+FROM python:3.12-alpine AS prod
+
+ARG BUILD_ID=1000:1000
+ARG RUNTIME_ID=1000:1000
+ARG UID=${BUILD_ID%:*}
+ARG GID=${BUILD_ID#*:}
+
+RUN --mount=type=cache,id=apk-cache,target=/var/cache/apk \
+	apk --cache-dir=/var/cache/apk add \
+		cairo \
+		dumb-init \
+		font-noto \
+		fontconfig \
+		libpq
+
+ENV HOME=/app
+
+RUN install -d -o "$UID" -g "$GID" "$HOME" /vol
+VOLUME /vol
+
+RUN fc-cache -f
+
+USER "$UID:$GID"
+
+WORKDIR "$HOME"
+
+COPY --from=prod-build --chown="$UID:$GID" "$HOME" .
+
+ENV PATH="$HOME/.venv/bin:$PATH"
+
+# This creates the static files in "/vol"
+RUN python manage.py collectstatic
+
+USER "$RUNTIME_ID"
+
+ENTRYPOINT ["/usr/bin/dumb-init", "--"]
+
+CMD ["./docker-entrypoint.sh"]
+
+# ----
+
+## Development stage
+FROM base AS dev
+
+ENV PATH="$HOME/.venv/bin:$PATH"
+
+USER "$RUNTIME_ID"

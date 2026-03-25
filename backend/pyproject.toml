@@ -1,0 +1,28 @@
+[project]
+name = "bird_ringing"
+version = "0.1.0"
+description = "The bird ringing project"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "cairosvg",
+    "django>=5.2.7",
+    "djangorestframework>=3.16.1",
+    "docxcompose>=2.0.0",
+    "docxtpl>=0.20.2",
+    "gunicorn>=23.0.0",
+    "psycopg[c]>=3.2.11",
+]
+
+[tool.ruff]
+exclude = [
+    ".cache",
+    ".ruff_cache",
+    ".venv",
+    ".local",
+]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.14.10",
+]

@@ -1,0 +1,54 @@
+---
+title: System separation
+---
+
+flowchart LR
+    admin@{ shape: circle, label: "Admin" }
+    intent@{ shape: diamond, label: "Intent" }
+
+    subgraph descriptions["Descriptions"]
+        direction TB
+        admin_desc@{ shape: brace-r, label: "Admin is the ringer license administrator working with managing licenses"}
+        nrm_entrypoint_desc@{ shape: brace-r, label: "The NRM Bird Ringing Entrypoint is the old system and allows all of the current operations"}
+        nbis_data_desc@{ shape: brace-r, label: "NBIS Database primarily focuses on holding the data pushed from the old system while allowing updates to generated documents and communication status"}
+        nbis_entrypoint_desc@{ shape: brace-r, label: "The NBIS Bird Ringing Entrypoint is the new system and focuses primarily on communcation around licenses and generation of license documents"}
+    end
+
+    subgraph nrm_bird_ringing["NRM Bird Ringing (Legacy)"]
+        nrm_entrypoint["Entrypoint"]
+        nrm_data@{ shape: lin-cyl, label: "NRM Database" }
+    end
+
+    subgraph nbis_bird_ringing["NBIS Bird Ringing (New system)"]
+        nbis_entrypoint["Entrypoint"]
+        nbis_data@{ shape: lin-cyl, label: "NBIS Database" }
+    end
+
+    one_way_push@{ shape: lin-rect, label: "One way push of data" }
+
+    admin_desc -.- admin
+    nbis_data_desc -.- nbis_data
+    nbis_entrypoint_desc -.- nbis_entrypoint
+    nrm_entrypoint_desc -.- nrm_entrypoint
+
+    admin --> intent
+
+    intent -- "Update licenses" --> nrm_entrypoint
+    intent -- "Update actors" --> nrm_entrypoint
+    intent -- "Update other content" --> nrm_entrypoint
+
+    nrm_entrypoint -. "Perform change operations" .-> nrm_data
+    nrm_data -. "Show results" .-> nrm_entrypoint
+
+
+    intent -- "Communicate license information" --> nbis_entrypoint
+    intent -- "Send reminders" --> nbis_entrypoint
+    intent -- "Inspect licenses" --> nbis_entrypoint
+    intent -- "Inspect actors" --> nbis_entrypoint
+
+    nbis_entrypoint -. "Store generated license documents" .-> nbis_data
+    nbis_entrypoint -. "Store license communcation" .-> nbis_data
+    nbis_data -. "Show results" .-> nbis_entrypoint
+
+    nrm_data -. "Data was updated or period of time passed" .-> one_way_push
+    one_way_push -. "Data transformed to new data model" .-> nbis_data

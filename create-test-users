@@ -1,0 +1,45 @@
+#!/bin/sh -
+
+# Helper script to generate admin and user accounts for development ONLY
+
+# Create a superuser with username 'admin' and password 'test'
+./compose-dev.sh exec \
+    -e DJANGO_SUPERUSER_USERNAME=admin \
+    -e DJANGO_SUPERUSER_EMAIL=admin@example.com \
+    -e DJANGO_SUPERUSER_PASSWORD=test \
+    --interactive=false \
+    backend \
+    python manage.py createsuperuser --no-input
+
+# Create base groups
+./compose-dev.sh exec \
+    backend \
+    python manage.py create_base_groups
+
+# Create a normal user with username 'user' and password 'test'.
+# Add to 'Bird ringing experts' group
+./compose-dev.sh exec backend \
+  python manage.py shell -v 0 -c "from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Group
+
+User = get_user_model()
+u, created = User.objects.get_or_create(
+    username='user',
+    defaults={'email': 'user@example.com'},
+)
+if created:
+    u.set_password('test')
+    u.is_staff = False
+    u.is_superuser = False
+    u.save()
+    print(f'User {u.username} created successfully')
+else:
+    print(f'User {u.username} already exists')
+
+g = Group.objects.get(name='Bird ringing experts')
+if u.groups.filter(pk=g.pk).exists():
+    print(f'User {u.username} is already in group {g.name}')
+else:
+    u.groups.add(g)
+    print(f'Added user {u.username} to group {g.name}')
+"

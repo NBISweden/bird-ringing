@@ -1,0 +1,24 @@
+#!/bin/sh -
+
+# Helper script to fetch and load mock data for development ONLY
+
+dirPath=backend/mock_data/example
+
+mkdir -p "$dirPath" || exit 1
+
+wget -q -N -P "$dirPath" https://pdmnyberg.github.io/ui-examples/data/bird-ringing/legacy/br-ex-Artlista.csv
+wget -q -N -P "$dirPath" https://pdmnyberg.github.io/ui-examples/data/bird-ringing/legacy/br-ex-Maerkare.csv
+wget -q -N -P "$dirPath" https://pdmnyberg.github.io/ui-examples/data/bird-ringing/legacy/br-ex-Medhj.csv
+wget -q -N -P "$dirPath" https://pdmnyberg.github.io/ui-examples/data/bird-ringing/legacy/br-ex-MarkAssYr.csv
+
+wget -q -N -P "$dirPath" https://pdmnyberg.github.io/ui-examples/data/bird-ringing/legacy/br-ex-Tillstand.csv
+wget -q -N -P "$dirPath" https://pdmnyberg.github.io/ui-examples/data/bird-ringing/legacy/br-ex-TillstProp.csv
+wget -q -N -P "$dirPath" https://pdmnyberg.github.io/ui-examples/data/bird-ringing/legacy/br-ex-TillstTyp.csv
+
+./compose-dev.sh exec backend python manage.py load_data "$@"
+
+# Create a test DNR permit in the database
+nowDate="$(python3 -c 'import datetime; print(datetime.date.today().isoformat())')"
+fiveYearsAfter="$(python3 -c 'import datetime; d=datetime.date.today(); print(d.replace(year=d.year+5).isoformat())')"
+./compose-dev.sh exec backend python manage.py set_permit_dnr \
+  --dnr "DNR-TEST-0001" --starts-at "$nowDate" --ends-at "$fiveYearsAfter"

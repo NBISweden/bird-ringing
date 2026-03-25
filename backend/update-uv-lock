@@ -1,0 +1,26 @@
+#!/bin/sh -
+
+cp uv.lock uv.lock.old
+
+docker build \
+	--file ../Dockerfile.backend \
+	--target dev \
+	--tag backend-update-lock \
+	--build-arg RUNTIME_ID="$(id -u):$(id -g)" \
+	--build-arg BUILD_ID="$(id -u):$(id -g)" \
+	. &&
+docker run \
+	--rm \
+	--volume './:/app' \
+	--workdir /app \
+	backend-update-lock \
+	uv sync --upgrade
+
+if ! cmp -s uv.lock uv.lock.old
+then
+		echo 'UV lock updated'
+	else
+		echo 'UV lock did not need updating'
+fi
+
+rm -f uv.lock.old

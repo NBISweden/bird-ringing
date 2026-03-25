@@ -1,0 +1,135 @@
+from django.contrib import admin
+from .models import (
+    Actor,
+    LicenseSequence,
+    License,
+    LicenseRelation,
+    LicenseDocument,
+    LicensePermissionType,
+    LicensePermissionProperty,
+    Species,
+    LicensePermission,
+    LicenseCommunication,
+    SpeciesImport,
+    ActorImport,
+    LicenseSequenceImport,
+    LicenseImport,
+    PermitDnr,
+)
+import datetime
+
+
+COMMON_EXCLUDES = [
+    "created_at",
+    "updated_at",
+    "created_by",
+    "updated_by",
+]
+
+
+class LicenseRelationAdmin(admin.TabularInline):
+    exclude = COMMON_EXCLUDES
+    model = LicenseRelation
+
+
+class LicensePermissionAdmin(admin.TabularInline):
+    exclude = COMMON_EXCLUDES
+    model = LicensePermission
+
+
+class LicensePermissionProperty(admin.TabularInline):
+    exclude = COMMON_EXCLUDES
+    model = LicensePermissionProperty
+
+
+class LicenseCommunicationAdmin(admin.TabularInline):
+    exclude = COMMON_EXCLUDES
+    model = LicenseCommunication
+
+
+class TabularLicenseAdmin(admin.TabularInline):
+    exclude = COMMON_EXCLUDES
+    model = License
+
+
+class ModelAdminWithChangeTracking(admin.ModelAdmin):
+    def save_model(self, request, obj, form, change):
+        if not hasattr(obj, "created_by"):
+            obj.created_by = request.user
+
+        obj.updated_by = request.user
+        obj.save()
+
+    def save_formset(self, request, obj, formset, change):
+        instances = formset.save(commit=False)
+        for instance in instances:
+            if not hasattr(instance, "created_by") or not instance.created_by:
+                instance.created_by = request.user
+
+            instance.updated_by = request.user
+            instance.updated_at = datetime.datetime.now()
+            instance.save()
+        formset.save()
+
+
+@admin.register(Actor)
+class ActorAdmin(ModelAdminWithChangeTracking):
+    exclude = COMMON_EXCLUDES
+    inlines = [LicenseCommunicationAdmin]
+
+
+@admin.register(LicenseSequence)
+class LicenseSequenceAdmin(ModelAdminWithChangeTracking):
+    exclude = COMMON_EXCLUDES
+    inlines = [TabularLicenseAdmin]
+
+
+@admin.register(License)
+class LicenseAdmin(ModelAdminWithChangeTracking):
+    exclude = COMMON_EXCLUDES
+    inlines = [
+        LicensePermissionAdmin,
+        LicenseRelationAdmin,
+        LicenseCommunicationAdmin,
+    ]
+
+
+@admin.register(Species)
+class SpeciesAdmin(ModelAdminWithChangeTracking):
+    exclude = COMMON_EXCLUDES
+
+
+@admin.register(LicensePermissionType)
+class LicensePermissionTypeAdmin(ModelAdminWithChangeTracking):
+    exclude = COMMON_EXCLUDES
+    inlines = [LicensePermissionProperty]
+
+
+@admin.register(LicenseDocument)
+class LicenseDocumentAdmin(ModelAdminWithChangeTracking):
+    exclude = COMMON_EXCLUDES
+
+
+@admin.register(ActorImport)
+class ActorImportAdmin(admin.ModelAdmin):
+    pass
+
+
+@admin.register(LicenseSequenceImport)
+class LicenseSequenceImportAdmin(admin.ModelAdmin):
+    pass
+
+
+@admin.register(LicenseImport)
+class LicenseImportAdmin(admin.ModelAdmin):
+    pass
+
+
+@admin.register(SpeciesImport)
+class SpeciesImportAdmin(admin.ModelAdmin):
+    pass
+
+
+@admin.register(PermitDnr)
+class PermitDnrAdmin(ModelAdminWithChangeTracking):
+    exclude = COMMON_EXCLUDES

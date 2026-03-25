@@ -1,0 +1,53 @@
+services:
+  frontend:
+    build:
+      target: dev
+    volumes:
+      - ./frontend:/app
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://frontend:3000"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  backend-init:
+    build:
+      target: dev
+    environment:
+      SERVICE_MODE: development-init
+    volumes:
+      - ./backend:/app
+
+  backend:
+    build:
+      target: dev
+    environment:
+      POSTGRES_USER: db_admin
+      SERVICE_MODE: development
+      DJANGO_DEBUG_MODE: True
+      POSTGRES_PASSWORD_FILE: /run/secrets/db-admin-pass
+      DJANGO_DEFAULT_FROM_EMAIL: <address used in from field>
+      DJANGO_EMAIL_BACKEND: django.core.mail.backends.console.EmailBackend
+      #DJANGO_EMAIL_BACKEND: django.core.mail.backends.smtp.EmailBackend
+      DJANGO_EMAIL_HOST: <smtp host>
+      DJANGO_EMAIL_PORT: <smtp port>
+      DJANGO_EMAIL_HOST_USER: <smtp user>
+      DJANGO_EMAIL_USE_SSL: False
+      DJANGO_EMAIL_HOST_PASSWORD_FILE: /run/secrets/django-email-password
+      LICENSING_EMAIL_FROM_ADDR: <address used in from field for licensing emails>
+      LICENSING_EMAIL_SUBJECT: "Hello world from bird ringing ({{mnr}}) {{name|safe}}"
+    volumes:
+      - ./backend:/app
+    secrets:
+      - db-admin-pass
+      - django-email-password
+
+  proxy:
+    environment:
+      SERVICE_MODE: development
+    depends_on:
+      frontend:
+        condition: service_healthy
+      backend:
+        condition: service_healthy

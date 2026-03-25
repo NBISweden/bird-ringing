@@ -1,0 +1,1144 @@
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from rest_framework.reverse import reverse
+
+from licensing.message_builder import MessageBuilder, LicenseAndPermitMessageBuilder, RingerBundleMessageBuilder
+from licensing.communication_service import CommunicationService
+from licensing.utils import get_flattened_license_and_relations
+from django.core import mail
+from django.core.mail import EmailMessage
+
+from licensing.license_card_service import (
+    LicenseCardService,
+    NoLicense as CardNoLicense,
+    ActorNotOnLicense as CardActorNotOnLicense,
+    skip_station_ringer_card,
+    CardCreationSkipped,
+)
+from licensing.permit_service import (
+    PermitService,
+    NoLicense as PermitNoLicense,
+    ActorNotOnLicense as PermitActorNotOnLicense,
+)
+
+from licensing.models import (
+    LicensePermissionProperty,
+    LicenseSequence,
+    License,
+    Actor,
+    ActorTypeChoices,
+    SexChoices,
+    LanguageChoices,
+    LicenseRoleChoices,
+    LicenseRelation,
+    ReportStatusChoices,
+    LicensePermission,
+    LicensePermissionType,
+    LicenseStatusChoices,
+    LicenseDocument,
+    LicenseCommunication,
+    CommunicationTypeChoices,
+    DocumentTypeChoices
+)
+from rest_framework.authentication import SessionAuthentication, BasicAuthentication
+from rest_framework.permissions import DjangoModelPermissions
+
+from rest_framework import routers, serializers, viewsets, filters, pagination, response
+from django.db import models
+from django.http import HttpResponse
+from django.template.exceptions import TemplateDoesNotExist
+from django.contrib.postgres.aggregates import StringAgg
+from collections import OrderedDict
+import logging
+
+
+logger = logging.getLogger(__name__)
+
+
+def parse_csv_string(csv_str: str):
+    return [v.strip() for v in csv_str.split(",")]
+
+
+def get_latest_licenses(mnrs: list[str]) -> list[License]:
+    sequences = get_sequences(mnrs)
+    licenses = []
+    for seq in sequences:
+        lic = seq.latest
+        if not lic:
+            raise serializers.ValidationError({"mnrs": f"No latest license for mnr {seq.mnr}."})
+        licenses.append(lic)
+
+    return licenses
+
+
+def get_sequences(mnrs: list[str]) -> list[LicenseSequence]:
+    if not mnrs:
+        raise serializers.ValidationError({"mnrs": "mnrs is required (comma-separated)."})
+
+    invalid_mnrs = [m for m in mnrs if not MnrSerializer(data={"mnr": m}).is_valid()]
+    if invalid_mnrs:
+        raise serializers.ValidationError(
+            {"mnrs": f"Invalid mnr(s): {', '.join(invalid_mnrs)}. Expected 4 digits each."}
+        )
+
+    seqs_by_mnr = {s.mnr: s for s in LicenseSequence.objects.filter(mnr__in=mnrs)}
+    missing_mnrs = [m for m in mnrs if m not in seqs_by_mnr]
+    if missing_mnrs:
+        raise serializers.ValidationError({"mnrs": f"Unknown mnr(s): {', '.join(missing_mnrs)}"})
+
+    return [seqs_by_mnr[m] for m in mnrs]
+
+def _send_license_emails_for_relations(
+    *,
+    request,
+    lic_rel_iter,
+    include_card: bool,
+    include_permit: bool,
+):
+    """
+    Send license emails for a stream of (lic, relation). Returns a DRF Response.
+    """
+    message_builder = LicenseAndPermitMessageBuilder(
+        MessageBuilder.from_licensing_settings(),
+        LicenseCardService(),
+    )
+
+    messages = []
+    skipped_messages: list[dict[str, object]] = []
+    try:
+        for (lic, relation) in lic_rel_iter:
+            if not relation.actor.email: # Ignore sending if the actor has no email address declared
+                skipped_messages.append(
+                    {
+                        "actor_id": relation.actor.id,
+                        "mnr": lic.sequence.mnr,
+                        "reason": "missing_email",
+                    }
+                )
+                continue
+
+            try:
+                msg = message_builder.build_message(
+                    lic,
+                    relation,
+                    include_card,
+                    include_permit,
+                )
+            except ValueError as e:
+                return Response({"detail": str(e)}, status=400)
+            messages.append((lic, relation.actor, msg))
+    except TemplateDoesNotExist as e:
+        logger.error(f"send_license_emails: {type(e)}: {e}")
+        return Response({"detail": "E-mail template is misconfigured."}, status=503)
+
+    success_messages: dict[tuple[bool, bool], str] = {
+        (True, True): "E-mail with license and permit sent",
+        (True, False): "E-mail with license sent",
+        (False, True): "E-mail with permit sent",
+    }
+
+    try:
+        communication_service = CommunicationService(mail)
+        failed_messages = communication_service.send_email_messages(
+            messages,
+            CommunicationTypeChoices.LICENSE_DELIVERY,
+            request.user,
+            success_message=success_messages.get((include_card, include_permit), "E-mail sent"),
+        )
+        return Response(
+            {
+                "messages_sent": len(messages) - len(failed_messages),
+                "failed_messages": failed_messages,
+                "skipped_messages": skipped_messages,
+            }, status=200 if len(failed_messages) == 0 else 422,
+        )
+
+    except OSError as e:
+        logger.error(f"send_license_emails: {type(e)}: {e}")
+        return Response({"detail": "Failed to connect to mail server"}, status=503)
+
+def _build_ringer_bundle_messages(*, lic_rel_pairs: list[tuple[License, LicenseRelation]],
+    include_card: bool, include_permit: bool,
+) -> list[tuple[License, Actor, EmailMessage]]:
+    """
+    Build one bundled ZIP email per license ringer using RingerBundleMessageBuilder.
+    Raise ValueError on validation failures.
+    """
+    if not lic_rel_pairs:
+        return []
+
+    rels_by_license_id: dict[int, list[LicenseRelation]] = {}
+    lic_by_id: dict[int, License] = {}
+
+    for lic, rel in lic_rel_pairs:
+        lic_by_id[lic.id] = lic
+        rels_by_license_id.setdefault(lic.id, []).append(rel)
+
+    msg_builder = MessageBuilder.from_licensing_settings()
+    bundle_builder = RingerBundleMessageBuilder(
+        msg_builder,
+        LicenseCardService(),
+        PermitService(),
+    )
+
+    bundle_messages: list[tuple[License, Actor, EmailMessage]] = []
+
+    for lic_id, rels in rels_by_license_id.items():
+        lic = lic_by_id[lic_id]
+
+        # Always determine ringer from the license itself (not from selected relations)
+        ringer_rel = (lic.actors.filter(role=LicenseRoleChoices.RINGER).select_related("actor").first())
+        if not ringer_rel:
+            raise ValueError(f"No ringer registered on license for mnr {lic.sequence.mnr}.")
+
+        ringer_actor = ringer_rel.actor
+        ringer_email = (ringer_actor.email or "").strip()
+        if not ringer_email:
+            raise ValueError(f"No email address available for ringer on license {lic.sequence.mnr}.")
+
+        msg = bundle_builder.build_message(
+            lic=lic,
+            ringer_actor=ringer_actor,
+            relations=rels,
+            include_card=include_card,
+            include_permit=include_permit,
+        )
+        if msg is None:
+            continue
+
+        bundle_messages.append((lic, ringer_actor, msg))
+
+    return bundle_messages
+
+def _send_ringer_bundle_messages(*, request, bundle_messages: list[tuple[License, Actor, EmailMessage]],
+) -> list[dict[str, object]]:
+    """
+    Sends pre-built bundle messages. Returns failed_messages.
+    """
+    if not bundle_messages:
+        return []
+
+    communication_service = CommunicationService(mail)
+    return communication_service.send_email_messages(
+        bundle_messages,
+        CommunicationTypeChoices.LICENSE_DELIVERY,
+        request.user,
+        try_message="Tried to send ringer bundle e-mail",
+        success_message="Ringer bundle e-mail sent",
+    )
+
+def _merge_response(resp: Response, extra: dict[str, object], *, status_code: int | None = None) -> Response:
+    base: dict[str, object] = {}
+    if isinstance(getattr(resp, "data", None), dict):
+        base = dict(resp.data)
+    base.update(extra)
+    return Response(base, status=resp.status_code if status_code is None else status_code)
+
+class DjangoProtectedModelPermissions(DjangoModelPermissions):
+    perms_map = {
+        "GET": ["%(app_label)s.view_%(model_name)s"],
+        "OPTIONS": [],
+        "HEAD": [],
+        "POST": ["%(app_label)s.add_%(model_name)s"],
+        "PUT": ["%(app_label)s.change_%(model_name)s"],
+        "PATCH": ["%(app_label)s.change_%(model_name)s"],
+        "DELETE": ["%(app_label)s.delete_%(model_name)s"],
+    }
+
+
+class IdSelectionFilter(filters.BaseFilterBackend):
+    """
+    Filter that allows filtering on object ids
+    """
+
+    def filter_queryset(self, request, queryset, view):
+        id_filter_target = getattr(view, "id_filter_target", "id")
+        id_filter_max = getattr(view, "id_filter_max", 100)
+
+        filter_ids = set(
+            [id for id in parse_csv_string(request.GET.get("ids", "")) if id]
+        )
+
+        if len(filter_ids) > id_filter_max:
+            raise serializers.ValidationError(
+                {
+                    "ids": f"Too many ids in list {len(filter_ids)}. Maximum limit is {id_filter_max}"
+                }
+            )
+
+        if len(filter_ids) > 0:
+            filter = {f"{id_filter_target}__in": filter_ids}
+            return queryset.filter(**filter)
+        else:
+            return queryset
+
+
+class DynamicOrderingFilter(filters.BaseFilterBackend):
+    """
+    Filter that allows dynamic user controlled ordering
+    """
+
+    def filter_queryset(self, request, queryset, view):
+        default_ordering = getattr(view, "default_ordering", [])
+        base_allowed_ordering = getattr(view, "allowed_ordering", [])
+        allowed_ordering = set(base_allowed_ordering)
+        order_by = [
+            o
+            for o in parse_csv_string(request.GET.get("ordering", ""))
+            if o in allowed_ordering
+        ]
+        order_by = order_by if len(order_by) > 0 else default_ordering
+        return queryset.order_by(*order_by)
+
+    @staticmethod
+    def include_reverse(items: list[str]):
+        return [f"{d}{o}" for o in items for d in ["", "-"]]
+
+
+class StandardResultsSetPagination(pagination.PageNumberPagination):
+    page_size = 100
+    page_size_query_param = "page_size"
+    max_page_size = 1000
+
+    def get_paginated_response(self, data):
+        return response.Response(
+            OrderedDict(
+                [
+                    ("count", self.page.paginator.count),
+                    (
+                        "num_pages",
+                        self.page.paginator.num_pages,
+                    ),  # Add total number of pages
+                    ("next", self.get_next_link()),
+                    ("previous", self.get_previous_link()),
+                    ("results", data),
+                ]
+            )
+        )
+
+
+class ActorLicenseRelationSerializer(serializers.ModelSerializer):
+    role = serializers.ChoiceField(
+        choices=LicenseRoleChoices, source="get_role_display"
+    )
+    version = serializers.IntegerField(source="license.version", read_only=True)
+    starts_at = serializers.DateField(source="license.starts_at", read_only=True)
+    ends_at = serializers.DateField(source="license.ends_at", read_only=True)
+    communication_status = serializers.SerializerMethodField(read_only=True)
+    communication_type = serializers.SerializerMethodField(read_only=True)
+
+
+    class Meta:
+        model = LicenseRelation
+        fields = ["license_id", "role", "mnr", "mednr", "version", "starts_at", "ends_at", "communication_status", "communication_type"]
+
+    def get_communication_status(self, obj):  
+        license_communication = LicenseCommunication.objects.filter(license=obj.license, actor=obj.actor).last()
+        if license_communication:
+            return license_communication.get_status_display()
+        return None
+    
+    def get_communication_type(self, obj):
+        license_communication = LicenseCommunication.objects.filter(license=obj.license, actor=obj.actor).last()
+        if license_communication:
+            return license_communication.get_type_display()
+        return None
+
+
+
+class ActorSerializer(serializers.ModelSerializer):
+    type = serializers.ChoiceField(choices=ActorTypeChoices, source="get_type_display")
+    sex = serializers.ChoiceField(choices=SexChoices, source="get_sex_display")
+    language = serializers.ChoiceField(
+        choices=LanguageChoices, source="get_language_display"
+    )
+    license_relations = ActorLicenseRelationSerializer(
+        many=True, read_only=True
+    )
+
+    class Meta:
+        model = Actor
+        fields = [
+            "id",
+            "full_name",
+            "first_name",
+            "last_name",
+            "type",
+            "sex",
+            "birth_date",
+            "birth_year",
+            "language",
+            "phone_number1",
+            "phone_number2",
+            "email",
+            "alternative_email",
+            "address",
+            "co_address",
+            "postal_code",
+            "city",
+            "country",
+            "license_relations",
+            "updated_at",
+        ]
+
+
+class ActorDetailSerializer(ActorSerializer):
+    previous_license_relations = ActorLicenseRelationSerializer(
+        many=True, read_only=True
+    )
+
+    class Meta:
+        model = Actor
+        fields = [
+            *ActorSerializer.Meta.fields,
+            "previous_license_relations",
+        ]
+
+
+class LicenseActorSerializer(serializers.ModelSerializer):
+    type = serializers.ChoiceField(choices=ActorTypeChoices, source="get_type_display")
+    sex = serializers.ChoiceField(choices=SexChoices, source="get_sex_display")
+    language = serializers.ChoiceField(
+        choices=LanguageChoices, source="get_language_display"
+    )
+
+    class Meta:
+        model = Actor
+        fields = [
+            "id",
+            "full_name",
+            "first_name",
+            "last_name",
+            "type",
+            "sex",
+            "birth_date",
+            "birth_year",
+            "language",
+            "phone_number1",
+            "phone_number2",
+            "email",
+            "alternative_email",
+            "address",
+            "co_address",
+            "postal_code",
+            "city",
+            "country",
+        ]
+
+
+class LicenseActorRelationSerializer(serializers.ModelSerializer):
+    actor = LicenseActorSerializer()
+    role = serializers.ChoiceField(
+        choices=LicenseRoleChoices, source="get_role_display"
+    )
+
+    class Meta:
+        model = LicenseRelation
+        fields = ["actor", "role", "mednr"]
+
+
+class LicensePermissionTypeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = LicensePermissionType
+        fields = ['name', 'description']
+
+class LicensePermissionPropertySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = LicensePermissionProperty
+        fields = ["name", "description"]
+
+class LicenseLicensePermissionSerializer(serializers.ModelSerializer):
+    type = LicensePermissionTypeSerializer(read_only=True)
+    species = serializers.SerializerMethodField()
+    properties = LicensePermissionPropertySerializer(many=True, read_only=True)
+
+    class Meta:
+        model = LicensePermission
+        fields = ["type", "description", "location", "starts_at", "ends_at", "species", "properties"]
+
+    def get_species(self, obj):
+        return list(obj.species_list.values_list('name', flat=True))
+
+class LicenseDocumentSerializer(serializers.ModelSerializer):
+    actor = serializers.CharField(source="actor.full_name", read_only=True)
+    actor_id = serializers.IntegerField(source="actor.id", read_only=True)
+    type = serializers.CharField(source="get_type_display", read_only=True)
+
+    class Meta:
+        model = LicenseDocument
+        fields = ["actor", "actor_id", "type", "reference"]
+
+class LicenseCommunicationSerializer(serializers.ModelSerializer):
+    actor = serializers.CharField(source="actor.full_name", read_only=True)
+    actor_id = serializers.IntegerField(source="actor.id", read_only=True)
+    type = serializers.CharField(source="get_type_display", read_only=True)
+    status = serializers.CharField(source="get_status_display", read_only=True)
+
+    class Meta:
+        model = LicenseCommunication
+        fields = ["actor", "actor_id", "type", "status", "note"]
+
+
+class LicenseSerializer(serializers.ModelSerializer):
+    actors = LicenseActorRelationSerializer(many=True, read_only=True)
+    permissions = LicenseLicensePermissionSerializer(many=True, read_only=True)
+    documents = LicenseDocumentSerializer(many=True, read_only=True)
+    communication = LicenseCommunicationSerializer(many=True, read_only=True)
+    report_status = serializers.ChoiceField(
+        choices=ReportStatusChoices, source="get_report_status_display"
+    )
+
+    class Meta:
+        model = License
+        fields = ["actors", "permissions", "documents", "communication", "version", "location", "description",
+                  "report_status", "starts_at", "ends_at", "created_at", "updated_at"]
+
+
+class LicenseHistoryItemSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = License
+        fields = ["version", "starts_at", "ends_at"]
+
+
+class LicenseSequenceSerializer(serializers.HyperlinkedModelSerializer):
+    latest = LicenseSerializer(read_only=True)
+    history = serializers.SerializerMethodField()
+    license_holder = serializers.CharField(read_only=True)
+    license_holder_type = serializers.CharField(read_only=True)
+    associate_ringer_count = serializers.IntegerField(read_only=True)
+    status = serializers.ChoiceField(
+        choices=LicenseStatusChoices, source="get_status_display"
+    )
+    methods = serializers.CharField()
+    last_email_sent_at = serializers.DateTimeField(read_only=True)
+    has_license_card = serializers.BooleanField(read_only=True)
+    has_permit = serializers.BooleanField(read_only=True)
+
+    class Meta:
+        model = LicenseSequence
+        fields = [
+            "mnr",
+            "latest",
+            "history",
+            "status",
+            "license_holder",
+            "license_holder_type",
+            "associate_ringer_count",
+            "methods",
+            "last_email_sent_at",
+            "has_license_card",
+            "has_permit",
+        ]
+
+    def get_history(self, obj):
+        qs = obj.instances.exclude(pk=models.F("sequence__latest__pk")).order_by("-version")
+        return LicenseHistoryItemSerializer(qs, many=True).data
+
+
+license_status_label = models.Case(
+    *[
+        models.When(status=value, then=models.Value(label))
+        for value, label in LicenseStatusChoices.choices
+    ],
+    output_field=models.CharField(),
+    default=models.Value(""),
+)
+
+license_report_status_label = models.Case(
+    *[
+        models.When(latest__report_status=value, then=models.Value(label))
+        for value, label in ReportStatusChoices.choices
+    ],
+    output_field=models.CharField(),
+    default=models.Value(""),
+)
+
+class LicenseCardRenderSerializer(serializers.Serializer):
+    actor_id = serializers.IntegerField(required=True, min_value=1)
+
+class MnrSerializer(serializers.Serializer):
+    mnr = serializers.CharField(min_length=4, max_length=4)
+
+class LicenseSequenceViewSet(viewsets.ModelViewSet):
+    authentication_classes = [SessionAuthentication, BasicAuthentication]
+    permission_classes = [DjangoProtectedModelPermissions]
+
+    lookup_field = "mnr"
+    queryset = LicenseSequence.objects.filter(latest__isnull=False).all().distinct()
+    serializer_class = LicenseSequenceSerializer
+    pagination_class = StandardResultsSetPagination
+
+    filter_backends = [DynamicOrderingFilter]
+
+    allowed_ordering = DynamicOrderingFilter.include_reverse(
+        [
+            "mnr",
+            "status",
+            "license_holder",
+            "license_holder_type",
+            "associate_ringer_count",
+            "methods",
+            "last_email_sent_at",
+            "status_label",
+            "report_status_label",
+            "has_license_card",
+            "has_permit",
+            "location",
+        ]
+    )
+    default_ordering = ["mnr"]
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+
+        search = self.request.query_params.get("search", None)
+
+        has_license_card = models.Exists(
+            LicenseDocument.objects.filter(
+                license=models.OuterRef('latest__id'),
+                type=DocumentTypeChoices.LICENSE,
+            )
+        )
+
+        has_permit = models.Exists(
+            LicenseDocument.objects.filter(
+                license=models.OuterRef('latest__id'),
+                type=DocumentTypeChoices.PERMIT,
+            )
+        )
+
+        queryset = queryset.annotate(
+            license_holder=StringAgg(
+                models.Case(
+                    models.When(
+                        latest__actors__role=models.Value(LicenseRoleChoices.RINGER),
+                        then="latest__actors__actor__full_name",
+                    ),
+                    default=models.Value(None),
+                    output_field=models.CharField(),
+                ),
+                delimiter=", ",
+                distinct=True,
+            ),
+            license_holder_type=models.Max(
+                models.Case(
+                    models.When(
+                        latest__actors__role=models.Value(LicenseRoleChoices.RINGER),
+                        then=models.Case(
+                            *[
+                                models.When(
+                                    latest__actors__actor__type=value,
+                                    then=models.Value(label),
+                                )
+                                for value, label in ActorTypeChoices.choices
+                            ],
+                            default=models.Value(""),
+                            output_field=models.CharField(),
+                        ),
+                    ),
+                    default=models.Value(None),
+                    output_field=models.CharField(),
+                )
+            ),
+            associate_ringer_count=models.Count(
+                "latest__actors__actor",
+                filter=models.Q(
+                    latest__actors__role=LicenseRoleChoices.ASSOCIATE_RINGER,
+                ),
+                distinct=True,
+            ),
+            methods=StringAgg(
+                "latest__permissions__type__name", delimiter=", ", distinct=True
+            ),
+            last_email_sent_at=models.Max(
+                models.Case(
+                    models.When(
+                        latest__communication__status=models.Value(1),
+                        then="latest__communication__updated_at",
+                    ),
+                    default=models.Value(None),
+                    output_field=models.DateField(),
+                )
+            ),
+            location=models.Subquery(
+                License.objects.filter(
+                    sequence=models.OuterRef('pk'),
+                    pk=models.F("sequence__latest__pk")
+                ).values("location")[:1]
+            ),
+            status_label=license_status_label,
+            report_status_label=license_report_status_label,
+            has_license_card=has_license_card,
+            has_permit=has_permit,
+        )
+
+        if search is not None:
+            search_terms = search.split()
+            for term in search_terms:
+                queryset = queryset.filter(
+                    models.Q(license_holder__icontains=term)
+                    | models.Q(mnr__icontains=term)
+                    | models.Q(methods__icontains=term)
+                    | models.Q(last_email_sent_at__icontains=term)
+                    | models.Q(status_label__icontains=term)
+                    | models.Q(report_status_label__icontains=term)
+                    | models.Q(license_holder_type__icontains=term)
+                    | models.Q(location__icontains=term)
+                )
+
+        return queryset
+
+    @action(detail=True, methods=["put"], url_path="card-create")
+    def card_create(self, request, mnr=None):
+        seq = self.get_object()
+        actor = self._get_actor_from_request(request)
+
+        service = LicenseCardService()
+        try:
+            lic = seq.latest
+            if not lic:
+                raise CardNoLicense("No current license found.")
+
+            doc = service.get_or_create_license_card_document(
+                lic=lic,
+                actor=actor,
+                created_by=request.user,
+                updated_by=request.user,
+                should_skip=skip_station_ringer_card,
+            )
+        except CardCreationSkipped as e:
+            return Response({"detail": str(e)}, status=400)
+        except CardNoLicense as e:
+            return Response({"detail": str(e)}, status=404)
+        except CardActorNotOnLicense as e:
+            return Response({"detail": str(e)}, status=400)
+
+        pdf_url = reverse("licensesequence-card-pdf", kwargs={"mnr": seq.mnr}, request=request)
+        pdf_url = f"{pdf_url}?actor_id={actor.id}"
+
+        return Response({"filename": doc.reference, "pdf_url": pdf_url}, status=200)
+
+    @action(detail=True, methods=["get"], url_path="card-pdf")
+    def card_pdf(self, request, mnr=None):
+        seq = self.get_object()
+        actor = self._get_actor_from_request(request)
+
+        service = LicenseCardService()
+        try:
+            lic = seq.latest
+            doc = service.get_license_card_document(lic=lic, actor=actor)
+        except CardNoLicense as e:
+            return Response({"detail": str(e)}, status=404)
+        except CardActorNotOnLicense as e:
+            return Response({"detail": str(e)}, status=400)
+
+        if not doc:
+            return Response({"detail": "No current license card PDF exists. Call /card-create first."}, status=404)
+
+        return self._pdf_http_response(lic=lic, actor=actor, doc=doc)
+
+    def _get_actor_from_request(self, request) -> Actor:
+        payload = request.data if request.method in ("POST", "PUT", "PATCH") else request.query_params
+        # allow fallback if body is empty but query param exists
+        if not payload or "actor_id" not in payload:
+            payload = {"actor_id": request.query_params.get("actor_id")}
+
+        ser = LicenseCardRenderSerializer(data=payload)
+        ser.is_valid(raise_exception=True)
+        actor_id = ser.validated_data["actor_id"]
+
+        try:
+            return Actor.objects.get(pk=actor_id)
+        except Actor.DoesNotExist:
+            raise serializers.ValidationError({"actor_id": "Actor not found"})
+    
+    def _pdf_http_response(self, *, lic: License, actor: Actor, doc) -> HttpResponse:
+        service = LicenseCardService()
+        filename = doc.reference or service.make_license_card_filename(lic, actor)
+        resp = HttpResponse(bytes(doc.data), content_type="application/pdf")
+        resp["Content-Disposition"] = f'inline; filename="{filename}"'
+        return resp
+
+    @action(detail=False, methods=["get"], url_path="card-pdf")
+    def card_pdf_batch(self, request):
+        raw = request.query_params.get("mnrs", "")
+        mnrs = [m for m in parse_csv_string(raw) if m]
+
+        try:
+            licenses = get_latest_licenses(mnrs)
+        except serializers.ValidationError as e:
+            return Response(e.detail, status=400)
+
+        service = LicenseCardService()
+        try:
+            zip_bytes = service.create_zip_with_license_card_pdfs(
+                licenses=licenses,
+                allowed_roles=(LicenseRoleChoices.RINGER, LicenseRoleChoices.ASSOCIATE_RINGER),
+            )
+        except CardNoLicense as e:
+            return Response({"detail": str(e)}, status=404)
+        except CardActorNotOnLicense as e:
+            return Response({"detail": str(e)}, status=400)
+        except ValueError as e:
+            return Response({"detail": str(e)}, status=404)
+
+        resp = HttpResponse(zip_bytes, content_type="application/zip")
+        resp["Content-Disposition"] = 'attachment; filename="license-cards.zip"'
+        return resp
+
+    @action(detail=False, methods=["put"], url_path="card-create")
+    def card_create_batch(self, request):
+        raw = request.query_params.get("mnrs", "")
+        mnrs = [m for m in parse_csv_string(raw) if m]
+
+        try:
+            licenses = get_latest_licenses(mnrs)
+        except serializers.ValidationError as e:
+            return Response(e.detail, status=400)
+
+        service = LicenseCardService()
+        try:
+            docs = service.batch_get_or_create_license_card_documents(
+                licenses=licenses,
+                created_by=request.user,
+                updated_by=request.user,
+                allowed_roles=(LicenseRoleChoices.RINGER, LicenseRoleChoices.ASSOCIATE_RINGER),
+                should_skip=skip_station_ringer_card,
+            )
+        except CardNoLicense as e:
+            return Response({"detail": str(e)}, status=404)
+        except CardActorNotOnLicense as e:
+            return Response({"detail": str(e)}, status=400)
+        except ValueError as e:
+            return Response({"detail": str(e)}, status=400)
+
+        return Response(
+            {"filenames": [d.reference for d in docs]},
+            status=200,
+        )
+    
+    @action(detail=False, methods=["put"], url_path="send-license-emails")
+    def send_license_emails(self, request):
+        include_card = request.query_params.get("include_card") is not None
+        include_permit = request.query_params.get("include_permit") is not None
+        raw = request.query_params.get("mnrs", "")
+        mnrs = [m for m in parse_csv_string(raw) if m]
+
+        try:
+            licenses = get_latest_licenses(mnrs)
+        except serializers.ValidationError as e:
+            return Response(e.detail, status=400)
+
+        # Always build bundle messages first (validation), then send actor mails, then send bundles.
+        try:
+            # For bundle e-mails: include ALL relations (including station ringer),
+            # because the bundle is sent to the ringer and should still go out.
+            lic_rel_pairs_for_bundle = list(get_flattened_license_and_relations(licenses))
+
+            # For individual e-mails: when include_card=True, skip station ringers
+            # (because we don't create cards for station ringers).
+            lic_rel_pairs_for_individual = list(get_flattened_license_and_relations(licenses, should_skip=skip_station_ringer_card if include_card else None))
+
+            bundle_messages = _build_ringer_bundle_messages(
+                lic_rel_pairs=lic_rel_pairs_for_bundle,
+                include_card=include_card,
+                include_permit=include_permit,
+            )
+        except ValueError as exc:
+            return Response({"detail": str(exc)}, status=400)
+
+        resp = _send_license_emails_for_relations(
+            request=request,
+            lic_rel_iter=iter(lic_rel_pairs_for_individual),
+            include_card=include_card,
+            include_permit=include_permit,
+        )
+
+        if resp.status_code != 200:
+            return resp
+
+        try:
+            bundle_failed = _send_ringer_bundle_messages(request=request, bundle_messages=bundle_messages)
+        except OSError:
+            return _merge_response(resp, {"ringer_bundle_error": "Failed to connect to mail server"}, status_code=503)
+        except Exception as exc:
+            logger.exception("ringer bundle failed: %s", exc)
+            return _merge_response(resp, {"ringer_bundle_error": "Failed to send ringer bundle e-mail"}, status_code=503)
+
+        if bundle_failed:
+            # Partial failure: actor emails succeeded, connection suceeded but the ringer bundle failed.
+            return _merge_response(resp, {"ringer_bundle_failed_messages": bundle_failed}, status_code=422)
+
+        return _merge_response(resp, {"ringer_bundle_messages_sent": len(bundle_messages)})
+
+    @action(detail=True, methods=["put"], url_path="send-license-emails")
+    def send_license_emails_for_actors(self, request, mnr=None):
+        include_card = request.query_params.get("include_card") is not None
+        include_permit = request.query_params.get("include_permit") is not None
+
+        raw = request.query_params.get("actor_ids", "")
+        actor_ids_str = [v for v in parse_csv_string(raw) if v]
+        if not actor_ids_str:
+            return Response({"actor_ids": "actor_ids is required (comma-separated)."}, status=400)
+
+        try:
+            actor_ids = [int(v) for v in actor_ids_str]
+        except ValueError:
+            return Response({"actor_ids": "actor_ids must be a comma-separated list of integers."}, status=400)
+
+        actor_id_set = set(actor_ids)
+
+        license = self.get_object().latest
+        if not license:
+            return Response({"detail": "No current license found."}, status=404)
+
+        try:
+            all_pairs_for_bundle = list(get_flattened_license_and_relations([license]))
+
+            all_pairs_for_individual = list(get_flattened_license_and_relations(
+                [license],
+                should_skip=skip_station_ringer_card if include_card else None,
+            ))
+
+            filtered_pairs_for_bundle = [(lic, rel) for (lic, rel) in all_pairs_for_bundle if rel.actor.id in actor_id_set]
+            filtered_pairs_for_individual = [(lic, rel) for (lic, rel) in all_pairs_for_individual if rel.actor.id in actor_id_set]
+
+            # Validate actor ids against the full license membership (bundle list has no skipping)
+            found_ids = {rel.actor.id for (_lic, rel) in filtered_pairs_for_bundle}
+            missing = sorted(actor_id_set - found_ids)
+            if missing:
+                return Response(
+                    {"detail": f"Actor(s) not on license: {', '.join(map(str, missing))}."},
+                    status=400,
+                )
+
+            if include_card and not filtered_pairs_for_individual and filtered_pairs_for_bundle:
+                return Response({"detail": "Selected ringers are skipped by card policy."}, status=400)
+
+            notify_ringer = request.query_params.get("notify_ringer") is not None
+
+            bundle_messages: list[tuple[License, Actor, EmailMessage]] = []
+            if notify_ringer:
+                try:
+                    bundle_messages = _build_ringer_bundle_messages(
+                        lic_rel_pairs=filtered_pairs_for_bundle,
+                        include_card=include_card,
+                        include_permit=include_permit,
+                    )
+                except ValueError as exc:
+                    return Response({"detail": str(exc)}, status=400)
+
+            resp = _send_license_emails_for_relations(
+                request=request,
+                lic_rel_iter=iter(filtered_pairs_for_individual),
+                include_card=include_card,
+                include_permit=include_permit,
+            )
+
+            if not notify_ringer or resp.status_code != 200:
+                return resp
+
+            try:
+                bundle_failed = _send_ringer_bundle_messages(request=request, bundle_messages=bundle_messages)
+            except OSError:
+                return _merge_response(resp, {"ringer_bundle_error": "Failed to connect to mail server"}, status_code=503)
+            except Exception as exc:
+                logger.exception("notify_ringer bundle failed: %s", exc)
+                return _merge_response(resp, {"ringer_bundle_error": "Failed to send ringer bundle e-mail"}, status_code=503)
+            if bundle_failed:
+                # Partial failure: actor emails succeeded, connection suceeded but the ringer bundle failed.
+                return _merge_response(resp, {"ringer_bundle_failed_messages": bundle_failed}, status_code=422)
+
+            return _merge_response(resp, {"ringer_bundle_message": "sent"})
+        except ValueError as e:
+            return Response({"detail": str(e)}, status=400)
+
+    @action(detail=True, methods=["put"], url_path="permit-create")
+    def permit_create(self, request, mnr=None):
+        seq = self.get_object()
+        actor = self._get_actor_from_request(request)
+
+        service = PermitService()
+        try:
+            lic = seq.latest
+            if not lic:
+                raise PermitNoLicense("No current license found.")
+
+            doc = service.get_or_create_permit_document(
+                lic=lic,
+                actor=actor,
+                created_by=request.user,
+                updated_by=request.user,
+            )
+        except PermitNoLicense as e:
+            return Response({"detail": str(e)}, status=404)
+        except PermitActorNotOnLicense as e:
+            return Response({"detail": str(e)}, status=400)
+
+        pdf_url = reverse("licensesequence-permit-pdf", kwargs={"mnr": seq.mnr}, request=request)
+        pdf_url = f"{pdf_url}?actor_id={actor.id}"
+
+        return Response({"filename": doc.reference, "pdf_url": pdf_url}, status=200)
+
+    @action(detail=True, methods=["get"], url_path="permit-pdf")
+    def permit_pdf(self, request, mnr=None):
+        seq = self.get_object()
+        actor = self._get_actor_from_request(request)
+
+        service = PermitService()
+        try:
+            lic = seq.latest
+            if not lic:
+                raise PermitNoLicense("No current license found.")
+
+            doc = service.get_permit_document(lic=lic, actor=actor)
+        except PermitNoLicense as e:
+            return Response({"detail": str(e)}, status=404)
+        except PermitActorNotOnLicense as e:
+            return Response({"detail": str(e)}, status=400)
+
+        if not doc:
+            return Response({"detail": "No current permit PDF exists. Call /permit-create first."}, status=404)
+
+        if not doc.data:
+            return Response({"detail": "Current permit document is missing file data. Call /permit-create again."}, status=409)
+
+        filename = doc.reference or service.make_permit_filename(lic, actor)
+        resp = HttpResponse(bytes(doc.data), content_type="application/pdf")
+        resp["Content-Disposition"] = f'inline; filename="{filename}"'
+        return resp
+
+    @action(detail=False, methods=["put"], url_path="permit-create")
+    def permit_create_batch(self, request):
+        raw = request.query_params.get("mnrs", "")
+        mnrs = [m for m in parse_csv_string(raw) if m]
+
+        try:
+            licenses = get_latest_licenses(mnrs)
+        except serializers.ValidationError as e:
+            return Response(e.detail, status=400)
+
+        service = PermitService()
+        try:
+            docs = service.batch_get_or_create_permit_documents(
+                licenses=licenses,
+                created_by=request.user,
+                updated_by=request.user,
+                allowed_roles=(LicenseRoleChoices.RINGER, LicenseRoleChoices.ASSOCIATE_RINGER),
+            )
+        except PermitNoLicense as e:
+            return Response({"detail": str(e)}, status=404)
+        except PermitActorNotOnLicense as e:
+            return Response({"detail": str(e)}, status=400)
+        except ValueError as e:
+            return Response({"detail": str(e)}, status=400)
+
+        return Response({"filenames": [d.reference for d in docs]}, status=200)
+
+    @action(detail=False, methods=["get"], url_path="permit-pdf")
+    def permit_pdf_batch(self, request):
+        raw = request.query_params.get("mnrs", "")
+        mnrs = [m for m in parse_csv_string(raw) if m]
+
+        try:
+            licenses = get_latest_licenses(mnrs)
+        except serializers.ValidationError as e:
+            return Response(e.detail, status=400)
+
+        service = PermitService()
+        try:
+            zip_bytes = service.create_zip_with_permit_docx_files(
+                licenses=licenses,
+                allowed_roles=(LicenseRoleChoices.RINGER, LicenseRoleChoices.ASSOCIATE_RINGER),
+            )
+        except PermitNoLicense as e:
+            return Response({"detail": str(e)}, status=404)
+        except PermitActorNotOnLicense as e:
+            return Response({"detail": str(e)}, status=400)
+        except ValueError as e:
+            return Response({"detail": str(e)}, status=404)
+
+        resp = HttpResponse(zip_bytes, content_type="application/zip")
+        resp["Content-Disposition"] = 'attachment; filename="permits.zip"'
+        return resp
+
+actor_type_label = models.Case(
+    *[
+        models.When(type=value, then=models.Value(label))
+        for value, label in ActorTypeChoices.choices
+    ],
+    output_field=models.CharField(),
+    default=models.Value(""),
+)
+
+
+latest_license_relation = LicenseRelation.objects.filter(
+    license__sequence__latest=models.F("license"),
+    actor=models.OuterRef("pk"),
+)
+
+license_role_label = models.Case(
+    *[
+        models.When(role=value, then=models.Value(label))
+        for value, label in LicenseRoleChoices.choices
+    ],
+    output_field=models.CharField()
+)
+
+class ActorViewSet(viewsets.ModelViewSet):
+    authentication_classes = [SessionAuthentication, BasicAuthentication]
+    permission_classes = [DjangoProtectedModelPermissions]
+
+    queryset = Actor.objects.annotate(
+        type_label=actor_type_label,
+        license_role_label=models.Subquery(
+            latest_license_relation.annotate(
+                role_label=license_role_label
+            ).values("actor").annotate(
+                roles_string=StringAgg("role_label", delimiter=", ")
+            ).values("roles_string")[:1]
+        ),
+        license_mnr=models.Subquery(
+            latest_license_relation.values("actor").annotate(
+                license_mnrs=StringAgg("license__sequence__mnr", delimiter=', ')
+            ).values("license_mnrs")[:1]
+        ),
+    ).all()
+    serializer_class = ActorSerializer
+    filter_backends = [filters.SearchFilter, DynamicOrderingFilter, IdSelectionFilter]
+    search_fields = [
+        "email",
+        "alternative_email",
+        "full_name",
+        "first_name",
+        "last_name",
+        "city",
+        "type_label",
+        "license_role_label",
+        "license_mnr",
+    ]
+    pagination_class = StandardResultsSetPagination
+
+    allowed_ordering = DynamicOrderingFilter.include_reverse(
+        [
+            "full_name",
+            "city",
+            "country",
+            "email",
+            "alternative_email",
+            "first_name",
+            "last_name",
+            "type",
+            "updated_at",
+        ]
+    )
+    default_ordering = ["full_name", "city", "country"]
+
+    def get_serializer_class(self):
+        if self.action == "retrieve":
+            return ActorDetailSerializer
+        return super().get_serializer_class()
+
+router = routers.DefaultRouter()
+router.register(r"license_sequence", LicenseSequenceViewSet)
+router.register(r"actor", ActorViewSet)

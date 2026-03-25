@@ -1,0 +1,12 @@
+# IDEs and editors
+.idea
+.vscode
+.env
+.env-django
+.temp_branch
+
+# Mock data
+mock_data
+
+# Docker compose override
+docker-compose.override.yml

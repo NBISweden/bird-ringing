@@ -1,0 +1,30 @@
+#!/bin/sh -
+
+cp package-lock.json package-lock.json.old
+
+docker build \
+	--file ../Dockerfile.frontend \
+	--target dev \
+	--tag frontend-update-lock \
+	--build-arg RUNTIME_ID="$(id -u):$(id -g)" \
+	--build-arg BUILD_ID="$(id -u):$(id -g)" \
+	. &&
+docker run \
+	--rm \
+	--volume './:/app' \
+	--workdir /app \
+	frontend-update-lock \
+	npm install \
+		--package-lock-only \
+		--ignore-scripts \
+		--no-audit \
+		--fund=false
+
+if ! cmp -s package-lock.json package-lock.json.old
+then
+	echo 'Package lock updated'
+else
+	echo 'Package lock did not need updating'
+fi
+
+rm -f package-lock.json.old
