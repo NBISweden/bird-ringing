@@ -8,6 +8,11 @@ from pathlib import Path
 
 class Command(BaseCommand):
     help = "Validates settings before starting the system"
+    variable_mapping = {
+        "LICENSING_CARD_TEMPLATE": "LICENSE_CARD_FILE",
+        "LICENSING_PERMIT_TEMPLATE_DOCX": "PERMIT_TEMPLATE_FILE",
+        "TEMPLATES_DIR": "DJANGO_TEMPLATES_DIR",
+    }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -28,7 +33,6 @@ class Command(BaseCommand):
     def validate_attributes(self):
         attributes = [
             "LICENSING_CARD_TEMPLATE",
-            "LICENSING_CARD_TEMPLATE_BACK",
             "LICENSING_PERMIT_TEMPLATE_DOCX",
             "DOCX2PDF_URL",
             "LICENSING_EMAIL_SUBJECT",
@@ -37,10 +41,11 @@ class Command(BaseCommand):
             "TEMPLATES_DIR",
         ]
         for attribute in attributes:
+            presentation = self._get_variable_presentation(attribute)
             if not hasattr(self.settings, attribute):
-                yield f"{attribute} is not set"
+                yield f"{presentation} is not set"
             elif not getattr(self.settings, attribute):
-                yield f"{attribute} can not be empty or 'None'"
+                yield f"{presentation} can not be empty or 'None'"
 
     def validate_templates(self):
         django_templates = [
@@ -53,18 +58,19 @@ class Command(BaseCommand):
                 try:
                     loader.select_template([template_name])
                 except TemplateDoesNotExist:
-                    yield f"Failed to load template: '{template_name}'"
+                    presentation = self._get_variable_presentation(template_name)
+                    yield f"Failed to load template: {presentation}"
 
         template_path_attributes = [
             "LICENSING_CARD_TEMPLATE",
-            "LICENSING_CARD_TEMPLATE_BACK",
             "LICENSING_PERMIT_TEMPLATE_DOCX"
         ]
         for path_attribute in template_path_attributes:
             template_path = getattr(self.settings, path_attribute, None)
             if template_path:
                 if not self._file_exists(template_path):
-                    yield f"Configured template file, for {path_attribute}, not found: {template_path}"
+                    presentation = self._get_variable_presentation(path_attribute)
+                    yield f"Configured template file, for {presentation}, not found: '{template_path}'"
 
     def validate_mail_settings(self):
         try:
@@ -78,3 +84,10 @@ class Command(BaseCommand):
     def _file_exists(self, path):
         path_file = Path(path)
         return path_file.is_file()
+    
+    def _get_variable_presentation(self, variable_name: str):
+        config_name = self.variable_mapping.get(variable_name)
+        if config_name is None:
+            return f"'{variable_name}'"
+        else:
+            return f"'{variable_name}' ({config_name})"
