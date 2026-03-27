@@ -10,7 +10,7 @@ class ColumnValidator:
     def get_errors(self, value):
         if value is None and self.required:
             return ["Missing column"]
-        if self.validator is not None:
+        if self.validator is not None and value is not None:
             try:
                 self.validator(value)
             except ValueError as e:
@@ -131,13 +131,14 @@ class MaerkareRowValidator(RowValidator):
         ]
 
 
-class MarkAssRowValidator(RowValidator):
+class MedhjRowValidator(RowValidator):
     columns = {
         "ENamn": ColumnValidator(required=True),
         "FNamn": ColumnValidator(required=True),
         "Mednr": ColumnValidator(required=True),
         "Mnr": ColumnValidator(required=True),
         "Fyr": ColumnValidator(validator=birth_date_or_year_validator),
+        "Role": ColumnValidator(validator=enum_validator({"A", "O", "R"})),
     }
 
     def get_references(self, row):
@@ -268,14 +269,18 @@ class CSVLoader:
         return self.get_dict_list(id)
 
     def _clean_data(self, row):
-        return {key: value.strip() for key, value in row.items() if value != "NULL" and key is not None}
+        return {
+            key: value.strip()
+            for key, value in row.items()
+            if value != "NULL" and key is not None and value is not None
+        }
 
 
 def get_collection_validator():
     return CollectionValidator({
         "Artlista": ArtlistaRowValidator(),
         "Maerkare": MaerkareRowValidator(),
-        "Medhj": MarkAssRowValidator(),
+        "Medhj": MedhjRowValidator(),
         "MarkAssYr": MarkAssYrRowValidator(),
         "Tillstand": TillstandRowValidator(),
         "TillstProp": TillstPropRowValidator(),
