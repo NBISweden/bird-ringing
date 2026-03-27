@@ -291,6 +291,17 @@ def get_collection_validator():
     })
 
 
+def validate(loader):
+    validator = get_collection_validator()
+    errors = validator.get_errors(loader)
+    for (key, index, column, error) in errors:
+        with_line = f" on line {index + 2}" if index is not None else ""
+        with_column = f" in column {column}" if column is not None else ""
+        print(f"Error in {key}{with_line}{with_column}: {error}")
+    if len(errors) > 0:
+        exit(1)
+
+
 if __name__ == "__main__":
     import sys
     import os
@@ -300,14 +311,7 @@ if __name__ == "__main__":
         dialect = sys.argv[2] if len(sys.argv) > 2 else "excel"
         loader = CSVLoader(sys.argv[1], dialect)
 
-        validator = get_collection_validator()
-        errors = validator.get_errors(loader)
-        for (key, index, column, error) in errors:
-            with_line = f" on line {index + 2}" if index is not None else ""
-            with_column = f" in column {column}" if column is not None else ""
-            print(f"Error in {key}{with_line}{with_column}: {error}")
-        if len(errors) > 0:
-            exit(1)
+        validate(loader)
     else:
         filename = os.path.basename(__file__)
         dialect_names = csv.list_dialects()

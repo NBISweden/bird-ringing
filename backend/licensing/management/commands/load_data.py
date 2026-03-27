@@ -8,7 +8,7 @@ import csv
 import logging
 import re
 from dataclasses import dataclass
-from licensing.data_loading_validation import get_collection_validator, CSVLoader
+from licensing.data_loading_validation import validate, CSVLoader
 
 
 logger = logging.getLogger(__name__)
@@ -54,14 +54,7 @@ class Command(BaseCommand):
         )
         self.current_year = options.get("current_year")
 
-        validator = get_collection_validator()
-
-        if validator is not None:
-            errors = validator.get_errors(loader)
-            for (key, index, column, error) in errors:
-                print(f"Error in {key} on line {index} in column {column}: {error}")
-            if len(errors) > 0:
-                exit()
+        validate(loader)
 
         # default skip legacy permissions unless explicitly included (can be refactored later)
         self.include_legacy_permissions = bool(options.get("include_legacy_permissions"))
