@@ -8,7 +8,7 @@ import csv
 import logging
 import re
 from dataclasses import dataclass
-from licensing.data_loading_validation import get_collection_validator
+from licensing.data_loading_validation import get_collection_validator, CSVLoader
 
 
 logger = logging.getLogger(__name__)
@@ -18,32 +18,6 @@ logger = logging.getLogger(__name__)
 class BirthParsed:
     birth_date: datetime.date | None
     birth_year: int | None
-
-
-class CSVLoader:
-    """
-    The purpose of the CSVLoader is to abstract the use of loaded data so that
-    the system can focus on the naming of the data rather than on where it is
-    or which format it is provided in.
-
-    The loader will read csv files using a path_format, provided by the user,
-    to find the correct file to read for a given name.
-    """
-
-    def __init__(self, path_format: str):
-        self._path_format = path_format
-
-    def get_dict_list(self, id: str):
-        path = self._path_format.format(id=id)
-        with open(path, "r", encoding="utf-8") as f:
-            reader = csv.DictReader(f)
-            return [self._clean_data(row) for row in reader]
-    
-    def __getitem__(self, id: str):
-        return self.get_dict_list(id)
-
-    def _clean_data(self, row):
-        return {key: value.strip() for key, value in row.items() if value != "NULL" and key is not None}
 
 
 def log_action(func):
