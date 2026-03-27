@@ -1,5 +1,6 @@
 import re
 import datetime
+import csv
 
 
 class ColumnValidator:
@@ -224,19 +225,21 @@ class CollectionValidator:
         required_references = []
         for (key, validator) in self._table_validators.items():
             table = tables[key]
-            try:
-                for index, entry in enumerate(table):
-                    errors.extend([
-                        (key, index, column, error)
-                        for (column, error) in validator.get_errors(entry)
-                    ])
+            for index, entry in enumerate(table):
+                errors.extend([
+                    (key, index, column, error)
+                    for (column, error) in validator.get_errors(entry)
+                ])
+
+                try:
                     references.update(validator.get_references(entry))
                     required_references.extend([
                         (key, index, reference)
                         for reference in validator.get_required_references(entry)
                     ])
-            except KeyError:
-                pass
+
+                except KeyError:
+                    pass
 
         for (key, index, (context, reference)) in required_references:
             if reference not in references:
@@ -290,7 +293,6 @@ def get_collection_validator():
 
 if __name__ == "__main__":
     import sys
-    import csv
     import os
 
     csv.register_dialect("nrm", delimiter=";")
@@ -301,7 +303,7 @@ if __name__ == "__main__":
         validator = get_collection_validator()
         errors = validator.get_errors(loader)
         for (key, index, column, error) in errors:
-            with_line = f" on line {index}" if index is not None else ""
+            with_line = f" on line {index + 2}" if index is not None else ""
             with_column = f" in column {column}" if column is not None else ""
             print(f"Error in {key}{with_line}{with_column}: {error}")
         if len(errors) > 0:

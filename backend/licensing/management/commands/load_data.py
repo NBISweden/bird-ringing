@@ -62,7 +62,6 @@ class Command(BaseCommand):
                 print(f"Error in {key} on line {index} in column {column}: {error}")
             if len(errors) > 0:
                 exit()
-        exit()
 
         # default skip legacy permissions unless explicitly included (can be refactored later)
         self.include_legacy_permissions = bool(options.get("include_legacy_permissions"))
