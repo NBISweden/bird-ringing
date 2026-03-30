@@ -6,14 +6,14 @@ dirPath=backend/mock_data/example
 
 mkdir -p "$dirPath" || exit 1
 
-wget -q -N -P "$dirPath" https://pdmnyberg.github.io/ui-examples/data/bird-ringing/legacy/br-ex-Artlista.csv
-wget -q -N -P "$dirPath" https://pdmnyberg.github.io/ui-examples/data/bird-ringing/legacy/br-ex-Maerkare.csv
-wget -q -N -P "$dirPath" https://pdmnyberg.github.io/ui-examples/data/bird-ringing/legacy/br-ex-Medhj.csv
-wget -q -N -P "$dirPath" https://pdmnyberg.github.io/ui-examples/data/bird-ringing/legacy/br-ex-MarkAssYr.csv
+wget -q -N -P "$dirPath" https://pdmnyberg.github.io/ui-examples/data/bird-ringing/next/br-ex-Artlista.csv
+wget -q -N -P "$dirPath" https://pdmnyberg.github.io/ui-examples/data/bird-ringing/next/br-ex-Maerkare.csv
+wget -q -N -P "$dirPath" https://pdmnyberg.github.io/ui-examples/data/bird-ringing/next/br-ex-Medhj.csv
+wget -q -N -P "$dirPath" https://pdmnyberg.github.io/ui-examples/data/bird-ringing/next/br-ex-MarkAssYr.csv
 
-wget -q -N -P "$dirPath" https://pdmnyberg.github.io/ui-examples/data/bird-ringing/legacy/br-ex-Tillstand.csv
-wget -q -N -P "$dirPath" https://pdmnyberg.github.io/ui-examples/data/bird-ringing/legacy/br-ex-TillstProp.csv
-wget -q -N -P "$dirPath" https://pdmnyberg.github.io/ui-examples/data/bird-ringing/legacy/br-ex-TillstTyp.csv
+wget -q -N -P "$dirPath" https://pdmnyberg.github.io/ui-examples/data/bird-ringing/next/br-ex-Tillstand.csv
+wget -q -N -P "$dirPath" https://pdmnyberg.github.io/ui-examples/data/bird-ringing/next/br-ex-TillstProp.csv
+wget -q -N -P "$dirPath" https://pdmnyberg.github.io/ui-examples/data/bird-ringing/next/br-ex-TillstTyp.csv
 
 ./compose-dev.sh exec backend python manage.py load_data "$@"
 

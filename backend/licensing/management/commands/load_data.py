@@ -303,12 +303,6 @@ class Command(BaseCommand):
             base_license.ends_at = self._replace_year(base_license.ends_at, year + year_delta)
             base_license.save()
             self._apply_relations(base_license, relations)
-            for permission in base_license.permissions.all():
-                if permission.ends_at and permission.starts_at:
-                    perm_year_delta = permission.ends_at.year - permission.starts_at.year
-                    permission.starts_at = self._replace_year(permission.starts_at, year)
-                    permission.ends_at = self._replace_year(permission.ends_at, year + perm_year_delta)
-                    permission.save()
             (license_import, created) = models.LicenseImport.objects.get_or_commit(
                 base_license,
                 f"commit-{year}",
@@ -602,4 +596,23 @@ class Command(BaseCommand):
         value = value.strip()
         if not value:
             return None
-        return datetime.datetime.strptime(value, "%Y-%m-%d").date()
+
+        date_formats = [
+            "%Y-%m-%d",
+            "%Y/%m/%d"
+        ]
+        variants = [
+            value,
+            f"2000-{value}",
+            f"2000/{value}",
+        ]
+
+        for date_format in date_formats:
+            for variant in variants:
+                try:
+                    return models.MonthDay.from_date(
+                        datetime.datetime.strptime(variant, date_format).date()
+                    )
+                except ValueError:
+                    pass
+            raise ValueError("no applicable date format found")
