@@ -120,6 +120,7 @@ class MaerkareRowValidator(RowValidator):
         "Spr": ColumnValidator(validator=enum_validator({"SV", "EN"})),
         "Fyr": ColumnValidator(validator=birth_date_or_year_validator),
         "Status": ColumnValidator(validator=enum_validator({"Aktiv", "Ej aktiv", "Avslutad"})),
+        "Sex": ColumnValidator(validator=enum_validator({"M", "F"})),
     }
 
     def get_references(self, row):
@@ -141,6 +142,7 @@ class MedhjRowValidator(RowValidator):
         "Mnr": ColumnValidator(required=True),
         "Fyr": ColumnValidator(validator=birth_date_or_year_validator),
         "Role": ColumnValidator(validator=enum_validator({"A", "O", "R"})),
+        "Sex": ColumnValidator(validator=enum_validator({"M", "F"})),
     }
 
     def get_references(self, row):

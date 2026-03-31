@@ -51,7 +51,7 @@ Maerkare is a table combining license and main ringer information.
 | Ort | optional | The city of the ringer. |
 | Postnr | optional | The postal code of the ringer. |
 | PriSta | required | The type of ringer Station or Person (S, P). |
-| Sex | optional | The sex of the ringer. Only applicable for a Person. |
+| Sex | optional | The sex of the ringer. Only applicable for a Person. Only accepts M or F. |
 | Slutredov | optional | If not null, the license will have the status `ReportStatusChoices.YES`.  |
 | Spr | optional | The language of the ringer. Allowed options SV, EN. |
 | Startyr | optional | The start year of the license. |
