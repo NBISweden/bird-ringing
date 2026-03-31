@@ -33,7 +33,7 @@ class TestValidateSettings(TestCase):
         
         self.command.settings = MockSettings()
         errors = list(self.command.validate_attributes())
-        self.assertEqual(8, len(errors), "Has one error per missing required setting")
+        self.assertEqual(7, len(errors), "Has one error per missing required setting")
 
     def test_failed_to_load_template(self):
         class MockSettings:
@@ -61,9 +61,8 @@ class TestValidateSettings(TestCase):
         self.assertEqual(
             errors,
             [
-                "Configured template file, for LICENSING_CARD_TEMPLATE, not found: a",
-                "Configured template file, for LICENSING_CARD_TEMPLATE_BACK, not found: b",
-                "Configured template file, for LICENSING_PERMIT_TEMPLATE_DOCX, not found: c"
+                "Configured template file, for 'LICENSING_CARD_TEMPLATE' (LICENSE_CARD_FILE), not found: 'a'",
+                "Configured template file, for 'LICENSING_PERMIT_TEMPLATE_DOCX' (PERMIT_TEMPLATE_FILE), not found: 'c'"
             ]
         )
     
