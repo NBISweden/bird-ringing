@@ -1,6 +1,7 @@
 import re
 import datetime
 import csv
+import collections
 
 
 class ColumnValidator:
@@ -50,6 +51,9 @@ class RowValidator:
         return []
 
     def get_required_references(self, row):
+        return []
+    
+    def get_uniques(self, row):
         return []
 
 
@@ -150,6 +154,11 @@ class MedhjRowValidator(RowValidator):
 
     def get_required_references(self, row):
         return [("Mnr", ("mnr", row["Mnr"]))]
+    
+    def get_uniques(self, row):
+        return [
+            ("unique-actors-for-role-and-license", row["Mnr"], row["Role"], row["ENamn"], row["FNamn"], row["Fyr"])
+        ]
 
 
 class MarkAssYrRowValidator(RowValidator):
@@ -226,6 +235,7 @@ class CollectionValidator:
         errors = []
         references = set()
         required_references = []
+        uniques = []
         for (key, validator) in self._table_validators.items():
             table = tables[key]
             for index, entry in enumerate(table):
@@ -243,10 +253,30 @@ class CollectionValidator:
 
                 except KeyError:
                     pass
+                
+                try:
+                    uniques.extend([
+                        (key, index, unique)
+                        for unique in validator.get_uniques(entry)
+                    ])
+                except KeyError:
+                    pass
 
         for (key, index, (context, reference)) in required_references:
             if reference not in references:
                 errors.append((key, index, context, f"Missing reference {reference}"))
+        
+        duplicates = set(
+            item
+            for item, count in collections.Counter([u for (_k, _i, u) in uniques]).items()
+            if count > 1
+        )
+        
+        for duplicate in duplicates:
+            for (key, index, unique) in uniques:
+                if unique == duplicate:
+                    (context, *cause) = unique
+                    errors.append((key, index, context, f"Duplicate detected {cause}"))
 
         return errors
 
