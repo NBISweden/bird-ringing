@@ -1,3 +1,4 @@
+from __future__ import annotations
 from django.db import models, transaction
 from django.db.models import Max, F, Window
 from django.db.models.functions import RowNumber
@@ -6,6 +7,9 @@ from django.core.validators import MinLengthValidator
 from django.template.defaultfilters import slugify
 import hashlib
 from .serializers import json_serialize
+from dataclasses import dataclass
+from typing import ClassVar, Tuple
+import datetime
 
 
 class ChangeTracking(models.Model):
@@ -17,6 +21,137 @@ class ChangeTracking(models.Model):
 
     class Meta:
         abstract = True
+
+
+@dataclass(frozen=True, order=True)
+class MonthDay:
+    month: int
+    day: int
+
+    DUMMY_YEAR: ClassVar[int] = 2000
+
+    def __post_init__(self):
+        self.as_date()
+
+    def as_date(self, year: int | None = None) -> datetime.date:
+        return MonthDay.to_dummy_date(self, year)
+
+    def __str__(self):
+        return f"{self.month:02d}-{self.day:02d}"
+    
+
+    @classmethod
+    def from_date(cls, value: datetime.date) -> MonthDay:
+        return cls(value.month, value.day)
+    
+    @staticmethod
+    def to_dummy_date(
+        date_or_month_day: datetime.date | MonthDay,
+        year: int | None = None
+    ):
+        value = date_or_month_day
+        year = MonthDay.DUMMY_YEAR if year is None else year
+        try:
+            return datetime.date(year, value.month, value.day)
+        except ValueError:
+            # Handle leap year by assuming 
+            if value.month == 2 and value.day == 29:
+                return datetime.date(year, value.month, 28)
+            else:
+                raise
+
+    @staticmethod
+    def get_period(
+        full_period: Tuple[datetime.date, datetime.date],
+        local_period: Tuple[MonthDay, MonthDay]
+    ) -> Tuple[datetime.date, datetime.date]:
+        (local_starts_at, local_ends_at) = local_period
+        starts_at = MonthDay.get_starts_at(full_period, local_starts_at)
+        ends_at = MonthDay.get_ends_at(full_period, starts_at, local_ends_at)
+        return (starts_at, ends_at)
+
+    @staticmethod
+    def get_starts_at(
+        full_period: Tuple[datetime.date, datetime.date],
+        local_starts_at: MonthDay
+    ) -> datetime.date:
+        """
+        Calculates the start of the local period using the assumption that the 
+        length of the local period is less than or equal to one year. The period is
+        assumed to begin before or within the range of the full_period.
+        """
+
+        (full_starts_at, full_ends_at) = full_period
+
+        if local_starts_at is None:
+            return full_starts_at
+
+        early_start = local_starts_at.as_date(full_starts_at.year)
+        late_start = local_starts_at.as_date(full_ends_at.year)
+        if early_start >= full_starts_at and early_start <= full_ends_at:
+            return early_start
+        elif late_start >= full_starts_at and late_start <= full_ends_at:
+            return late_start
+        return early_start
+
+    @staticmethod
+    def get_ends_at(
+        full_period: Tuple[datetime.date, datetime.date],
+        starts_at: datetime.date,
+        local_ends_at: MonthDay
+    ) -> datetime.date:
+        """
+        Calculates the end of the local period using the assumption that the
+        length of the local period is less than or equal to one year. The period is
+        assumed to end after or within the range of the full_period.
+        """
+
+        (full_starts_at, full_ends_at) = full_period
+        if local_ends_at is None:
+            return full_ends_at
+
+        early_end = local_ends_at.as_date(starts_at.year)
+
+        if early_end <= starts_at or early_end <= full_starts_at:
+            return local_ends_at.as_date(starts_at.year + 1)
+        else:
+            return early_end
+
+
+class MonthDayField(models.DateField):
+    description = "A month and a date intended to target any year."
+
+    def to_python(self, value):
+        if value is None or isinstance(value, MonthDay):
+            return value
+
+        value = super().to_python(value)
+        if value is None:
+            return value
+        return MonthDay.from_date(value)
+
+    def from_db_value(self, value, expression, connection):
+        if value is None:
+            return value
+        if isinstance(value, datetime.date):
+            return MonthDay.from_date(value)
+        value = super().to_python(value)
+        return MonthDay.from_date(value)
+
+    def get_prep_value(self, value):
+        if value is None:
+            return None
+        if isinstance(value, MonthDay):
+            return value.as_date()
+        else:
+            value = super().get_prep_value(value)
+            return MonthDay.to_dummy_date(value)
+
+    def value_to_string(self, obj):
+        value = self.value_from_object(obj)
+        if value is None:
+            return ""
+        return str(value)
 
 
 class ActorTypeChoices(models.IntegerChoices):
@@ -473,8 +608,8 @@ class LicensePermission(ChangeTracking):
     species_list = models.ManyToManyField(Species, blank=True)
     properties = models.ManyToManyField(LicensePermissionProperty, blank=True)
 
-    starts_at = models.DateField(blank=True, null=True)
-    ends_at = models.DateField(blank=True, null=True)
+    starts_at = MonthDayField(blank=True, null=True)
+    ends_at = MonthDayField(blank=True, null=True)
 
     def copy_to(self, license: License):
         base = LicensePermission.objects.get(pk=self.pk)

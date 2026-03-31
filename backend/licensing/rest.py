@@ -38,7 +38,8 @@ from licensing.models import (
     LicenseDocument,
     LicenseCommunication,
     CommunicationTypeChoices,
-    DocumentTypeChoices
+    DocumentTypeChoices,
+    MonthDay,
 )
 from rest_framework.authentication import SessionAuthentication, BasicAuthentication
 from rest_framework.permissions import DjangoModelPermissions
@@ -451,6 +452,8 @@ class LicenseLicensePermissionSerializer(serializers.ModelSerializer):
     type = LicensePermissionTypeSerializer(read_only=True)
     species = serializers.SerializerMethodField()
     properties = LicensePermissionPropertySerializer(many=True, read_only=True)
+    starts_at = serializers.SerializerMethodField()
+    ends_at = serializers.SerializerMethodField()
 
     class Meta:
         model = LicensePermission
@@ -458,6 +461,18 @@ class LicenseLicensePermissionSerializer(serializers.ModelSerializer):
 
     def get_species(self, obj):
         return list(obj.species_list.values_list('name', flat=True))
+    
+    def get_starts_at(self, obj):
+        return MonthDay.get_starts_at(
+            (obj.license.starts_at, obj.license.ends_at),
+            obj.starts_at
+        )
+
+    def get_ends_at(self, obj):
+        return MonthDay.get_period(
+            (obj.license.starts_at, obj.license.ends_at),
+            (obj.starts_at, obj.ends_at)
+        )[1]
 
 class LicenseDocumentSerializer(serializers.ModelSerializer):
     actor = serializers.CharField(source="actor.full_name", read_only=True)
