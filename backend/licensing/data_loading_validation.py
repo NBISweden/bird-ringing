@@ -119,6 +119,7 @@ class MaerkareRowValidator(RowValidator):
         "PriSta": ColumnValidator(required=True, validator=enum_validator({"P", "S"})),
         "Spr": ColumnValidator(validator=enum_validator({"SV", "EN"})),
         "Fyr": ColumnValidator(validator=birth_date_or_year_validator),
+        "Status": ColumnValidator(validator=enum_validator({"Aktiv", "Ej aktiv", "Avslutad"})),
     }
 
     def get_references(self, row):
