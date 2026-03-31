@@ -4,7 +4,6 @@ from django.db.models import Max, F, Window
 from django.db.models.functions import RowNumber
 from django.contrib.auth.models import User
 from django.core.validators import MinLengthValidator
-from django.core import exceptions
 from django.template.defaultfilters import slugify
 import hashlib
 from .serializers import json_serialize
@@ -34,7 +33,7 @@ class MonthDay:
     def __post_init__(self):
         self.as_date()
 
-    def as_date(self, year=None):
+    def as_date(self, year: int | None = None) -> datetime.date:
         return MonthDay.to_dummy_date(self, year)
 
     def __str__(self):
@@ -42,11 +41,14 @@ class MonthDay:
     
 
     @classmethod
-    def from_date(cls, value):
+    def from_date(cls, value: datetime.date) -> MonthDay:
         return cls(value.month, value.day)
     
     @staticmethod
-    def to_dummy_date(date_or_month_day, year=None):
+    def to_dummy_date(
+        date_or_month_day: datetime.date | MonthDay,
+        year: int | None = None
+    ):
         value = date_or_month_day
         year = MonthDay.DUMMY_YEAR if year is None else year
         try:
@@ -62,7 +64,7 @@ class MonthDay:
     def get_period(
         full_period: Tuple[datetime.date, datetime.date],
         local_period: Tuple[MonthDay, MonthDay]
-    ):
+    ) -> Tuple[datetime.date, datetime.date]:
         (local_starts_at, local_ends_at) = local_period
         starts_at = MonthDay.get_starts_at(full_period, local_starts_at)
         ends_at = MonthDay.get_ends_at(full_period, starts_at, local_ends_at)
@@ -72,7 +74,7 @@ class MonthDay:
     def get_starts_at(
         full_period: Tuple[datetime.date, datetime.date],
         local_starts_at: MonthDay
-    ):
+    ) -> datetime.date:
         """
         Calculates the start of the local period using the assumption that the 
         length of the local period is less than or equal to one year. The period is
@@ -97,7 +99,7 @@ class MonthDay:
         full_period: Tuple[datetime.date, datetime.date],
         starts_at: datetime.date,
         local_ends_at: MonthDay
-    ):
+    ) -> datetime.date:
         """
         Calculates the end of the local period using the assumption that the
         length of the local period is less than or equal to one year. The period is
@@ -144,7 +146,6 @@ class MonthDayField(models.DateField):
         else:
             value = super().get_prep_value(value)
             return MonthDay.to_dummy_date(value)
-        raise exceptions.ValidationError("Invalid value for MonthDayField")
 
     def value_to_string(self, obj):
         value = self.value_from_object(obj)
