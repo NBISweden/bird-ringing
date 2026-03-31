@@ -66,6 +66,11 @@ class ArtlistaRowValidator(RowValidator):
 
     def get_references(self, row):
         return [("species", row["VetKod"])]
+    
+    def get_uniques(self, row):
+        return [
+            ("VetKod", row["VetKod"])
+        ]
 
 
 def enum_validator(enum_as_set):
@@ -73,7 +78,7 @@ def enum_validator(enum_as_set):
 
     def _enum_validator(value):
         if value not in validation_set:
-            raise ValueError(f"Value {value} is not {validation_set}")
+            raise ValueError(f"Value '{value}' is not {validation_set}")
 
     return _enum_validator
 
@@ -124,7 +129,7 @@ class MaerkareRowValidator(RowValidator):
         "Spr": ColumnValidator(validator=enum_validator({"SV", "EN"})),
         "Fyr": ColumnValidator(validator=birth_date_or_year_validator),
         "Status": ColumnValidator(validator=enum_validator({"Aktiv", "Ej aktiv", "Avslutad"})),
-        "Sex": ColumnValidator(validator=enum_validator({"M", "F"})),
+        "Sex": ColumnValidator(validator=enum_validator({"M", "F", ""})),
     }
 
     def get_references(self, row):
@@ -136,6 +141,11 @@ class MaerkareRowValidator(RowValidator):
             for ref in ["AdrMnr", "AssMnr1", "AssMnr2", "AssMnr3"]
             if ref in row
         ]
+    
+    def get_uniques(self, row):
+        return [
+            ("Mnr", (row["Mnr"]))
+        ]
 
 
 class MedhjRowValidator(RowValidator):
@@ -146,7 +156,7 @@ class MedhjRowValidator(RowValidator):
         "Mnr": ColumnValidator(required=True),
         "Fyr": ColumnValidator(validator=birth_date_or_year_validator),
         "Role": ColumnValidator(validator=enum_validator({"A", "O", "R"})),
-        "Sex": ColumnValidator(validator=enum_validator({"M", "F"})),
+        "Sex": ColumnValidator(validator=enum_validator({"M", "F", ""})),
     }
 
     def get_references(self, row):
@@ -157,7 +167,7 @@ class MedhjRowValidator(RowValidator):
     
     def get_uniques(self, row):
         return [
-            ("unique-actors-for-role-and-license", row["Mnr"], row["Role"], row["ENamn"], row["FNamn"], row["Fyr"])
+            ("unique-actors-for-role-and-license", (row["Mnr"], row["Role"], row["ENamn"], row["FNamn"], row["Fyr"]))
         ]
 
 
@@ -172,6 +182,11 @@ class MarkAssYrRowValidator(RowValidator):
         return [
             ("Mnr", ("mnr", row["Mnr"])),
             (("Mnr", "Mednr"), ("markass", row["Mnr"], row["Mednr"]))
+        ]
+    
+    def get_uniques(self, row):
+        return [
+            ("Mnr, Mednr, Ar", (row["Mnr"], row["Mednr"], row["Ar"]))
         ]
 
 
@@ -275,7 +290,7 @@ class CollectionValidator:
         for duplicate in duplicates:
             for (key, index, unique) in uniques:
                 if unique == duplicate:
-                    (context, *cause) = unique
+                    (context, cause) = unique
                     errors.append((key, index, context, f"Duplicate detected {cause}"))
 
         return errors
