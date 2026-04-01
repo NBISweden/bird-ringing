@@ -61,6 +61,8 @@ Some configuration options are supplied as environment variables using Docker Co
 | backend            | DJANGO_EMAIL_USE_SSL            | Specify if the server uses SSL or not. Default is `false`. |
 | backend            | DJANGO_EMAIL_SSL_KEYFILE        | (When `DJANGO_EMAIL_USE_SSL="true"`) A SSL key file. Preferrably using [docker secrets](https://docs.docker.com/compose/how-tos/use-secrets/). |
 | backend            | DJANGO_EMAIL_SSL_CERTFILE       | (When `DJANGO_EMAIL_USE_SSL="true"`) A SSL a certificate file. Preferrably using [docker secrets](https://docs.docker.com/compose/how-tos/use-secrets/). |
+| backend            | GUNICORN_WORKERS                | Specify the number of workers to use for the production gunicorn instance. See [gunicorns documentation](https://gunicorn.org/reference/settings/#workers) for details |
+| backend            | GUNICORN_TIMEOUT                | Specify the worker timeout in seconds for the production gunicorn instance. See [gunicorns documentation](https://gunicorn.org/reference/settings/#timeout) for details |
 
 ### Docker Options
 
