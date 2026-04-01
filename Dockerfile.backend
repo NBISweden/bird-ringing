@@ -8,6 +8,7 @@ ARG GID=${BUILD_ID#*:}
 RUN --mount=type=cache,id=apk-cache,target=/var/cache/apk \
     apk --cache-dir=/var/cache/apk add \
 	build-base \
+	ca-certificates \
 	ccache \
 	dumb-init \
 	libpq \
@@ -15,6 +16,8 @@ RUN --mount=type=cache,id=apk-cache,target=/var/cache/apk \
 	cairo \
 	fontconfig \
 	font-noto
+
+RUN update-ca-certificates
 RUN fc-cache -f
 
 ENV HOME=/app
