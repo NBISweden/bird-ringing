@@ -20,6 +20,9 @@ from django.urls import path, include
 from licensing.rest import router as licensing_router
 from .views import SystemInfoView, HealthCheckView, LoginView
 
+admin.site.site_header = "Bird Ringing Admin"
+admin.site.site_title = "Bird Ringing Admin Portal"
+admin.site.index_title = "Welcome to the Bird Ringing Admin Portal"
 
 urlpatterns = [
     path("admin/", admin.site.urls),

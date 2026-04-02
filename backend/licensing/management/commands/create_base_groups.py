@@ -20,17 +20,42 @@ class Command(BaseCommand):
             permissions = ["view_licensesequence", "view_actor", "change_licensesequence"]
 
             for _, group_name in group_names.items():
-                group, created = Group.objects.get_or_create(name=group_name)
-                if created:
-                    for perm_name in permissions:
-                        perm = Permission.objects.get(codename=perm_name)
-                        group.permissions.add(perm)
-                    group.save()
+                self.create_group(group_name, permissions)
+            
+            self.create_group(
+                "BR-Editor",
+                [
+                    f"{auth}_{modelname}"
+                    for modelname in [
+                        "licensesequence",
+                        "actor",
+                        "license",
+                        "species",
+                        "licenserelation",
+                        "licensecommunication",
+                        "licensepermission",
+                        "licensepermissionproperty",
+                        "licensepermissiontype",
+                        "licensedocument",
+                        "permitdnr",
+                        
+                    ]
+                    for auth in ["view", "change", "delete", "add"]
+                ]
+            )
 
-                    self.stdout.write(
-                        self.style.SUCCESS(f"Group '{group_name}' was created.")
-                    )
-                else:
-                    self.stdout.write(
-                        self.style.NOTICE(f"Group '{group_name}' already exists.")
-                    )
+    def create_group(self, group_name: str, permissions: list[str]):
+        group, created = Group.objects.get_or_create(name=group_name)
+        if created:
+            for perm_name in permissions:
+                perm = Permission.objects.get(codename=perm_name)
+                group.permissions.add(perm)
+            group.save()
+
+            self.stdout.write(
+                self.style.SUCCESS(f"Group '{group_name}' was created.")
+            )
+        else:
+            self.stdout.write(
+                self.style.NOTICE(f"Group '{group_name}' already exists.")
+            )
