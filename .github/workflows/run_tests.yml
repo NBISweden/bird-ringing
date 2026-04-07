@@ -32,4 +32,4 @@ jobs:
         env:
           DJANGO_SECRET_KEY: test-secret-key
         run: |
-          uv run python manage.py test licensing.tests
+          uv run manage.py test -v 2
