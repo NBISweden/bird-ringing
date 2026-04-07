@@ -1,5 +1,5 @@
 from django.test import TestCase
-from django.test import Client
+from django.test import Client, override_settings
 from django.urls import reverse
 from licensing.models import (
     Actor,
@@ -25,6 +25,8 @@ from licensing.communication_service import CommunicationService
 from licensing.license_card_service import LicenseCardService
 import io
 import zipfile
+import tempfile
+from pathlib import Path
 
 
 class _EmailTestBase(TestCase):
@@ -535,6 +537,29 @@ class LicenseDocumentEmailSelectedActorsTests(_EmailTestBase):
         return f"/api/license_sequence/{mnr}/send-license-emails/?{query}"
 
 class LicenseDocumentEmailNotifyRingerTests(_EmailTestBase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls._tmpdir = tempfile.TemporaryDirectory()
+        cls._card_template = Path(cls._tmpdir.name) / "license-card-template.svg"
+        cls._card_template.write_text(
+            """<svg xmlns="http://www.w3.org/2000/svg" width="400" height="200">
+           <rect width="100%" height="100%" fill="white"/>
+           <text x="20" y="40">{{ text_placeholder }}</text>
+           </svg>""",
+            encoding="utf-8",
+        )
+        cls._override = override_settings(
+            LICENSING_CARD_TEMPLATE=str(cls._card_template)
+        )
+        cls._override.enable()
+
+    @classmethod
+    def tearDownClass(cls):
+        cls._override.disable()
+        cls._tmpdir.cleanup()
+        super().tearDownClass()
+
     @staticmethod
     def _plain_licensesequence_queryset(_self):
         return LicenseSequence.objects.all()
