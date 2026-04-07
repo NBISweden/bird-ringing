@@ -29,7 +29,9 @@ case $SERVICE_MODE in
 		exec python manage.py runserver 0.0.0.0:8000
 		;;
 	production*)
-		exec gunicorn --bind 0.0.0.0:8000 bird_ringing.wsgi
+		TIMEOUT=${GUNICORN_TIMEOUT:-30}
+		WORKERS=${GUNICORN_WORKERS:-1}
+		exec gunicorn --bind 0.0.0.0:8000 bird_ringing.wsgi --timeout "$TIMEOUT" --workers "$WORKERS"
 		;;
 	*)
 		printf "Unknown SERVICE_MODE: %s\n" "$SERVICE_MODE" >&2
