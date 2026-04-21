@@ -15,6 +15,7 @@ from licensing.models import (
 )
 import datetime
 import mimetypes
+import re
 
 
 class MessageBuilder:
@@ -137,6 +138,9 @@ class RingerBundleMessageBuilder:
         self.message_builder = message_builder
         self.card_service = card_service
         self.permit_service = permit_service or PermitService()
+        self.zip_file_suffix = RingerBundleMessageBuilder.parse_bundle_suffix(
+            getattr(django_settings, "LICENSING_HELPER_BUNDLE_SUFFIX", "helpers-documents")
+        )
 
     def build_message(self, *, lic: License, ringer_actor: Actor, relations: list[LicenseRelation], include_card: bool,
         include_permit: bool,
@@ -170,7 +174,7 @@ class RingerBundleMessageBuilder:
             return None
 
         zip_bytes = zip_bytes_from_files(files)
-        zip_filename = f"{lic.sequence.mnr}-helpers-documents.zip"
+        zip_filename = f"{lic.sequence.mnr}-{self.zip_file_suffix}.zip"
 
         zip_attachment = EmailAttachment(
             filename=zip_filename,
@@ -188,3 +192,8 @@ class RingerBundleMessageBuilder:
             },
             attachments=[zip_attachment],
         )
+
+    @staticmethod
+    def parse_bundle_suffix(suffix):
+        FILENAME_REGEX = r'[^a-zA-Z0-9ÄÖÅäöå_\-]'
+        return re.sub(FILENAME_REGEX, '-', suffix)
