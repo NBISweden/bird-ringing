@@ -38,7 +38,7 @@ async function fetchActorEmail([client, ids]: [
   string[],
   string,
 ]): Promise<string[]> {
-  const actors = await Client.fetchAll(
+  const actors = await client.fetchAll(
     client.fetchActorPage(1, undefined, undefined, ids),
   );
   return actors
