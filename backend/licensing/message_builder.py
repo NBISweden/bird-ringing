@@ -16,6 +16,7 @@ from licensing.models import (
 import datetime
 import mimetypes
 import re
+from django.utils.translation import gettext as _
 
 
 class MessageBuilder:
@@ -138,9 +139,7 @@ class RingerBundleMessageBuilder:
         self.message_builder = message_builder
         self.card_service = card_service
         self.permit_service = permit_service or PermitService()
-        self.zip_file_suffix = RingerBundleMessageBuilder.parse_bundle_suffix(
-            getattr(django_settings, "LICENSING_HELPER_BUNDLE_SUFFIX", "helpers-documents")
-        )
+        self.zip_file_suffix = RingerBundleMessageBuilder.parse_bundle_suffix(_("helpers-documents"))
 
     def build_message(self, *, lic: License, ringer_actor: Actor, relations: list[LicenseRelation], include_card: bool,
         include_permit: bool,
@@ -188,7 +187,7 @@ class RingerBundleMessageBuilder:
                 "mnr": lic.sequence.mnr,
                 "name": ringer_actor.full_name,
                 "date": datetime.date.today().isoformat(),
-                "attachments": [("bundle", zip_filename)],
+                "attachments": [(_("bundle"), zip_filename)],
             },
             attachments=[zip_attachment],
         )

@@ -29,6 +29,7 @@ import io
 import zipfile
 import tempfile
 from pathlib import Path
+from django.utils.translation import gettext as _
 
 
 class _EmailTestBase(TestCase):
@@ -36,11 +37,9 @@ class _EmailTestBase(TestCase):
     Shared setup + helpers for email batch-sending tests.
     """
     def setUp(self):
-        zip_file_suffix = RingerBundleMessageBuilder.parse_bundle_suffix(
-            getattr(settings, "LICENSING_HELPER_BUNDLE_SUFFIX", "helpers-documents")
-        )
+        zip_file_suffix = RingerBundleMessageBuilder.parse_bundle_suffix(_("helpers-documents"))
         self.bundle_suffix = f"-{zip_file_suffix}.zip"
-        self.client = Client()
+        self.client = Client(HTTP_ACCEPT_LANGUAGE="en")
         self.user_with_access = create_user(
             "userwithaccess",
             "pwd",
