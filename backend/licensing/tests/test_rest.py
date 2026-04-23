@@ -16,6 +16,7 @@ from licensing.models import (
     LicenseCommunication,
     CommunicationStatusChoices,
 )
+from licensing.message_builder import RingerBundleMessageBuilder
 from .utils import create_user, get_fingerprint
 import datetime
 from django.core import mail
@@ -27,6 +28,7 @@ import io
 import zipfile
 import tempfile
 from pathlib import Path
+from django.utils.translation import gettext as _
 
 
 class _EmailTestBase(TestCase):
@@ -34,7 +36,9 @@ class _EmailTestBase(TestCase):
     Shared setup + helpers for email batch-sending tests.
     """
     def setUp(self):
-        self.client = Client()
+        zip_file_suffix = RingerBundleMessageBuilder.parse_bundle_suffix(_("helpers-documents"))
+        self.bundle_suffix = f"-{zip_file_suffix}.zip"
+        self.client = Client(HTTP_ACCEPT_LANGUAGE="en")
         self.user_with_access = create_user(
             "userwithaccess",
             "pwd",
@@ -140,6 +144,7 @@ class _EmailTestBase(TestCase):
         self.client.login(username="userwithaccess", password="pwd")
 
 
+@override_settings(COMMUNICATION_LANGUAGE_CODE="en")
 class LicenseDocumentEmailTests(_EmailTestBase):
     def test_fail_when_missing_license_documents(self):
         self._with_access()
@@ -205,15 +210,14 @@ class LicenseDocumentEmailTests(_EmailTestBase):
         response = self.client.put(url)
         self.assertEqual(response.status_code, 200)
         today_str = str(datetime.date.today())
-        bundle_suffix = "-helpers-documents.zip"
         actor_messages = [
             m for m in mail.outbox
-            if not any(filename.endswith(bundle_suffix) for (filename, _data, _mimetype) in m.attachments)
+            if not any(filename.endswith(self.bundle_suffix) for (filename, _data, _mimetype) in m.attachments)
         ]
 
         bundle_messages = [
             m for m in mail.outbox
-            if any(filename.endswith(bundle_suffix) for (filename, _data, _mimetype) in m.attachments)
+            if any(filename.endswith(self.bundle_suffix) for (filename, _data, _mimetype) in m.attachments)
         ]
 
         actor_license_combos = list(zip([*self.actors, *self.actors], [*self.licenses, *reversed(self.licenses)]))
@@ -267,10 +271,10 @@ class LicenseDocumentEmailTests(_EmailTestBase):
             self.assertEqual(1, len(msg.attachments))
 
             zip_filename, data, mimetype = msg.attachments[0]
-            self.assertTrue(zip_filename.endswith("-helpers-documents.zip"))
+            self.assertTrue(zip_filename.endswith(self.bundle_suffix))
             self.assertEqual("application/zip", mimetype)
 
-            mnr = zip_filename.split("-helpers-documents.zip")[0]
+            mnr = zip_filename.split(self.bundle_suffix)[0]
             self.assertIn(mnr, licenses_by_mnr)
             lic = licenses_by_mnr[mnr]
 
@@ -414,17 +418,16 @@ class LicenseDocumentEmailTests(_EmailTestBase):
 
         # Verify station ringer did NOT receive an individual email (PDF attachment),
         # but did receive a bundle email (ZIP attachment)
-        bundle_suffix = "-helpers-documents.zip"
         bundle_msgs = [
             m for m in mail.outbox
-            if any(fn.endswith(bundle_suffix) for (fn, _data, _mime) in m.attachments)
+            if any(fn.endswith(self.bundle_suffix) for (fn, _data, _mime) in m.attachments)
         ]
         self.assertEqual(1, len(bundle_msgs))
         self.assertEqual([ringer_actor.email], bundle_msgs[0].to)
 
         individual_msgs = [
             m for m in mail.outbox
-            if not any(fn.endswith(bundle_suffix) for (fn, _data, _mime) in m.attachments)
+            if not any(fn.endswith(self.bundle_suffix) for (fn, _data, _mime) in m.attachments)
         ]
         # Only the associate should get an individual message in this request
         self.assertEqual(1, len(individual_msgs))
@@ -437,6 +440,7 @@ class LicenseDocumentEmailTests(_EmailTestBase):
         ]
         return reverse("licensesequence-send-license-emails") + f"?mnrs={','.join(mnrs)}&{'&'.join(params)}"
 
+@override_settings(COMMUNICATION_LANGUAGE_CODE="en")
 class LicenseDocumentEmailSelectedActorsTests(_EmailTestBase):
     # We patch get_queryset() to a plain queryset for these tests to avoid postgres specific anotations
     # like StringAgg(distinct=True) that fail with sqlite.
@@ -536,6 +540,7 @@ class LicenseDocumentEmailSelectedActorsTests(_EmailTestBase):
         query = "&".join(params)
         return f"/api/license_sequence/{mnr}/send-license-emails/?{query}"
 
+@override_settings(COMMUNICATION_LANGUAGE_CODE="en")
 class LicenseDocumentEmailNotifyRingerTests(_EmailTestBase):
     @classmethod
     def setUpClass(cls):
@@ -602,7 +607,7 @@ class LicenseDocumentEmailNotifyRingerTests(_EmailTestBase):
         self.assertEqual(1, len(bundle_msg.attachments))
 
         filename, data, mimetype = bundle_msg.attachments[0]
-        self.assertTrue(filename.endswith("-helpers-documents.zip"))
+        self.assertTrue(filename.endswith(self.bundle_suffix))
         self.assertEqual("application/zip", mimetype)
 
         with zipfile.ZipFile(io.BytesIO(data), "r") as zf:
@@ -741,10 +746,9 @@ class LicenseDocumentEmailNotifyRingerTests(_EmailTestBase):
         self.assertEqual("sent", resp.json()["ringer_bundle_message"])
 
         # Ensure the bundle went to the (station) ringer
-        bundle_suffix = "-helpers-documents.zip"
         bundle_msgs = [
             m for m in mail.outbox
-            if any(fn.endswith(bundle_suffix) for (fn, _data, _mime) in m.attachments)
+            if any(fn.endswith(self.bundle_suffix) for (fn, _data, _mime) in m.attachments)
         ]
         self.assertEqual(1, len(bundle_msgs))
         self.assertEqual([ringer_actor.email], bundle_msgs[0].to)

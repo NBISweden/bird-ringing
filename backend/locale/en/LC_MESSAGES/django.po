@@ -1,0 +1,173 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-04-23 13:29+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: bird_ringing/settings.py:145
+msgid "Swedish"
+msgstr "Swedish"
+
+#: bird_ringing/settings.py:146
+msgid "English"
+msgstr "English"
+
+#: licensing/message_builder.py:139 licensing/tests/test_rest.py:39
+msgid "helpers-documents"
+msgstr "helpers-documents"
+
+#: licensing/message_builder.py:187
+msgid "bundle"
+msgstr "bundle"
+
+#: licensing/models.py:159
+msgid "person"
+msgstr "person"
+
+#: licensing/models.py:160
+msgid "station"
+msgstr "station"
+
+#: licensing/models.py:164
+msgid "male"
+msgstr "male"
+
+#: licensing/models.py:165
+msgid "female"
+msgstr "female"
+
+#: licensing/models.py:166
+msgid "undisclosed"
+msgstr "undisclosed"
+
+#: licensing/models.py:167
+msgid "n/a"
+msgstr "n/a"
+
+#: licensing/models.py:171
+msgid "unknown"
+msgstr "unknown"
+
+#: licensing/models.py:172
+msgid "sv"
+msgstr "swedish"
+
+#: licensing/models.py:173
+msgid "en"
+msgstr "english"
+
+#: licensing/models.py:177
+msgid "yes"
+msgstr "yes"
+
+#: licensing/models.py:178
+msgid "no"
+msgstr "no"
+
+#: licensing/models.py:179
+msgid "incomplete"
+msgstr "incomplete"
+
+#: licensing/models.py:183
+msgid "final"
+msgstr "final"
+
+#: licensing/models.py:184
+msgid "partial"
+msgstr "partial"
+
+#: licensing/models.py:188
+msgid "ringer"
+msgstr "ringer"
+
+#: licensing/models.py:189
+msgid "associate ringer"
+msgstr "associate ringer"
+
+#: licensing/models.py:190
+msgid "affiliate"
+msgstr "affiliate"
+
+#: licensing/models.py:191
+msgid "communication"
+msgstr "communication"
+
+#: licensing/models.py:195
+msgid "active"
+msgstr "active"
+
+#: licensing/models.py:196
+msgid "inactive"
+msgstr "inactive"
+
+#: licensing/models.py:197
+msgid "terminated"
+msgstr "terminated"
+
+#: licensing/models.py:201
+#, fuzzy
+#| msgid "helpers-documents"
+msgid "document"
+msgstr "document"
+
+#: licensing/models.py:202
+msgid "license"
+msgstr "license"
+
+#: licensing/models.py:203
+msgid "permit"
+msgstr "permit"
+
+#: licensing/models.py:207
+#, fuzzy
+#| msgid "license-delivery"
+msgid "license-delivery"
+msgstr "license delivery"
+
+#: licensing/models.py:208
+#, fuzzy
+#| msgid "license-update"
+msgid "license-update"
+msgstr "license update"
+
+#: licensing/models.py:212
+msgid "sent"
+msgstr "sent"
+
+#: licensing/models.py:213
+msgid "received"
+msgstr "received"
+
+#: licensing/models.py:214
+msgid "bounced"
+msgstr "bounced"
+
+#: licensing/models.py:215
+msgid "failed"
+msgstr "failed"
+
+#: licensing/rest.py:137
+msgid "E-mail with license and permit sent"
+msgstr "E-mail with license and permit sent"
+
+#: licensing/rest.py:138
+msgid "E-mail with license sent"
+msgstr "E-mail with license sent"
+
+#: licensing/rest.py:139
+msgid "E-mail with permit sent"
+msgstr "E-mail with permit sent"

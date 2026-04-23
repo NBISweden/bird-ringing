@@ -4,9 +4,10 @@ from rest_framework.reverse import reverse
 
 from licensing.message_builder import MessageBuilder, LicenseAndPermitMessageBuilder, RingerBundleMessageBuilder
 from licensing.communication_service import CommunicationService
-from licensing.utils import get_flattened_license_and_relations
+from licensing.utils import get_flattened_license_and_relations, communication_language_context
 from django.core import mail
 from django.core.mail import EmailMessage
+from django.utils.translation import gettext as _
 
 from licensing.license_card_service import (
     LicenseCardService,
@@ -133,9 +134,9 @@ def _send_license_emails_for_relations(
         return Response({"detail": "E-mail template is misconfigured."}, status=503)
 
     success_messages: dict[tuple[bool, bool], str] = {
-        (True, True): "E-mail with license and permit sent",
-        (True, False): "E-mail with license sent",
-        (False, True): "E-mail with permit sent",
+        (True, True): _("E-mail with license and permit sent"),
+        (True, False): _("E-mail with license sent"),
+        (False, True): _("E-mail with permit sent"),
     }
 
     try:
@@ -550,24 +551,6 @@ class LicenseSequenceSerializer(serializers.HyperlinkedModelSerializer):
         return LicenseHistoryItemSerializer(qs, many=True).data
 
 
-license_status_label = models.Case(
-    *[
-        models.When(status=value, then=models.Value(label))
-        for value, label in LicenseStatusChoices.choices
-    ],
-    output_field=models.CharField(),
-    default=models.Value(""),
-)
-
-license_report_status_label = models.Case(
-    *[
-        models.When(latest__report_status=value, then=models.Value(label))
-        for value, label in ReportStatusChoices.choices
-    ],
-    output_field=models.CharField(),
-    default=models.Value(""),
-)
-
 class LicenseCardRenderSerializer(serializers.Serializer):
     actor_id = serializers.IntegerField(required=True, min_value=1)
 
@@ -622,6 +605,24 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
             )
         )
 
+        license_status_label = models.Case(
+            *[
+                models.When(status=value, then=models.Value(str(label)))
+                for value, label in LicenseStatusChoices.choices
+            ],
+            output_field=models.CharField(),
+            default=models.Value(""),
+        )
+
+        license_report_status_label = models.Case(
+            *[
+                models.When(latest__report_status=value, then=models.Value(str(label)))
+                for value, label in ReportStatusChoices.choices
+            ],
+            output_field=models.CharField(),
+            default=models.Value(""),
+        )
+
         queryset = queryset.annotate(
             license_holder=StringAgg(
                 models.Case(
@@ -643,7 +644,7 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
                             *[
                                 models.When(
                                     latest__actors__actor__type=value,
-                                    then=models.Value(label),
+                                    then=models.Value(str(label)),
                                 )
                                 for value, label in ActorTypeChoices.choices
                             ],
@@ -834,123 +835,43 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
     
     @action(detail=False, methods=["put"], url_path="send-license-emails")
     def send_license_emails(self, request):
-        include_card = request.query_params.get("include_card") is not None
-        include_permit = request.query_params.get("include_permit") is not None
-        raw = request.query_params.get("mnrs", "")
-        mnrs = [m for m in parse_csv_string(raw) if m]
+        with communication_language_context():
+            include_card = request.query_params.get("include_card") is not None
+            include_permit = request.query_params.get("include_permit") is not None
+            raw = request.query_params.get("mnrs", "")
+            mnrs = [m for m in parse_csv_string(raw) if m]
 
-        try:
-            licenses = get_latest_licenses(mnrs)
-        except serializers.ValidationError as e:
-            return Response(e.detail, status=400)
+            try:
+                licenses = get_latest_licenses(mnrs)
+            except serializers.ValidationError as e:
+                return Response(e.detail, status=400)
 
-        # Always build bundle messages first (validation), then send actor mails, then send bundles.
-        try:
-            # For bundle e-mails: include ALL relations (including station ringer),
-            # because the bundle is sent to the ringer and should still go out.
-            lic_rel_pairs_for_bundle = list(get_flattened_license_and_relations(licenses))
+            # Always build bundle messages first (validation), then send actor mails, then send bundles.
+            try:
+                # For bundle e-mails: include ALL relations (including station ringer),
+                # because the bundle is sent to the ringer and should still go out.
+                lic_rel_pairs_for_bundle = list(get_flattened_license_and_relations(licenses))
 
-            # For individual e-mails: when include_card=True, skip station ringers
-            # (because we don't create cards for station ringers).
-            lic_rel_pairs_for_individual = list(get_flattened_license_and_relations(licenses, should_skip=skip_station_ringer_card if include_card else None))
+                # For individual e-mails: when include_card=True, skip station ringers
+                # (because we don't create cards for station ringers).
+                lic_rel_pairs_for_individual = list(get_flattened_license_and_relations(licenses, should_skip=skip_station_ringer_card if include_card else None))
 
-            bundle_messages = _build_ringer_bundle_messages(
-                lic_rel_pairs=lic_rel_pairs_for_bundle,
-                include_card=include_card,
-                include_permit=include_permit,
-            )
-        except ValueError as exc:
-            return Response({"detail": str(exc)}, status=400)
-
-        resp = _send_license_emails_for_relations(
-            request=request,
-            lic_rel_iter=iter(lic_rel_pairs_for_individual),
-            include_card=include_card,
-            include_permit=include_permit,
-        )
-
-        if resp.status_code != 200:
-            return resp
-
-        try:
-            bundle_failed = _send_ringer_bundle_messages(request=request, bundle_messages=bundle_messages)
-        except OSError:
-            return _merge_response(resp, {"ringer_bundle_error": "Failed to connect to mail server"}, status_code=503)
-        except Exception as exc:
-            logger.exception("ringer bundle failed: %s", exc)
-            return _merge_response(resp, {"ringer_bundle_error": "Failed to send ringer bundle e-mail"}, status_code=503)
-
-        if bundle_failed:
-            # Partial failure: actor emails succeeded, connection suceeded but the ringer bundle failed.
-            return _merge_response(resp, {"ringer_bundle_failed_messages": bundle_failed}, status_code=422)
-
-        return _merge_response(resp, {"ringer_bundle_messages_sent": len(bundle_messages)})
-
-    @action(detail=True, methods=["put"], url_path="send-license-emails")
-    def send_license_emails_for_actors(self, request, mnr=None):
-        include_card = request.query_params.get("include_card") is not None
-        include_permit = request.query_params.get("include_permit") is not None
-
-        raw = request.query_params.get("actor_ids", "")
-        actor_ids_str = [v for v in parse_csv_string(raw) if v]
-        if not actor_ids_str:
-            return Response({"actor_ids": "actor_ids is required (comma-separated)."}, status=400)
-
-        try:
-            actor_ids = [int(v) for v in actor_ids_str]
-        except ValueError:
-            return Response({"actor_ids": "actor_ids must be a comma-separated list of integers."}, status=400)
-
-        actor_id_set = set(actor_ids)
-
-        license = self.get_object().latest
-        if not license:
-            return Response({"detail": "No current license found."}, status=404)
-
-        try:
-            all_pairs_for_bundle = list(get_flattened_license_and_relations([license]))
-
-            all_pairs_for_individual = list(get_flattened_license_and_relations(
-                [license],
-                should_skip=skip_station_ringer_card if include_card else None,
-            ))
-
-            filtered_pairs_for_bundle = [(lic, rel) for (lic, rel) in all_pairs_for_bundle if rel.actor.id in actor_id_set]
-            filtered_pairs_for_individual = [(lic, rel) for (lic, rel) in all_pairs_for_individual if rel.actor.id in actor_id_set]
-
-            # Validate actor ids against the full license membership (bundle list has no skipping)
-            found_ids = {rel.actor.id for (_lic, rel) in filtered_pairs_for_bundle}
-            missing = sorted(actor_id_set - found_ids)
-            if missing:
-                return Response(
-                    {"detail": f"Actor(s) not on license: {', '.join(map(str, missing))}."},
-                    status=400,
+                bundle_messages = _build_ringer_bundle_messages(
+                    lic_rel_pairs=lic_rel_pairs_for_bundle,
+                    include_card=include_card,
+                    include_permit=include_permit,
                 )
-
-            if include_card and not filtered_pairs_for_individual and filtered_pairs_for_bundle:
-                return Response({"detail": "Selected ringers are skipped by card policy."}, status=400)
-
-            notify_ringer = request.query_params.get("notify_ringer") is not None
-
-            bundle_messages: list[tuple[License, Actor, EmailMessage]] = []
-            if notify_ringer:
-                try:
-                    bundle_messages = _build_ringer_bundle_messages(
-                        lic_rel_pairs=filtered_pairs_for_bundle,
-                        include_card=include_card,
-                        include_permit=include_permit,
-                    )
-                except ValueError as exc:
-                    return Response({"detail": str(exc)}, status=400)
+            except ValueError as exc:
+                return Response({"detail": str(exc)}, status=400)
 
             resp = _send_license_emails_for_relations(
                 request=request,
-                lic_rel_iter=iter(filtered_pairs_for_individual),
+                lic_rel_iter=iter(lic_rel_pairs_for_individual),
                 include_card=include_card,
                 include_permit=include_permit,
             )
 
-            if not notify_ringer or resp.status_code != 200:
+            if resp.status_code != 200:
                 return resp
 
             try:
@@ -958,15 +879,97 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
             except OSError:
                 return _merge_response(resp, {"ringer_bundle_error": "Failed to connect to mail server"}, status_code=503)
             except Exception as exc:
-                logger.exception("notify_ringer bundle failed: %s", exc)
+                logger.exception("ringer bundle failed: %s", exc)
                 return _merge_response(resp, {"ringer_bundle_error": "Failed to send ringer bundle e-mail"}, status_code=503)
+
             if bundle_failed:
                 # Partial failure: actor emails succeeded, connection suceeded but the ringer bundle failed.
                 return _merge_response(resp, {"ringer_bundle_failed_messages": bundle_failed}, status_code=422)
 
-            return _merge_response(resp, {"ringer_bundle_message": "sent"})
-        except ValueError as e:
-            return Response({"detail": str(e)}, status=400)
+            return _merge_response(resp, {"ringer_bundle_messages_sent": len(bundle_messages)})
+
+    @action(detail=True, methods=["put"], url_path="send-license-emails")
+    def send_license_emails_for_actors(self, request, mnr=None):
+        with communication_language_context():
+            include_card = request.query_params.get("include_card") is not None
+            include_permit = request.query_params.get("include_permit") is not None
+
+            raw = request.query_params.get("actor_ids", "")
+            actor_ids_str = [v for v in parse_csv_string(raw) if v]
+            if not actor_ids_str:
+                return Response({"actor_ids": "actor_ids is required (comma-separated)."}, status=400)
+
+            try:
+                actor_ids = [int(v) for v in actor_ids_str]
+            except ValueError:
+                return Response({"actor_ids": "actor_ids must be a comma-separated list of integers."}, status=400)
+
+            actor_id_set = set(actor_ids)
+
+            license = self.get_object().latest
+            if not license:
+                return Response({"detail": "No current license found."}, status=404)
+
+            try:
+                all_pairs_for_bundle = list(get_flattened_license_and_relations([license]))
+
+                all_pairs_for_individual = list(get_flattened_license_and_relations(
+                    [license],
+                    should_skip=skip_station_ringer_card if include_card else None,
+                ))
+
+                filtered_pairs_for_bundle = [(lic, rel) for (lic, rel) in all_pairs_for_bundle if rel.actor.id in actor_id_set]
+                filtered_pairs_for_individual = [(lic, rel) for (lic, rel) in all_pairs_for_individual if rel.actor.id in actor_id_set]
+
+                # Validate actor ids against the full license membership (bundle list has no skipping)
+                found_ids = {rel.actor.id for (_lic, rel) in filtered_pairs_for_bundle}
+                missing = sorted(actor_id_set - found_ids)
+                if missing:
+                    return Response(
+                        {"detail": f"Actor(s) not on license: {', '.join(map(str, missing))}."},
+                        status=400,
+                    )
+
+                if include_card and not filtered_pairs_for_individual and filtered_pairs_for_bundle:
+                    return Response({"detail": "Selected ringers are skipped by card policy."}, status=400)
+
+                notify_ringer = request.query_params.get("notify_ringer") is not None
+
+                bundle_messages: list[tuple[License, Actor, EmailMessage]] = []
+                if notify_ringer:
+                    try:
+                        bundle_messages = _build_ringer_bundle_messages(
+                            lic_rel_pairs=filtered_pairs_for_bundle,
+                            include_card=include_card,
+                            include_permit=include_permit,
+                        )
+                    except ValueError as exc:
+                        return Response({"detail": str(exc)}, status=400)
+
+                resp = _send_license_emails_for_relations(
+                    request=request,
+                    lic_rel_iter=iter(filtered_pairs_for_individual),
+                    include_card=include_card,
+                    include_permit=include_permit,
+                )
+
+                if not notify_ringer or resp.status_code != 200:
+                    return resp
+
+                try:
+                    bundle_failed = _send_ringer_bundle_messages(request=request, bundle_messages=bundle_messages)
+                except OSError:
+                    return _merge_response(resp, {"ringer_bundle_error": "Failed to connect to mail server"}, status_code=503)
+                except Exception as exc:
+                    logger.exception("notify_ringer bundle failed: %s", exc)
+                    return _merge_response(resp, {"ringer_bundle_error": "Failed to send ringer bundle e-mail"}, status_code=503)
+                if bundle_failed:
+                    # Partial failure: actor emails succeeded, connection suceeded but the ringer bundle failed.
+                    return _merge_response(resp, {"ringer_bundle_failed_messages": bundle_failed}, status_code=422)
+
+                return _merge_response(resp, {"ringer_bundle_message": "sent"})
+            except ValueError as e:
+                return Response({"detail": str(e)}, status=400)
 
     @action(detail=True, methods=["put"], url_path="permit-create")
     def permit_create(self, request, mnr=None):
@@ -1077,48 +1080,11 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
         resp["Content-Disposition"] = 'attachment; filename="permits.zip"'
         return resp
 
-actor_type_label = models.Case(
-    *[
-        models.When(type=value, then=models.Value(label))
-        for value, label in ActorTypeChoices.choices
-    ],
-    output_field=models.CharField(),
-    default=models.Value(""),
-)
-
-
-latest_license_relation = LicenseRelation.objects.filter(
-    license__sequence__latest=models.F("license"),
-    actor=models.OuterRef("pk"),
-)
-
-license_role_label = models.Case(
-    *[
-        models.When(role=value, then=models.Value(label))
-        for value, label in LicenseRoleChoices.choices
-    ],
-    output_field=models.CharField()
-)
-
 class ActorViewSet(viewsets.ModelViewSet):
     authentication_classes = [SessionAuthentication, BasicAuthentication]
     permission_classes = [DjangoProtectedModelPermissions]
 
-    queryset = Actor.objects.annotate(
-        type_label=actor_type_label,
-        license_role_label=models.Subquery(
-            latest_license_relation.annotate(
-                role_label=license_role_label
-            ).values("actor").annotate(
-                roles_string=StringAgg("role_label", delimiter=", ")
-            ).values("roles_string")[:1]
-        ),
-        license_mnr=models.Subquery(
-            latest_license_relation.values("actor").annotate(
-                license_mnrs=StringAgg("license__sequence__mnr", delimiter=', ')
-            ).values("license_mnrs")[:1]
-        ),
-    ).all()
+    queryset = Actor.objects.all()
     serializer_class = ActorSerializer
     filter_backends = [filters.SearchFilter, DynamicOrderingFilter, IdSelectionFilter]
     search_fields = [
@@ -1148,6 +1114,45 @@ class ActorViewSet(viewsets.ModelViewSet):
         ]
     )
     default_ordering = ["full_name", "city", "country"]
+
+    def get_queryset(self):
+        actor_type_label = models.Case(
+            *[
+                models.When(type=value, then=models.Value(str(label)))
+                for value, label in ActorTypeChoices.choices
+            ],
+            output_field=models.CharField(),
+            default=models.Value(""),
+        )
+
+        latest_license_relation = LicenseRelation.objects.filter(
+            license__sequence__latest=models.F("license"),
+            actor=models.OuterRef("pk"),
+        )
+
+        license_role_label = models.Case(
+            *[
+                models.When(role=value, then=models.Value(str(label)))
+                for value, label in LicenseRoleChoices.choices
+            ],
+            output_field=models.CharField()
+        )
+
+        return self.queryset.annotate(
+            type_label=actor_type_label,
+            license_role_label=models.Subquery(
+                latest_license_relation.annotate(
+                    role_label=license_role_label
+                ).values("actor").annotate(
+                    roles_string=StringAgg("role_label", delimiter=", ")
+                ).values("roles_string")[:1]
+            ),
+            license_mnr=models.Subquery(
+                latest_license_relation.values("actor").annotate(
+                    license_mnrs=StringAgg("license__sequence__mnr", delimiter=', ')
+                ).values("license_mnrs")[:1]
+            ),
+        ).all()
 
     def get_serializer_class(self):
         if self.action == "retrieve":
