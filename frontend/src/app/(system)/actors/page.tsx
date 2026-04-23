@@ -1,7 +1,6 @@
 "use client";
 import { useState, Suspense, useMemo, useEffect } from "react";
 import Link from "next/link";
-import { Fragment } from "react";
 import { useItemSelections, useDebouncedValue } from "../hooks";
 import { Pagination } from "../../../components/Pagination";
 import useSWR from "swr";
@@ -11,7 +10,6 @@ import { useRouter } from "next/navigation";
 import {
   ActorLicenseRelation,
   PagedResponse,
-  Role,
   getPages,
   hrefWithParams,
   Page,
@@ -69,7 +67,7 @@ function toActorTable(
   formatOption: Translation["formatOption"],
 ): TableItem<ActorPropertyIds> {
   const licenses: ActorLicenseRelation[] = item.license_relations;
-  const roles = new Set<Role>(licenses.map((l) => l.role));
+  const roles = new Set<string>(licenses.map((l) => l.role.id));
   return {
     id: String(item.id),
     properties: {
@@ -81,7 +79,7 @@ function toActorTable(
         ),
       },
       type: {
-        component: formatOption(item.type, {
+        component: formatOption(item.type.id, {
           person: "actorTypePerson",
           station: "actorTypeStation",
         }),
@@ -93,7 +91,7 @@ function toActorTable(
               <Badge color="info" rounded outline key={r}>
                 {formatOption(r, {
                   affiliate: "licenseRoleAffiliate",
-                  "associate ringer": "licenseRoleAssociateRinger",
+                  associate_ringer: "licenseRoleAssociateRinger",
                   communication: "licenseRoleCommunication",
                   ringer: "licenseRoleRinger",
                 })}

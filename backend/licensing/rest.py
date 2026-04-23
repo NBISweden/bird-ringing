@@ -38,6 +38,7 @@ from licensing.models import (
     LicenseDocument,
     LicenseCommunication,
     CommunicationTypeChoices,
+    CommunicationStatusChoices,
     DocumentTypeChoices,
     MonthDay,
 )
@@ -247,6 +248,27 @@ class DjangoProtectedModelPermissions(DjangoModelPermissions):
     }
 
 
+class LabeledChoiceField(serializers.Field):
+    def __init__(self, choices, **kwargs):
+        self.choices = choices
+        super().__init__(**kwargs)
+
+    def to_representation(self, obj):
+        if obj is not None:
+            return {
+                "id": str(self.choices(obj).name).lower(),
+                "label": self.choices(obj).label,
+            }
+        else:
+            return None
+    
+    def to_internal_value(self, data):
+        for choice_value, choice in self.choices.__members__.items():
+            if data == choice.name:
+                return choice.value
+        raise serializers.ValidationError("Choice not valid.")
+
+
 class IdSelectionFilter(filters.BaseFilterBackend):
     """
     Filter that allows filtering on object ids
@@ -319,39 +341,37 @@ class StandardResultsSetPagination(pagination.PageNumberPagination):
 
 
 class ActorLicenseRelationSerializer(serializers.ModelSerializer):
-    role = serializers.ChoiceField(
-        choices=LicenseRoleChoices, source="get_role_display"
-    )
+    role = LabeledChoiceField(choices=LicenseRoleChoices)
     version = serializers.IntegerField(source="license.version", read_only=True)
     starts_at = serializers.DateField(source="license.starts_at", read_only=True)
     ends_at = serializers.DateField(source="license.ends_at", read_only=True)
     communication_status = serializers.SerializerMethodField(read_only=True)
     communication_type = serializers.SerializerMethodField(read_only=True)
 
-
-    class Meta:
-        model = LicenseRelation
-        fields = ["license_id", "role", "mnr", "mednr", "version", "starts_at", "ends_at", "communication_status", "communication_type"]
-
-    def get_communication_status(self, obj):  
+    def get_communication_status(self, obj):
         license_communication = LicenseCommunication.objects.filter(license=obj.license, actor=obj.actor).last()
         if license_communication:
-            return license_communication.get_status_display()
+            serializer = LabeledChoiceField(CommunicationStatusChoices)
+            return serializer.to_representation(license_communication.status)
         return None
     
     def get_communication_type(self, obj):
         license_communication = LicenseCommunication.objects.filter(license=obj.license, actor=obj.actor).last()
         if license_communication:
-            return license_communication.get_type_display()
+            serializer = LabeledChoiceField(CommunicationTypeChoices)
+            return serializer.to_representation(license_communication.type)
         return None
 
+    class Meta:
+        model = LicenseRelation
+        fields = ["license_id", "role", "mnr", "mednr", "version", "starts_at", "ends_at", "communication_status", "communication_type"]
 
 
 class ActorSerializer(serializers.ModelSerializer):
-    type = serializers.ChoiceField(choices=ActorTypeChoices, source="get_type_display")
-    sex = serializers.ChoiceField(choices=SexChoices, source="get_sex_display")
-    language = serializers.ChoiceField(
-        choices=LanguageChoices, source="get_language_display"
+    type = LabeledChoiceField(choices=ActorTypeChoices)
+    sex = LabeledChoiceField(choices=SexChoices)
+    language = LabeledChoiceField(
+        choices=LanguageChoices
     )
     license_relations = ActorLicenseRelationSerializer(
         many=True, read_only=True
@@ -397,11 +417,9 @@ class ActorDetailSerializer(ActorSerializer):
 
 
 class LicenseActorSerializer(serializers.ModelSerializer):
-    type = serializers.ChoiceField(choices=ActorTypeChoices, source="get_type_display")
-    sex = serializers.ChoiceField(choices=SexChoices, source="get_sex_display")
-    language = serializers.ChoiceField(
-        choices=LanguageChoices, source="get_language_display"
-    )
+    type = LabeledChoiceField(choices=ActorTypeChoices)
+    sex = LabeledChoiceField(choices=SexChoices)
+    language = LabeledChoiceField(choices=LanguageChoices)
 
     class Meta:
         model = Actor
@@ -429,9 +447,7 @@ class LicenseActorSerializer(serializers.ModelSerializer):
 
 class LicenseActorRelationSerializer(serializers.ModelSerializer):
     actor = LicenseActorSerializer()
-    role = serializers.ChoiceField(
-        choices=LicenseRoleChoices, source="get_role_display"
-    )
+    role = LabeledChoiceField(choices=LicenseRoleChoices)
 
     class Meta:
         model = LicenseRelation
@@ -477,7 +493,7 @@ class LicenseLicensePermissionSerializer(serializers.ModelSerializer):
 class LicenseDocumentSerializer(serializers.ModelSerializer):
     actor = serializers.CharField(source="actor.full_name", read_only=True)
     actor_id = serializers.IntegerField(source="actor.id", read_only=True)
-    type = serializers.CharField(source="get_type_display", read_only=True)
+    type = LabeledChoiceField(DocumentTypeChoices, read_only=True)
 
     class Meta:
         model = LicenseDocument
@@ -486,8 +502,8 @@ class LicenseDocumentSerializer(serializers.ModelSerializer):
 class LicenseCommunicationSerializer(serializers.ModelSerializer):
     actor = serializers.CharField(source="actor.full_name", read_only=True)
     actor_id = serializers.IntegerField(source="actor.id", read_only=True)
-    type = serializers.CharField(source="get_type_display", read_only=True)
-    status = serializers.CharField(source="get_status_display", read_only=True)
+    type = LabeledChoiceField(CommunicationTypeChoices, read_only=True)
+    status = LabeledChoiceField(CommunicationStatusChoices, read_only=True)
 
     class Meta:
         model = LicenseCommunication
@@ -499,9 +515,7 @@ class LicenseSerializer(serializers.ModelSerializer):
     permissions = LicenseLicensePermissionSerializer(many=True, read_only=True)
     documents = LicenseDocumentSerializer(many=True, read_only=True)
     communication = LicenseCommunicationSerializer(many=True, read_only=True)
-    report_status = serializers.ChoiceField(
-        choices=ReportStatusChoices, source="get_report_status_display"
-    )
+    report_status = LabeledChoiceField(choices=ReportStatusChoices)
 
     class Meta:
         model = License
@@ -519,11 +533,9 @@ class LicenseSequenceSerializer(serializers.HyperlinkedModelSerializer):
     latest = LicenseSerializer(read_only=True)
     history = serializers.SerializerMethodField()
     license_holder = serializers.CharField(read_only=True)
-    license_holder_type = serializers.CharField(read_only=True)
+    license_holder_type = LabeledChoiceField(choices=ActorTypeChoices, read_only=True)
     associate_ringer_count = serializers.IntegerField(read_only=True)
-    status = serializers.ChoiceField(
-        choices=LicenseStatusChoices, source="get_status_display"
-    )
+    status = LabeledChoiceField(choices=LicenseStatusChoices)
     methods = serializers.CharField()
     last_email_sent_at = serializers.DateTimeField(read_only=True)
     has_license_card = serializers.BooleanField(read_only=True)
@@ -549,24 +561,6 @@ class LicenseSequenceSerializer(serializers.HyperlinkedModelSerializer):
         qs = obj.instances.exclude(pk=models.F("sequence__latest__pk")).order_by("-version")
         return LicenseHistoryItemSerializer(qs, many=True).data
 
-
-license_status_label = models.Case(
-    *[
-        models.When(status=value, then=models.Value(label))
-        for value, label in LicenseStatusChoices.choices
-    ],
-    output_field=models.CharField(),
-    default=models.Value(""),
-)
-
-license_report_status_label = models.Case(
-    *[
-        models.When(latest__report_status=value, then=models.Value(label))
-        for value, label in ReportStatusChoices.choices
-    ],
-    output_field=models.CharField(),
-    default=models.Value(""),
-)
 
 class LicenseCardRenderSerializer(serializers.Serializer):
     actor_id = serializers.IntegerField(required=True, min_value=1)
@@ -622,6 +616,24 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
             )
         )
 
+        license_status_label = models.Case(
+            *[
+                models.When(status=value, then=models.Value(str(label)))
+                for value, label in LicenseStatusChoices.choices
+            ],
+            output_field=models.CharField(),
+            default=models.Value(""),
+        )
+
+        license_report_status_label = models.Case(
+            *[
+                models.When(latest__report_status=value, then=models.Value(str(label)))
+                for value, label in ReportStatusChoices.choices
+            ],
+            output_field=models.CharField(),
+            default=models.Value(""),
+        )
+
         queryset = queryset.annotate(
             license_holder=StringAgg(
                 models.Case(
@@ -639,20 +651,10 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
                 models.Case(
                     models.When(
                         latest__actors__role=models.Value(LicenseRoleChoices.RINGER),
-                        then=models.Case(
-                            *[
-                                models.When(
-                                    latest__actors__actor__type=value,
-                                    then=models.Value(label),
-                                )
-                                for value, label in ActorTypeChoices.choices
-                            ],
-                            default=models.Value(""),
-                            output_field=models.CharField(),
-                        ),
+                        then="latest__actors__role"
                     ),
                     default=models.Value(None),
-                    output_field=models.CharField(),
+                    output_field=models.IntegerField(),
                 )
             ),
             associate_ringer_count=models.Count(
@@ -1077,48 +1079,11 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
         resp["Content-Disposition"] = 'attachment; filename="permits.zip"'
         return resp
 
-actor_type_label = models.Case(
-    *[
-        models.When(type=value, then=models.Value(label))
-        for value, label in ActorTypeChoices.choices
-    ],
-    output_field=models.CharField(),
-    default=models.Value(""),
-)
-
-
-latest_license_relation = LicenseRelation.objects.filter(
-    license__sequence__latest=models.F("license"),
-    actor=models.OuterRef("pk"),
-)
-
-license_role_label = models.Case(
-    *[
-        models.When(role=value, then=models.Value(label))
-        for value, label in LicenseRoleChoices.choices
-    ],
-    output_field=models.CharField()
-)
-
 class ActorViewSet(viewsets.ModelViewSet):
     authentication_classes = [SessionAuthentication, BasicAuthentication]
     permission_classes = [DjangoProtectedModelPermissions]
 
-    queryset = Actor.objects.annotate(
-        type_label=actor_type_label,
-        license_role_label=models.Subquery(
-            latest_license_relation.annotate(
-                role_label=license_role_label
-            ).values("actor").annotate(
-                roles_string=StringAgg("role_label", delimiter=", ")
-            ).values("roles_string")[:1]
-        ),
-        license_mnr=models.Subquery(
-            latest_license_relation.values("actor").annotate(
-                license_mnrs=StringAgg("license__sequence__mnr", delimiter=', ')
-            ).values("license_mnrs")[:1]
-        ),
-    ).all()
+    queryset = Actor.objects.all()
     serializer_class = ActorSerializer
     filter_backends = [filters.SearchFilter, DynamicOrderingFilter, IdSelectionFilter]
     search_fields = [
@@ -1148,6 +1113,45 @@ class ActorViewSet(viewsets.ModelViewSet):
         ]
     )
     default_ordering = ["full_name", "city", "country"]
+
+    def get_queryset(self):
+        actor_type_label = models.Case(
+            *[
+                models.When(type=value, then=models.Value(str(label)))
+                for value, label in ActorTypeChoices.choices
+            ],
+            output_field=models.CharField(),
+            default=models.Value(""),
+        )
+
+        latest_license_relation = LicenseRelation.objects.filter(
+            license__sequence__latest=models.F("license"),
+            actor=models.OuterRef("pk"),
+        )
+
+        license_role_label = models.Case(
+            *[
+                models.When(role=value, then=models.Value(str(label)))
+                for value, label in LicenseRoleChoices.choices
+            ],
+            output_field=models.CharField()
+        )
+
+        return self.queryset.annotate(
+            type_label=actor_type_label,
+            license_role_label=models.Subquery(
+                latest_license_relation.annotate(
+                    role_label=license_role_label
+                ).values("actor").annotate(
+                    roles_string=StringAgg("role_label", delimiter=", ")
+                ).values("roles_string")[:1]
+            ),
+            license_mnr=models.Subquery(
+                latest_license_relation.values("actor").annotate(
+                    license_mnrs=StringAgg("license__sequence__mnr", delimiter=', ')
+                ).values("license_mnrs")[:1]
+            ),
+        ).all()
 
     def get_serializer_class(self):
         if self.action == "retrieve":

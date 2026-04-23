@@ -8,33 +8,21 @@ import { getCookie, parseCompleteUrl } from "./utils";
 
 export class Client {
   private _apiRoot: string;
+  private _headers: HeadersInit;
 
-  constructor(apiRoot: string) {
+  constructor(apiRoot: string, headers: HeadersInit = {}) {
     this._apiRoot = parseCompleteUrl(apiRoot);
-  }
-
-  private async _getJson<T>(path: string): Promise<T> {
-    const url = new URL(this._apiRoot + path);
-    const resp = await fetch(url.href);
-
-    if (!resp.ok) {
-      const body = await resp.text().catch(() => "");
-      throw new Error(
-        `GET ${url.href} failed: ${resp.status} ${resp.statusText} ${body}`,
-      );
-    }
-
-    return (await resp.json()) as T;
+    this._headers = headers;
   }
 
   async fetchLicenseSequenceByMnr(mnr: string): Promise<LicenseListItem> {
-    return this._getJson<LicenseListItem>(
+    return this.fetchJson<LicenseListItem>(
       `license_sequence/${encodeURIComponent(mnr)}/`,
     );
   }
 
   async fetchActorById(actorId: string): Promise<ActorListItem> {
-    return await this._getJson<ActorListItem>(`actor/${actorId}/`);
+    return await this.fetchJson<ActorListItem>(`actor/${actorId}/`);
   }
 
   async fetchActorPage(
@@ -78,6 +66,7 @@ export class Client {
     );
     const response = await fetch(`${url.href}`, {
       credentials: "same-origin",
+      headers: this._headers
     });
     if (response.ok) {
       const pageData: PagedResponse<T> = await response.json();
@@ -88,9 +77,10 @@ export class Client {
     }
   }
 
-  static async fetchAll<T>(
+  async fetchAll<T>(
     firstPagePromise: Promise<PagedResponse<T>>,
   ): Promise<T[]> {
+
     let currentPage: PagedResponse<T> | null = await firstPagePromise;
     const items: T[] = [];
     while (currentPage) {
@@ -98,6 +88,7 @@ export class Client {
       if (currentPage.next) {
         const response: Response = await fetch(currentPage.next, {
           credentials: "same-origin",
+          headers: this._headers
         });
 
         if (response.ok) {
@@ -141,6 +132,7 @@ export class Client {
       credentials: init?.credentials ?? "same-origin",
       headers: {
         Accept: "application/json",
+        ...this._headers,
         ...(init?.headers || {}),
       },
     });

@@ -24,11 +24,32 @@ const actorTypeOptions = {
   actorTypeStation: "Station",
 };
 
+const communicationTypeOptions = {
+  communicationTypeLicenseDelivery: "Licensutskick",
+  communicationTypeLicenseUpdate: "Licensupdatering",
+}
+
+const communicationStatusOptions = {
+  communicationStatusSent: "Skickad",
+  communicationStatusReceived: "Mottagen",
+  communicationStatusBounced: "Studsad",
+  communicationStatusFailed: "Misslyckad"
+}
+
+const documentTypeOptions = {
+  documentTypeDocument: "Dokument",
+  documentTypeLicense: "Licens",
+  documentTypePermit: "Tillstånd",
+}
+
 export const locale: TranslationMap = {
   ...licenseReportStatusOptions,
   ...licenseStatusOptions,
   ...licenseRoleOptions,
   ...actorTypeOptions,
+  ...communicationTypeOptions,
+  ...communicationStatusOptions,
+  ...documentTypeOptions,
   birdRinging: "Ringmärkning",
   userPermissions: "Användarrättigheter",
   userSignedOut: "Du har blivit utloggad.",
@@ -155,7 +176,7 @@ export const locale: TranslationMap = {
   licenseUpdatedAt: "Uppdaterad {date}",
   licenseValidityPeriod:
     "<from>Giltig från </from>{startsAt}<to> till </to>{endsAt}",
-  buttonCreateDocuments: "Create documents",
+  buttonCreateDocuments: "Skapa dokument",
   permitCreateDocuments: "Skapa tillstånd",
   permitCreateDocumentsConfirmText:
     "Vill du skapa tillstånd för alla ringmärkare och hjälpare för valda licenser?",

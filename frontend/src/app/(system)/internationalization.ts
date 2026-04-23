@@ -37,7 +37,10 @@ export function useTranslation() {
       },
       formatOption: (value, mapping, values) => {
         const messageId = mapping[value];
-        return intl.formatMessage(messages[messageId], values);
+        if (messageId) {
+          return intl.formatMessage(messages[messageId], values);
+        }
+        return String(value)
       },
     };
   }, [intl]);

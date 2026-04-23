@@ -27,11 +27,32 @@ const actorTypeOptions = {
   actorTypeStation: "Station",
 };
 
+const communicationTypeOptions = {
+  communicationTypeLicenseDelivery: "License delivery",
+  communicationTypeLicenseUpdate: "License update",
+}
+
+const communicationStatusOptions = {
+  communicationStatusSent: "Sent",
+  communicationStatusReceived: "Received",
+  communicationStatusBounced: "Bounced",
+  communicationStatusFailed: "Failed"
+}
+
+const documentTypeOptions = {
+  documentTypeDocument: "Document",
+  documentTypeLicense: "License",
+  documentTypePermit: "Permit",
+}
+
 const messagesBase = {
   ...licenseReportStatusOptions,
   ...licenseStatusOptions,
   ...licenseRoleOptions,
   ...actorTypeOptions,
+  ...communicationTypeOptions,
+  ...documentTypeOptions,
+  ...communicationStatusOptions,
 
   birdRinging: "Bird Ringing",
   userPermissions: "User permissions",
