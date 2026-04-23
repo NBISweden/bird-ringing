@@ -10,6 +10,7 @@ from .serializers import json_serialize
 from dataclasses import dataclass
 from typing import ClassVar, Tuple
 import datetime
+from django.utils.translation import gettext_lazy as _
 
 
 class ChangeTracking(models.Model):
@@ -155,63 +156,63 @@ class MonthDayField(models.DateField):
 
 
 class ActorTypeChoices(models.IntegerChoices):
-    PERSON = (0, "person")
-    STATION = (1, "station")
+    PERSON = (0, _("person"))
+    STATION = (1, _("station"))
 
 
 class SexChoices(models.IntegerChoices):
-    MALE = (1, "male")
-    FEMALE = (2, "female")
-    UNDISCLOSED = (3, "undisclosed")
-    NOT_APPLICABLE = (4, "n/a")
+    MALE = (1, _("male"))
+    FEMALE = (2, _("female"))
+    UNDISCLOSED = (3, _("undisclosed"))
+    NOT_APPLICABLE = (4, _("n/a"))
 
 
 class LanguageChoices(models.IntegerChoices):
-    UNKNOWN = (0, "unknown")
-    SV = (1, "sv")
-    EN = (2, "en")
+    UNKNOWN = (0, _("unknown"))
+    SV = (1, _("sv"))
+    EN = (2, _("en"))
 
 
 class ReportStatusChoices(models.IntegerChoices):
-    YES = (1, "yes")
-    NO = (2, "no")
-    INCOMPLETE = (3, "incomplete")
+    YES = (1, _("yes"))
+    NO = (2, _("no"))
+    INCOMPLETE = (3, _("incomplete"))
 
 
 class ReportTypeChoices(models.IntegerChoices):
-    FINAL = (1, "final")
-    PARTIAL = (2, "partial")
+    FINAL = (1, _("final"))
+    PARTIAL = (2, _("partial"))
 
 
 class LicenseRoleChoices(models.IntegerChoices):
-    RINGER = (1, "ringer")
-    ASSOCIATE_RINGER = (2, "associate ringer")
-    AFFILIATE = (3, "affiliate")
-    COMMUNICATION = (4, "communication")
+    RINGER = (1, _("ringer"))
+    ASSOCIATE_RINGER = (2, _("associate ringer"))
+    AFFILIATE = (3, _("affiliate"))
+    COMMUNICATION = (4, _("communication"))
 
 
 class LicenseStatusChoices(models.IntegerChoices):
-    ACTIVE = (1, "active")
-    INACTIVE = (2, "inactive")
-    TERMINATED = (3, "terminated")
+    ACTIVE = (1, _("active"))
+    INACTIVE = (2, _("inactive"))
+    TERMINATED = (3, _("terminated"))
 
 
 class DocumentTypeChoices(models.IntegerChoices):
-    DOCUMENT = (1, "document")
-    LICENSE = (2, "license")
-    PERMIT = (3, "permit")
+    DOCUMENT = (1, _("document"))
+    LICENSE = (2, _("license"))
+    PERMIT = (3, _("permit"))
 
 
 class CommunicationTypeChoices(models.IntegerChoices):
-    LICENSE_DELIVERY = (1, "license-delivery")
-    LICENSE_UPDATE = (2, "license-update")
+    LICENSE_DELIVERY = (1, _("license delivery"))
+    LICENSE_UPDATE = (2, _("license update"))
 
 
 class CommunicationStatusChoices(models.IntegerChoices):
-    SENT = (1, "sent")
-    RECEIVED = (2, "received")
-    BOUNCED = (3, "bounced")
-    FAILED = (4, "failed")
+    SENT = (1, _("sent"))
+    RECEIVED = (2, _("received"))
+    BOUNCED = (3, _("bounced"))
+    FAILED = (4, _("failed"))
 
 
 class Actor(ChangeTracking):
