@@ -7,7 +7,6 @@ import { notFound, useSearchParams } from "next/navigation";
 import { useClient } from "../../contexts";
 import {
   ActorLicenseRelation,
-  Role,
   convertDateToLocale,
   convertOnlyDateToLocale,
 } from "../../common";
@@ -16,6 +15,7 @@ import Spinner from "@/components/Spinner";
 import { useTranslation } from "../../internationalization";
 import { Alert } from "@/components/Alert";
 import { PaginationContainer, usePagination } from "@/components/Pagination";
+import * as options from "../../options";
 
 async function fetchActor([client, _ctx, entryId]: [Client, "actor", string]) {
   return client.fetchActorById(entryId);
@@ -115,13 +115,13 @@ function ActorViewBase() {
     return acc;
   }, {});
 
-  const roles = new Set<Role>(licenses.map((l) => l.role));
+  const roles = new Set<string>(licenses.map((l) => l.role.id));
 
   return (
     <div className="container">
       <div className="row">
         <h2 className="fw-bold">
-          <i className={`bi bi-${getActorIcon(data.type)} me-3`} />
+          <i className={`bi bi-${getActorIcon(data.type.id)} me-3`} />
           {data.full_name}
         </h2>
         <div className="col-12 col-xl-6">
@@ -129,7 +129,7 @@ function ActorViewBase() {
             <div className="card-header d-flex justify-content-between">
               <div>
                 <span className="m-0">{Array.from(roles).join(", ")}</span>
-                <i className={`bi bi-${getGenderIcon(data.sex)} ms-1`} />
+                <i className={`bi bi-${getGenderIcon(data.sex.id)} ms-1`} />
               </div>
               {data.birth_date ? (
                 <p className="fst-italic m-0">
@@ -265,7 +265,7 @@ function LicenseGroup({
 }
 
 function LicenseEntry({ license }: { license: ActorLicenseRelation }) {
-  const { t, format } = useTranslation();
+  const { t, format, formatOption } = useTranslation();
   const {
     starts_at,
     ends_at,
@@ -284,7 +284,7 @@ function LicenseEntry({ license }: { license: ActorLicenseRelation }) {
             {mnr}-{mednr}
           </Link>
         </span>
-        <span className="text-secondary small">{role}</span>
+        <span className="text-secondary small">{formatOption(role.id, options.actorRole)}</span>
       </div>
       <div className="py-2 col-5 d-flex flex-column flex-md-row align-items-center ">
         <div>
@@ -311,9 +311,9 @@ function LicenseEntry({ license }: { license: ActorLicenseRelation }) {
         </div>
       </div>
       <div className="py-2 col-4 d-flex align-items-center fw-semibold text-capitalize">
-        {communication_type}
+        {communication_type ? formatOption(communication_type.id, options.communicationType) : <></>}
         <span className="badge rounded-pill text-primary border border-primary ms-2">
-          {communication_status}
+          {communication_status ? formatOption(communication_status.id, options.communicationStatus) : <></>}
         </span>
       </div>
     </div>

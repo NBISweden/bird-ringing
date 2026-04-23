@@ -12,6 +12,7 @@ import { Alert } from "@/components/Alert";
 import { useTranslation } from "../../internationalization";
 import { convertOnlyDateToLocale } from "../../common";
 import { Badge } from "@/components/Badge";
+import * as options from "../../options";
 
 async function fetchLicense([client, _ctx, entryId]: [
   Client,
@@ -87,11 +88,7 @@ function LicenseViewInner() {
               color="primary"
               className="inline-block ms-4"
             >
-              {formatOption(String(data.latest.report_status), {
-                yes: "licenseReportStatusYes",
-                no: "licenseReportStatusNo",
-                incomplete: "licenseReportStatusIncomplete",
-              })}
+              {formatOption(data.latest.report_status.id, options.licenseReportStatus)}
             </Badge>
           </h1>
           <LicenceView license={data.latest} mnr={data.mnr} />

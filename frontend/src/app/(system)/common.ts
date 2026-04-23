@@ -2,16 +2,21 @@ import { ReadonlyURLSearchParams } from "next/navigation";
 import React from "react";
 import { Translation } from "./internationalization";
 
+export type LabeledAttribute = {
+  id: string;
+  label: string;
+}
+
 export type ActorBase = {
   id: number;
   full_name: string;
   first_name: string;
   last_name: string;
-  type: string;
-  sex: string;
+  type: LabeledAttribute;
+  sex: LabeledAttribute;
   birth_date: string | null;
   birth_year: number | null;
-  language: string;
+  language: LabeledAttribute;
   phone_number1: string;
   phone_number2: string;
   email: string;
@@ -32,16 +37,14 @@ export type ActorListItem = ActorBase & {
 export type ActorLicenseRelation = {
   license_id: number;
   mnr: string;
-  role: string;
+  role: LabeledAttribute;
   mednr: string;
   version: number;
   starts_at: string;
   ends_at: string;
-  communication_type: string;
-  communication_status: string;
+  communication_type?: LabeledAttribute;
+  communication_status?: LabeledAttribute;
 };
-
-export type Role = string;
 
 export type PagedResponse<T> = {
   count: number;
@@ -134,9 +137,9 @@ export type LicenseListItem = {
   mnr: string;
   latest: LicenseInstance;
   history?: LicenseHistoryItem[];
-  status: string;
+  status: LabeledAttribute;
   license_holder: string;
-  license_holder_type: string;
+  license_holder_type: LabeledAttribute;
   associate_ringer_count: number;
   methods: string;
   last_email_sent_at: string;
@@ -166,15 +169,15 @@ export type LicensePermission = {
 export type LicenseDocument = {
   actor: string;
   actor_id: number;
-  type: string;
+  type: LabeledAttribute;
   reference: string;
 };
 
 export type LicenceCommunication = {
   actor: string;
   actor_id: number;
-  type: string;
-  status: string;
+  type: LabeledAttribute;
+  status: LabeledAttribute;
   note: string;
 };
 
@@ -186,7 +189,7 @@ export type LicenseInstance = {
   version: number;
   location: string;
   description: string;
-  report_status: string;
+  report_status: LabeledAttribute;
   starts_at: string;
   ends_at: string;
   created_at: string;
@@ -195,7 +198,7 @@ export type LicenseInstance = {
 
 export type LicenseActorRelation = {
   actor: ActorBase;
-  role: string;
+  role: LabeledAttribute;
   mednr?: string;
 };
 

@@ -11,6 +11,7 @@ import { useSendLicenseEmailForActorsAction } from "../app/(system)/licenses/act
 import { useTranslation } from "@/app/(system)/internationalization";
 import { LicensePermissionItem } from "./LicensePermissionItem";
 import { useState } from "react";
+import * as options from "@/app/(system)/options";
 
 type LicenceViewProps = {
   license: LicenseInstance;
@@ -21,24 +22,24 @@ export function LicenceView({ license, mnr }: LicenceViewProps) {
   const client = useClient();
 
   const sendEmailForActorsAction = useSendLicenseEmailForActorsAction(client);
-  const { t, format } = useTranslation();
+  const { t, format, formatOption } = useTranslation();
 
   const [selectedActorIds, setSelectedActorIds] = useState(new Set<number>());
   const [notifyRinger, setNotifyRinger] = useState(false);
 
   const isSelectableRelation = (rel: LicenseInstance["actors"][number]) => {
-    const roleOk = rel.role === "ringer" || rel.role === "associate ringer";
+    const roleOk = rel.role.id === "ringer" || rel.role.id === "associate ringer";
     if (!roleOk) return false;
 
     // Do not allow selecting the ringer if the ringer is a station
-    if (rel.role === "ringer" && rel.actor.type === "station") return false;
+    if (rel.role.id === "ringer" && rel.actor.type.id === "station") return false;
 
     return true;
   };
 
   const hasSelectedAssociateRinger = license.actors.some(
     (rel) =>
-      rel.role === "associate ringer" && selectedActorIds.has(rel.actor.id),
+      rel.role.id === "associate ringer" && selectedActorIds.has(rel.actor.id),
   );
   const effectiveNotifyRinger = notifyRinger && hasSelectedAssociateRinger;
 
@@ -78,7 +79,7 @@ export function LicenceView({ license, mnr }: LicenceViewProps) {
                   <div className="me-auto">
                     <span className="me-2">{t("licenseReportStatus")}</span>
                     <span className="badge rounded-pill border border-primary text-primary text-capitalize">
-                      {String(license.report_status)}
+                      {formatOption(license.report_status.id, options.licenseReportStatus)}
                     </span>
                   </div>
                   <div className="d-flex gap-3 text-muted small">
@@ -153,7 +154,7 @@ export function LicenceView({ license, mnr }: LicenceViewProps) {
                   <li className="list-group-item mb-3" key={i}>
                     <div className="row align-items-center g-2">
                       <div className="col-12 col-md-3 fw-semibold text-capitalize">
-                        {rel.role}
+                        {formatOption(rel.role.id, options.actorRole)}
                       </div>
                       <div className="col-10 col-md-7">
                         <i className="bi bi-person text-primary me-1" />
@@ -226,7 +227,7 @@ export function LicenceView({ license, mnr }: LicenceViewProps) {
               <li className="list-group-item mb-3" key={i}>
                 <div className="row align-items-center g-2">
                   <div className="col-12 col-md-2 fw-semibold text-capitalize">
-                    {doc.type}
+                    {formatOption(doc.type.id, options.documentType)}
                   </div>
                   <div className="col-12 col-md-3">
                     <i className="bi bi-person text-primary me-1" />
@@ -238,9 +239,9 @@ export function LicenceView({ license, mnr }: LicenceViewProps) {
                     <span className="text-muted small me-2">
                       {t("licenseDocumentReference")}
                     </span>
-                    {doc.type === "license" || doc.type === "permit" ? (
+                    {doc.type.id === "license" || doc.type.id === "permit" ? (
                       <a
-                        href={`/api/license_sequence/${mnr}/${doc.type === "license" ? "card-pdf" : "permit-pdf"}/?actor_id=${doc.actor_id}`}
+                        href={`/api/license_sequence/${mnr}/${doc.type.id === "license" ? "card-pdf" : "permit-pdf"}/?actor_id=${doc.actor_id}`}
                         target="_blank"
                         rel="noreferrer"
                         className="badge rounded-pill border border-primary text-primary text-decoration-none"
@@ -270,7 +271,7 @@ export function LicenceView({ license, mnr }: LicenceViewProps) {
               <li className="list-group-item mb-3" key={i}>
                 <div className="row align-items-center g-2">
                   <div className="col-12 col-md-2 fw-semibold text-capitalize">
-                    {item.type}
+                    {formatOption(item.type.id, options.communicationType)}
                   </div>
                   <div className="col-12 col-md-3">
                     <i className="bi bi-person text-primary me-1" />
@@ -280,7 +281,7 @@ export function LicenceView({ license, mnr }: LicenceViewProps) {
                   </div>
                   <div className="col-12 col-md-2">
                     <span className="badge rounded-pill border border-primary text-primary text-capitalize">
-                      {item.status}
+                      {formatOption(item.status.id, options.communicationStatus)}
                     </span>
                   </div>
                   <div className="col-12 col-md-5">

@@ -27,6 +27,7 @@ import {
   useDownloadPermitsZipAction,
   useSendLicenseEmailAction,
 } from "./actions";
+import * as options from "../options";
 
 import { useTranslation, Translation } from "../internationalization";
 import { Badge } from "@/components/Badge";
@@ -88,16 +89,13 @@ function toLicenseTable(
       type: {
         component:
           (item.license_holder_type &&
-            formatOption(item.license_holder_type, {
-              person: "actorTypePerson",
-              station: "actorTypeStation",
-            })) ||
+            formatOption(item.license_holder_type.id, options.actorType)) ||
           "-",
       },
       license_holder: {
         component: (() => {
           const licenseHolder = item.latest.actors.find(
-            (a) => a.role === "ringer",
+            (a) => a.role.id === "ringer",
           );
           return licenseHolder ? (
             <Link href={`actors/entry?entryId=${licenseHolder.actor.id}`}>
@@ -125,18 +123,10 @@ function toLicenseTable(
         ),
       },
       final_report_status: {
-        component: formatOption(item.latest.report_status, {
-          yes: "licenseReportStatusYes",
-          no: "licenseReportStatusNo",
-          incomplete: "licenseReportStatusIncomplete",
-        }),
+        component: formatOption(item.latest.report_status.id, options.licenseReportStatus),
       },
       license_status: {
-        component: formatOption(item.status, {
-          active: "licenseStatusActive",
-          inactive: "licenseStatusInactive",
-          terminated: "licenseStatusTerminated",
-        }),
+        component: formatOption(item.status.id, options.licenseStatus),
       },
       has_license_card: {
         component: item.has_license_card ? (
