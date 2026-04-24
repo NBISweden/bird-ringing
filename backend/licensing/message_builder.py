@@ -16,6 +16,7 @@ from licensing.models import (
 import datetime
 import mimetypes
 import re
+from django.utils.text import slugify
 from django.utils.translation import gettext as _
 
 
@@ -73,6 +74,14 @@ class MessageBuilder:
             )
         except (FileNotFoundError, AttributeError, TypeError) as e:
             raise ValueError(f"Failed to configure message builder: {e}")
+    
+    @staticmethod
+    def create_file_name(document_type: str, mnr, mednr: str | None = None, name: str | None = None) -> str:
+        identifier = mnr if mednr is None else f"{mnr}-{mednr}"
+        name_slug = None if name is None else slugify(name)[:40] 
+        document_type_slug = slugify(document_type)
+
+        return f"{document_type_slug}-{identifier}" + (f"-{name_slug}.pdf" if name_slug else ".pdf")
 
 
 class LicenseAndPermitMessageBuilder:
@@ -96,13 +105,19 @@ class LicenseAndPermitMessageBuilder:
 
         elif include_card:
             (mimetype, _encoding) = mimetypes.guess_type(card_document.reference)
+            document_type = DocumentTypeChoices(card_document.type).label
             card_attachment = (
                 EmailAttachment(
                     content=card_document.data,
                     mimetype=mimetype,
-                    filename=card_document.reference
+                    filename=MessageBuilder.create_file_name(
+                        document_type=document_type,
+                        mnr=lic.sequence.mnr,
+                        mednr=(None if relation.role == LicenseRoleChoices.RINGER else relation.mednr),
+                        name=relation.actor.full_name
+                    )
                 ),
-                DocumentTypeChoices(card_document.type).label
+                document_type
             )
 
         permit_attachment = None

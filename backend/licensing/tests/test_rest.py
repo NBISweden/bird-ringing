@@ -28,6 +28,7 @@ import io
 import zipfile
 import tempfile
 from pathlib import Path
+from django.utils.text import slugify
 from django.utils.translation import gettext as _
 
 
@@ -108,7 +109,9 @@ class _EmailTestBase(TestCase):
             )
 
     def _license_name(self, lic, actor):
-        return f"{lic.sequence.mnr}-{actor.id}-test.pdf"
+        rel = lic.actors.filter(actor=actor).get()
+        mednr = "" if rel.role == LicenseRoleChoices.RINGER else f"-{rel.mednr}"
+        return f"license-{lic.sequence.mnr}{mednr}-{slugify(actor.full_name)}.pdf"
 
     def _add_license_documents(self, actors, licenses):
         for (actor, lic) in zip(actors, licenses):
