@@ -12,6 +12,9 @@ import time
 import io
 import zipfile
 from django.conf import settings
+from contextlib import contextmanager
+from django.utils import translation
+
 
 # A callable type for determining whether to skip license card creation for a given license/actor/relation.
 # This is redefined here to avoid circular imports between utils and license_card_service.
@@ -90,3 +93,13 @@ def default_document_copy_policy(latest: License, previous: License | None):
 
     documents_to_copy = list(document_query)
     latest.documents.add(*documents_to_copy)
+
+
+@contextmanager
+def communication_language_context():
+    language = getattr(settings, "COMMUNICATION_LANGUAGE_CODE")
+    if language:
+        with translation.override(language):
+            yield
+    else:
+        yield
