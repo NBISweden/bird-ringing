@@ -119,8 +119,6 @@ msgid "terminated"
 msgstr "terminated"
 
 #: licensing/models.py:201
-#, fuzzy
-#| msgid "helpers-documents"
 msgid "document"
 msgstr "document"
 
@@ -133,14 +131,10 @@ msgid "permit"
 msgstr "permit"
 
 #: licensing/models.py:207
-#, fuzzy
-#| msgid "license-delivery"
 msgid "license-delivery"
 msgstr "license delivery"
 
 #: licensing/models.py:208
-#, fuzzy
-#| msgid "license-update"
 msgid "license-update"
 msgstr "license update"
 

@@ -119,10 +119,8 @@ msgid "terminated"
 msgstr "avslutad"
 
 #: licensing/models.py:201
-#, fuzzy
-#| msgid "helpers-documents"
 msgid "document"
-msgstr "medhjälparlicenser-dokument"
+msgstr "dokument"
 
 #: licensing/models.py:202
 msgid "license"
@@ -133,14 +131,10 @@ msgid "permit"
 msgstr "tillstånd"
 
 #: licensing/models.py:207
-#, fuzzy
-#| msgid "license-delivery"
 msgid "license-delivery"
 msgstr "licenseleverans"
 
 #: licensing/models.py:208
-#, fuzzy
-#| msgid "license-update"
 msgid "license-update"
 msgstr "licensuppdatering"
 
