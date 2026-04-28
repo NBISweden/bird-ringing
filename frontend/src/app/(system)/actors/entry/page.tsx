@@ -1,12 +1,13 @@
 "use client";
 
-import { Suspense } from "react";
+import { Suspense, useState } from "react";
 import Link from "next/link";
 import useSWR from "swr";
 import { notFound, useSearchParams } from "next/navigation";
 import { useClient } from "../../contexts";
 import {
   ActorLicenseRelation,
+  ActorListItem,
   Role,
   convertDateToLocale,
   convertOnlyDateToLocale,
@@ -16,6 +17,9 @@ import Spinner from "@/components/Spinner";
 import { useTranslation } from "../../internationalization";
 import { Alert } from "@/components/Alert";
 import { PaginationContainer, usePagination } from "@/components/Pagination";
+import Icon from "@/components/Icon";
+import { ActorEntryForm } from "@/components/ActorEntryForm";
+import { useNotImplementedModal } from "../actions";
 
 async function fetchActor([client, _ctx, entryId]: [Client, "actor", string]) {
   return client.fetchActorById(entryId);
@@ -69,6 +73,8 @@ function ActorViewBase() {
   const actorId = searchParams.get("entryId");
   const client = useClient();
   const { t } = useTranslation();
+  const [isEditing, setIsEditing] = useState<boolean>(false);
+  const notImplementedAction = useNotImplementedModal();
 
   const { data, isLoading, error } = useSWR(
     actorId ? [client, "actor", actorId] : null,
@@ -123,86 +129,24 @@ function ActorViewBase() {
         <h2 className="fw-bold">
           <i className={`bi bi-${getActorIcon(data.type)} me-3`} />
           {data.full_name}
+          <button
+            className="btn btn-outline-secondary ms-2"
+            onClick={() => setIsEditing(!isEditing)}
+          >
+            <Icon icon={isEditing ? "eye" : "pencil-square"} />
+          </button>
         </h2>
-        <div className="col-12 col-xl-6">
-          <div className="card my-4">
-            <div className="card-header d-flex justify-content-between">
-              <div>
-                <span className="m-0">{Array.from(roles).join(", ")}</span>
-                <i className={`bi bi-${getGenderIcon(data.sex)} ms-1`} />
-              </div>
-              {data.birth_date ? (
-                <p className="fst-italic m-0">
-                  * {convertOnlyDateToLocale(data.birth_date)}
-                </p>
-              ) : data.birth_year ? (
-                <p className="fst-italic m-0">* {data.birth_year}</p>
-              ) : null}
-            </div>
-            <div className="card-body pb-0">
-              <ul className="list-group list-group-flush">
-                <li className="list-group-item d-flex">
-                  <i className="bi bi-envelope-at-fill me-4" />
-                  <div className="d-flex flex-column">
-                    {data.email ? (
-                      <span>{data.email}</span>
-                    ) : (
-                      <p className="text-muted fst-italic m-0">
-                        {t("actorNoEmailAddress")}
-                      </p>
-                    )}
-                    {data.alternative_email && (
-                      <span className="text-muted">
-                        {data.alternative_email}
-                      </span>
-                    )}
-                  </div>
-                </li>
-                <li className="list-group-item d-flex">
-                  <i className="bi bi-telephone-fill me-4" />
-                  <div className="d-flex flex-column">
-                    {data.phone_number1 ? (
-                      <span>{data.phone_number1}</span>
-                    ) : (
-                      <p className="text-muted fst-italic m-0">
-                        {t("actorNoPhoneNumber")}
-                      </p>
-                    )}
-                    {data.phone_number2 && (
-                      <span className="text-muted">{data.phone_number2}</span>
-                    )}
-                  </div>
-                </li>
-                <li className="list-group-item d-flex">
-                  <i className="bi bi-house-fill me-4" />
-                  <div className="d-flex flex-column">
-                    {data.address ? (
-                      <span>{data.address}</span>
-                    ) : (
-                      <p className="text-muted fst-italic m-0">
-                        {t("actorNoAddress")}
-                      </p>
-                    )}
-                    {data.co_address && <span>{data.co_address}</span>}
-                    {data.postal_code || data.city ? (
-                      <span>{data.postal_code + " " + data.city}</span>
-                    ) : (
-                      <p className="text-muted fst-italic m-0">
-                        {t("actorNoCity")}
-                      </p>
-                    )}
-                    {data.country && <span>{data.country}</span>}
-                  </div>
-                </li>
-              </ul>
-            </div>
-            <p className="text-muted text-end small m-1">
-              {t("actorUpdatedAt", {
-                date: convertDateToLocale(data.updated_at),
-              })}
-            </p>
-          </div>
-        </div>
+        {isEditing ? (
+          <ActorEntryForm
+            initialActor={data}
+            onSubmit={(a) => {
+              notImplementedAction(t("actorFormTitle"));
+              console.log(a);
+            }}
+          />
+        ) : (
+          <ActorEntry actor={data} roles={Array.from(roles)} />
+        )}
         <div className="col-12 col-xxl-9">
           <h3 className="pt-4 fw-bold">{t("actorLicenses")}</h3>
           <ul className="list-group list-group-flush">
@@ -261,6 +205,89 @@ function LicenseGroup({
         <LicenseEntry key={getLicenseGroupKey([l])} license={l} />
       ))}
     </details>
+  );
+}
+
+function ActorEntry({ actor, roles }: { actor: ActorListItem; roles: Role[] }) {
+  const { t } = useTranslation();
+  return (
+    <div className="col-12 col-xl-6">
+      <div className="card my-4">
+        <div className="card-header d-flex justify-content-between">
+          <div>
+            <span className="m-0">{roles.join(", ")}</span>
+            <i className={`bi bi-${getGenderIcon(actor.sex)} ms-1`} />
+          </div>
+          {actor.birth_date ? (
+            <p className="fst-italic m-0">
+              * {convertOnlyDateToLocale(actor.birth_date)}
+            </p>
+          ) : actor.birth_year ? (
+            <p className="fst-italic m-0">* {actor.birth_year}</p>
+          ) : null}
+        </div>
+        <div className="card-body pb-0">
+          <ul className="list-group list-group-flush">
+            <li className="list-group-item d-flex">
+              <i className="bi bi-envelope-at-fill me-4" />
+              <div className="d-flex flex-column">
+                {actor.email ? (
+                  <span>{actor.email}</span>
+                ) : (
+                  <p className="text-muted fst-italic m-0">
+                    {t("actorNoEmailAddress")}
+                  </p>
+                )}
+                {actor.alternative_email && (
+                  <span className="text-muted">{actor.alternative_email}</span>
+                )}
+              </div>
+            </li>
+            <li className="list-group-item d-flex">
+              <i className="bi bi-telephone-fill me-4" />
+              <div className="d-flex flex-column">
+                {actor.phone_number1 ? (
+                  <span>{actor.phone_number1}</span>
+                ) : (
+                  <p className="text-muted fst-italic m-0">
+                    {t("actorNoPhoneNumber")}
+                  </p>
+                )}
+                {actor.phone_number2 && (
+                  <span className="text-muted">{actor.phone_number2}</span>
+                )}
+              </div>
+            </li>
+            <li className="list-group-item d-flex">
+              <i className="bi bi-house-fill me-4" />
+              <div className="d-flex flex-column">
+                {actor.address ? (
+                  <span>{actor.address}</span>
+                ) : (
+                  <p className="text-muted fst-italic m-0">
+                    {t("actorNoAddress")}
+                  </p>
+                )}
+                {actor.co_address && <span>{actor.co_address}</span>}
+                {actor.postal_code || actor.city ? (
+                  <span>{actor.postal_code + " " + actor.city}</span>
+                ) : (
+                  <p className="text-muted fst-italic m-0">
+                    {t("actorNoCity")}
+                  </p>
+                )}
+                {actor.country && <span>{actor.country}</span>}
+              </div>
+            </li>
+          </ul>
+        </div>
+        <p className="text-muted text-end small m-1">
+          {t("actorUpdatedAt", {
+            date: convertDateToLocale(actor.updated_at),
+          })}
+        </p>
+      </div>
+    </div>
   );
 }
 

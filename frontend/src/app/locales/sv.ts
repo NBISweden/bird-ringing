@@ -24,11 +24,37 @@ const actorTypeOptions = {
   actorTypeStation: "Station",
 };
 
+const actorFields = {
+  actorAddress: "Adress",
+  actorAlternativeEmail: "Alternativ e-postadress",
+  actorBirthDate: "Birth date",
+  actorCity: "Ort",
+  actorCOAddress: "C/O adress",
+  actorEmail: "E-postadress",
+  actorGender: "Kön",
+  actorName: "Namn",
+  actorType: "Typ",
+  actorPhoneNumber1: "Telefonnummer 1",
+  actorPhoneNumber2: "Telefonnummer 2",
+};
+
+const actorForm = {
+  actorFormSave: "Spara",
+  actorFormAddressPlaceholder: "Skriv en address",
+  actorFormPhoneNumberPlaceholder: "Skriv ett telefonnummer",
+  actorFormBirthDatePlaceholder: "Skriv ett födelsedatum",
+  actorFormEmailPlaceholder: "Skriv en e-postadress",
+  actorFormCityPlaceholder: "Skriv ett ortsnamn",
+  actorFormTitle: "Redigerar ringmärkare",
+};
+
 export const locale: TranslationMap = {
   ...licenseReportStatusOptions,
   ...licenseStatusOptions,
   ...licenseRoleOptions,
   ...actorTypeOptions,
+  ...actorFields,
+  ...actorForm,
   birdRinging: "Ringmärkning",
   userPermissions: "Användarrättigheter",
   userSignedOut: "Du har blivit utloggad.",
@@ -45,9 +71,7 @@ export const locale: TranslationMap = {
   actorListView: "Ringmärkare",
   expertsLogin: "Expertinloggning",
 
-  actorCity: "Ort",
   actorDeactivate: "Avaktivera",
-  actorEmail: "E-post",
   actorErrorLoadingActorText:
     "Något gick fel när vi försökte ladda data för ringmärkare med id {actorId}.",
   actorErrorLoadingActorTitle: "Misslyckades att hämta ringmärkare",
@@ -63,7 +87,6 @@ export const locale: TranslationMap = {
   actorLicenses: "Licenser",
   actorLoadingEmailAddresses: "Laddar e-postadresser",
   actorNoEmailAddressesFound: "Inga e-postadresser fanns ",
-  actorName: "Namn",
   actorNoAddress: "ingen adress",
   actorNoCity: "ingen stad",
   actorNoCurrentLicenses: "Inga nuvarande licenser",
@@ -72,7 +95,6 @@ export const locale: TranslationMap = {
   actorPreviousLicenses: "Previous licenses",
   actorRoles: "Roller",
   actorSendLicenses: "Skicka licenser",
-  actorType: "Typ",
   actorUpdatedAt: "Uppdaterad {date}",
 
   licenseActors: "Ringmärkare / hjälpare",

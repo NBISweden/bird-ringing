@@ -27,11 +27,37 @@ const actorTypeOptions = {
   actorTypeStation: "Station",
 };
 
+const actorFields = {
+  actorAddress: "Address",
+  actorAlternativeEmail: "Alternative e-mail",
+  actorBirthDate: "Birth date",
+  actorCity: "City",
+  actorCOAddress: "C/O address",
+  actorEmail: "E-mail",
+  actorGender: "Gender",
+  actorName: "Name",
+  actorType: "Type",
+  actorPhoneNumber1: "Phone number 1",
+  actorPhoneNumber2: "Phone number 2",
+};
+
+const actorForm = {
+  actorFormSave: "Save",
+  actorFormAddressPlaceholder: "Enter address",
+  actorFormPhoneNumberPlaceholder: "Enter phone number",
+  actorFormBirthDatePlaceholder: "Enter birth date",
+  actorFormEmailPlaceholder: "Enter e-mail",
+  actorFormCityPlaceholder: "Enter city name",
+  actorFormTitle: "Editing actor",
+};
+
 const messagesBase = {
   ...licenseReportStatusOptions,
   ...licenseStatusOptions,
   ...licenseRoleOptions,
   ...actorTypeOptions,
+  ...actorFields,
+  ...actorForm,
 
   birdRinging: "Bird Ringing",
   userPermissions: "User permissions",
@@ -41,7 +67,6 @@ const messagesBase = {
   userWelcomeHeader: "Welcome, {name}",
   userWelcomeText: "You’re successfully logged in as an expert.",
   dashboard: "Dashboard",
-
   licenseListView: "Licenses",
   licenseView: "License {licenseHolder} {licenseId}",
   actorListView: "Ringers",
@@ -53,9 +78,8 @@ const messagesBase = {
   goToSystem: "Go to system",
   expertsLogin: "Experts login",
 
-  actorCity: "City",
   actorDeactivate: "Deactivate",
-  actorEmail: "E-mail",
+
   actorErrorLoadingActorText:
     "Something went wrong while loading ringer data for ringer {actorId}.",
   actorErrorLoadingActorTitle: "Failed to load ringer",
@@ -71,7 +95,6 @@ const messagesBase = {
   actorLicenses: "Licenses",
   actorLoadingEmailAddresses: "Loading e-mail addresses",
   actorNoEmailAddressesFound: "No e-mail addresses were found",
-  actorName: "Name",
   actorNoAddress: "no address",
   actorNoCity: "no city",
   actorNoCurrentLicenses: "No current licenses",
@@ -80,7 +103,6 @@ const messagesBase = {
   actorPreviousLicenses: "Previous licenses",
   actorRoles: "Roles",
   actorSendLicenses: "Send licenses",
-  actorType: "Type",
   actorUpdatedAt: "Updated at {date}",
 
   licenseActors: "Ringers / associate ringers",
