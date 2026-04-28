@@ -71,6 +71,7 @@ export const locale: TranslationMap = {
   actorListView: "Ringmärkare",
   expertsLogin: "Expertinloggning",
 
+  actorCreate: "Lägg till ringmärkare",
   actorDeactivate: "Avaktivera",
   actorErrorLoadingActorText:
     "Något gick fel när vi försökte ladda data för ringmärkare med id {actorId}.",

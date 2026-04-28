@@ -78,6 +78,7 @@ const messagesBase = {
   goToSystem: "Go to system",
   expertsLogin: "Experts login",
 
+  actorCreate: "Add ringer",
   actorDeactivate: "Deactivate",
 
   actorErrorLoadingActorText:

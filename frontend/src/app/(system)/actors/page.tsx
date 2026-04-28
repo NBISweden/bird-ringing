@@ -294,6 +294,13 @@ function BaseListView({
           {allSelected ? t("selectNone") : t("selectAll")}
         </button>
         <span className="input-group-text flex-grow-1">{selectionInfo}</span>
+        <Link
+          href="/actors/create"
+          className="btn btn-outline-secondary"
+          type="button"
+        >
+          {t("actorCreate")}
+        </Link>
         <button
           className={`btn btn-outline-secondary dropdown-toggle  ${isLoading ? "disabled" : ""}`}
           onClick={() => setActionIsOpen(!actionIsOpen)}

@@ -12,8 +12,8 @@ export function ActorEntryForm({
   initialActor,
   onSubmit,
 }: {
-  initialActor: ActorBase;
-  onSubmit: (actor: ActorBase) => void;
+  initialActor: Partial<ActorBase>;
+  onSubmit: (actor: Partial<ActorBase>) => void;
 }) {
   const { t } = useTranslation();
   const [actor, updateValue] = useObjectState(initialActor);
@@ -32,7 +32,7 @@ export function ActorEntryForm({
                   <div>
                     <VerticalField label={t("actorType")} id="type">
                       <SelectInput
-                        value={actor.type}
+                        value={actor.type || "-"}
                         onChange={(event) =>
                           updateValue({
                             type: event.target.value,
@@ -42,7 +42,7 @@ export function ActorEntryForm({
                                 : "n/a",
                           })
                         }
-                        options={["person", "station"].map((o) => ({
+                        options={["-", "person", "station"].map((o) => ({
                           value: o,
                           label: o,
                         }))}
@@ -50,14 +50,18 @@ export function ActorEntryForm({
                     </VerticalField>
                     <VerticalField label={t("actorGender")} id="sex">
                       <SelectInput
-                        value={actor.sex}
+                        value={actor.sex || "-"}
                         onChange={(event) =>
                           updateValue({ sex: event.target.value })
                         }
                         disabled={actor.type === "station"}
-                        options={["male", "female", "unspecified", "n/a"].map(
-                          (o) => ({ value: o, label: o }),
-                        )}
+                        options={[
+                          "-",
+                          "male",
+                          "female",
+                          "unspecified",
+                          "n/a",
+                        ].map((o) => ({ value: o, label: o }))}
                       />
                     </VerticalField>
                     <VerticalField label={t("actorBirthDate")} id="birth_date">
