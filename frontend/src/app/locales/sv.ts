@@ -36,6 +36,9 @@ const actorFields = {
   actorType: "Typ",
   actorPhoneNumber1: "Telefonnummer 1",
   actorPhoneNumber2: "Telefonnummer 2",
+  actorFullName: "Komplett namn",
+  actorFirstName: "Förnamn",
+  actorLastName: "Efternamn",
 };
 
 const actorForm = {
@@ -45,6 +48,9 @@ const actorForm = {
   actorFormBirthDatePlaceholder: "Skriv ett födelsedatum",
   actorFormEmailPlaceholder: "Skriv en e-postadress",
   actorFormCityPlaceholder: "Skriv ett ortsnamn",
+  actorFormFullNamePlaceholder: "",
+  actorFormFirstNamePlaceholder: "Skriv ett förnamn",
+  actorFormLastNamePlaceholder: "Skriv ett efternamn",
   actorFormTitle: "Redigerar ringmärkare",
 };
 

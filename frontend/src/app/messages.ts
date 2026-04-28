@@ -39,6 +39,9 @@ const actorFields = {
   actorType: "Type",
   actorPhoneNumber1: "Phone number 1",
   actorPhoneNumber2: "Phone number 2",
+  actorFullName: "Full name",
+  actorFirstName: "First name",
+  actorLastName: "Last name",
 };
 
 const actorForm = {
@@ -48,6 +51,9 @@ const actorForm = {
   actorFormBirthDatePlaceholder: "Enter birth date",
   actorFormEmailPlaceholder: "Enter e-mail",
   actorFormCityPlaceholder: "Enter city name",
+  actorFormFullNamePlaceholder: "",
+  actorFormFirstNamePlaceholder: "Enter first name",
+  actorFormLastNamePlaceholder: "Enter last name",
   actorFormTitle: "Editing actor",
 };
 

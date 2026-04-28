@@ -30,6 +30,48 @@ export function ActorEntryForm({
                 <li className="list-group-item d-flex">
                   <i className="bi bi-info-circle me-4" />
                   <div>
+                    <VerticalField label={t("actorFirstName")} id="first_name">
+                      <TextInput
+                        type="text"
+                        placeholder={t("actorFormFirstNamePlaceholder")}
+                        value={actor.first_name || ""}
+                        onChange={(event) => {
+                          const value = event.target.value;
+                          updateValue({
+                            full_name: [value, actor.last_name]
+                              .filter((v) => !!v)
+                              .join(" "),
+                            first_name: value,
+                          });
+                        }}
+                      />
+                    </VerticalField>
+                    <VerticalField label={t("actorLastName")} id="last_name">
+                      <TextInput
+                        type="text"
+                        disabled={actor.type === "station"}
+                        placeholder={t("actorFormLastNamePlaceholder")}
+                        value={actor.last_name || ""}
+                        onChange={(event) => {
+                          const value = event.target.value;
+                          updateValue({
+                            full_name: [actor.first_name, value]
+                              .filter((v) => !!v)
+                              .join(" "),
+                            last_name: value,
+                          });
+                        }}
+                      />
+                    </VerticalField>
+                    <VerticalField label={t("actorFullName")} id="full_name">
+                      <TextInput
+                        type="text"
+                        disabled={true}
+                        value={actor.full_name}
+                        placeholder={t("actorFormFullNamePlaceholder")}
+                        onChange={() => {}}
+                      />
+                    </VerticalField>
                     <VerticalField label={t("actorType")} id="type">
                       <SelectInput
                         value={actor.type || "-"}
@@ -40,6 +82,11 @@ export function ActorEntryForm({
                               event.target.value === "person"
                                 ? "unspecified"
                                 : "n/a",
+                            last_name:
+                              event.target.value === "station"
+                                ? ""
+                                : actor.last_name,
+                            full_name: actor.first_name,
                           })
                         }
                         options={["-", "person", "station"].map((o) => ({
