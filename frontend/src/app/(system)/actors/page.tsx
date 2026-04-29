@@ -21,7 +21,7 @@ import {
   MenuAction,
 } from "../common";
 import { Client } from "../client";
-import { useClient } from "../contexts";
+import { useClient, useFlags } from "../contexts";
 import Icon from "@/components/Icon";
 import { useFetchEmailAddressesAction } from "./actions";
 import { Translation, useTranslation } from "../internationalization";
@@ -206,6 +206,7 @@ function BaseListView({
 }: ListViewProps) {
   const { t, formatOption } = useTranslation();
   const [actionIsOpen, setActionIsOpen] = useState(false);
+  const flags = useFlags();
 
   const items = useMemo(
     () => actors.map<TableItem>((actor) => toActorTable(actor, formatOption)),
@@ -294,13 +295,17 @@ function BaseListView({
           {allSelected ? t("selectNone") : t("selectAll")}
         </button>
         <span className="input-group-text flex-grow-1">{selectionInfo}</span>
-        <Link
-          href="/actors/create"
-          className="btn btn-outline-secondary"
-          type="button"
-        >
-          {t("actorCreate")}
-        </Link>
+        {flags.has("mock-actor-editing") ? (
+          <Link
+            href="/actors/create"
+            className="btn btn-outline-secondary"
+            type="button"
+          >
+            {t("actorCreate")}
+          </Link>
+        ) : (
+          <></>
+        )}
         <button
           className={`btn btn-outline-secondary dropdown-toggle  ${isLoading ? "disabled" : ""}`}
           onClick={() => setActionIsOpen(!actionIsOpen)}

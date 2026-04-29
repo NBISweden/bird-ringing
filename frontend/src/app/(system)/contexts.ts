@@ -1,11 +1,20 @@
-import { createContext, useContext, useState, useCallback } from "react";
+import {
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+  useMemo,
+} from "react";
 import { Client } from "./client";
 import { ButtonType } from "./common";
+
+export type FeatureFlags = "mock-actor-editing";
 
 export type Config = {
   authUrl: string;
   apiRootUrl: string;
   defaultLang: string;
+  flags?: FeatureFlags[];
 };
 
 export const ConfigContext = createContext<Config | null>(null);
@@ -18,6 +27,12 @@ export const useConfig = () => {
   }
 
   return config;
+};
+
+export const useFlags = () => {
+  const { flags } = useConfig();
+  const flagsSet = useMemo(() => new Set(flags || []), [flags]);
+  return flagsSet;
 };
 
 export type Auth = {

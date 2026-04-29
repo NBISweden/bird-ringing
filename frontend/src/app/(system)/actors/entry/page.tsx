@@ -4,7 +4,7 @@ import { Suspense, useState } from "react";
 import Link from "next/link";
 import useSWR from "swr";
 import { notFound, useSearchParams } from "next/navigation";
-import { useClient } from "../../contexts";
+import { useClient, useFlags } from "../../contexts";
 import {
   ActorLicenseRelation,
   ActorListItem,
@@ -75,6 +75,7 @@ function ActorViewBase() {
   const { t } = useTranslation();
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const notImplementedAction = useNotImplementedModal();
+  const flags = useFlags();
 
   const { data, isLoading, error } = useSWR(
     actorId ? [client, "actor", actorId] : null,
@@ -129,12 +130,16 @@ function ActorViewBase() {
         <h2 className="fw-bold">
           <i className={`bi bi-${getActorIcon(data.type)} me-3`} />
           {data.full_name}
-          <button
-            className="btn btn-outline-secondary ms-2"
-            onClick={() => setIsEditing(!isEditing)}
-          >
-            <Icon icon={isEditing ? "eye" : "pencil-square"} />
-          </button>
+          {flags.has("mock-actor-editing") ? (
+            <button
+              className="btn btn-outline-secondary ms-2"
+              onClick={() => setIsEditing(!isEditing)}
+            >
+              <Icon icon={isEditing ? "eye" : "pencil-square"} />
+            </button>
+          ) : (
+            <></>
+          )}
         </h2>
         {isEditing ? (
           <ActorEntryForm

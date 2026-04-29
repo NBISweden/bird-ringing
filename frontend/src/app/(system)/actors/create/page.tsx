@@ -5,10 +5,17 @@ import { ActorBase } from "../../common";
 import { useTranslation } from "../../internationalization";
 import { ActorEntryForm } from "@/components/ActorEntryForm";
 import { useNotImplementedModal } from "../actions";
+import { useFlags } from "../../contexts";
+import { notFound } from "next/navigation";
 
 function ActorViewBase() {
   const { t } = useTranslation();
   const notImplementedAction = useNotImplementedModal();
+  const flags = useFlags();
+
+  if (!flags.has("mock-actor-editing")) {
+    notFound();
+  }
 
   const actor: Partial<ActorBase> = {};
 
