@@ -52,7 +52,7 @@ export function ConfigProvider({
 
   const activeConfig = isLoading ? undefined : config || defaultConfig;
 
-  if (error && !activeConfig) {
+  if (error && !config) {
     return errorMessage ? errorMessage : <></>;
   }
   return activeConfig === undefined ? (
