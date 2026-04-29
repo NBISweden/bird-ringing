@@ -37,6 +37,9 @@ class RestPropertiesTests(TestCase):
                 updated_by=self.user_with_access
             )
         self._test_endpoint("/api/property/actor/")
+
+        items = self._test_endpoint("/api/property/actor/?search=adam")
+        self.assertEqual(len(items), 1, "only one matching actor should be included")
     
     def test_species_endpoint(self):
         for name in ["Sparv", "Mes"]:
@@ -49,6 +52,9 @@ class RestPropertiesTests(TestCase):
             )
         self._test_endpoint("/api/property/species/")
 
+        items = self._test_endpoint("/api/property/species/?search=mes")
+        self.assertEqual(len(items), 1, "only one matching species should be included")
+
     def test_permission_type_endpoint(self):
         for name in ["A", "B", "C"]:
             LicensePermissionType.objects.create(
@@ -58,6 +64,10 @@ class RestPropertiesTests(TestCase):
                 updated_by=self.user_with_access
             )
         self._test_endpoint("/api/property/permission_type/")
+
+        items = self._test_endpoint("/api/property/permission_type/?search=b")
+        self.assertEqual(len(items), 1, "only one matching permission type should be included")
+
 
     def test_permission_property_endpoint(self):
         [ptA, ptB, ptC] = [
@@ -91,6 +101,9 @@ class RestPropertiesTests(TestCase):
             related_type = item["related_type"]
             if related_type is not None:
                 self.assertTrue("id" in related_type, "related_type should have an id")
+        
+        items = self._test_endpoint("/api/property/permission_property/?search=has-5-b")
+        self.assertEqual(len(items), 1, "only one matching permission property should be included")
     
     def test_choice_field_endpoints(self):
         endpoints = [
