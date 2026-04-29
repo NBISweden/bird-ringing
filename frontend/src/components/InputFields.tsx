@@ -8,11 +8,11 @@ import {
   useContext,
   useId,
 } from "react";
-import Icon from "./Icon";
 
 type FieldContext = {
   fieldId?: string;
   helpId?: string;
+  required?: boolean;
 };
 export const FieldContext = createContext<FieldContext>({});
 export const FieldErrorContext = createContext<
@@ -23,9 +23,16 @@ type FieldProps = PropsWithChildren<{
   label: string | ReactElement;
   helpText?: string | ReactElement;
   id?: string;
+  required?: boolean;
 }>;
 
-export function VerticalField({ children, label, helpText, id }: FieldProps) {
+export function VerticalField({
+  children,
+  label,
+  helpText,
+  id,
+  required,
+}: FieldProps) {
   const helpId = useId();
   const allocatedId = useId();
   const fieldId = id === undefined ? allocatedId : id;
@@ -35,8 +42,9 @@ export function VerticalField({ children, label, helpText, id }: FieldProps) {
     <div className="mb-3">
       <label className="form-label" htmlFor={fieldId}>
         {label}
+        {required ? <span className="ms-1">*</span> : <></>}
       </label>
-      <FieldContext.Provider value={{ fieldId, helpId }}>
+      <FieldContext.Provider value={{ fieldId, helpId, required }}>
         {children}
       </FieldContext.Provider>
       {helpText ? (
@@ -57,7 +65,13 @@ export function VerticalField({ children, label, helpText, id }: FieldProps) {
   );
 }
 
-export function HorizontalField({ children, label, helpText, id }: FieldProps) {
+export function HorizontalField({
+  children,
+  label,
+  helpText,
+  id,
+  required,
+}: FieldProps) {
   const helpId = useId();
   const allocatedId = useId();
   const fieldId = id === undefined ? allocatedId : id;
@@ -68,10 +82,11 @@ export function HorizontalField({ children, label, helpText, id }: FieldProps) {
       <div className="col-auto">
         <label className="form-label" htmlFor={fieldId}>
           {label}
+          {required ? <span className="ms-1">*</span> : <></>}
         </label>
       </div>
       <div className="col-auto">
-        <FieldContext.Provider value={{ fieldId, helpId }}>
+        <FieldContext.Provider value={{ fieldId, helpId, required }}>
           {children}
         </FieldContext.Provider>
       </div>
@@ -97,20 +112,11 @@ export function HorizontalField({ children, label, helpText, id }: FieldProps) {
   );
 }
 
-export function RequiredField({
-  required,
-  children,
-}: PropsWithChildren<{ required: boolean }>) {
-  return required ? (
-    <div className="input-group">
-      {children}
-      <span className="input-group-text" id="basic-addon1">
-        <Icon icon="exclamation-diamond" />
-      </span>
-    </div>
-  ) : (
-    children
-  );
+function getFirstValue<T>(...values: (T | undefined)[]): T | undefined {
+  for (const v of values) {
+    if (v !== undefined) return v;
+  }
+  return undefined;
 }
 
 export function SelectInput<T>({
@@ -120,24 +126,22 @@ export function SelectInput<T>({
   SelectHTMLAttributes<HTMLSelectElement>,
   HTMLSelectElement
 > & { options: { value: T; label: string }[] }) {
-  const { fieldId, helpId } = useContext(FieldContext);
+  const { fieldId, helpId, required: fieldRequired } = useContext(FieldContext);
+  const required = getFirstValue(props.required, fieldRequired);
   return (
-    <RequiredField
-      required={props.required === undefined ? false : props.required}
+    <select
+      {...props}
+      required={required}
+      className="form-select"
+      id={fieldId}
+      aria-describedby={helpId ? helpId : undefined}
     >
-      <select
-        {...props}
-        className="form-select"
-        id={fieldId}
-        aria-describedby={helpId ? helpId : undefined}
-      >
-        {options.map(({ value, label }) => (
-          <option key={String(value)} value={String(value)}>
-            {label}
-          </option>
-        ))}
-      </select>
-    </RequiredField>
+      {options.map(({ value, label }) => (
+        <option key={String(value)} value={String(value)}>
+          {label}
+        </option>
+      ))}
+    </select>
   );
 }
 
@@ -147,17 +151,15 @@ export function TextInput(
     HTMLInputElement
   >,
 ) {
-  const { fieldId, helpId } = useContext(FieldContext);
+  const { fieldId, helpId, required: fieldRequired } = useContext(FieldContext);
+  const required = getFirstValue(props.required, fieldRequired);
   return (
-    <RequiredField
-      required={props.required === undefined ? false : props.required}
-    >
-      <input
-        {...props}
-        className="form-control"
-        id={fieldId}
-        aria-describedby={helpId ? helpId : undefined}
-      />
-    </RequiredField>
+    <input
+      {...props}
+      required={required}
+      className="form-control"
+      id={fieldId}
+      aria-describedby={helpId ? helpId : undefined}
+    />
   );
 }

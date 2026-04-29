@@ -31,9 +31,8 @@ export function ActorEntryForm({
                 <li className="list-group-item d-flex">
                   <i className="bi bi-info-circle me-4" />
                   <div>
-                    <VerticalField label={t("actorType")} id="type">
+                    <VerticalField label={t("actorType")} id="type" required>
                       <SelectInput
-                        required
                         value={actor.type || "-"}
                         onChange={(event) =>
                           updateValue({
@@ -58,10 +57,10 @@ export function ActorEntryForm({
                     <VerticalField
                       label={isPerson ? t("actorFirstName") : t("actorName")}
                       id="first_name"
+                      required
                     >
                       <TextInput
                         type="text"
-                        required
                         placeholder={
                           isPerson
                             ? t("actorFormFirstNamePlaceholder")
@@ -84,10 +83,10 @@ export function ActorEntryForm({
                         <VerticalField
                           label={t("actorLastName")}
                           id="last_name"
+                          required
                         >
                           <TextInput
                             type="text"
-                            required
                             placeholder={t("actorFormLastNamePlaceholder")}
                             value={actor.last_name || ""}
                             disabled={!isPerson}
@@ -128,9 +127,9 @@ export function ActorEntryForm({
                         isPerson ? t("actorBirthDate") : t("actorCreationDate")
                       }
                       id="birth_date"
+                      required
                     >
                       <TextInput
-                        required
                         type="date"
                         placeholder={
                           isPerson
@@ -145,9 +144,8 @@ export function ActorEntryForm({
                 <li className="list-group-item d-flex">
                   <i className="bi bi-envelope-at-fill me-4" />
                   <div>
-                    <VerticalField label={t("actorEmail")} id="email">
+                    <VerticalField label={t("actorEmail")} id="email" required>
                       <TextInput
-                        required
                         type="email"
                         placeholder={t("actorFormEmailPlaceholder")}
                         defaultValue={actor.email || ""}
@@ -171,9 +169,9 @@ export function ActorEntryForm({
                     <VerticalField
                       label={t("actorPhoneNumber1")}
                       id="phone_number1"
+                      required
                     >
                       <TextInput
-                        required
                         type="phonenumber"
                         placeholder={t("actorFormPhoneNumberPlaceholder")}
                         defaultValue={actor.phone_number1 || ""}
@@ -194,25 +192,30 @@ export function ActorEntryForm({
                 <li className="list-group-item d-flex">
                   <i className="bi bi-house-fill me-4" />
                   <div>
-                    <VerticalField label={t("actorCity")} id="city">
+                    <VerticalField label={t("actorCity")} id="city" required>
                       <TextInput
-                        required
                         type="text"
                         placeholder={t("actorFormCityPlaceholder")}
                         defaultValue={actor.city || ""}
                       />
                     </VerticalField>
-                    <VerticalField label={t("actorAddress")} id="address">
+                    <VerticalField
+                      label={t("actorAddress")}
+                      id="address"
+                      required
+                    >
                       <TextInput
-                        required
                         type="text"
                         placeholder={t("actorFormAddressPlaceholder")}
                         defaultValue={actor.address || ""}
                       />
                     </VerticalField>
-                    <VerticalField label={t("actorCOAddress")} id="co_address">
+                    <VerticalField
+                      label={t("actorCOAddress")}
+                      id="co_address"
+                      required
+                    >
                       <TextInput
-                        required
                         type="text"
                         placeholder={t("actorFormAddressPlaceholder")}
                         defaultValue={actor.co_address || ""}
