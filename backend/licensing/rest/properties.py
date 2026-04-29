@@ -1,6 +1,5 @@
-from rest_framework import routers
-from rest_framework import serializers, viewsets
-
+from rest_framework import routers, serializers, viewsets, filters
+from rest_framework.authentication import SessionAuthentication, BasicAuthentication
 from licensing.models import (
     Actor,
     LicensePermissionType,
@@ -64,21 +63,33 @@ class PermissionPropertySerializer(serializers.ModelSerializer):
 
 
 class ActorViewSet(viewsets.ModelViewSet):
+    authentication_classes = [SessionAuthentication, BasicAuthentication]
     permission_classes = [DjangoProtectedModelPermissions]
+
+    filter_backends = [filters.SearchFilter]
+    search_fields = ["full_name"]
 
     queryset = Actor.objects.all()
     serializer_class = ActorSerializer
 
 
 class PermissionTypeViewSet(viewsets.ModelViewSet):
+    authentication_classes = [SessionAuthentication, BasicAuthentication]
     permission_classes = [DjangoProtectedModelPermissions]
+
+    filter_backends = [filters.SearchFilter]
+    search_fields = ["name"]
 
     queryset = LicensePermissionType.objects.all()
     serializer_class = PermissionTypeSerializer
 
 
 class PermissionPropertyViewSet(viewsets.ModelViewSet):
+    authentication_classes = [SessionAuthentication, BasicAuthentication]
     permission_classes = [DjangoProtectedModelPermissions]
+
+    filter_backends = [filters.SearchFilter]
+    search_fields = ["name"]
 
     queryset = LicensePermissionProperty.objects.all()
     serializer_class = PermissionPropertySerializer
