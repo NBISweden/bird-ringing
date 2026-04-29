@@ -13,7 +13,7 @@ from licensing.models import (
     LicenseRoleChoices,
     LicenseStatusChoices,
 )
-from .utils import LabeledChoiceViewset
+from .utils import LabeledChoiceViewset, DjangoProtectedModelPermissions
 
 
 class ActorSerializer(serializers.ModelSerializer):
@@ -64,16 +64,22 @@ class PermissionPropertySerializer(serializers.ModelSerializer):
 
 
 class ActorViewSet(viewsets.ModelViewSet):
+    permission_classes = [DjangoProtectedModelPermissions]
+
     queryset = Actor.objects.all()
     serializer_class = ActorSerializer
 
 
 class PermissionTypeViewSet(viewsets.ModelViewSet):
+    permission_classes = [DjangoProtectedModelPermissions]
+
     queryset = LicensePermissionType.objects.all()
     serializer_class = PermissionTypeSerializer
 
 
 class PermissionPropertyViewSet(viewsets.ModelViewSet):
+    permission_classes = [DjangoProtectedModelPermissions]
+
     queryset = LicensePermissionProperty.objects.all()
     serializer_class = PermissionPropertySerializer
 
