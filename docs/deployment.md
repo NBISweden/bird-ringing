@@ -257,6 +257,7 @@ A minimal `config.json` file should look as follows:
 
 The array in the property `flags` can contain any number of feature flags as strings. Currently supported feature flags are:
 
-| Flag | Feature                                                          |
-| :------------ | :------------------------------------------------------ |
-| `"mock-actor-editing"`   | Enables a mocked version of actor editing.   |
+| Flag                      | Feature                                                 |
+| :------------------------ | :------------------------------------------------------ |
+| `"mock-actor-editing"`    | Enables a mocked version of actor editing.              |
+| `"mock-license-editing"`  | Enables a mocker version of license editing.            |
