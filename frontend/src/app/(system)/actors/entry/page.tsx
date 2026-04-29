@@ -19,7 +19,7 @@ import { Alert } from "@/components/Alert";
 import { PaginationContainer, usePagination } from "@/components/Pagination";
 import Icon from "@/components/Icon";
 import { ActorEntryForm } from "@/components/ActorEntryForm";
-import { useNotImplementedModal } from "../actions";
+import { useNotImplementedModal } from "../../hooks";
 
 async function fetchActor([client, _ctx, entryId]: [Client, "actor", string]) {
   return client.fetchActorById(entryId);

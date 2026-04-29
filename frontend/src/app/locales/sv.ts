@@ -42,6 +42,16 @@ const actorFields = {
   actorCreationDate: "Startdatum",
 };
 
+const licenseFields = {
+  licenseStartsAt: "Valid from",
+  licenseEndsAt: "Valid to",
+  licenseDescription: "Description",
+};
+
+const licenseForm = {
+  licenseFormTitle: "Editing license",
+};
+
 const actorForm = {
   actorFormSave: "Spara",
   actorFormAddressPlaceholder: "Skriv en address",
@@ -64,6 +74,9 @@ export const locale: TranslationMap = {
   ...actorTypeOptions,
   ...actorFields,
   ...actorForm,
+  ...licenseFields,
+  ...licenseForm,
+
   birdRinging: "Ringmärkning",
   userPermissions: "Användarrättigheter",
   userSignedOut: "Du har blivit utloggad.",
@@ -110,6 +123,7 @@ export const locale: TranslationMap = {
   licenseActors: "Ringmärkare / hjälpare",
   licenseCommunication: "Kommunikation",
   licenseCommunicationNote: "Anteckning",
+  licenseCreate: "Add license",
   licenseCreateLicenseDocuments: "Skapa licensdokument",
   licenseCreateLicenseDocumentsConfirmText:
     "Vill du skapa licensdokument för alla ringmärkare associerade med licenser?",

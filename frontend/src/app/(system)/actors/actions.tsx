@@ -68,26 +68,3 @@ function ActorEmailList({ ids }: { ids: string[] }) {
     <Alert type="secondary">{t("actorNoEmailAddressesFound")}</Alert>
   );
 }
-
-export function useNotImplementedModal() {
-  const modalStack = useModalsContext();
-  const { t } = useTranslation();
-
-  const action = useCallback(
-    (title?: string) => {
-      modalStack.add({
-        title: title || t("featureNotImplemented"),
-        content: t("featureNotImplemented"),
-        actions: [
-          {
-            label: t("closeModal"),
-            action: () => {},
-            type: "primary",
-          },
-        ],
-      });
-    },
-    [modalStack, t],
-  );
-  return action;
-}

@@ -5,6 +5,7 @@ import {
   PropsWithChildren,
   ReactElement,
   SelectHTMLAttributes,
+  TextareaHTMLAttributes,
   useContext,
   useId,
 } from "react";
@@ -155,6 +156,25 @@ export function TextInput(
   const required = getFirstValue(props.required, fieldRequired);
   return (
     <input
+      {...props}
+      required={required}
+      className="form-control"
+      id={fieldId}
+      aria-describedby={helpId ? helpId : undefined}
+    />
+  );
+}
+
+export function TextArea(
+  props: DetailedHTMLProps<
+    TextareaHTMLAttributes<HTMLTextAreaElement>,
+    HTMLTextAreaElement
+  >,
+) {
+  const { fieldId, helpId, required: fieldRequired } = useContext(FieldContext);
+  const required = getFirstValue(props.required, fieldRequired);
+  return (
+    <textarea
       {...props}
       required={required}
       className="form-control"

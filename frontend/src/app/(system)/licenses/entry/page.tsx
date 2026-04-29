@@ -5,13 +5,16 @@ import useSWR from "swr";
 import { notFound, useSearchParams } from "next/navigation";
 import Spinner from "@/components/Spinner";
 
-import { useClient } from "../../contexts";
+import { useClient, useFlags } from "../../contexts";
 import { Client } from "../../client";
 import { LicenceView } from "@/components/LicenceView";
 import { Alert } from "@/components/Alert";
 import { useTranslation } from "../../internationalization";
 import { convertOnlyDateToLocale } from "../../common";
 import { Badge } from "@/components/Badge";
+import Icon from "@/components/Icon";
+import { LicenseEntryForm } from "@/components/LiceneseEntryForm";
+import { useNotImplementedModal } from "../../hooks";
 
 async function fetchLicense([client, _ctx, entryId]: [
   Client,
@@ -26,6 +29,9 @@ function LicenseViewInner() {
   const mnr = params.get("mnr");
   const client = useClient();
   const { t, format, formatOption } = useTranslation();
+  const [isEditing, setIsEditing] = useState<boolean>(false);
+  const flags = useFlags();
+  const notImplementedAction = useNotImplementedModal();
 
   const { data, isLoading, error } = useSWR(
     mnr ? [client, "license", mnr] : null,
@@ -93,8 +99,28 @@ function LicenseViewInner() {
                 incomplete: "licenseReportStatusIncomplete",
               })}
             </Badge>
+            {flags.has("mock-license-editing") ? (
+              <button
+                className="btn btn-outline-secondary ms-2"
+                onClick={() => setIsEditing(!isEditing)}
+              >
+                <Icon icon={isEditing ? "eye" : "pencil-square"} />
+              </button>
+            ) : (
+              <></>
+            )}
           </h1>
-          <LicenceView license={data.latest} mnr={data.mnr} />
+          {isEditing ? (
+            <LicenseEntryForm
+              initialLicense={data.latest}
+              onSubmit={(a) => {
+                notImplementedAction(t("licenseFormTitle"));
+                console.log(a);
+              }}
+            />
+          ) : (
+            <LicenceView license={data.latest} mnr={data.mnr} />
+          )}
           {/* History */}
           <div className="py-3">
             <h3 className="h2">{t("licenseHistory")}</h3>

@@ -60,6 +60,16 @@ const actorForm = {
   actorFormTitle: "Editing actor",
 };
 
+const licenseFields = {
+  licenseStartsAt: "Valid from",
+  licenseEndsAt: "Valid to",
+  licenseDescription: "Description",
+};
+
+const licenseForm = {
+  licenseFormTitle: "Editing license",
+};
+
 const messagesBase = {
   ...licenseReportStatusOptions,
   ...licenseStatusOptions,
@@ -67,6 +77,8 @@ const messagesBase = {
   ...actorTypeOptions,
   ...actorFields,
   ...actorForm,
+  ...licenseForm,
+  ...licenseFields,
 
   birdRinging: "Bird Ringing",
   userPermissions: "User permissions",
@@ -118,6 +130,7 @@ const messagesBase = {
   licenseActors: "Ringers / associate ringers",
   licenseCommunication: "Communication",
   licenseCommunicationNote: "Note",
+  licenseCreate: "Add license",
   licenseCreateLicenseDocuments: "Create license documents",
   licenseCreateLicenseDocumentsConfirmText:
     "Do you want to create license cards for all ringers and associate ringers for selected licenses?",
