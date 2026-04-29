@@ -8,6 +8,7 @@ import {
   useContext,
   useId,
 } from "react";
+import Icon from "./Icon";
 
 type FieldContext = {
   fieldId?: string;
@@ -96,6 +97,22 @@ export function HorizontalField({ children, label, helpText, id }: FieldProps) {
   );
 }
 
+export function RequiredField({
+  required,
+  children,
+}: PropsWithChildren<{ required: boolean }>) {
+  return required ? (
+    <div className="input-group">
+      {children}
+      <span className="input-group-text" id="basic-addon1">
+        <Icon icon="exclamation-diamond" />
+      </span>
+    </div>
+  ) : (
+    children
+  );
+}
+
 export function SelectInput<T>({
   options,
   ...props
@@ -105,18 +122,22 @@ export function SelectInput<T>({
 > & { options: { value: T; label: string }[] }) {
   const { fieldId, helpId } = useContext(FieldContext);
   return (
-    <select
-      {...props}
-      className="form-select"
-      id={fieldId}
-      aria-describedby={helpId ? helpId : undefined}
+    <RequiredField
+      required={props.required === undefined ? false : props.required}
     >
-      {options.map(({ value, label }) => (
-        <option key={String(value)} value={String(value)}>
-          {label}
-        </option>
-      ))}
-    </select>
+      <select
+        {...props}
+        className="form-select"
+        id={fieldId}
+        aria-describedby={helpId ? helpId : undefined}
+      >
+        {options.map(({ value, label }) => (
+          <option key={String(value)} value={String(value)}>
+            {label}
+          </option>
+        ))}
+      </select>
+    </RequiredField>
   );
 }
 
@@ -128,11 +149,15 @@ export function TextInput(
 ) {
   const { fieldId, helpId } = useContext(FieldContext);
   return (
-    <input
-      {...props}
-      className="form-control"
-      id={fieldId}
-      aria-describedby={helpId ? helpId : undefined}
-    />
+    <RequiredField
+      required={props.required === undefined ? false : props.required}
+    >
+      <input
+        {...props}
+        className="form-control"
+        id={fieldId}
+        aria-describedby={helpId ? helpId : undefined}
+      />
+    </RequiredField>
   );
 }

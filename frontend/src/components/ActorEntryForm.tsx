@@ -17,6 +17,7 @@ export function ActorEntryForm({
 }) {
   const { t } = useTranslation();
   const [actor, updateValue] = useObjectState(initialActor);
+  const isPerson = actor.type === "person";
   return (
     <form>
       <FieldErrorContext.Provider value={{}}>
@@ -30,50 +31,9 @@ export function ActorEntryForm({
                 <li className="list-group-item d-flex">
                   <i className="bi bi-info-circle me-4" />
                   <div>
-                    <VerticalField label={t("actorFirstName")} id="first_name">
-                      <TextInput
-                        type="text"
-                        placeholder={t("actorFormFirstNamePlaceholder")}
-                        value={actor.first_name || ""}
-                        onChange={(event) => {
-                          const value = event.target.value;
-                          updateValue({
-                            full_name: [value, actor.last_name]
-                              .filter((v) => !!v)
-                              .join(" "),
-                            first_name: value,
-                          });
-                        }}
-                      />
-                    </VerticalField>
-                    <VerticalField label={t("actorLastName")} id="last_name">
-                      <TextInput
-                        type="text"
-                        disabled={actor.type === "station"}
-                        placeholder={t("actorFormLastNamePlaceholder")}
-                        value={actor.last_name || ""}
-                        onChange={(event) => {
-                          const value = event.target.value;
-                          updateValue({
-                            full_name: [actor.first_name, value]
-                              .filter((v) => !!v)
-                              .join(" "),
-                            last_name: value,
-                          });
-                        }}
-                      />
-                    </VerticalField>
-                    <VerticalField label={t("actorFullName")} id="full_name">
-                      <TextInput
-                        type="text"
-                        disabled={true}
-                        value={actor.full_name}
-                        placeholder={t("actorFormFullNamePlaceholder")}
-                        onChange={() => {}}
-                      />
-                    </VerticalField>
                     <VerticalField label={t("actorType")} id="type">
                       <SelectInput
+                        required
                         value={actor.type || "-"}
                         onChange={(event) =>
                           updateValue({
@@ -95,26 +55,88 @@ export function ActorEntryForm({
                         }))}
                       />
                     </VerticalField>
-                    <VerticalField label={t("actorGender")} id="sex">
-                      <SelectInput
-                        value={actor.sex || "-"}
-                        onChange={(event) =>
-                          updateValue({ sex: event.target.value })
+                    <VerticalField
+                      label={isPerson ? t("actorFirstName") : t("actorName")}
+                      id="first_name"
+                    >
+                      <TextInput
+                        type="text"
+                        required
+                        placeholder={
+                          isPerson
+                            ? t("actorFormFirstNamePlaceholder")
+                            : t("actorFormNamePlaceholder")
                         }
-                        disabled={actor.type === "station"}
-                        options={[
-                          "-",
-                          "male",
-                          "female",
-                          "unspecified",
-                          "n/a",
-                        ].map((o) => ({ value: o, label: o }))}
+                        value={actor.first_name || ""}
+                        onChange={(event) => {
+                          const value = event.target.value;
+                          updateValue({
+                            full_name: [value, actor.last_name]
+                              .filter((v) => !!v)
+                              .join(" "),
+                            first_name: value,
+                          });
+                        }}
                       />
                     </VerticalField>
-                    <VerticalField label={t("actorBirthDate")} id="birth_date">
+                    {isPerson ? (
+                      <>
+                        <VerticalField
+                          label={t("actorLastName")}
+                          id="last_name"
+                        >
+                          <TextInput
+                            type="text"
+                            required
+                            placeholder={t("actorFormLastNamePlaceholder")}
+                            value={actor.last_name || ""}
+                            disabled={!isPerson}
+                            onChange={(event) => {
+                              const value = event.target.value;
+                              updateValue({
+                                full_name: [actor.first_name, value]
+                                  .filter((v) => !!v)
+                                  .join(" "),
+                                last_name: value,
+                              });
+                            }}
+                          />
+                        </VerticalField>
+                        <VerticalField label={t("actorGender")} id="sex">
+                          <SelectInput
+                            value={actor.sex || "-"}
+                            required
+                            onChange={(event) =>
+                              updateValue({ sex: event.target.value })
+                            }
+                            disabled={!isPerson}
+                            options={[
+                              "-",
+                              "male",
+                              "female",
+                              "unspecified",
+                              "n/a",
+                            ].map((o) => ({ value: o, label: o }))}
+                          />
+                        </VerticalField>
+                      </>
+                    ) : (
+                      <></>
+                    )}
+                    <VerticalField
+                      label={
+                        isPerson ? t("actorBirthDate") : t("actorCreationDate")
+                      }
+                      id="birth_date"
+                    >
                       <TextInput
+                        required
                         type="date"
-                        placeholder={t("actorFormBirthDatePlaceholder")}
+                        placeholder={
+                          isPerson
+                            ? t("actorFormBirthDatePlaceholder")
+                            : t("actorFormCreationDatePlaceholder")
+                        }
                         defaultValue={actor.birth_date || ""}
                       />
                     </VerticalField>
@@ -125,6 +147,7 @@ export function ActorEntryForm({
                   <div>
                     <VerticalField label={t("actorEmail")} id="email">
                       <TextInput
+                        required
                         type="email"
                         placeholder={t("actorFormEmailPlaceholder")}
                         defaultValue={actor.email || ""}
@@ -150,6 +173,7 @@ export function ActorEntryForm({
                       id="phone_number1"
                     >
                       <TextInput
+                        required
                         type="phonenumber"
                         placeholder={t("actorFormPhoneNumberPlaceholder")}
                         defaultValue={actor.phone_number1 || ""}
@@ -172,6 +196,7 @@ export function ActorEntryForm({
                   <div>
                     <VerticalField label={t("actorCity")} id="city">
                       <TextInput
+                        required
                         type="text"
                         placeholder={t("actorFormCityPlaceholder")}
                         defaultValue={actor.city || ""}
@@ -179,6 +204,7 @@ export function ActorEntryForm({
                     </VerticalField>
                     <VerticalField label={t("actorAddress")} id="address">
                       <TextInput
+                        required
                         type="text"
                         placeholder={t("actorFormAddressPlaceholder")}
                         defaultValue={actor.address || ""}
@@ -186,6 +212,7 @@ export function ActorEntryForm({
                     </VerticalField>
                     <VerticalField label={t("actorCOAddress")} id="co_address">
                       <TextInput
+                        required
                         type="text"
                         placeholder={t("actorFormAddressPlaceholder")}
                         defaultValue={actor.co_address || ""}

@@ -42,6 +42,7 @@ const actorFields = {
   actorFullName: "Full name",
   actorFirstName: "First name",
   actorLastName: "Last name",
+  actorCreationDate: "Creation date",
 };
 
 const actorForm = {
@@ -54,6 +55,8 @@ const actorForm = {
   actorFormFullNamePlaceholder: "",
   actorFormFirstNamePlaceholder: "Enter first name",
   actorFormLastNamePlaceholder: "Enter last name",
+  actorFormNamePlaceholder: "Enter name",
+  actorFormCreationDatePlaceholder: "Enter creation date",
   actorFormTitle: "Editing actor",
 };
 

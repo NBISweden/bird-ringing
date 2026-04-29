@@ -39,6 +39,7 @@ const actorFields = {
   actorFullName: "Komplett namn",
   actorFirstName: "Förnamn",
   actorLastName: "Efternamn",
+  actorCreationDate: "Startdatum",
 };
 
 const actorForm = {
@@ -51,7 +52,9 @@ const actorForm = {
   actorFormFullNamePlaceholder: "",
   actorFormFirstNamePlaceholder: "Skriv ett förnamn",
   actorFormLastNamePlaceholder: "Skriv ett efternamn",
+  actorFormNamePlaceholder: "Skriv ett namn",
   actorFormTitle: "Redigerar ringmärkare",
+  actorFormCreationDatePlaceholder: "Skriv ett startdatum",
 };
 
 export const locale: TranslationMap = {
