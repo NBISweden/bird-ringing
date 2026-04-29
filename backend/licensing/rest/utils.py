@@ -1,5 +1,6 @@
 from rest_framework import serializers, viewsets
 from rest_framework.response import Response
+from rest_framework.permissions import DjangoModelPermissions
 
 
 class LabeledChoiceField(serializers.Field):
@@ -62,3 +63,19 @@ class LabeledChoiceViewset(viewsets.ViewSet):
         serializer_class = self.get_serializer_class()
         serializer = serializer_class(choices, many=True)
         return Response(serializer.data)
+
+
+class DjangoProtectedModelPermissions(DjangoModelPermissions):
+    """
+    Shared permission model for protected data.
+    """
+
+    perms_map = {
+        "GET": ["%(app_label)s.view_%(model_name)s"],
+        "OPTIONS": [],
+        "HEAD": [],
+        "POST": ["%(app_label)s.add_%(model_name)s"],
+        "PUT": ["%(app_label)s.change_%(model_name)s"],
+        "PATCH": ["%(app_label)s.change_%(model_name)s"],
+        "DELETE": ["%(app_label)s.delete_%(model_name)s"],
+    }
