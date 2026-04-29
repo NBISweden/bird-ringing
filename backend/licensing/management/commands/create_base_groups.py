@@ -7,6 +7,13 @@ from django.conf import settings
 class Command(BaseCommand):
     help = "Create user groups defined in settings.GROUP_NAMES"
 
+    def add_arguments(self, parser):
+        parser.add_argument(
+            "--update",
+            action="store_true",
+            help="Update existing group",
+        )
+
     def handle(self, *args, **options):
         with transaction.atomic():
             group_names = getattr(settings, "GROUP_NAMES", {})
@@ -17,18 +24,30 @@ class Command(BaseCommand):
                 )
                 return
 
-            permissions = ["view_licensesequence", "view_actor", "change_licensesequence"]
+            permissions = [
+                "view_licensesequence",
+                "view_actor",
+                "change_licensesequence",
+                "view_licensepermissiontype",
+                "view_licensepermissionproperty"
+            ]
 
             for _, group_name in group_names.items():
                 group, created = Group.objects.get_or_create(name=group_name)
-                if created:
+                if created or options["update"]:
                     for perm_name in permissions:
                         perm = Permission.objects.get(codename=perm_name)
                         group.permissions.add(perm)
                     group.save()
+                    
+                    action = (
+                        "updated"
+                        if options["update"]
+                        else "created"
+                    )
 
                     self.stdout.write(
-                        self.style.SUCCESS(f"Group '{group_name}' was created.")
+                        self.style.SUCCESS(f"Group '{group_name}' was {action}.")
                     )
                 else:
                     self.stdout.write(
