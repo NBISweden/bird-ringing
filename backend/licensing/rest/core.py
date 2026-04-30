@@ -43,7 +43,6 @@ from licensing.models import (
     MonthDay,
 )
 from rest_framework.authentication import SessionAuthentication, BasicAuthentication
-from rest_framework.permissions import DjangoModelPermissions
 
 from rest_framework import routers, serializers, viewsets, filters, pagination, response
 from django.db import models
@@ -51,6 +50,7 @@ from django.http import HttpResponse
 from django.template.exceptions import TemplateDoesNotExist
 from django.contrib.postgres.aggregates import StringAgg
 from collections import OrderedDict
+from .utils import DjangoProtectedModelPermissions
 import logging
 
 
@@ -235,17 +235,6 @@ def _merge_response(resp: Response, extra: dict[str, object], *, status_code: in
         base = dict(resp.data)
     base.update(extra)
     return Response(base, status=resp.status_code if status_code is None else status_code)
-
-class DjangoProtectedModelPermissions(DjangoModelPermissions):
-    perms_map = {
-        "GET": ["%(app_label)s.view_%(model_name)s"],
-        "OPTIONS": [],
-        "HEAD": [],
-        "POST": ["%(app_label)s.add_%(model_name)s"],
-        "PUT": ["%(app_label)s.change_%(model_name)s"],
-        "PATCH": ["%(app_label)s.change_%(model_name)s"],
-        "DELETE": ["%(app_label)s.delete_%(model_name)s"],
-    }
 
 
 class IdSelectionFilter(filters.BaseFilterBackend):
