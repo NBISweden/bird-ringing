@@ -84,3 +84,22 @@ export function useActionWithoutCache<T>(
 
   return { data, isLoading: isMutating, error };
 }
+
+export function useObjectState<T extends object>(
+  initialValue: T,
+): [T, (delta: Partial<T>) => void] {
+  const [value, setValue] = useState<T>(initialValue);
+  const updateValue = useCallback(
+    (delta: Partial<T>) => {
+      setValue((prev) => {
+        return {
+          ...prev,
+          ...delta,
+        };
+      });
+    },
+    [setValue],
+  );
+
+  return [value, updateValue];
+}

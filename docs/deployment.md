@@ -12,6 +12,10 @@ In order to get the service up and running you will need to go through the follo
 6. [Create super user and groups](#enable-service-admin)
 7. [Load data](#load-data)
 
+In special deployment situations some additional configuration might be required. Some examples of this are as follows:
+- [Using an External Database](#using-an-external-database)
+- [Using feature flags](#using-feature-flags)
+
 ## Prerequisites
 
 The current recommended setup of the service only requires Docker and Docker Compose as dependencies. The setup includes a backend container running `Django`, a `PostgreSQL` database, and a proxy serving static content and reverse-proxying the `Django` backend. Optionally, the service can be configured to use an externally hosted PostgreSQL database.
@@ -224,3 +228,35 @@ services:
   database:
     restart: always
 ```
+
+## Using feature flags
+
+In order to use feature flags in production you have to make the frontend `config.json` file accessible. This can be achieved by configuring a compose override as follows:
+
+```yml
+services:
+  proxy:
+    #...
+    volumes:
+      - ./resources/config.json:/srv/frontend-config/config.json:ro
+    #...
+
+```
+Where it is epxected that you put the `config.json` file in the directory `resources` in the project root.
+
+A minimal `config.json` file should look as follows:
+
+```json
+{
+  "apiRootUrl": "api/",
+  "authUrl": "api/login/",
+  "defaultLang": "en",
+  "flags": []
+}
+```
+
+The array in the property `flags` can contain any number of feature flags as strings. Currently supported feature flags are:
+
+| Flag | Feature                                                          |
+| :------------ | :------------------------------------------------------ |
+| `"mock-actor-editing"`   | Enables a mocked version of actor editing.   |
