@@ -9,6 +9,7 @@ import {
   useContext,
   useId,
 } from "react";
+import Icon from "./Icon";
 
 type FieldContext = {
   fieldId?: string;
@@ -24,6 +25,7 @@ type FieldProps = PropsWithChildren<{
   label: string | ReactElement;
   helpText?: string | ReactElement;
   id?: string;
+  icon?: string;
   required?: boolean;
 }>;
 
@@ -32,6 +34,7 @@ export function VerticalField({
   label,
   helpText,
   id,
+  icon,
   required,
 }: FieldProps) {
   const helpId = useId();
@@ -42,6 +45,7 @@ export function VerticalField({
   return (
     <div className="mb-3">
       <label className="form-label" htmlFor={fieldId}>
+        {icon ? <Icon icon={`${icon} me-2`} /> : <></>}
         {label}
         {required ? <span className="ms-1">*</span> : <></>}
       </label>
@@ -71,6 +75,7 @@ export function HorizontalField({
   label,
   helpText,
   id,
+  icon,
   required,
 }: FieldProps) {
   const helpId = useId();
@@ -82,6 +87,7 @@ export function HorizontalField({
     <div className="row g-3 align-items-center">
       <div className="col-auto">
         <label className="form-label" htmlFor={fieldId}>
+          {icon ? <Icon icon={`${icon} me-2`} /> : <></>}
           {label}
           {required ? <span className="ms-1">*</span> : <></>}
         </label>

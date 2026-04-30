@@ -64,6 +64,10 @@ const licenseFields = {
   licenseStartsAt: "Valid from",
   licenseEndsAt: "Valid to",
   licenseDescription: "Description",
+  licensePermissionType: "Type",
+  licensePermissionDescription: "Description",
+  licensePermissionStartsAt: "Starts at",
+  licensePermissionEndsAt: "Ends at",
 };
 
 const licenseForm = {
