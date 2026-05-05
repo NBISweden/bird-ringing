@@ -1,13 +1,16 @@
 import {
+  ChangeEvent,
   createContext,
   DetailedHTMLProps,
   InputHTMLAttributes,
   PropsWithChildren,
   ReactElement,
   SelectHTMLAttributes,
+  TextareaHTMLAttributes,
   useContext,
   useId,
 } from "react";
+import Icon from "./Icon";
 
 type FieldContext = {
   fieldId?: string;
@@ -23,6 +26,7 @@ type FieldProps = PropsWithChildren<{
   label: string | ReactElement;
   helpText?: string | ReactElement;
   id?: string;
+  icon?: string;
   required?: boolean;
 }>;
 
@@ -31,6 +35,7 @@ export function VerticalField({
   label,
   helpText,
   id,
+  icon,
   required,
 }: FieldProps) {
   const helpId = useId();
@@ -41,6 +46,7 @@ export function VerticalField({
   return (
     <div className="mb-3">
       <label className="form-label" htmlFor={fieldId}>
+        {icon ? <Icon icon={`${icon} me-2`} /> : <></>}
         {label}
         {required ? <span className="ms-1">*</span> : <></>}
       </label>
@@ -70,6 +76,7 @@ export function HorizontalField({
   label,
   helpText,
   id,
+  icon,
   required,
 }: FieldProps) {
   const helpId = useId();
@@ -81,6 +88,7 @@ export function HorizontalField({
     <div className="row g-3 align-items-center">
       <div className="col-auto">
         <label className="form-label" htmlFor={fieldId}>
+          {icon ? <Icon icon={`${icon} me-2`} /> : <></>}
           {label}
           {required ? <span className="ms-1">*</span> : <></>}
         </label>
@@ -121,23 +129,49 @@ function getFirstValue<T>(...values: (T | undefined)[]): T | undefined {
 
 export function SelectInput<T>({
   options,
+  value,
+  defaultValue,
+  onChange,
   ...props
-}: DetailedHTMLProps<
-  SelectHTMLAttributes<HTMLSelectElement>,
-  HTMLSelectElement
-> & { options: { value: T; label: string }[] }) {
+}: Omit<
+  DetailedHTMLProps<SelectHTMLAttributes<HTMLSelectElement>, HTMLSelectElement>,
+  "onChange" | "value" | "defaultValue"
+> & {
+  options: { value: T; label: string }[];
+  onChange?: (
+    v: T,
+    event: ChangeEvent<HTMLSelectElement, HTMLSelectElement>,
+  ) => void;
+  value?: T;
+  defaultValue?: T;
+}) {
   const { fieldId, helpId, required: fieldRequired } = useContext(FieldContext);
   const required = getFirstValue(props.required, fieldRequired);
+  const selectedValue =
+    value === undefined
+      ? undefined
+      : options.findIndex((o) => o.value === value);
+  const selectedDefaultValue =
+    defaultValue === undefined
+      ? undefined
+      : options.findIndex((o) => o.value === defaultValue);
   return (
     <select
       {...props}
+      onChange={(event) => {
+        if (onChange) {
+          onChange(options[parseInt(event.target.value)].value, event);
+        }
+      }}
+      value={selectedValue}
+      defaultValue={selectedDefaultValue}
       required={required}
       className="form-select"
       id={fieldId}
       aria-describedby={helpId ? helpId : undefined}
     >
-      {options.map(({ value, label }) => (
-        <option key={String(value)} value={String(value)}>
+      {options.map(({ label }, index) => (
+        <option key={index} value={index}>
           {label}
         </option>
       ))}
@@ -155,6 +189,25 @@ export function TextInput(
   const required = getFirstValue(props.required, fieldRequired);
   return (
     <input
+      {...props}
+      required={required}
+      className="form-control"
+      id={fieldId}
+      aria-describedby={helpId ? helpId : undefined}
+    />
+  );
+}
+
+export function TextArea(
+  props: DetailedHTMLProps<
+    TextareaHTMLAttributes<HTMLTextAreaElement>,
+    HTMLTextAreaElement
+  >,
+) {
+  const { fieldId, helpId, required: fieldRequired } = useContext(FieldContext);
+  const required = getFirstValue(props.required, fieldRequired);
+  return (
+    <textarea
       {...props}
       required={required}
       className="form-control"

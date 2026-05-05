@@ -1,33 +1,32 @@
 "use client";
 
 import { Suspense } from "react";
-import { ActorBase } from "../../common";
 import { useTranslation } from "../../internationalization";
-import { ActorEntryForm } from "@/components/ActorEntryForm";
 import { useFlags } from "../../contexts";
 import { notFound } from "next/navigation";
 import { useNotImplementedModal } from "../../hooks";
+import {
+  LicenseEntryForm,
+  LicenseFormData,
+} from "@/components/LiceneseEntryForm";
 
 function ActorViewBase() {
   const { t } = useTranslation();
   const notImplementedAction = useNotImplementedModal();
   const flags = useFlags();
 
-  if (!flags.has("mock-actor-editing")) {
+  if (!flags.has("mock-license-editing")) {
     notFound();
   }
 
-  const actor: Partial<ActorBase> = {};
+  const license: Partial<LicenseFormData> = {};
 
   return (
     <div className="container">
       <div className="row">
-        <h2 className="fw-bold">
-          <i className={`bi bi-person me-3`} />
-          {t("actorCreate")}
-        </h2>
-        <ActorEntryForm
-          initialActor={actor}
+        <h2 className="fw-bold">{t("licenseCreate")}</h2>
+        <LicenseEntryForm
+          initialLicense={license}
           onSubmit={(a) => {
             notImplementedAction(t("actorFormTitle"));
             console.log(a);

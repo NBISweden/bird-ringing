@@ -34,17 +34,12 @@ export function ActorEntryForm({
                     <VerticalField label={t("actorType")} id="type" required>
                       <SelectInput
                         value={actor.type || "-"}
-                        onChange={(event) =>
+                        onChange={(value) =>
                           updateValue({
-                            type: event.target.value,
-                            sex:
-                              event.target.value === "person"
-                                ? "unspecified"
-                                : "n/a",
+                            type: value,
+                            sex: value === "person" ? "unspecified" : "n/a",
                             last_name:
-                              event.target.value === "station"
-                                ? ""
-                                : actor.last_name,
+                              value === "station" ? "" : actor.last_name,
                             full_name: actor.first_name,
                           })
                         }
@@ -105,9 +100,7 @@ export function ActorEntryForm({
                           <SelectInput
                             value={actor.sex || "-"}
                             required
-                            onChange={(event) =>
-                              updateValue({ sex: event.target.value })
-                            }
+                            onChange={(value) => updateValue({ sex: value })}
                             disabled={!isPerson}
                             options={[
                               "-",
