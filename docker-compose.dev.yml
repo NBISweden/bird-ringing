@@ -35,13 +35,13 @@ services:
       POSTGRES_PASSWORD_FILE: /run/secrets/db-admin-pass
       #DJANGO_EMAIL_BACKEND: django.core.mail.backends.console.EmailBackend
       DJANGO_EMAIL_BACKEND: django.core.mail.backends.smtp.EmailBackend
-      DJANGO_DEFAULT_FROM_EMAIL: licensing-local@example.test
+      DJANGO_DEFAULT_FROM_EMAIL: licensing-local@example.com
       DJANGO_EMAIL_HOST: mailpit
       DJANGO_EMAIL_PORT: 1025
       DJANGO_EMAIL_HOST_USER: ""
       DJANGO_EMAIL_USE_SSL: false
       DJANGO_EMAIL_HOST_PASSWORD_FILE: /run/secrets/django-email-password
-      LICENSING_EMAIL_FROM_ADDR: <address used in from field for licensing emails>
+      LICENSING_EMAIL_FROM_ADDR: user@email.example.com
       LICENSING_EMAIL_SUBJECT: "Hello world from bird ringing ({{mnr}}) {{name|safe}}"
     volumes:
       - ./backend:/app
