@@ -101,6 +101,7 @@ class RestPropertiesTests(TestCase):
             related_type = item["related_type"]
             if related_type is not None:
                 self.assertTrue("id" in related_type, "related_type should have an id")
+                self.assertTrue(isinstance(related_type["id"], str))
         
         items = self._test_endpoint("/api/property/permission_property/?search=has-5-b")
         self.assertEqual(len(items), 1, "only one matching permission property should be included")
@@ -130,6 +131,8 @@ class RestPropertiesTests(TestCase):
         for item in items:
             self.assertTrue("id" in item, "item should have an id")
             self.assertTrue("label" in item, "item should have a label")
+            self.assertTrue(isinstance(item["id"], str))
+            self.assertTrue(isinstance(item["label"], str))
         
         return items
 

@@ -17,7 +17,7 @@ from .utils import LabeledChoiceViewset, DjangoProtectedModelPermissions
 
 
 class ActorSerializer(serializers.ModelSerializer):
-    id = serializers.IntegerField(read_only=True)
+    id = serializers.CharField(read_only=True)
     label = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
@@ -44,7 +44,7 @@ class SpeciesSerializer(serializers.ModelSerializer):
 
 
 class PermissionTypeSerializer(serializers.ModelSerializer):
-    id = serializers.IntegerField(read_only=True)
+    id = serializers.CharField(read_only=True)
     label = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
@@ -56,7 +56,7 @@ class PermissionTypeSerializer(serializers.ModelSerializer):
 
 
 class PermissionPropertySerializer(serializers.ModelSerializer):
-    id = serializers.IntegerField(read_only=True)
+    id = serializers.CharField(read_only=True)
     label = serializers.SerializerMethodField(read_only=True)
     related_type = serializers.SerializerMethodField(read_only=True)
     queryset = LicensePermissionProperty.objects.all().select_related("related_type")
@@ -71,7 +71,7 @@ class PermissionPropertySerializer(serializers.ModelSerializer):
     def get_related_type(self, obj):
         return (
             {
-                "id": obj.related_type.id,
+                "id": str(obj.related_type.id),
             }
             if obj.related_type
             else None
