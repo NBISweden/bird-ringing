@@ -8,7 +8,7 @@ import {
 import { Client } from "./client";
 import { ButtonType } from "./common";
 
-export type FeatureFlags = "mock-actor-editing";
+export type FeatureFlags = "mock-actor-editing" | "mock-license-editing";
 
 export type Config = {
   authUrl: string;
