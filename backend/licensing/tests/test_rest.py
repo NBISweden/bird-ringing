@@ -21,7 +21,7 @@ from .utils import create_user, get_fingerprint
 import datetime
 from django.core import mail
 from unittest.mock import patch
-from licensing.rest import LicenseSequenceViewSet
+from licensing.rest.core import LicenseSequenceViewSet
 from licensing.communication_service import CommunicationService
 from licensing.license_card_service import LicenseCardService
 import io
