@@ -42,6 +42,31 @@ const actorFields = {
   actorCreationDate: "Startdatum",
 };
 
+const licenseFields = {
+  licenseStartsAt: "Valid from",
+  licenseEndsAt: "Valid to",
+  licenseDescription: "Description",
+  licensePermissionType: "Typ",
+  licensePermissionDescription: "Beskrivning",
+  licensePermissionStartsAt: "Startdatum",
+  licensePermissionEndsAt: "Slutdatum",
+  licensePermissionProperties: "Egenskaper",
+  licensePermissionSpecies: "Art",
+  licenseFormActor: "Ringmärkare",
+  licenseFormRole: "Roll",
+  licenseFormRelationId: "MedNr",
+};
+
+const licenseForm = {
+  licenseFormSave: "Spara",
+  licenseFormTitle: "Redigerar license",
+  licenseFormFilterActors: "Sök efter ringmärkare",
+  licenseFormFilterSpecies: "Sök efter art",
+  licenseFormFilterProperties: "Sök efter egenskap",
+  licenseFormAddActor: "Lägg till ringmärkare",
+  licenseFormNoMatchingActors: "Inga matchande ringmärkare",
+};
+
 const actorForm = {
   actorFormSave: "Spara",
   actorFormAddressPlaceholder: "Skriv en address",
@@ -64,6 +89,9 @@ export const locale: TranslationMap = {
   ...actorTypeOptions,
   ...actorFields,
   ...actorForm,
+  ...licenseFields,
+  ...licenseForm,
+
   birdRinging: "Ringmärkning",
   userPermissions: "Användarrättigheter",
   userSignedOut: "Du har blivit utloggad.",
@@ -110,6 +138,7 @@ export const locale: TranslationMap = {
   licenseActors: "Ringmärkare / hjälpare",
   licenseCommunication: "Kommunikation",
   licenseCommunicationNote: "Anteckning",
+  licenseCreate: "Add license",
   licenseCreateLicenseDocuments: "Skapa licensdokument",
   licenseCreateLicenseDocumentsConfirmText:
     "Vill du skapa licensdokument för alla ringmärkare associerade med licenser?",
@@ -210,6 +239,8 @@ export const locale: TranslationMap = {
   featureNotImplemented: "Den här funktionen är inte implementerad än.",
   loadingData: "Laddar data",
   okModal: "Ok",
+  selectOption: "Välj ett alternativ",
+  selectMultipleOptions: "Välj flera alternativ",
   selectAll: "Välj alla",
   selectNone: "Välj inga",
   selectionSizeComparison: "{selectedCount} valda av {fullCount}",

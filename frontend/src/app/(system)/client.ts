@@ -1,6 +1,7 @@
 import {
   ActorListItem,
   LicenseListItem,
+  Options,
   PagedResponse,
   SendEmailResult,
 } from "./common";
@@ -113,6 +114,13 @@ export class Client {
       }
     }
     return items;
+  }
+
+  async fetchOptions<T extends keyof Options>(
+    option: T,
+  ): Promise<Options[T][]> {
+    const options = await this._getJson<Options[T][]>(`property/${option}`);
+    return options;
   }
 
   async batchCreateLicenseCards(

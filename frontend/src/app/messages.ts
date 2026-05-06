@@ -60,6 +60,31 @@ const actorForm = {
   actorFormTitle: "Editing actor",
 };
 
+const licenseFields = {
+  licenseStartsAt: "Valid from",
+  licenseEndsAt: "Valid to",
+  licenseDescription: "Description",
+  licensePermissionType: "Type",
+  licensePermissionDescription: "Description",
+  licensePermissionStartsAt: "Starts at",
+  licensePermissionEndsAt: "Ends at",
+  licensePermissionProperties: "Properties",
+  licensePermissionSpecies: "Species",
+  licenseFormActor: "Actor",
+  licenseFormRole: "Role",
+  licenseFormRelationId: "MedNr",
+};
+
+const licenseForm = {
+  licenseFormSave: "Save",
+  licenseFormTitle: "Editing license",
+  licenseFormFilterActors: "Search for actor",
+  licenseFormFilterSpecies: "Search for species",
+  licenseFormFilterProperties: "Search for property",
+  licenseFormAddActor: "Add actor",
+  licenseFormNoMatchingActors: "No matching actors",
+};
+
 const messagesBase = {
   ...licenseReportStatusOptions,
   ...licenseStatusOptions,
@@ -67,6 +92,8 @@ const messagesBase = {
   ...actorTypeOptions,
   ...actorFields,
   ...actorForm,
+  ...licenseForm,
+  ...licenseFields,
 
   birdRinging: "Bird Ringing",
   userPermissions: "User permissions",
@@ -118,6 +145,7 @@ const messagesBase = {
   licenseActors: "Ringers / associate ringers",
   licenseCommunication: "Communication",
   licenseCommunicationNote: "Note",
+  licenseCreate: "Add license",
   licenseCreateLicenseDocuments: "Create license documents",
   licenseCreateLicenseDocumentsConfirmText:
     "Do you want to create license cards for all ringers and associate ringers for selected licenses?",
@@ -213,6 +241,8 @@ const messagesBase = {
   featureNotImplemented: "This feature is not yet implemented",
   loadingData: "Loading data",
   okModal: "Ok",
+  selectOption: "Select an option",
+  selectMultipleOptions: "Select multiple options",
   selectAll: "Select all",
   selectNone: "Select none",
   selectionSizeComparison: "{selectedCount} selected of {fullCount}",

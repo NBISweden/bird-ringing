@@ -19,7 +19,7 @@ import {
   MenuAction,
 } from "../common";
 import { Client } from "../client";
-import { useClient } from "../contexts";
+import { useClient, useFlags } from "../contexts";
 import {
   useBatchCreateLicenseCardsAction,
   useDownloadLicenseCardsZipAction,
@@ -254,6 +254,7 @@ function BaseListView({
 }) {
   const [actionIsOpen, setActionIsOpen] = useState(false);
   const { t, formatOption } = useTranslation();
+  const flags = useFlags();
 
   const items = useMemo(
     () =>
@@ -364,6 +365,17 @@ function BaseListView({
           {allSelected ? t("selectNone") : t("selectAll")}
         </button>
         <span className="input-group-text flex-grow-1">{selectionInfo}</span>
+        {flags.has("mock-license-editing") ? (
+          <Link
+            href="/licenses/create"
+            className="btn btn-outline-secondary"
+            type="button"
+          >
+            {t("licenseCreate")}
+          </Link>
+        ) : (
+          <></>
+        )}
         <button
           className={`btn btn-outline-secondary dropdown-toggle  ${isLoading ? "disabled" : ""}`}
           onClick={() => setActionIsOpen(!actionIsOpen)}
