@@ -96,8 +96,8 @@ class PermitDocxRenderer:
                     "type_name": perm.type.name,
                     "location": (perm.location or "").strip(),
                     "description": (perm.description or "").strip(),
-                    "starts_at": perm.starts_at.isoformat() if perm.starts_at else None,
-                    "ends_at": perm.ends_at.isoformat() if perm.ends_at else None,
+                    "starts_at": perm.starts_at.as_date(lic.starts_at.year).isoformat() if perm.starts_at else None,
+                    "ends_at": perm.ends_at.as_date(lic.starts_at.year).isoformat() if perm.ends_at else None,
                     "properties": [p.name for p in perm.properties.all()],
                     "species": [s.name for s in perm.species_list.all()],
                 }
@@ -229,7 +229,7 @@ class PermitDocxRenderer:
             blocks: "OrderedDict[tuple[tuple[str, ...], str], list[LicensePermission]]" = OrderedDict()
             for p in ordered_rows:
                 props = self._norm_props([x.name for x in p.properties.all()])
-                period = self._period_label(starts_at=p.starts_at, ends_at=p.ends_at, props=props)
+                period = self._period_label(starts_at=p.starts_at.as_date(lic.starts_at.year), ends_at=p.ends_at.as_date(lic.starts_at.year), props=props)
                 blocks.setdefault((props, period), []).append(p)
 
             first_cond = True
