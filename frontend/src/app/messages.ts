@@ -105,7 +105,7 @@ const messagesBase = {
   dashboard: "Dashboard",
   licenseListView: "Licenses",
   licenseView: "License {licenseHolder} {licenseId}",
-  actorListView: "Ringers",
+  actorListView: "Actors",
   welcomeMessageHeader: {
     defaultMessage: "Welcome to Birdy!",
     description: "A welcome message for the start page",
@@ -114,14 +114,14 @@ const messagesBase = {
   goToSystem: "Go to system",
   expertsLogin: "Experts login",
 
-  actorCreate: "Add ringer",
+  actorCreate: "Add actor",
   actorDeactivate: "Deactivate",
 
   actorErrorLoadingActorText:
-    "Something went wrong while loading ringer data for ringer {actorId}.",
-  actorErrorLoadingActorTitle: "Failed to load ringer",
+    "Something went wrong while loading actor data for actor {actorId}.",
+  actorErrorLoadingActorTitle: "Failed to load actor",
   actorFetchEmailAddresses: "Fetch e-mail addresses",
-  actorFilterDescription: "Filter ringer list",
+  actorFilterDescription: "Filter actor list",
   actorFilterLabel: "Filter",
   actorFilterPlaceholder: "Name, E-mail, City, Mnr, Role, Type",
   actorLastUpdated: "Last updated",
