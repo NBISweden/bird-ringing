@@ -8,7 +8,7 @@ const licenseReportStatusOptions = {
 
 const licenseStatusOptions = {
   licenseStatusTerminated: "Avslutad",
-  licenseStatusInactive: "Inaktiv",
+  licenseStatusPaused: "Pausad",
   licenseStatusActive: "Aktiv",
 };
 
@@ -118,8 +118,9 @@ export const locale: TranslationMap = {
   actorFilterLabel: "Filtrera",
   actorFilterPlaceholder: "Namn, E-post, Ort, Mnr, Roll, Typ",
   actorLastUpdated: "Senast uppdaterad",
-  actorLicenseActive: "Aktiv",
-  actorLicenseInactive: "Inaktiv",
+  actorLicenseInEffect: "Aktuell",
+  actorLicenseExpired: "Utgången",
+  actorLicensePending: "Kommande",
   actorLicenseValidityPeriod:
     "<from>{startsAt}</from><to><muted>till</muted> {endsAt}</to>",
   actorLicenses: "Licenser",

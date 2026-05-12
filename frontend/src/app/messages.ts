@@ -11,7 +11,7 @@ const licenseReportStatusOptions = {
 
 const licenseStatusOptions = {
   licenseStatusTerminated: "Terminated",
-  licenseStatusInactive: "Inactive",
+  licenseStatusPaused: "Paused",
   licenseStatusActive: "Active",
 };
 
@@ -125,8 +125,9 @@ const messagesBase = {
   actorFilterLabel: "Filter",
   actorFilterPlaceholder: "Name, E-mail, City, Mnr, Role, Type",
   actorLastUpdated: "Last updated",
-  actorLicenseActive: "Active",
-  actorLicenseInactive: "Inactive",
+  actorLicenseInEffect: "In effect",
+  actorLicenseExpired: "Expired",
+  actorLicensePending: "Pending",
   actorLicenseValidityPeriod:
     "<from>{startsAt}</from><to><muted>to</muted> {endsAt}</to>",
   actorLicenses: "Licenses",
