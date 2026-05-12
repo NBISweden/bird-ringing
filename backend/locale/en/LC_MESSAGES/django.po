@@ -106,8 +106,8 @@ msgid "active"
 msgstr "active"
 
 #: licensing/models.py:196
-msgid "inactive"
-msgstr "inactive"
+msgid "paused"
+msgstr "paused"
 
 #: licensing/models.py:197
 msgid "terminated"
