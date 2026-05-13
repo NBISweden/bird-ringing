@@ -43,6 +43,8 @@ const actorFields = {
   actorFirstName: "First name",
   actorLastName: "Last name",
   actorCreationDate: "Creation date",
+  actorLanguage: "Language",
+  actorCountry: "Country",
 };
 
 const actorForm = {
@@ -56,8 +58,13 @@ const actorForm = {
   actorFormFirstNamePlaceholder: "Enter first name",
   actorFormLastNamePlaceholder: "Enter last name",
   actorFormNamePlaceholder: "Enter name",
+  actorFormLanguagePlaceholder: "Enter language",
+  actorFormCountryPlaceholder: "Enter country",
   actorFormCreationDatePlaceholder: "Enter creation date",
   actorFormTitle: "Editing actor",
+  actorFormInfoSubtitle: "Basic information",
+  actorFormContactSubtitle: "Contact details",
+  actorFormLocationSubtitle: "Location",
 };
 
 const licenseFields = {

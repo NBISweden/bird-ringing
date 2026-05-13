@@ -48,7 +48,13 @@ export function VerticalField({
       <label className="form-label" htmlFor={fieldId}>
         {icon ? <Icon icon={`${icon} me-2`} /> : <></>}
         {label}
-        {required ? <span className="ms-1">*</span> : <></>}
+        {required ? (
+          <span className="ms-1" aria-hidden="true">
+            *
+          </span>
+        ) : (
+          <></>
+        )}
       </label>
       <FieldContext.Provider value={{ fieldId, helpId, required }}>
         {children}
@@ -90,7 +96,13 @@ export function HorizontalField({
         <label className="form-label" htmlFor={fieldId}>
           {icon ? <Icon icon={`${icon} me-2`} /> : <></>}
           {label}
-          {required ? <span className="ms-1">*</span> : <></>}
+          {required ? (
+            <span className="ms-1" aria-hidden="true">
+              *
+            </span>
+          ) : (
+            <></>
+          )}
         </label>
       </div>
       <div className="col-auto">
@@ -117,6 +129,26 @@ export function HorizontalField({
         <></>
       )}
     </div>
+  );
+}
+
+export function FormSection({
+  icon,
+  title,
+  children,
+}: {
+  icon: string;
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <fieldset className="mt-4">
+      <legend>
+        <i className={`bi bi-${icon} me-4`} aria-hidden="true" />
+        {title}
+      </legend>
+      <div>{children}</div>
+    </fieldset>
   );
 }
 
@@ -166,6 +198,7 @@ export function SelectInput<T>({
       value={selectedValue}
       defaultValue={selectedDefaultValue}
       required={required}
+      aria-required={required}
       className="form-select"
       id={fieldId}
       aria-describedby={helpId ? helpId : undefined}
@@ -191,6 +224,7 @@ export function TextInput(
     <input
       {...props}
       required={required}
+      aria-required={required}
       className="form-control"
       id={fieldId}
       aria-describedby={helpId ? helpId : undefined}
@@ -210,6 +244,7 @@ export function TextArea(
     <textarea
       {...props}
       required={required}
+      aria-required={required}
       className="form-control"
       id={fieldId}
       aria-describedby={helpId ? helpId : undefined}
