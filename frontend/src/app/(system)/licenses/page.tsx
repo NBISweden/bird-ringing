@@ -134,7 +134,7 @@ function toLicenseTable(
       license_status: {
         component: formatOption(item.status, {
           active: "licenseStatusActive",
-          inactive: "licenseStatusInactive",
+          paused: "licenseStatusPaused",
           terminated: "licenseStatusTerminated",
         }),
       },

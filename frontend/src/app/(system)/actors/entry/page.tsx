@@ -33,14 +33,18 @@ function LoadingActor() {
   );
 }
 
-function isLicenseActive(license: ActorLicenseRelation): boolean {
+function getLicenseStatus(
+  license: ActorLicenseRelation,
+): "in-effect" | "expired" | "pending" {
   const today = new Date();
   const startDate = new Date(license.starts_at);
   const endDate = new Date(license.ends_at);
   if (startDate <= today && endDate >= today) {
-    return true;
+    return "in-effect";
+  } else if (endDate < today) {
+    return "expired";
   } else {
-    return false;
+    return "pending";
   }
 }
 
@@ -297,7 +301,7 @@ function ActorEntry({ actor, roles }: { actor: ActorListItem; roles: Role[] }) {
 }
 
 function LicenseEntry({ license }: { license: ActorLicenseRelation }) {
-  const { t, format } = useTranslation();
+  const { format, formatOption } = useTranslation();
   const {
     starts_at,
     ends_at,
@@ -307,7 +311,8 @@ function LicenseEntry({ license }: { license: ActorLicenseRelation }) {
     mnr,
     mednr,
   } = license;
-  const licenseIsActive = isLicenseActive(license);
+  const licenseStatus = getLicenseStatus(license);
+  const licenseIsActive = licenseStatus === "in-effect";
   return (
     <div className="row">
       <div className="py-2 col-3 text-nowrap d-flex flex-column justify-content-center">
@@ -336,9 +341,11 @@ function LicenseEntry({ license }: { license: ActorLicenseRelation }) {
           <span
             className={`badge rounded-pill ms-2 ${licenseIsActive ? "text-success-emphasis bg-success-subtle" : "text-dark-emphasis bg-body-secondary"}`}
           >
-            {licenseIsActive
-              ? t("actorLicenseActive")
-              : t("actorLicenseInactive")}
+            {formatOption(licenseStatus, {
+              "in-effect": "actorLicenseInEffect",
+              pending: "actorLicensePending",
+              expired: "actorLicenseExpired",
+            })}
           </span>
         </div>
       </div>

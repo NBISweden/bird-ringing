@@ -193,7 +193,7 @@ class LicenseRoleChoices(models.IntegerChoices):
 
 class LicenseStatusChoices(models.IntegerChoices):
     ACTIVE = (1, _("active"))
-    INACTIVE = (2, _("inactive"))
+    PAUSED = (2, _("paused"))
     TERMINATED = (3, _("terminated"))
 
 

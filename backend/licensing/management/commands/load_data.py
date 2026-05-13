@@ -197,7 +197,7 @@ class Command(BaseCommand):
         )
         status = {
             "Aktiv": models.LicenseStatusChoices.ACTIVE,
-            "Ej aktiv": models.LicenseStatusChoices.INACTIVE,
+            "Ej aktiv": models.LicenseStatusChoices.PAUSED,
             "Avslutad": models.LicenseStatusChoices.TERMINATED,
         }[license_data.get("Status", "Ej aktiv")]
         mnr = license_data["Mnr"]
