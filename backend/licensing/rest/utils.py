@@ -3,25 +3,31 @@ from rest_framework.response import Response
 from rest_framework.permissions import DjangoModelPermissions
 
 
-class LabeledChoiceField(serializers.Field):
+class NameBasedChoiceField(serializers.Field):
     def __init__(self, choices, **kwargs):
         self.choices = choices
         super().__init__(**kwargs)
 
     def to_representation(self, obj):
         if obj is not None:
-            return {
-                "id": str(self.choices(obj).name).lower(),
-                "label": self.choices(obj).label,
-            }
+            return self._to_id(self.choices(obj).name)
         else:
             return None
     
     def to_internal_value(self, data):
+        try:
+            choice = self.choices(data)
+            return choice.value
+        except ValueError:
+            pass
+
         for choice_value, choice in self.choices.__members__.items():
-            if data == choice.name:
+            if data == self._to_id(choice.name):
                 return choice.value
-        raise serializers.ValidationError("Choice not valid.")
+        raise serializers.ValidationError(f"Choice, '{data}', is not valid.")
+
+    def _to_id(self, value):
+        return str(value).lower()
 
 
 class LabeledChoiceSerializer(serializers.Serializer):
