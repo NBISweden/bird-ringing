@@ -131,20 +131,25 @@ function ActorViewBase() {
   return (
     <div className="container">
       <div className="row">
-        <h2 className="fw-bold">
-          <i className={`bi bi-${getActorIcon(data.type)} me-3`} />
-          {data.full_name}
-          {flags.has("mock-actor-editing") ? (
-            <button
-              className="btn btn-outline-secondary ms-2"
-              onClick={() => setIsEditing(!isEditing)}
-            >
-              <Icon icon={isEditing ? "eye" : "pencil-square"} />
-            </button>
-          ) : (
-            <></>
-          )}
-        </h2>
+        <div className="col-12 col-xxl-9">
+          <div className="d-flex justify-content-between align-items-center mb-3">
+            <h2 className="fw-bold mb-0">
+              <i className={`bi bi-${getActorIcon(data.type)} me-3`} />
+              {data.full_name}
+            </h2>
+            {flags.has("mock-actor-editing") ? (
+              <button
+                className="btn btn-outline-secondary ms-2 flex-shrink-0"
+                onClick={() => setIsEditing(!isEditing)}
+              >
+                <Icon icon={isEditing ? "arrow-left" : "pencil-square"} />
+                <span className="ms-2">
+                  {!isEditing ? t("edit") : t("done")}
+                </span>
+              </button>
+            ) : null}
+          </div>
+        </div>
         {isEditing ? (
           <ActorEntryForm
             initialActor={data}
@@ -156,6 +161,7 @@ function ActorViewBase() {
         ) : (
           <ActorEntry actor={data} roles={Array.from(roles)} />
         )}
+
         <div className="col-12 col-xxl-9">
           <h3 className="pt-4 fw-bold">{t("actorLicenses")}</h3>
           <ul className="list-group list-group-flush">

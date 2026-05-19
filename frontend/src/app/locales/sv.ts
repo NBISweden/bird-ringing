@@ -258,4 +258,6 @@ export const locale: TranslationMap = {
   selectNone: "Välj inga",
   selectionSizeComparison: "{selectedCount} valda av {fullCount}",
   unknownError: "Ett okänt fel inträffade.",
+  edit: "Redigera",
+  done: "Klart",
 };

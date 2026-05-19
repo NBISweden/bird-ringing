@@ -264,6 +264,8 @@ const messagesBase = {
   selectNone: "Select none",
   selectionSizeComparison: "{selectedCount} selected of {fullCount}",
   unknownError: "An unknown error occurred.",
+  edit: "Edit",
+  done: "Done",
 };
 
 function makeMessageMap<T extends { [P in keyof T]: Message | string }>(
