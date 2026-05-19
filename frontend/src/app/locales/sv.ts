@@ -42,6 +42,8 @@ const actorFields = {
   actorCreationDate: "Startdatum",
   actorLanguage: "Språk",
   actorCountry: "Land",
+  actorPostalCode: "Postnummer",
+  actorDescription: "Beskrivning",
 };
 
 const licenseFields = {
@@ -80,6 +82,7 @@ const actorForm = {
   actorFormFirstNamePlaceholder: "Skriv ett förnamn",
   actorFormLastNamePlaceholder: "Skriv ett efternamn",
   actorFormNamePlaceholder: "Skriv ett namn",
+  actorFormPostalCodePlaceholder: "Skriv ett postnummer",
   actorFormTitle: "Redigerar ringmärkare",
   actorFormCreationDatePlaceholder: "Skriv ett startdatum",
   actorFormLanguagePlaceholder: "Skriv ett språk",
@@ -87,6 +90,8 @@ const actorForm = {
   actorFormInfoSubtitle: "Om ringmärkaren",
   actorFormContactSubtitle: "Kontaktuppgifter",
   actorFormLocationSubtitle: "Plats",
+  actorFormDetailsSubtitle: "Detaljer",
+  actorFromDescriptionPlaceholder: "Skriv en beskrivning",
 };
 
 export const locale: TranslationMap = {

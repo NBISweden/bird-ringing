@@ -225,7 +225,7 @@ export function TextInput(
       {...props}
       required={required}
       aria-required={required}
-      className="form-control"
+      className={`form-control ${props.className || ""}`}
       id={fieldId}
       aria-describedby={helpId ? helpId : undefined}
     />
@@ -245,7 +245,7 @@ export function TextArea(
       {...props}
       required={required}
       aria-required={required}
-      className="form-control"
+      className={`form-control ${props.className || ""}`}
       id={fieldId}
       aria-describedby={helpId ? helpId : undefined}
     />

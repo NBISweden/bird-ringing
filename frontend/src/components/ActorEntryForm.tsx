@@ -7,6 +7,7 @@ import {
   TextInput,
   VerticalField,
   FormSection,
+  TextArea,
 } from "./InputFields";
 
 export function ActorEntryForm({
@@ -46,7 +47,10 @@ export function ActorEntryForm({
                           type: value,
                           sex: value === "person" ? "unspecified" : "n/a",
                           last_name: value === "station" ? "" : actor.last_name,
-                          full_name: actor.first_name,
+                          full_name:
+                            value === "station"
+                              ? actor.first_name
+                              : [actor.first_name, actor.last_name].join(" "),
                         })
                       }
                       options={["-", "person", "station"].map((o) => ({
@@ -126,7 +130,6 @@ export function ActorEntryForm({
                       isPerson ? t("actorBirthDate") : t("actorCreationDate")
                     }
                     id="birth_date"
-                    required
                   >
                     <TextInput
                       type="date"
@@ -141,13 +144,24 @@ export function ActorEntryForm({
                       }
                     />
                   </VerticalField>
-                  <VerticalField label={t("actorLanguage")} id="language">
+
+                  <VerticalField
+                    label={
+                      isPerson ? t("actorBirthYear") : t("actorCreationYear")
+                    }
+                    id="birth_year"
+                  >
                     <TextInput
-                      type="text"
-                      placeholder={t("actorFormLanguagePlaceholder")}
-                      value={actor.language || ""}
+                      type="number"
+                      disabled={!!actor.birth_date}
+                      placeholder={
+                        isPerson
+                          ? t("actorFormBirthYearPlaceholder")
+                          : t("actorFormCreationYearPlaceholder")
+                      }
+                      value={actor.birth_year || 9999}
                       onChange={(event) =>
-                        updateValue({ language: event.target.value })
+                        updateValue({ birth_year: +event.target.value })
                       }
                     />
                   </VerticalField>
@@ -228,6 +242,20 @@ export function ActorEntryForm({
                     />
                   </VerticalField>
                   <VerticalField
+                    label={t("actorPostalCode")}
+                    id="postal_code"
+                    required
+                  >
+                    <TextInput
+                      type="text"
+                      placeholder={t("actorFormPostalCodePlaceholder")}
+                      value={actor.postal_code || ""}
+                      onChange={(event) =>
+                        updateValue({ postal_code: event.target.value })
+                      }
+                    />
+                  </VerticalField>
+                  <VerticalField
                     label={t("actorAddress")}
                     id="address"
                     required
@@ -260,6 +288,29 @@ export function ActorEntryForm({
                         updateValue({ country: event.target.value })
                       }
                     />
+                  </VerticalField>
+                </div>
+              </FormSection>
+              <FormSection icon="twitter" title={t("actorFormDetailsSubtitle")}>
+                <div>
+                  <VerticalField label={t("actorLanguage")} id="language">
+                    <TextInput
+                      type="text"
+                      placeholder={t("actorFormLanguagePlaceholder")}
+                      value={actor.language || ""}
+                      onChange={(event) =>
+                        updateValue({ language: event.target.value })
+                      }
+                    />
+                  </VerticalField>
+                  <VerticalField label={t("actorDescription")} id="description">
+                    <TextArea
+                      placeholder={t("actorFormDescriptionPlaceholder")}
+                      value={actor.description}
+                      onChange={(event) =>
+                        updateValue({ description: event.target.value })
+                      }
+                    ></TextArea>
                   </VerticalField>
                 </div>
               </FormSection>

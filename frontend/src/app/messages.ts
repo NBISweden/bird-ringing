@@ -31,6 +31,7 @@ const actorFields = {
   actorAddress: "Address",
   actorAlternativeEmail: "Alternative e-mail",
   actorBirthDate: "Birth date",
+  actorBirthYear: "Birth year",
   actorCity: "City",
   actorCOAddress: "C/O address",
   actorEmail: "E-mail",
@@ -43,8 +44,11 @@ const actorFields = {
   actorFirstName: "First name",
   actorLastName: "Last name",
   actorCreationDate: "Creation date",
+  actorCreationYear: "Creation year",
   actorLanguage: "Language",
   actorCountry: "Country",
+  actorPostalCode: "Postal code",
+  actorDescription: "Description",
 };
 
 const actorForm = {
@@ -52,8 +56,10 @@ const actorForm = {
   actorFormAddressPlaceholder: "Enter address",
   actorFormPhoneNumberPlaceholder: "Enter phone number",
   actorFormBirthDatePlaceholder: "Enter birth date",
+  actorFormBirthYearPlaceholder: "Enter birth year",
   actorFormEmailPlaceholder: "Enter e-mail",
   actorFormCityPlaceholder: "Enter city name",
+  actorFormPostalCodePlaceholder: "Enter postal code",
   actorFormFullNamePlaceholder: "",
   actorFormFirstNamePlaceholder: "Enter first name",
   actorFormLastNamePlaceholder: "Enter last name",
@@ -61,10 +67,13 @@ const actorForm = {
   actorFormLanguagePlaceholder: "Enter language",
   actorFormCountryPlaceholder: "Enter country",
   actorFormCreationDatePlaceholder: "Enter creation date",
+  actorFormCreationYearPlaceholder: "Enter creation year",
   actorFormTitle: "Editing actor",
   actorFormInfoSubtitle: "Basic information",
-  actorFormContactSubtitle: "Contact details",
+  actorFormContactSubtitle: "Contact",
   actorFormLocationSubtitle: "Location",
+  actorFormDetailsSubtitle: "Details",
+  actorFormDescriptionPlaceholder: "Enter description",
 };
 
 const licenseFields = {
