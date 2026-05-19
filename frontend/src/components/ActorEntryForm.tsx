@@ -20,6 +20,52 @@ export function ActorEntryForm({
   const { t } = useTranslation();
   const [actor, updateValue] = useObjectState(initialActor);
   const isPerson = actor.type === "person";
+
+  const languageOptions = [
+    "Swedish",
+    "English",
+    "Unknown",
+    "Albanian",
+    "Arabic",
+    "Azerbaijani",
+    "Basque",
+    "Belarusian",
+    "Bosnian",
+    "Bulgarian",
+    "Catalan",
+    "Croatian",
+    "Czech",
+    "Danish",
+    "Dutch",
+    "Estonian",
+    "Finnish",
+    "French",
+    "Georgian",
+    "German",
+    "Greek",
+    "Hebrew",
+    "Hungarian",
+    "Icelandic",
+    "Italian",
+    "Kazakh",
+    "Latvian",
+    "Lithuanian",
+    "Macedonian",
+    "Maltese",
+    "Montenegrin",
+    "Norwegian",
+    "Polish",
+    "Portuguese",
+    "Romanian",
+    "Russian",
+    "Serbian",
+    "Slovak",
+    "Slovenian",
+    "Spanish",
+    "Turkish",
+    "Ukrainian",
+  ];
+
   return (
     <form
       onSubmit={(e) => {
@@ -114,10 +160,10 @@ export function ActorEntryForm({
                           disabled={!isPerson}
                           options={[
                             "-",
-                            "male",
-                            "female",
-                            "unspecified",
-                            "n/a",
+                            t("actorFormGenderMale"),
+                            t("actorFormGenderFemale"),
+                            t("actorFormGenderUnspecified"),
+                            t("actorFormGenderNA"),
                           ].map((o) => ({ value: o, label: o }))}
                         />
                       </VerticalField>
@@ -294,13 +340,13 @@ export function ActorEntryForm({
               <FormSection icon="twitter" title={t("actorFormDetailsSubtitle")}>
                 <div>
                   <VerticalField label={t("actorLanguage")} id="language">
-                    <TextInput
-                      type="text"
-                      placeholder={t("actorFormLanguagePlaceholder")}
-                      value={actor.language || ""}
-                      onChange={(event) =>
-                        updateValue({ language: event.target.value })
-                      }
+                    <SelectInput
+                      value={actor.language || "unknown"}
+                      onChange={(value) => updateValue({ language: value })}
+                      options={languageOptions.map((o) => ({
+                        value: o.toLowerCase(),
+                        label: o,
+                      }))}
                     />
                   </VerticalField>
                   <VerticalField label={t("actorDescription")} id="description">

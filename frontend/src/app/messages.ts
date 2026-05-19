@@ -74,6 +74,10 @@ const actorForm = {
   actorFormLocationSubtitle: "Location",
   actorFormDetailsSubtitle: "Details",
   actorFormDescriptionPlaceholder: "Enter description",
+  actorFormGenderMale: "Male",
+  actorFormGenderFemale: "Female",
+  actorFormGenderUnspecified: "Unspecified",
+  actorFormGenderNA: "N/A",
 };
 
 const licenseFields = {

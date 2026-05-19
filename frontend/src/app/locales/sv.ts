@@ -92,6 +92,10 @@ const actorForm = {
   actorFormLocationSubtitle: "Plats",
   actorFormDetailsSubtitle: "Detaljer",
   actorFromDescriptionPlaceholder: "Skriv en beskrivning",
+  actorFormGenderMale: "Man",
+  actorFormGenderFemale: "Kvinna",
+  actorFormGenderUnspecified: "Ospecificerat",
+  actorFormGenderNA: "Ej tillämpligt",
 };
 
 export const locale: TranslationMap = {
