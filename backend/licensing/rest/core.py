@@ -50,7 +50,7 @@ from django.http import HttpResponse
 from django.template.exceptions import TemplateDoesNotExist
 from django.contrib.postgres.aggregates import StringAgg
 from collections import OrderedDict
-from .utils import DjangoProtectedModelPermissions
+from .utils import DjangoProtectedModelPermissions, NameBasedChoiceField
 import logging
 
 
@@ -338,14 +338,14 @@ class ActorLicenseRelationSerializer(serializers.ModelSerializer):
 
 
 class ActorSerializer(serializers.ModelSerializer):
-    type = serializers.ChoiceField(choices=ActorTypeChoices, source="get_type_display")
-    sex = serializers.ChoiceField(choices=SexChoices, source="get_sex_display")
-    language = serializers.ChoiceField(
-        choices=LanguageChoices, source="get_language_display"
-    )
+    type = NameBasedChoiceField(choices=ActorTypeChoices)
+    sex = NameBasedChoiceField(choices=SexChoices)
+    language = NameBasedChoiceField(choices=LanguageChoices)
     license_relations = ActorLicenseRelationSerializer(
         many=True, read_only=True
     )
+    created_by = serializers.HiddenField(default=serializers.CurrentUserDefault())
+    updated_by = serializers.HiddenField(default=serializers.CurrentUserDefault())
 
     class Meta:
         model = Actor
@@ -370,6 +370,8 @@ class ActorSerializer(serializers.ModelSerializer):
             "country",
             "license_relations",
             "updated_at",
+            "created_by",
+            "updated_by",
         ]
 
 
