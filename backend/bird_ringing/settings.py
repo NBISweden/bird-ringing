@@ -17,6 +17,8 @@ from bird_ringing.helpers import get_secret_from_file, parse_csv_from_env
 from bird_ringing.helpers import strtobool
 from django.core.management.utils import get_random_secret_key
 import sys
+import os
+from django.utils.translation import gettext_lazy as _
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -137,13 +139,25 @@ DOCX2PDF_URL = getenv("DOCX2PDF_URL", "")
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
 
-LANGUAGE_CODE = "en-us"
+LANGUAGE_CODE = "en"
+
+LANGUAGES = [
+    ("sv", _("Swedish")),
+    ("en", _("English")),
+]
 
 TIME_ZONE = "UTC"
 
 USE_I18N = True
 
+LOCALE_PATHS = (
+    os.path.join(BASE_DIR, 'locale'),
+)
+
 USE_TZ = True
+
+COMMUNICATION_LANGUAGE_CODE = getenv("LICENSING_COMMUNICATION_LANGUAGE_CODE", LANGUAGE_CODE)
+
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/

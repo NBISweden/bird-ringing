@@ -7,7 +7,8 @@ case $SERVICE_MODE in (*-init)
 		development*)
 			pip install uv &&
 			uv sync --frozen &&
-			python manage.py makemigrations || exit
+			python manage.py makemigrations &&
+			python manage.py compilemessages || exit
 			;;
 		production*)
 			: # Do nothing.

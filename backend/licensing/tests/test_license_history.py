@@ -265,6 +265,8 @@ class TestLicenseHistory(TestCase):
     def test_license_dump(self):
         starts_at = datetime.date(year=2026, month=2, day=1)
         ends_at = datetime.date(year=2026, month=11, day=1)
+        p_starts_at = models.MonthDay.from_date(starts_at)
+        p_ends_at = models.MonthDay.from_date(ends_at)
         self.assertEqual(
             self.license_sequence.current.dump(),
             (
@@ -283,8 +285,8 @@ class TestLicenseHistory(TestCase):
                     ends_at,
                     set((doc.id  for doc in self.reference_docs)),
                     {
-                        (1, "", "", starts_at, ends_at, (1, 2), (1, 2)),
-                        (2, "", "", starts_at, ends_at, (1, 2), (1, 2))
+                        (1, "", "", p_starts_at, p_ends_at, (1, 2), (1, 2)),
+                        (2, "", "", p_starts_at, p_ends_at, (1, 2), (1, 2))
                     }
                 )
             )

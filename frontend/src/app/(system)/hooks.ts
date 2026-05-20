@@ -6,6 +6,8 @@ import {
   useEffect,
 } from "react";
 import useSWRMutation from "swr/mutation";
+import { useModalsContext } from "./contexts";
+import { useTranslation } from "./internationalization";
 
 export function useItemSelections(
   currentSubSet: Set<string>,
@@ -83,4 +85,59 @@ export function useActionWithoutCache<T>(
   });
 
   return { data, isLoading: isMutating, error };
+}
+
+export function useObjectState<T extends object>(
+  initialValue: T,
+): [T, (delta: Partial<T>) => void] {
+  const [value, setValue] = useState<T>(initialValue);
+  const updateValue = useCallback(
+    (delta: Partial<T>) => {
+      setValue((prev) => {
+        return {
+          ...prev,
+          ...delta,
+        };
+      });
+    },
+    [setValue],
+  );
+
+  return [value, updateValue];
+}
+
+export function useNotImplementedModal() {
+  const modalStack = useModalsContext();
+  const { t } = useTranslation();
+
+  const action = useCallback(
+    (title?: string) => {
+      modalStack.add({
+        title: title || t("featureNotImplemented"),
+        content: t("featureNotImplemented"),
+        actions: [
+          {
+            label: t("closeModal"),
+            action: () => {},
+            type: "primary",
+          },
+        ],
+      });
+    },
+    [modalStack, t],
+  );
+  return action;
+}
+
+export function useFilter<T>(items: (T & { term: string })[]) {
+  const [filter, setFilter] = useState<string>("");
+  const filterItems = filter.split(/\s+/).map((i) => i.toLowerCase());
+  const filteredItems = items.filter((r) =>
+    filterItems.some((fi) => r.term.toLowerCase().includes(fi)),
+  );
+  return {
+    filteredItems,
+    setFilter,
+    filter,
+  };
 }

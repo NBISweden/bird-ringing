@@ -11,7 +11,7 @@ const licenseReportStatusOptions = {
 
 const licenseStatusOptions = {
   licenseStatusTerminated: "Terminated",
-  licenseStatusInactive: "Inactive",
+  licenseStatusPaused: "Paused",
   licenseStatusActive: "Active",
 };
 
@@ -27,11 +27,73 @@ const actorTypeOptions = {
   actorTypeStation: "Station",
 };
 
+const actorFields = {
+  actorAddress: "Address",
+  actorAlternativeEmail: "Alternative e-mail",
+  actorBirthDate: "Birth date",
+  actorCity: "City",
+  actorCOAddress: "C/O address",
+  actorEmail: "E-mail",
+  actorGender: "Gender",
+  actorName: "Name",
+  actorType: "Type",
+  actorPhoneNumber1: "Phone number 1",
+  actorPhoneNumber2: "Phone number 2",
+  actorFullName: "Full name",
+  actorFirstName: "First name",
+  actorLastName: "Last name",
+  actorCreationDate: "Creation date",
+};
+
+const actorForm = {
+  actorFormSave: "Save",
+  actorFormAddressPlaceholder: "Enter address",
+  actorFormPhoneNumberPlaceholder: "Enter phone number",
+  actorFormBirthDatePlaceholder: "Enter birth date",
+  actorFormEmailPlaceholder: "Enter e-mail",
+  actorFormCityPlaceholder: "Enter city name",
+  actorFormFullNamePlaceholder: "",
+  actorFormFirstNamePlaceholder: "Enter first name",
+  actorFormLastNamePlaceholder: "Enter last name",
+  actorFormNamePlaceholder: "Enter name",
+  actorFormCreationDatePlaceholder: "Enter creation date",
+  actorFormTitle: "Editing actor",
+};
+
+const licenseFields = {
+  licenseStartsAt: "Valid from",
+  licenseEndsAt: "Valid to",
+  licenseDescription: "Description",
+  licensePermissionType: "Type",
+  licensePermissionDescription: "Description",
+  licensePermissionStartsAt: "Starts at",
+  licensePermissionEndsAt: "Ends at",
+  licensePermissionProperties: "Properties",
+  licensePermissionSpecies: "Species",
+  licenseFormActor: "Actor",
+  licenseFormRole: "Role",
+  licenseFormRelationId: "MedNr",
+};
+
+const licenseForm = {
+  licenseFormSave: "Save",
+  licenseFormTitle: "Editing license",
+  licenseFormFilterActors: "Search for actor",
+  licenseFormFilterSpecies: "Search for species",
+  licenseFormFilterProperties: "Search for property",
+  licenseFormAddActor: "Add actor",
+  licenseFormNoMatchingActors: "No matching actors",
+};
+
 const messagesBase = {
   ...licenseReportStatusOptions,
   ...licenseStatusOptions,
   ...licenseRoleOptions,
   ...actorTypeOptions,
+  ...actorFields,
+  ...actorForm,
+  ...licenseForm,
+  ...licenseFields,
 
   birdRinging: "Bird Ringing",
   userPermissions: "User permissions",
@@ -41,10 +103,9 @@ const messagesBase = {
   userWelcomeHeader: "Welcome, {name}",
   userWelcomeText: "You’re successfully logged in as an expert.",
   dashboard: "Dashboard",
-
   licenseListView: "Licenses",
   licenseView: "License {licenseHolder} {licenseId}",
-  actorListView: "Ringers",
+  actorListView: "Actors",
   welcomeMessageHeader: {
     defaultMessage: "Welcome to Birdy!",
     description: "A welcome message for the start page",
@@ -53,25 +114,25 @@ const messagesBase = {
   goToSystem: "Go to system",
   expertsLogin: "Experts login",
 
-  actorCity: "City",
+  actorCreate: "Add actor",
   actorDeactivate: "Deactivate",
-  actorEmail: "E-mail",
+
   actorErrorLoadingActorText:
-    "Something went wrong while loading ringer data for ringer {actorId}.",
-  actorErrorLoadingActorTitle: "Failed to load ringer",
+    "Something went wrong while loading actor data for actor {actorId}.",
+  actorErrorLoadingActorTitle: "Failed to load actor",
   actorFetchEmailAddresses: "Fetch e-mail addresses",
-  actorFilterDescription: "Filter ringer list",
+  actorFilterDescription: "Filter actor list",
   actorFilterLabel: "Filter",
   actorFilterPlaceholder: "Name, E-mail, City, Mnr, Role, Type",
   actorLastUpdated: "Last updated",
-  actorLicenseActive: "Active",
-  actorLicenseInactive: "Inactive",
+  actorLicenseInEffect: "In effect",
+  actorLicenseExpired: "Expired",
+  actorLicensePending: "Pending",
   actorLicenseValidityPeriod:
     "<from>{startsAt}</from><to><muted>to</muted> {endsAt}</to>",
   actorLicenses: "Licenses",
   actorLoadingEmailAddresses: "Loading e-mail addresses",
   actorNoEmailAddressesFound: "No e-mail addresses were found",
-  actorName: "Name",
   actorNoAddress: "no address",
   actorNoCity: "no city",
   actorNoCurrentLicenses: "No current licenses",
@@ -80,12 +141,12 @@ const messagesBase = {
   actorPreviousLicenses: "Previous licenses",
   actorRoles: "Roles",
   actorSendLicenses: "Send licenses",
-  actorType: "Type",
   actorUpdatedAt: "Updated at {date}",
 
   licenseActors: "Ringers / associate ringers",
   licenseCommunication: "Communication",
   licenseCommunicationNote: "Note",
+  licenseCreate: "Add license",
   licenseCreateLicenseDocuments: "Create license documents",
   licenseCreateLicenseDocumentsConfirmText:
     "Do you want to create license cards for all ringers and associate ringers for selected licenses?",
@@ -181,6 +242,8 @@ const messagesBase = {
   featureNotImplemented: "This feature is not yet implemented",
   loadingData: "Loading data",
   okModal: "Ok",
+  selectOption: "Select an option",
+  selectMultipleOptions: "Select multiple options",
   selectAll: "Select all",
   selectNone: "Select none",
   selectionSizeComparison: "{selectedCount} selected of {fullCount}",

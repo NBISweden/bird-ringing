@@ -1,5 +1,5 @@
 "use client";
-import { Config, ConfigContext } from "@/app/(system)/contexts";
+import { Config, ConfigContext, FeatureFlags } from "@/app/(system)/contexts";
 import React from "react";
 import useSWRImmutable from "swr/immutable";
 
@@ -21,6 +21,13 @@ async function fetchConfig(url: string): Promise<Config> {
     authUrl: parseValue("authUrl", config, String),
     apiRootUrl: parseValue("apiRootUrl", config, String),
     defaultLang: parseValue("defaultLang", config, String),
+    flags: parseValue("flags", config, (value) =>
+      value
+        ? (Array.isArray(value) ? value : [value]).map(
+            (v) => String(v) as FeatureFlags,
+          )
+        : undefined,
+    ),
   };
 }
 

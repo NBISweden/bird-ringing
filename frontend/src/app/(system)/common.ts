@@ -43,6 +43,27 @@ export type ActorLicenseRelation = {
 
 export type Role = string;
 
+export type Options = {
+  actor: Option;
+  permission_type: Option;
+  permission_property: Option & {
+    related_type: { id: string };
+  };
+  actor_type: Option;
+  sex: Option;
+  language: Option;
+  report_status: Option;
+  report_type: Option;
+  license_role: Option;
+  license_status: Option;
+  species: Option;
+};
+
+export type Option = {
+  id: string;
+  label: string;
+};
+
 export type PagedResponse<T> = {
   count: number;
   num_pages: number;

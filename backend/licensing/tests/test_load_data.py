@@ -1,7 +1,6 @@
 from django.test import TestCase
 from licensing import models
 from licensing.management.commands.load_data import Command
-import datetime
 import os
 
 
@@ -96,8 +95,8 @@ class TestLoadData(TestCase):
             {
                 "license_mnr": ld["Mnr"],
                 "type_code": permit_type_codes[index % len(permit_type_codes)],
-                "starts_at": str(datetime.date(year=int(ld.get('Startyr', current_year)), month=3, day=1) + datetime.timedelta(days=-1)),
-                "ends_at": f"{ld.get('Startyr', current_year)}-10-01",
+                "starts_at": "02-29",
+                "ends_at": "10-01",
                 "description": f"description-{ld['Mnr']}",
                 "species_codes": ";".join(species_codes),
                 "property_codes": ";".join(permit_property_codes),

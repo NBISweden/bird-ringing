@@ -8,7 +8,7 @@ const licenseReportStatusOptions = {
 
 const licenseStatusOptions = {
   licenseStatusTerminated: "Avslutad",
-  licenseStatusInactive: "Inaktiv",
+  licenseStatusPaused: "Pausad",
   licenseStatusActive: "Aktiv",
 };
 
@@ -24,11 +24,74 @@ const actorTypeOptions = {
   actorTypeStation: "Station",
 };
 
+const actorFields = {
+  actorAddress: "Adress",
+  actorAlternativeEmail: "Alternativ e-postadress",
+  actorBirthDate: "Birth date",
+  actorCity: "Ort",
+  actorCOAddress: "C/O adress",
+  actorEmail: "E-postadress",
+  actorGender: "Kön",
+  actorName: "Namn",
+  actorType: "Typ",
+  actorPhoneNumber1: "Telefonnummer 1",
+  actorPhoneNumber2: "Telefonnummer 2",
+  actorFullName: "Komplett namn",
+  actorFirstName: "Förnamn",
+  actorLastName: "Efternamn",
+  actorCreationDate: "Startdatum",
+};
+
+const licenseFields = {
+  licenseStartsAt: "Valid from",
+  licenseEndsAt: "Valid to",
+  licenseDescription: "Description",
+  licensePermissionType: "Typ",
+  licensePermissionDescription: "Beskrivning",
+  licensePermissionStartsAt: "Startdatum",
+  licensePermissionEndsAt: "Slutdatum",
+  licensePermissionProperties: "Egenskaper",
+  licensePermissionSpecies: "Art",
+  licenseFormActor: "Ringmärkare",
+  licenseFormRole: "Roll",
+  licenseFormRelationId: "MedNr",
+};
+
+const licenseForm = {
+  licenseFormSave: "Spara",
+  licenseFormTitle: "Redigerar license",
+  licenseFormFilterActors: "Sök efter ringmärkare",
+  licenseFormFilterSpecies: "Sök efter art",
+  licenseFormFilterProperties: "Sök efter egenskap",
+  licenseFormAddActor: "Lägg till ringmärkare",
+  licenseFormNoMatchingActors: "Inga matchande ringmärkare",
+};
+
+const actorForm = {
+  actorFormSave: "Spara",
+  actorFormAddressPlaceholder: "Skriv en address",
+  actorFormPhoneNumberPlaceholder: "Skriv ett telefonnummer",
+  actorFormBirthDatePlaceholder: "Skriv ett födelsedatum",
+  actorFormEmailPlaceholder: "Skriv en e-postadress",
+  actorFormCityPlaceholder: "Skriv ett ortsnamn",
+  actorFormFullNamePlaceholder: "",
+  actorFormFirstNamePlaceholder: "Skriv ett förnamn",
+  actorFormLastNamePlaceholder: "Skriv ett efternamn",
+  actorFormNamePlaceholder: "Skriv ett namn",
+  actorFormTitle: "Redigerar ringmärkare",
+  actorFormCreationDatePlaceholder: "Skriv ett startdatum",
+};
+
 export const locale: TranslationMap = {
   ...licenseReportStatusOptions,
   ...licenseStatusOptions,
   ...licenseRoleOptions,
   ...actorTypeOptions,
+  ...actorFields,
+  ...actorForm,
+  ...licenseFields,
+  ...licenseForm,
+
   birdRinging: "Ringmärkning",
   userPermissions: "Användarrättigheter",
   userSignedOut: "Du har blivit utloggad.",
@@ -42,28 +105,27 @@ export const locale: TranslationMap = {
   goToSystem: "Gå till systemet",
   licenseListView: "Licenser",
   licenseView: "{licenseHolder} {licenseId}",
-  actorListView: "Ringmärkare",
+  actorListView: "Aktör",
   expertsLogin: "Expertinloggning",
 
-  actorCity: "Ort",
+  actorCreate: "Lägg till aktör",
   actorDeactivate: "Avaktivera",
-  actorEmail: "E-post",
   actorErrorLoadingActorText:
-    "Något gick fel när vi försökte ladda data för ringmärkare med id {actorId}.",
-  actorErrorLoadingActorTitle: "Misslyckades att hämta ringmärkare",
+    "Något gick fel när vi försökte ladda data för aktör med id {actorId}.",
+  actorErrorLoadingActorTitle: "Misslyckades att hämta aktör",
   actorFetchEmailAddresses: "Hämta e-postadresser",
-  actorFilterDescription: "Filtrera ringmärkarlistan",
+  actorFilterDescription: "Filtrera aktörlistan",
   actorFilterLabel: "Filtrera",
   actorFilterPlaceholder: "Namn, E-post, Ort, Mnr, Roll, Typ",
   actorLastUpdated: "Senast uppdaterad",
-  actorLicenseActive: "Aktiv",
-  actorLicenseInactive: "Inaktiv",
+  actorLicenseInEffect: "Aktuell",
+  actorLicenseExpired: "Utgången",
+  actorLicensePending: "Kommande",
   actorLicenseValidityPeriod:
     "<from>{startsAt}</from><to><muted>till</muted> {endsAt}</to>",
   actorLicenses: "Licenser",
   actorLoadingEmailAddresses: "Laddar e-postadresser",
   actorNoEmailAddressesFound: "Inga e-postadresser fanns ",
-  actorName: "Namn",
   actorNoAddress: "ingen adress",
   actorNoCity: "ingen stad",
   actorNoCurrentLicenses: "Inga nuvarande licenser",
@@ -72,12 +134,12 @@ export const locale: TranslationMap = {
   actorPreviousLicenses: "Previous licenses",
   actorRoles: "Roller",
   actorSendLicenses: "Skicka licenser",
-  actorType: "Typ",
   actorUpdatedAt: "Uppdaterad {date}",
 
   licenseActors: "Ringmärkare / hjälpare",
   licenseCommunication: "Kommunikation",
   licenseCommunicationNote: "Anteckning",
+  licenseCreate: "Add license",
   licenseCreateLicenseDocuments: "Skapa licensdokument",
   licenseCreateLicenseDocumentsConfirmText:
     "Vill du skapa licensdokument för alla ringmärkare associerade med licenser?",
@@ -178,6 +240,8 @@ export const locale: TranslationMap = {
   featureNotImplemented: "Den här funktionen är inte implementerad än.",
   loadingData: "Laddar data",
   okModal: "Ok",
+  selectOption: "Välj ett alternativ",
+  selectMultipleOptions: "Välj flera alternativ",
   selectAll: "Välj alla",
   selectNone: "Välj inga",
   selectionSizeComparison: "{selectedCount} valda av {fullCount}",

@@ -16,6 +16,12 @@ handle /health {
 @backend path /admin/* /api/*
 @backend-dev path /admin/* /api/* /static/*
 
+handle /config.json {
+	file_server {
+		root /srv/frontend-config
+	}
+}
+
 # In development, proxy backend requests to the backend Django
 # development server, and proxy frontend requests to the React
 # development server.

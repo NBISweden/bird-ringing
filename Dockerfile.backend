@@ -15,7 +15,8 @@ RUN --mount=type=cache,id=apk-cache,target=/var/cache/apk \
 	libpq-dev \
 	cairo \
 	fontconfig \
-	font-noto
+	font-noto \
+	gettext
 
 RUN update-ca-certificates
 RUN fc-cache -f
@@ -86,7 +87,8 @@ RUN --mount=type=cache,id=apk-cache,target=/var/cache/apk \
 		dumb-init \
 		font-noto \
 		fontconfig \
-		libpq
+		libpq \
+		gettext
 
 ENV HOME=/app
 
@@ -105,6 +107,7 @@ ENV PATH="$HOME/.venv/bin:$PATH"
 
 # This creates the static files in "/vol"
 RUN python manage.py collectstatic
+RUN python manage.py compilemessages
 
 USER "$RUNTIME_ID"
 

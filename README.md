@@ -57,6 +57,12 @@ mkdir -p backend/mock_data/example/
 ./data-init
 ```
 
+### Local email testing
+
+For local development, the Docker Compose setup includes Mailpit for capturing
+outgoing emails. Open the Mailpit at `http://localhost:8025/` to inspect emails sent by the
+application without sending real messages.
+
 ## Frontend development
 
 ### Adding dependencies

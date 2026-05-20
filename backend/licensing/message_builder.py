@@ -15,6 +15,9 @@ from licensing.models import (
 )
 import datetime
 import mimetypes
+import re
+from django.utils.text import slugify
+from django.utils.translation import gettext as _
 
 
 class MessageBuilder:
@@ -71,6 +74,14 @@ class MessageBuilder:
             )
         except (FileNotFoundError, AttributeError, TypeError) as e:
             raise ValueError(f"Failed to configure message builder: {e}")
+    
+    @staticmethod
+    def create_file_name(document_type: str, mnr, mednr: str | None = None, name: str | None = None) -> str:
+        identifier = mnr if mednr is None else f"{mnr}-{mednr}"
+        name_slug = None if name is None else slugify(name)[:40] 
+        document_type_slug = slugify(document_type)
+
+        return f"{document_type_slug}-{identifier}" + (f"-{name_slug}.pdf" if name_slug else ".pdf")
 
 
 class LicenseAndPermitMessageBuilder:
@@ -94,13 +105,19 @@ class LicenseAndPermitMessageBuilder:
 
         elif include_card:
             (mimetype, _encoding) = mimetypes.guess_type(card_document.reference)
+            document_type = DocumentTypeChoices(card_document.type).label
             card_attachment = (
                 EmailAttachment(
                     content=card_document.data,
                     mimetype=mimetype,
-                    filename=card_document.reference
+                    filename=MessageBuilder.create_file_name(
+                        document_type=document_type,
+                        mnr=lic.sequence.mnr,
+                        mednr=(None if relation.role == LicenseRoleChoices.RINGER else relation.mednr),
+                        name=relation.actor.full_name
+                    )
                 ),
-                DocumentTypeChoices(card_document.type).label
+                document_type
             )
 
         permit_attachment = None
@@ -137,6 +154,7 @@ class RingerBundleMessageBuilder:
         self.message_builder = message_builder
         self.card_service = card_service
         self.permit_service = permit_service or PermitService()
+        self.zip_file_suffix = RingerBundleMessageBuilder.parse_bundle_suffix(_("helpers-documents"))
 
     def build_message(self, *, lic: License, ringer_actor: Actor, relations: list[LicenseRelation], include_card: bool,
         include_permit: bool,
@@ -170,7 +188,7 @@ class RingerBundleMessageBuilder:
             return None
 
         zip_bytes = zip_bytes_from_files(files)
-        zip_filename = f"{lic.sequence.mnr}-helpers-documents.zip"
+        zip_filename = f"{lic.sequence.mnr}-{self.zip_file_suffix}.zip"
 
         zip_attachment = EmailAttachment(
             filename=zip_filename,
@@ -184,7 +202,12 @@ class RingerBundleMessageBuilder:
                 "mnr": lic.sequence.mnr,
                 "name": ringer_actor.full_name,
                 "date": datetime.date.today().isoformat(),
-                "attachments": [("bundle", zip_filename)],
+                "attachments": [(_("bundle"), zip_filename)],
             },
             attachments=[zip_attachment],
         )
+
+    @staticmethod
+    def parse_bundle_suffix(suffix):
+        FILENAME_REGEX = r'[^a-zA-Z0-9ÄÖÅäöå_\-]'
+        return re.sub(FILENAME_REGEX, '-', suffix)
