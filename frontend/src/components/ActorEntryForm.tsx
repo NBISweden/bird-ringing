@@ -21,6 +21,8 @@ export function ActorEntryForm({
   const [actor, updateValue] = useObjectState(initialActor);
   const isPerson = actor.type === "person";
 
+  // The list of languages was provided by the Bird Ringing Central.
+  // It's all languages used within the European bird ringing network (EURING).
   const languageOptions = [
     "Swedish",
     "English",
