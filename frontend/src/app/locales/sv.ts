@@ -97,6 +97,7 @@ const actorForm = {
   actorFormGenderFemale: "Kvinna",
   actorFormGenderUnspecified: "Ospecificerat",
   actorFormGenderNA: "Ej tillämpligt",
+  actorFormSaving: "Sparar ringmärkare...",
 };
 
 export const locale: TranslationMap = {

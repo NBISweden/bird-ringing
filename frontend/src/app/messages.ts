@@ -77,8 +77,12 @@ const actorForm = {
   actorFormDescriptionPlaceholder: "Enter description",
   actorFormGenderMale: "Male",
   actorFormGenderFemale: "Female",
-  actorFormGenderUnspecified: "Unspecified",
+  actorFormGenderUndisclosed: "Undisclosed",
   actorFormGenderNA: "N/A",
+  actorFormSaving: "Saving actor...",
+  actorFormCreateSuccessTitle: "Actor created",
+  actorFormCreateSuccessMessage: "The actor has been created successfully.",
+  actorFormCreateErrorTitle: "Failed to create actor",
 };
 
 const licenseFields = {
