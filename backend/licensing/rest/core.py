@@ -368,6 +368,7 @@ class ActorSerializer(serializers.ModelSerializer):
             "postal_code",
             "city",
             "country",
+            "description",
             "license_relations",
             "updated_at",
             "created_by",

@@ -171,6 +171,7 @@ class LanguageChoices(models.IntegerChoices):
     UNKNOWN = (0, _("unknown"))
     SV = (1, _("sv"))
     EN = (2, _("en"))
+# TODO: Add more languages to fit the frontend
 
 
 class ReportStatusChoices(models.IntegerChoices):

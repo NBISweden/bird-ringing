@@ -1,4 +1,5 @@
 import {
+  ActorBase,
   ActorListItem,
   LicenseListItem,
   Options,
@@ -161,6 +162,25 @@ export class Client {
       const contentType = response.headers.get("content-type") || "";
       if (contentType.includes("application/json")) {
         const data = await response.json().catch(() => null);
+
+        if (
+          response.status === 400 &&
+          data &&
+          typeof data === "object" &&
+          !Array.isArray(data) &&
+          !("detail" in data)
+        ) {
+          const messages = Object.entries(
+            data as Record<string, string | string[]>,
+          )
+            .map(
+              ([field, errors]) =>
+                `${field}: ${Array.isArray(errors) ? errors.join(", ") : String(errors)}`,
+            )
+            .join("\n");
+          throw new Error(messages || `Request failed (${response.status})`);
+        }
+
         const detail =
           data?.detail ??
           (data && typeof data === "object" ? JSON.stringify(data) : null) ??
@@ -248,5 +268,17 @@ export class Client {
       `license_sequence/${encodeURIComponent(mnr)}/send-license-emails/?${qs.toString()}`,
       { method: "PUT", headers: csrf ? { "X-CSRFToken": csrf } : {} },
     );
+  }
+
+  async createActor(actor: Partial<ActorBase>): Promise<ActorListItem> {
+    const csrf = getCookie("csrftoken");
+    return this.fetchJson<ActorListItem>("actor/", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(csrf ? { "X-CSRFToken": csrf } : {}),
+      },
+      body: JSON.stringify(actor),
+    });
   }
 }

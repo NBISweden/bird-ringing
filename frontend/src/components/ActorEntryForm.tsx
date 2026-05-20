@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { ActorBase } from "@/app/(system)/common";
 import { useObjectState } from "@/app/(system)/hooks";
 import { useTranslation } from "@/app/(system)/internationalization";
@@ -16,11 +17,12 @@ export function ActorEntryForm({
   title,
 }: {
   initialActor: Partial<ActorBase>;
-  onSubmit: (actor: Partial<ActorBase>) => void;
+  onSubmit: (actor: Partial<ActorBase>) => void | Promise<void>;
   title: string;
 }) {
   const { t } = useTranslation();
   const [actor, updateValue] = useObjectState(initialActor);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const isPerson = actor.type === "person";
 
   // The list of languages was provided by the Bird Ringing Central.
@@ -72,9 +74,16 @@ export function ActorEntryForm({
 
   return (
     <form
-      onSubmit={(e) => {
+      onSubmit={async (e) => {
         e.preventDefault();
-        onSubmit(actor);
+        console.log("submitting");
+        setIsSubmitting(true);
+        try {
+          await onSubmit(actor);
+        } finally {
+          setIsSubmitting(false);
+          console.log("done submitting");
+        }
       }}
     >
       <FieldErrorContext.Provider value={{}}>
@@ -95,7 +104,7 @@ export function ActorEntryForm({
                       onChange={(value) =>
                         updateValue({
                           type: value,
-                          sex: value === "person" ? "unspecified" : "n/a",
+                          sex: value === "person" ? "undisclosed" : "n/a",
                           last_name: value === "station" ? "" : actor.last_name,
                           full_name:
                             value === "station"
@@ -172,7 +181,7 @@ export function ActorEntryForm({
                             },
                             {
                               value: "unspecified",
-                              label: t("actorFormGenderUnspecified"),
+                              label: t("actorFormGenderUndisclosed"),
                             },
                             { value: "n/a", label: t("actorFormGenderNA") },
                           ]}
@@ -376,6 +385,7 @@ export function ActorEntryForm({
                       options={languageOptions.map((o) => ({
                         value: o.toLowerCase(),
                         label: o,
+                        // TODO: make values fit backend model
                       }))}
                     />
                   </VerticalField>
@@ -391,8 +401,11 @@ export function ActorEntryForm({
                 </div>
               </FormSection>
             </div>
-            <button className="btn btn-secondary align-self-end me-3 mb-3">
-              {t("actorFormSave")}
+            <button
+              className="btn btn-secondary align-self-end me-3 mb-3"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? t("actorFormSaving") : t("actorFormSave")}
             </button>
           </div>
         </div>
