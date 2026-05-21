@@ -103,10 +103,11 @@ export function ActorEntryForm({
                               : [actor.first_name, actor.last_name].join(" "),
                         })
                       }
-                      options={["-", "person", "station"].map((o) => ({
-                        value: o,
-                        label: o,
-                      }))}
+                      options={[
+                        { value: "-", label: "-" },
+                        { value: "person", label: t("actorTypePerson") },
+                        { value: "station", label: t("actorTypeStation") },
+                      ]}
                     />
                   </VerticalField>
                   <VerticalField
@@ -163,19 +164,25 @@ export function ActorEntryForm({
                           onChange={(value) => updateValue({ sex: value })}
                           disabled={!isPerson}
                           options={[
-                            "-",
-                            t("actorFormGenderMale"),
-                            t("actorFormGenderFemale"),
-                            t("actorFormGenderUnspecified"),
-                            t("actorFormGenderNA"),
-                          ].map((o) => ({ value: o, label: o }))}
+                            { value: "-", label: "-" },
+                            { value: "male", label: t("actorFormGenderMale") },
+                            {
+                              value: "female",
+                              label: t("actorFormGenderFemale"),
+                            },
+                            {
+                              value: "unspecified",
+                              label: t("actorFormGenderUnspecified"),
+                            },
+                            { value: "n/a", label: t("actorFormGenderNA") },
+                          ]}
                         />
                       </VerticalField>
                     </>
                   ) : (
                     <></>
                   )}
-                  {!!actor.type ? (
+                  {actor.type ? (
                     <>
                       <VerticalField
                         label={
