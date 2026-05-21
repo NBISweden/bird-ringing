@@ -28,7 +28,7 @@ function ActorViewBase() {
         <LicenseEntryForm
           initialLicense={license}
           onSubmit={(a) => {
-            notImplementedAction(t("actorFormTitle"));
+            notImplementedAction(t("actorFormAddTitle"));
             console.log(a);
           }}
         />
