@@ -154,9 +154,10 @@ function ActorViewBase() {
           <ActorEntryForm
             initialActor={data}
             onSubmit={(a) => {
-              notImplementedAction(t("actorFormTitle"));
+              notImplementedAction(t("actorFormEditTitle"));
               console.log(a);
             }}
+            title={t("actorFormEditTitle")}
           />
         ) : (
           <ActorEntry actor={data} roles={Array.from(roles)} />

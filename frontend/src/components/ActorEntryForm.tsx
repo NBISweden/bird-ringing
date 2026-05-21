@@ -13,9 +13,11 @@ import {
 export function ActorEntryForm({
   initialActor,
   onSubmit,
+  title,
 }: {
   initialActor: Partial<ActorBase>;
   onSubmit: (actor: Partial<ActorBase>) => void;
+  title: string;
 }) {
   const { t } = useTranslation();
   const [actor, updateValue] = useObjectState(initialActor);
@@ -79,7 +81,7 @@ export function ActorEntryForm({
         <div className="col-12 col-xl-6">
           <div className="card my-4">
             <div className="card-header py-3">
-              <h3 className="m-0">{t("actorFormTitle")}</h3>
+              <h3 className="m-0">{title}</h3>
             </div>
             <div className="card-body">
               <FormSection
