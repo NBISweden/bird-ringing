@@ -22,6 +22,7 @@ export type ActorBase = {
   city: string;
   country: string;
   updated_at: string;
+  description: string;
 };
 
 export type ActorListItem = ActorBase & {

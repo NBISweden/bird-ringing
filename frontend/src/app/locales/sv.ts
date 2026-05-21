@@ -27,7 +27,7 @@ const actorTypeOptions = {
 const actorFields = {
   actorAddress: "Adress",
   actorAlternativeEmail: "Alternativ e-postadress",
-  actorBirthDate: "Birth date",
+  actorBirthDate: "Födelsedatum",
   actorCity: "Ort",
   actorCOAddress: "C/O adress",
   actorEmail: "E-postadress",
@@ -40,6 +40,10 @@ const actorFields = {
   actorFirstName: "Förnamn",
   actorLastName: "Efternamn",
   actorCreationDate: "Startdatum",
+  actorLanguage: "Språk",
+  actorCountry: "Land",
+  actorPostalCode: "Postnummer",
+  actorDescription: "Beskrivning",
 };
 
 const licenseFields = {
@@ -78,8 +82,21 @@ const actorForm = {
   actorFormFirstNamePlaceholder: "Skriv ett förnamn",
   actorFormLastNamePlaceholder: "Skriv ett efternamn",
   actorFormNamePlaceholder: "Skriv ett namn",
-  actorFormTitle: "Redigerar ringmärkare",
+  actorFormPostalCodePlaceholder: "Skriv ett postnummer",
+  actorFormEditTitle: "Redigerar ringmärkare",
+  actorFormAddTitle: "Ny ringmärkare",
   actorFormCreationDatePlaceholder: "Skriv ett startdatum",
+  actorFormLanguagePlaceholder: "Skriv ett språk",
+  actorFormCountryPlaceholder: "Skriv ett land",
+  actorFormInfoSubtitle: "Om ringmärkaren",
+  actorFormContactSubtitle: "Kontaktuppgifter",
+  actorFormLocationSubtitle: "Plats",
+  actorFormDetailsSubtitle: "Detaljer",
+  actorFromDescriptionPlaceholder: "Skriv en beskrivning",
+  actorFormGenderMale: "Man",
+  actorFormGenderFemale: "Kvinna",
+  actorFormGenderUnspecified: "Ospecificerat",
+  actorFormGenderNA: "Ej tillämpligt",
 };
 
 export const locale: TranslationMap = {
@@ -246,4 +263,6 @@ export const locale: TranslationMap = {
   selectNone: "Välj inga",
   selectionSizeComparison: "{selectedCount} valda av {fullCount}",
   unknownError: "Ett okänt fel inträffade.",
+  edit: "Redigera",
+  done: "Klart",
 };

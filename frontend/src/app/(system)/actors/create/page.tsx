@@ -22,16 +22,13 @@ function ActorViewBase() {
   return (
     <div className="container">
       <div className="row">
-        <h2 className="fw-bold">
-          <i className={`bi bi-person me-3`} />
-          {t("actorCreate")}
-        </h2>
         <ActorEntryForm
           initialActor={actor}
           onSubmit={(a) => {
-            notImplementedAction(t("actorFormTitle"));
+            notImplementedAction(t("actorFormAddTitle"));
             console.log(a);
           }}
+          title={t("actorFormAddTitle")}
         />
       </div>
     </div>

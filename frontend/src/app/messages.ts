@@ -31,6 +31,7 @@ const actorFields = {
   actorAddress: "Address",
   actorAlternativeEmail: "Alternative e-mail",
   actorBirthDate: "Birth date",
+  actorBirthYear: "Birth year",
   actorCity: "City",
   actorCOAddress: "C/O address",
   actorEmail: "E-mail",
@@ -43,6 +44,11 @@ const actorFields = {
   actorFirstName: "First name",
   actorLastName: "Last name",
   actorCreationDate: "Creation date",
+  actorCreationYear: "Creation year",
+  actorLanguage: "Language",
+  actorCountry: "Country",
+  actorPostalCode: "Postal code",
+  actorDescription: "Description",
 };
 
 const actorForm = {
@@ -50,14 +56,29 @@ const actorForm = {
   actorFormAddressPlaceholder: "Enter address",
   actorFormPhoneNumberPlaceholder: "Enter phone number",
   actorFormBirthDatePlaceholder: "Enter birth date",
+  actorFormBirthYearPlaceholder: "Enter birth year",
   actorFormEmailPlaceholder: "Enter e-mail",
   actorFormCityPlaceholder: "Enter city name",
+  actorFormPostalCodePlaceholder: "Enter postal code",
   actorFormFullNamePlaceholder: "",
   actorFormFirstNamePlaceholder: "Enter first name",
   actorFormLastNamePlaceholder: "Enter last name",
   actorFormNamePlaceholder: "Enter name",
+  actorFormLanguagePlaceholder: "Enter language",
+  actorFormCountryPlaceholder: "Enter country",
   actorFormCreationDatePlaceholder: "Enter creation date",
-  actorFormTitle: "Editing actor",
+  actorFormCreationYearPlaceholder: "Enter creation year",
+  actorFormEditTitle: "Editing actor",
+  actorFormAddTitle: "New actor",
+  actorFormInfoSubtitle: "Basic information",
+  actorFormContactSubtitle: "Contact",
+  actorFormLocationSubtitle: "Location",
+  actorFormDetailsSubtitle: "Details",
+  actorFormDescriptionPlaceholder: "Enter description",
+  actorFormGenderMale: "Male",
+  actorFormGenderFemale: "Female",
+  actorFormGenderUnspecified: "Unspecified",
+  actorFormGenderNA: "N/A",
 };
 
 const licenseFields = {
@@ -248,6 +269,8 @@ const messagesBase = {
   selectNone: "Select none",
   selectionSizeComparison: "{selectedCount} selected of {fullCount}",
   unknownError: "An unknown error occurred.",
+  edit: "Edit",
+  done: "Done",
 };
 
 function makeMessageMap<T extends { [P in keyof T]: Message | string }>(
