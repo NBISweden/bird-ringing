@@ -173,46 +173,65 @@ export function ActorEntryForm({
                   ) : (
                     <></>
                   )}
-                  <VerticalField
-                    label={
-                      isPerson ? t("actorBirthDate") : t("actorCreationDate")
-                    }
-                    id="birth_date"
-                  >
-                    <TextInput
-                      type="date"
-                      placeholder={
-                        isPerson
-                          ? t("actorFormBirthDatePlaceholder")
-                          : t("actorFormCreationDatePlaceholder")
-                      }
-                      value={actor.birth_date || ""}
-                      onChange={(event) =>
-                        updateValue({ birth_date: event.target.value })
-                      }
-                    />
-                  </VerticalField>
-
-                  <VerticalField
-                    label={
-                      isPerson ? t("actorBirthYear") : t("actorCreationYear")
-                    }
-                    id="birth_year"
-                  >
-                    <TextInput
-                      type="number"
-                      disabled={!!actor.birth_date}
-                      placeholder={
-                        isPerson
-                          ? t("actorFormBirthYearPlaceholder")
-                          : t("actorFormCreationYearPlaceholder")
-                      }
-                      value={actor.birth_year || 9999}
-                      onChange={(event) =>
-                        updateValue({ birth_year: +event.target.value })
-                      }
-                    />
-                  </VerticalField>
+                  {!!actor.type ? (
+                    <>
+                      <VerticalField
+                        label={
+                          isPerson
+                            ? t("actorBirthDate")
+                            : t("actorCreationDate")
+                        }
+                        id="birth_date"
+                      >
+                        <TextInput
+                          type="date"
+                          placeholder={
+                            isPerson
+                              ? t("actorFormBirthDatePlaceholder")
+                              : t("actorFormCreationDatePlaceholder")
+                          }
+                          value={actor.birth_date || ""}
+                          onChange={(event) =>
+                            updateValue({
+                              birth_date: event.target.value,
+                              birth_year: new Date(
+                                event.target.value,
+                              ).getFullYear(),
+                            })
+                          }
+                        />
+                      </VerticalField>
+                      <VerticalField
+                        label={
+                          isPerson
+                            ? t("actorBirthYear")
+                            : t("actorCreationYear")
+                        }
+                        id="birth_year"
+                      >
+                        <TextInput
+                          type="number"
+                          disabled={!!actor.birth_date}
+                          placeholder={
+                            isPerson
+                              ? t("actorFormBirthYearPlaceholder")
+                              : t("actorFormCreationYearPlaceholder")
+                          }
+                          value={
+                            actor.birth_year ||
+                            (actor.birth_date &&
+                              new Date(actor.birth_date).getFullYear()) ||
+                            undefined
+                          }
+                          onChange={(event) =>
+                            updateValue({ birth_year: +event.target.value })
+                          }
+                        />
+                      </VerticalField>
+                    </>
+                  ) : (
+                    <></>
+                  )}
                 </div>
               </FormSection>
               <FormSection
