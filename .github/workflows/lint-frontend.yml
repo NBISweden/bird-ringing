@@ -27,3 +27,7 @@ jobs:
         if: always()
         working-directory: frontend
         run: npm run format
+      
+      - name: "Make sure that the frontend builds"
+        working-directory: frontend
+        run: npm run build
