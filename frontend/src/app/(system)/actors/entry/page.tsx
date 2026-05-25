@@ -4,8 +4,9 @@ import { Suspense, useState } from "react";
 import Link from "next/link";
 import useSWR from "swr";
 import { notFound, useSearchParams } from "next/navigation";
-import { useClient, useFlags } from "../../contexts";
+import { useClient, useFlags, useModalsContext } from "../../contexts";
 import {
+  ActorBase,
   ActorLicenseRelation,
   ActorListItem,
   Role,
@@ -19,7 +20,6 @@ import { Alert } from "@/components/Alert";
 import { PaginationContainer, usePagination } from "@/components/Pagination";
 import Icon from "@/components/Icon";
 import { ActorEntryForm } from "@/components/ActorEntryForm";
-import { useNotImplementedModal } from "../../hooks";
 
 async function fetchActor([client, _ctx, entryId]: [Client, "actor", string]) {
   return client.fetchActorById(entryId);
@@ -78,10 +78,10 @@ function ActorViewBase() {
   const client = useClient();
   const { t } = useTranslation();
   const [isEditing, setIsEditing] = useState<boolean>(false);
-  const notImplementedAction = useNotImplementedModal();
   const flags = useFlags();
+  const modals = useModalsContext();
 
-  const { data, isLoading, error } = useSWR(
+  const { data, isLoading, error, mutate } = useSWR(
     actorId ? [client, "actor", actorId] : null,
     fetchActor,
   );
@@ -128,6 +128,43 @@ function ActorViewBase() {
 
   const roles = new Set<Role>(licenses.map((l) => l.role));
 
+  const handleEditSubmit = async (actor: Partial<ActorBase>) => {
+    try {
+      await client.updateActor(data!.id, actor);
+      await mutate(); // refetch so the view reflects the saved changes
+
+      modals.add({
+        title: t("actorUpdateSuccessTitle"),
+        content: <p className="mb-0">{t("actorUpdateSuccessMessage")}</p>,
+        closeAction: () => setIsEditing(false),
+        actions: [
+          {
+            label: t("closeModal"),
+            action: () => setIsEditing(false),
+          },
+        ],
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      const lines = message.split("\n").filter(Boolean);
+
+      modals.add({
+        title: t("actorUpdateErrorTitle"),
+        content:
+          lines.length > 1 ? (
+            <ul className="mb-0">
+              {lines.map((line, i) => (
+                <li key={i}>{line}</li>
+              ))}
+            </ul>
+          ) : (
+            <p className="mb-0">{message}</p>
+          ),
+        actions: [{ label: t("closeModal"), action: () => {} }],
+      });
+    }
+  };
+
   return (
     <div className="container">
       <div className="row">
@@ -154,7 +191,7 @@ function ActorViewBase() {
           <ActorEntryForm
             initialActor={data}
             onSubmit={(a) => {
-              notImplementedAction(t("actorFormEditTitle"));
+              handleEditSubmit(a);
               console.log(a);
             }}
             title={t("actorFormEditTitle")}

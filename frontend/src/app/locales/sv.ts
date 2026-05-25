@@ -104,6 +104,15 @@ const actorForm = {
   actorFormSaving: "Sparar ringmärkare...",
 };
 
+const modals = {
+  actorCreateSuccessTitle: "Ringmärkare skapad",
+  actorCreateSuccessMessage: "Ringmärkaren har skapats.",
+  actorCreateErrorTitle: "Misslyckades att skapa ringmärkare",
+  actorUpdateSuccessTitle: "Ringmärkare uppdaterad",
+  actorUpdateSuccessMessage: "Ringmärkaren har uppdaterats.",
+  actorUpdateErrorTitle: "Misslyckades att uppdatera ringmärkare",
+};
+
 export const locale: TranslationMap = {
   ...licenseReportStatusOptions,
   ...licenseStatusOptions,
@@ -113,6 +122,7 @@ export const locale: TranslationMap = {
   ...actorForm,
   ...licenseFields,
   ...licenseForm,
+  ...modals,
 
   birdRinging: "Ringmärkning",
   userPermissions: "Användarrättigheter",
