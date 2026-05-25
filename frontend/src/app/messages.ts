@@ -27,6 +27,13 @@ const actorTypeOptions = {
   actorTypeStation: "Station",
 };
 
+const actorGenderOptions = {
+  actorGenderMale: "Male",
+  actorGenderFemale: "Female",
+  actorGenderUndisclosed: "Undisclosed",
+  actorGenderNA: "N/A",
+};
+
 const actorFields = {
   actorAddress: "Address",
   actorAlternativeEmail: "Alternative e-mail",
@@ -75,10 +82,6 @@ const actorForm = {
   actorFormLocationSubtitle: "Location",
   actorFormDetailsSubtitle: "Details",
   actorFormDescriptionPlaceholder: "Enter description",
-  actorFormGenderMale: "Male",
-  actorFormGenderFemale: "Female",
-  actorFormGenderUndisclosed: "Undisclosed",
-  actorFormGenderNA: "N/A",
   actorFormSaving: "Saving actor...",
 };
 
@@ -121,6 +124,7 @@ const messagesBase = {
   ...licenseStatusOptions,
   ...licenseRoleOptions,
   ...actorTypeOptions,
+  ...actorGenderOptions,
   ...actorFields,
   ...actorForm,
   ...licenseForm,

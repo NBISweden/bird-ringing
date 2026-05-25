@@ -24,6 +24,13 @@ const actorTypeOptions = {
   actorTypeStation: "Station",
 };
 
+const actorGenderOptions = {
+  actorGenderMale: "Man",
+  actorGenderFemale: "Kvinna",
+  actorGenderUndisclosed: "Okänt",
+  actorGenderNA: "Ej tillämpligt",
+};
+
 const actorFields = {
   actorAddress: "Adress",
   actorAlternativeEmail: "Alternativ e-postadress",
@@ -93,10 +100,6 @@ const actorForm = {
   actorFormLocationSubtitle: "Plats",
   actorFormDetailsSubtitle: "Detaljer",
   actorFromDescriptionPlaceholder: "Skriv en beskrivning",
-  actorFormGenderMale: "Man",
-  actorFormGenderFemale: "Kvinna",
-  actorFormGenderUnspecified: "Ospecificerat",
-  actorFormGenderNA: "Ej tillämpligt",
   actorFormSaving: "Sparar ringmärkare...",
 };
 
@@ -114,6 +117,7 @@ export const locale: TranslationMap = {
   ...licenseStatusOptions,
   ...licenseRoleOptions,
   ...actorTypeOptions,
+  ...actorGenderOptions,
   ...actorFields,
   ...actorForm,
   ...licenseFields,
