@@ -112,10 +112,18 @@ function LicenseViewInner() {
           </h1>
           {isEditing ? (
             <LicenseEntryForm
-              initialLicense={data.latest}
-              onSubmit={(a) => {
+              initialLicense={{
+                mnr: data.mnr,
+                status: data.status,
+                starts_at: data.latest.starts_at,
+                ends_at: data.latest.ends_at,
+                location: data.latest.location,
+                description: data.latest.description,
+                report_status: data.latest.report_status,
+              }}
+              onSubmit={(license) => {
                 notImplementedAction(t("licenseFormTitle"));
-                console.log(a);
+                console.log(license);
               }}
             />
           ) : (
