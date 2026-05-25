@@ -80,9 +80,6 @@ const actorForm = {
   actorFormGenderUndisclosed: "Undisclosed",
   actorFormGenderNA: "N/A",
   actorFormSaving: "Saving actor...",
-  actorFormCreateSuccessTitle: "Actor created",
-  actorFormCreateSuccessMessage: "The actor has been created successfully.",
-  actorFormCreateErrorTitle: "Failed to create actor",
 };
 
 const licenseFields = {
@@ -110,6 +107,15 @@ const licenseForm = {
   licenseFormNoMatchingActors: "No matching actors",
 };
 
+const modals = {
+  actorCreateSuccessTitle: "Actor created",
+  actorCreateSuccessMessage: "The actor has been created successfully.",
+  actorCreateErrorTitle: "Failed to create actor",
+  actorUpdateSuccessTitle: "Actor updated",
+  actorUpdateSuccessMessage: "The actor has been updated successfully.",
+  actorUpdateErrorTitle: "Failed to update actor",
+};
+
 const messagesBase = {
   ...licenseReportStatusOptions,
   ...licenseStatusOptions,
@@ -119,6 +125,7 @@ const messagesBase = {
   ...actorForm,
   ...licenseForm,
   ...licenseFields,
+  ...modals,
 
   birdRinging: "Bird Ringing",
   userPermissions: "User permissions",
