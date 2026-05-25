@@ -281,4 +281,19 @@ export class Client {
       body: JSON.stringify(actor),
     });
   }
+
+  async updateActor(
+    actorId: number,
+    actor: Partial<ActorBase>,
+  ): Promise<ActorListItem> {
+    const csrf = getCookie("csrftoken");
+    return this.fetchJson<ActorListItem>(`actor/${actorId}/`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        ...(csrf ? { "X-CSRFToken": csrf } : {}),
+      },
+      body: JSON.stringify(actor),
+    });
+  }
 }
