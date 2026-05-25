@@ -178,16 +178,16 @@ export function ActorEntryForm({
                           disabled={!isPerson}
                           options={[
                             { value: "-", label: "-" },
-                            { value: "male", label: t("actorFormGenderMale") },
+                            { value: "male", label: t("actorGenderMale") },
                             {
                               value: "female",
-                              label: t("actorFormGenderFemale"),
+                              label: t("actorGenderFemale"),
                             },
                             {
                               value: "unspecified",
-                              label: t("actorFormGenderUndisclosed"),
+                              label: t("actorGenderUndisclosed"),
                             },
-                            { value: "n/a", label: t("actorFormGenderNA") },
+                            { value: "n/a", label: t("actorGenderNA") },
                           ]}
                         />
                       </VerticalField>
