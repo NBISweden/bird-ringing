@@ -74,7 +74,8 @@ const licenseForm = {
   licenseFormMnrPlaceholder: "Ange ett fyrsiffrigt MNR",
   licenseFormMnrInvalid: "MNR måste bestå av exakt fyra siffror.",
   licenseFormRequired: "Det här fältet är obligatoriskt.",
-  licenseFormEndsAtBeforeStartsAt: "Giltig till måste vara samma datum eller senare än giltig från.",
+  licenseFormEndsAtBeforeStartsAt:
+    "Giltig till måste vara samma datum eller senare än giltig från.",
   licenseFormFilterActors: "Sök efter ringmärkare",
   licenseFormFilterSpecies: "Sök efter art",
   licenseFormFilterProperties: "Sök efter egenskap",

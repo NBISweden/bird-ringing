@@ -44,9 +44,7 @@ export function LicenseEntryForm({
 
   const [errors, setErrors] = useState<LicenseFormErrors>({});
 
-  function validateLicense(
-    value: Partial<LicenseFormData>,
-  ): LicenseFormErrors {
+  function validateLicense(value: Partial<LicenseFormData>): LicenseFormErrors {
     const nextErrors: LicenseFormErrors = {};
 
     if (!value.mnr?.trim()) {
@@ -158,9 +156,7 @@ export function LicenseEntryForm({
                 >
                   <SelectInput
                     value={license.report_status || ""}
-                    onChange={(value) =>
-                      updateValue({ report_status: value })
-                    }
+                    onChange={(value) => updateValue({ report_status: value })}
                     options={[
                       { value: "", label: t("selectOption") },
                       {

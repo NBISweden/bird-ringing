@@ -107,7 +107,8 @@ const licenseForm = {
   licenseFormMnrPlaceholder: "Enter a four digit MNR",
   licenseFormMnrInvalid: "MNR must be exactly four digits.",
   licenseFormRequired: "This field is required.",
-  licenseFormEndsAtBeforeStartsAt: "Valid to must be after or equal to valid from.",
+  licenseFormEndsAtBeforeStartsAt:
+    "Valid to must be after or equal to valid from.",
   licenseFormFilterActors: "Search for actor",
   licenseFormFilterSpecies: "Search for species",
   licenseFormFilterProperties: "Search for property",
