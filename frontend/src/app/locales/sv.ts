@@ -65,7 +65,16 @@ const licenseFields = {
 
 const licenseForm = {
   licenseFormSave: "Spara",
-  licenseFormTitle: "Redigerar license",
+  licenseFormTitle: "Redigerar licens",
+  licenseFormAddTitle: "Ny licens",
+  licenseFormBasicInfoSubtitle: "Grundinformation",
+  licenseFormValiditySubtitle: "Giltighetsperiod",
+  licenseFormLocationSubtitle: "Plats",
+  licenseFormDetailsSubtitle: "Detaljer",
+  licenseFormMnrPlaceholder: "Ange ett fyrsiffrigt MNR",
+  licenseFormMnrInvalid: "MNR måste bestå av exakt fyra siffror.",
+  licenseFormRequired: "Det här fältet är obligatoriskt.",
+  licenseFormEndsAtBeforeStartsAt: "Giltig till måste vara samma datum eller senare än giltig från.",
   licenseFormFilterActors: "Sök efter ringmärkare",
   licenseFormFilterSpecies: "Sök efter art",
   licenseFormFilterProperties: "Sök efter egenskap",
