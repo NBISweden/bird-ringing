@@ -2,24 +2,25 @@
 
 import { Suspense } from "react";
 import { useTranslation } from "../../internationalization";
-import { useFlags } from "../../contexts";
-import { notFound } from "next/navigation";
 import { useNotImplementedModal } from "../../hooks";
 import {
   LicenseEntryForm,
   LicenseFormData,
 } from "@/components/LiceneseEntryForm";
 
-function ActorViewBase() {
+function LicenseViewBase() {
   const { t } = useTranslation();
   const notImplementedAction = useNotImplementedModal();
-  const flags = useFlags();
 
-  if (!flags.has("mock-license-editing")) {
-    notFound();
-  }
-
-  const license: Partial<LicenseFormData> = {};
+  const license: Partial<LicenseFormData> = {
+    mnr: "",
+    status: "active",
+    starts_at: "",
+    ends_at: "",
+    location: "",
+    description: "",
+    report_status: "no",
+  };
 
   return (
     <div className="container">
@@ -27,9 +28,9 @@ function ActorViewBase() {
         <h2 className="fw-bold">{t("licenseCreate")}</h2>
         <LicenseEntryForm
           initialLicense={license}
-          onSubmit={(a) => {
-            notImplementedAction(t("actorFormAddTitle"));
-            console.log(a);
+          onSubmit={(license) => {
+            notImplementedAction(t("licenseFormAddTitle"));
+            console.log(license);
           }}
         />
       </div>
@@ -37,10 +38,10 @@ function ActorViewBase() {
   );
 }
 
-export default function ActorView() {
+export default function LicenseView() {
   return (
     <Suspense>
-      <ActorViewBase />
+      <LicenseViewBase />
     </Suspense>
   );
 }
