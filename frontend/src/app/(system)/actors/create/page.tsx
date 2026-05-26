@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense } from "react";
 import { ActorBase } from "../../common";
 import { useTranslation } from "../../internationalization";
 import { ActorEntryForm } from "@/components/ActorEntryForm";
@@ -13,23 +13,14 @@ function ActorViewBase() {
   const client = useClient();
   const modals = useModalsContext();
   const router = useRouter();
-  const [savedActorId, setSavedActorId] = useState<number | null>(null);
 
   if (!flags.has("mock-actor-editing")) {
     notFound();
   }
 
   const handleSubmit = async (actor: Partial<ActorBase>) => {
-    console.log("starting save process");
     try {
-      const result =
-        savedActorId !== null
-          ? await client.updateActor(savedActorId, actor)
-          : await client.createActor(actor);
-
-      if (savedActorId === null) {
-        setSavedActorId(result.id);
-      }
+      const result = await client.createActor(actor);
       modals.add({
         title: t("actorCreateSuccessTitle"),
         content: <p className="mb-0">{t("actorCreateSuccessMessage")}</p>,
@@ -65,10 +56,7 @@ function ActorViewBase() {
       <div className="row">
         <ActorEntryForm
           initialActor={{}}
-          onSubmit={(a) => {
-            handleSubmit(a);
-            console.log(a);
-          }}
+          onSubmit={handleSubmit}
           title={t("actorFormAddTitle")}
         />
       </div>

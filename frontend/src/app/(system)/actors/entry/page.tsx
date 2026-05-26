@@ -190,10 +190,7 @@ function ActorViewBase() {
         {isEditing ? (
           <ActorEntryForm
             initialActor={data}
-            onSubmit={(a) => {
-              handleEditSubmit(a);
-              console.log(a);
-            }}
+            onSubmit={handleEditSubmit}
             title={t("actorFormEditTitle")}
           />
         ) : (
