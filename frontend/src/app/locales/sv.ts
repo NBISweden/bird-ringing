@@ -103,7 +103,7 @@ const actorForm = {
   actorFormContactSubtitle: "Kontaktuppgifter",
   actorFormLocationSubtitle: "Plats",
   actorFormDetailsSubtitle: "Detaljer",
-  actorFromDescriptionPlaceholder: "Skriv en beskrivning",
+  actorFormDescriptionPlaceholder: "Skriv en beskrivning",
   actorFormSaving: "Sparar ringmärkare...",
 };
 
