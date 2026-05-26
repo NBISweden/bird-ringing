@@ -178,9 +178,7 @@ function ActorViewBase() {
               onClick={() => setIsEditing(!isEditing)}
             >
               <Icon icon={isEditing ? "arrow-left" : "pencil-square"} />
-              <span className="ms-2">
-                {!isEditing ? t("edit") : t("done")}
-              </span>
+              <span className="ms-2">{!isEditing ? t("edit") : t("done")}</span>
             </button>
           </div>
         </div>
