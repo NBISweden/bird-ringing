@@ -5,7 +5,7 @@ import useSWR from "swr";
 import { notFound, useSearchParams } from "next/navigation";
 import Spinner from "@/components/Spinner";
 
-import { useClient, useFlags } from "../../contexts";
+import { useClient } from "../../contexts";
 import { Client } from "../../client";
 import { LicenceView } from "@/components/LicenceView";
 import { Alert } from "@/components/Alert";
@@ -30,7 +30,6 @@ function LicenseViewInner() {
   const client = useClient();
   const { t, format, formatOption } = useTranslation();
   const [isEditing, setIsEditing] = useState<boolean>(false);
-  const flags = useFlags();
   const notImplementedAction = useNotImplementedModal();
 
   const { data, isLoading, error } = useSWR(
@@ -99,16 +98,12 @@ function LicenseViewInner() {
                 incomplete: "licenseReportStatusIncomplete",
               })}
             </Badge>
-            {flags.has("mock-license-editing") ? (
-              <button
-                className="btn btn-outline-secondary ms-2"
-                onClick={() => setIsEditing(!isEditing)}
-              >
-                <Icon icon={isEditing ? "eye" : "pencil-square"} />
-              </button>
-            ) : (
-              <></>
-            )}
+            <button
+              className="btn btn-outline-secondary ms-2"
+              onClick={() => setIsEditing(!isEditing)}
+            >
+              <Icon icon={isEditing ? "eye" : "pencil-square"} />
+            </button>
           </h1>
           {isEditing ? (
             <LicenseEntryForm
