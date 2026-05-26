@@ -340,7 +340,7 @@ class ActorLicenseRelationSerializer(serializers.ModelSerializer):
 class ActorSerializer(serializers.ModelSerializer):
     type = NameBasedChoiceField(choices=ActorTypeChoices)
     sex = NameBasedChoiceField(choices=SexChoices)
-    language = NameBasedChoiceField(choices=LanguageChoices)
+    language = NameBasedChoiceField(choices=LanguageChoices, required=False)
     license_relations = ActorLicenseRelationSerializer(
         many=True, read_only=True
     )
