@@ -4,7 +4,7 @@ import { Suspense, useState } from "react";
 import Link from "next/link";
 import useSWR from "swr";
 import { notFound, useSearchParams } from "next/navigation";
-import { useClient, useFlags, useModalsContext } from "../../contexts";
+import { useClient, useModalsContext } from "../../contexts";
 import {
   ActorBase,
   ActorLicenseRelation,
@@ -78,7 +78,6 @@ function ActorViewBase() {
   const client = useClient();
   const { t } = useTranslation();
   const [isEditing, setIsEditing] = useState<boolean>(false);
-  const flags = useFlags();
   const modals = useModalsContext();
 
   const { data, isLoading, error, mutate } = useSWR(
@@ -174,17 +173,15 @@ function ActorViewBase() {
               <i className={`bi bi-${getActorIcon(data.type)} me-3`} />
               {data.full_name}
             </h2>
-            {flags.has("mock-actor-editing") ? (
-              <button
-                className="btn btn-outline-secondary ms-2 flex-shrink-0"
-                onClick={() => setIsEditing(!isEditing)}
-              >
-                <Icon icon={isEditing ? "arrow-left" : "pencil-square"} />
-                <span className="ms-2">
-                  {!isEditing ? t("edit") : t("done")}
-                </span>
-              </button>
-            ) : null}
+            <button
+              className="btn btn-outline-secondary ms-2 flex-shrink-0"
+              onClick={() => setIsEditing(!isEditing)}
+            >
+              <Icon icon={isEditing ? "arrow-left" : "pencil-square"} />
+              <span className="ms-2">
+                {!isEditing ? t("edit") : t("done")}
+              </span>
+            </button>
           </div>
         </div>
         {isEditing ? (
