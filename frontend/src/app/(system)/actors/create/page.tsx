@@ -4,19 +4,14 @@ import { Suspense } from "react";
 import { ActorBase } from "../../common";
 import { useTranslation } from "../../internationalization";
 import { ActorEntryForm } from "@/components/ActorEntryForm";
-import { useFlags, useClient, useModalsContext } from "../../contexts";
-import { notFound, useRouter } from "next/navigation";
+import { useClient, useModalsContext } from "../../contexts";
+import { useRouter } from "next/navigation";
 
 function ActorViewBase() {
   const { t } = useTranslation();
-  const flags = useFlags();
   const client = useClient();
   const modals = useModalsContext();
   const router = useRouter();
-
-  if (!flags.has("mock-actor-editing")) {
-    notFound();
-  }
 
   const handleSubmit = async (actor: Partial<ActorBase>) => {
     try {
