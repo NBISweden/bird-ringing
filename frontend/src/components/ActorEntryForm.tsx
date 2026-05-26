@@ -14,10 +14,9 @@ import {
 // The list of languages was provided by the Bird Ringing Central.
 // It's all languages used within the European bird ringing network (EURING).
 const languageOptions: { value: string; label: string }[] = [
-  { value: "-", label: "-" },
+  { value: "unknown", label: "Unknown" },
   { value: "sv", label: "Swedish" },
   { value: "en", label: "English" },
-  { value: "unknown", label: "Unknown" },
   { value: "sq", label: "Albanian" },
   { value: "ar", label: "Arabic" },
   { value: "az", label: "Azerbaijani" },
@@ -77,13 +76,11 @@ export function ActorEntryForm({
     <form
       onSubmit={async (e) => {
         e.preventDefault();
-        console.log("submitting");
         setIsSubmitting(true);
         try {
           await onSubmit(actor);
         } finally {
           setIsSubmitting(false);
-          console.log("done submitting");
         }
       }}
     >
@@ -101,7 +98,7 @@ export function ActorEntryForm({
                 <div>
                   <VerticalField label={t("actorType")} id="type" required>
                     <SelectInput
-                      value={actor.type || "-"}
+                      value={actor.type || ""}
                       onChange={(value) =>
                         updateValue({
                           type: value,
@@ -117,7 +114,7 @@ export function ActorEntryForm({
                         })
                       }
                       options={[
-                        { value: "-", label: "-" },
+                        { value: "", label: t("selectOption") },
                         { value: "person", label: t("actorTypePerson") },
                         { value: "station", label: t("actorTypeStation") },
                       ]}
@@ -158,7 +155,6 @@ export function ActorEntryForm({
                           type="text"
                           placeholder={t("actorFormLastNamePlaceholder")}
                           value={actor.last_name || ""}
-                          disabled={!isPerson}
                           onChange={(event) => {
                             const value = event.target.value;
                             updateValue({
@@ -172,22 +168,22 @@ export function ActorEntryForm({
                       </VerticalField>
                       <VerticalField label={t("actorGender")} id="sex">
                         <SelectInput
-                          value={actor.sex || "-"}
-                          required
+                          value={actor.sex || "undisclosed"}
                           onChange={(value) => updateValue({ sex: value })}
-                          disabled={!isPerson}
                           options={[
-                            { value: "-", label: "-" },
                             { value: "male", label: t("actorGenderMale") },
                             {
                               value: "female",
                               label: t("actorGenderFemale"),
                             },
                             {
-                              value: "unspecified",
+                              value: "undisclosed",
                               label: t("actorGenderUndisclosed"),
                             },
-                            { value: "n/a", label: t("actorGenderNA") },
+                            {
+                              value: "not_applicable",
+                              label: t("actorGenderNA"),
+                            },
                           ]}
                         />
                       </VerticalField>
@@ -213,14 +209,15 @@ export function ActorEntryForm({
                               : t("actorFormCreationDatePlaceholder")
                           }
                           value={actor.birth_date || ""}
-                          onChange={(event) =>
+                          onChange={(event) => {
+                            const value = event.target.value;
                             updateValue({
-                              birth_date: event.target.value,
-                              birth_year: new Date(
-                                event.target.value,
-                              ).getFullYear(),
-                            })
-                          }
+                              birth_date: value || null,
+                              birth_year: value
+                                ? new Date(value).getFullYear()
+                                : null,
+                            });
+                          }}
                         />
                       </VerticalField>
                       <VerticalField
@@ -243,11 +240,12 @@ export function ActorEntryForm({
                             actor.birth_year ||
                             (actor.birth_date &&
                               new Date(actor.birth_date).getFullYear()) ||
-                            undefined
+                            ""
                           }
-                          onChange={(event) =>
-                            updateValue({ birth_year: +event.target.value })
-                          }
+                          onChange={(event) => {
+                            const value = event.target.value;
+                            updateValue({ birth_year: value ? +value : null });
+                          }}
                         />
                       </VerticalField>
                     </>
@@ -292,7 +290,7 @@ export function ActorEntryForm({
                     required
                   >
                     <TextInput
-                      type="phonenumber"
+                      type="tel"
                       placeholder={t("actorFormPhoneNumberPlaceholder")}
                       value={actor.phone_number1 || ""}
                       onChange={(event) =>
@@ -305,7 +303,7 @@ export function ActorEntryForm({
                     id="phone_number2"
                   >
                     <TextInput
-                      type="phonenumber"
+                      type="tel"
                       placeholder={t("actorFormPhoneNumberPlaceholder")}
                       value={actor.phone_number2 || ""}
                       onChange={(event) =>
@@ -384,7 +382,7 @@ export function ActorEntryForm({
                 <div>
                   <VerticalField label={t("actorLanguage")} id="language">
                     <SelectInput
-                      value={actor.language}
+                      value={actor.language || "unknown"}
                       onChange={(value) => updateValue({ language: value })}
                       options={languageOptions}
                     />
@@ -392,7 +390,7 @@ export function ActorEntryForm({
                   <VerticalField label={t("actorDescription")} id="description">
                     <TextArea
                       placeholder={t("actorFormDescriptionPlaceholder")}
-                      value={actor.description}
+                      value={actor.description || ""}
                       onChange={(event) =>
                         updateValue({ description: event.target.value })
                       }
