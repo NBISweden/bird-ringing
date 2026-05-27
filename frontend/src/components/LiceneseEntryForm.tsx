@@ -700,7 +700,10 @@ export function LicenseEntryForm({
               </FormSection>
             </div>
 
-            <button className="btn btn-secondary align-self-end me-3 mb-3">
+            <button
+              type="submit"
+              className="btn btn-secondary align-self-end me-3 mb-3"
+            >
               {t("licenseFormSave")}
             </button>
           </div>
