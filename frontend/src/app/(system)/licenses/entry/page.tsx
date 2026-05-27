@@ -116,6 +116,7 @@ function LicenseViewInner() {
                 description: data.latest.description,
                 report_status: data.latest.report_status,
               }}
+              title={t("licenseFormTitle")}
               onSubmit={(license) => {
                 notImplementedAction(t("licenseFormTitle"));
                 console.log(license);

@@ -521,9 +521,11 @@ function MockLicenseOptionsLoader({
 export function LicenseEntryForm({
   initialLicense,
   onSubmit,
+  title,
 }: {
   initialLicense: Partial<LicenseFormData>;
   onSubmit: (license: Partial<LicenseFormData>) => void;
+  title: string;
 }) {
   const { t } = useTranslation();
   const flags = useFlags();
@@ -563,7 +565,7 @@ export function LicenseEntryForm({
         <div className="col-12 col-xl-6">
           <div className="card my-4">
             <div className="card-header py-3">
-              <h3 className="m-0">{t("licenseFormAddTitle")}</h3>
+              <h3 className="m-0">{title}</h3>
             </div>
 
             <div className="card-body">

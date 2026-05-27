@@ -25,9 +25,9 @@ function LicenseViewBase() {
   return (
     <div className="container">
       <div className="row">
-        <h2 className="fw-bold">{t("licenseCreate")}</h2>
         <LicenseEntryForm
           initialLicense={license}
+          title={t("licenseFormAddTitle")}
           onSubmit={(license) => {
             notImplementedAction(t("licenseFormAddTitle"));
             console.log(license);
