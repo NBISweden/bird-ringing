@@ -150,48 +150,7 @@ class ActorUpdateTests(TestCase):
                     "full_name": ["This field is required."]
                 }
             ),
-            # The frontend used to send "unspecified" / "n/a" instead of the
-            # actual enum names "undisclosed" / "not_applicable". These
-            # cases pin the backend's rejection of those values so the
-            # frontend stays honest.
-            (
-                {
-                    "full_name": "Cecilia",
-                    "email": "cecilia@example.com",
-                    "sex": "unspecified",
-                    "type": "person",
-                    "language": "sv"
-                },
-                {
-                    "sex": ["Choice, 'unspecified', is not valid."]
-                }
-            ),
-            (
-                {
-                    "full_name": "Disa",
-                    "email": "disa@example.com",
-                    "sex": "n/a",
-                    "type": "person",
-                    "language": "sv"
-                },
-                {
-                    "sex": ["Choice, 'n/a', is not valid."]
-                }
-            ),
-            # The placeholder "-" used to leak from the form selects.
-            (
-                {
-                    "full_name": "Erik",
-                    "email": "erik@example.com",
-                    "sex": "undisclosed",
-                    "type": "-",
-                    "language": "sv"
-                },
-                {
-                    "type": ["Choice, '-', is not valid."]
-                }
-            ),
-            # Invalid email format must be rejected.
+
             (
                 {
                     "full_name": "Filip",

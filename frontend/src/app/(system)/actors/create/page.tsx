@@ -1,19 +1,27 @@
 "use client";
 
-import { Suspense } from "react";
+import { Suspense, useState } from "react";
 import { ActorBase } from "../../common";
 import { useTranslation } from "../../internationalization";
-import { ActorEntryForm } from "@/components/ActorEntryForm";
+import {
+  ActorEntryForm,
+  ActorEntryFormErrors,
+} from "@/components/ActorEntryForm";
 import { useClient, useModalsContext } from "../../contexts";
 import { useRouter } from "next/navigation";
+import { FieldValidationError } from "../../client";
 
 function ActorViewBase() {
   const { t } = useTranslation();
   const client = useClient();
   const modals = useModalsContext();
   const router = useRouter();
+  const [errors, setErrors] = useState<ActorEntryFormErrors | undefined>(
+    undefined,
+  );
 
   const handleSubmit = async (actor: Partial<ActorBase>) => {
+    setErrors(undefined);
     try {
       const result = await client.createActor(actor);
       modals.add({
@@ -27,6 +35,13 @@ function ActorViewBase() {
         ],
       });
     } catch (error) {
+      if (error instanceof FieldValidationError) {
+        setErrors({
+          fields: error.fieldErrors,
+          nonField: error.nonFieldErrors,
+        });
+        return;
+      }
       const message = error instanceof Error ? error.message : String(error);
       const lines = message.split("\n").filter(Boolean);
 
@@ -53,6 +68,7 @@ function ActorViewBase() {
           initialActor={{}}
           onSubmit={handleSubmit}
           title={t("actorFormAddTitle")}
+          errors={errors}
         />
       </div>
     </div>

@@ -8,6 +8,22 @@ import {
 } from "./common";
 import { getCookie, parseCompleteUrl } from "./utils";
 
+export class FieldValidationError extends Error {
+  fieldErrors: Record<string, string[]>;
+  nonFieldErrors: string[];
+
+  constructor(
+    fieldErrors: Record<string, string[]>,
+    nonFieldErrors: string[],
+    message: string,
+  ) {
+    super(message);
+    this.name = "FieldValidationError";
+    this.fieldErrors = fieldErrors;
+    this.nonFieldErrors = nonFieldErrors;
+  }
+}
+
 export class Client {
   private _apiRoot: string;
 
@@ -170,15 +186,18 @@ export class Client {
           !Array.isArray(data) &&
           !("detail" in data)
         ) {
-          const messages = Object.entries(
-            data as Record<string, string | string[]>,
-          )
-            .map(
-              ([field, errors]) =>
-                `${field}: ${Array.isArray(errors) ? errors.join(", ") : String(errors)}`,
-            )
-            .join("\n");
-          throw new Error(messages || `Request failed (${response.status})`);
+          const normalized: Record<string, string[]> = Object.fromEntries(
+            Object.entries(data as Record<string, string | string[]>).map(
+              ([k, v]) => [k, (Array.isArray(v) ? v : [v]).map(String)],
+            ),
+          );
+          const { non_field_errors: nonFieldErrors = [], ...fieldErrors } =
+            normalized;
+          const message =
+            Object.entries(normalized)
+              .map(([k, v]) => `${k}: ${v.join(", ")}`)
+              .join("\n") || `Request failed (${response.status})`;
+          throw new FieldValidationError(fieldErrors, nonFieldErrors, message);
         }
 
         const detail =
