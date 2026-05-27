@@ -1,4 +1,5 @@
 import {
+  ActorBase,
   ActorListItem,
   LicenseListItem,
   Options,
@@ -6,6 +7,22 @@ import {
   SendEmailResult,
 } from "./common";
 import { getCookie, parseCompleteUrl } from "./utils";
+
+export class FieldValidationError extends Error {
+  fieldErrors: Record<string, string[]>;
+  nonFieldErrors: string[];
+
+  constructor(
+    fieldErrors: Record<string, string[]>,
+    nonFieldErrors: string[],
+    message: string,
+  ) {
+    super(message);
+    this.name = "FieldValidationError";
+    this.fieldErrors = fieldErrors;
+    this.nonFieldErrors = nonFieldErrors;
+  }
+}
 
 export class Client {
   private _apiRoot: string;
@@ -161,6 +178,28 @@ export class Client {
       const contentType = response.headers.get("content-type") || "";
       if (contentType.includes("application/json")) {
         const data = await response.json().catch(() => null);
+
+        if (
+          response.status === 400 &&
+          data &&
+          typeof data === "object" &&
+          !Array.isArray(data) &&
+          !("detail" in data)
+        ) {
+          const normalized: Record<string, string[]> = Object.fromEntries(
+            Object.entries(data as Record<string, string | string[]>).map(
+              ([k, v]) => [k, (Array.isArray(v) ? v : [v]).map(String)],
+            ),
+          );
+          const { non_field_errors: nonFieldErrors = [], ...fieldErrors } =
+            normalized;
+          const message =
+            Object.entries(normalized)
+              .map(([k, v]) => `${k}: ${v.join(", ")}`)
+              .join("\n") || `Request failed (${response.status})`;
+          throw new FieldValidationError(fieldErrors, nonFieldErrors, message);
+        }
+
         const detail =
           data?.detail ??
           (data && typeof data === "object" ? JSON.stringify(data) : null) ??
@@ -248,5 +287,32 @@ export class Client {
       `license_sequence/${encodeURIComponent(mnr)}/send-license-emails/?${qs.toString()}`,
       { method: "PUT", headers: csrf ? { "X-CSRFToken": csrf } : {} },
     );
+  }
+
+  async createActor(actor: Partial<ActorBase>): Promise<ActorListItem> {
+    const csrf = getCookie("csrftoken");
+    return this.fetchJson<ActorListItem>("actor/", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(csrf ? { "X-CSRFToken": csrf } : {}),
+      },
+      body: JSON.stringify(actor),
+    });
+  }
+
+  async updateActor(
+    actorId: number,
+    actor: Partial<ActorBase>,
+  ): Promise<ActorListItem> {
+    const csrf = getCookie("csrftoken");
+    return this.fetchJson<ActorListItem>(`actor/${actorId}/`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        ...(csrf ? { "X-CSRFToken": csrf } : {}),
+      },
+      body: JSON.stringify(actor),
+    });
   }
 }

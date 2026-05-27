@@ -97,10 +97,16 @@ const actorForm = {
   actorFormLocationSubtitle: "Plats",
   actorFormDetailsSubtitle: "Detaljer",
   actorFormDescriptionPlaceholder: "Skriv en beskrivning",
-  actorFormGenderMale: "Man",
-  actorFormGenderFemale: "Kvinna",
-  actorFormGenderUnspecified: "Ospecificerat",
-  actorFormGenderNA: "Ej tillämpligt",
+  actorFormSaving: "Sparar ringmärkare...",
+};
+
+const modals = {
+  actorCreateSuccessTitle: "Ringmärkare skapad",
+  actorCreateSuccessMessage: "Ringmärkaren har skapats.",
+  actorCreateErrorTitle: "Misslyckades att skapa ringmärkare",
+  actorUpdateSuccessTitle: "Ringmärkare uppdaterad",
+  actorUpdateSuccessMessage: "Ringmärkaren har uppdaterats.",
+  actorUpdateErrorTitle: "Misslyckades att uppdatera ringmärkare",
 };
 
 export const locale: TranslationMap = {
@@ -112,6 +118,7 @@ export const locale: TranslationMap = {
   ...actorForm,
   ...licenseFields,
   ...licenseForm,
+  ...modals,
 
   birdRinging: "Ringmärkning",
   userPermissions: "Användarrättigheter",

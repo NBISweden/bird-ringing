@@ -15,12 +15,18 @@ import Icon from "./Icon";
 type FieldContext = {
   fieldId?: string;
   helpId?: string;
+  errorId?: string;
   required?: boolean;
 };
 export const FieldContext = createContext<FieldContext>({});
 export const FieldErrorContext = createContext<
   Record<string, string | undefined>
 >({});
+
+function describedBy(...ids: (string | undefined)[]): string | undefined {
+  const joined = ids.filter(Boolean).join(" ");
+  return joined || undefined;
+}
 
 type FieldProps = PropsWithChildren<{
   label: string | ReactElement;
@@ -40,9 +46,11 @@ export function VerticalField({
 }: FieldProps) {
   const helpId = useId();
   const allocatedId = useId();
+  const allocatedErrorId = useId();
   const fieldId = id === undefined ? allocatedId : id;
   const fieldErrors = useContext(FieldErrorContext);
   const error = fieldErrors[fieldId];
+  const errorId = error ? allocatedErrorId : undefined;
   return (
     <div className="mb-3">
       <label className="form-label" htmlFor={fieldId}>
@@ -56,7 +64,7 @@ export function VerticalField({
           <></>
         )}
       </label>
-      <FieldContext.Provider value={{ fieldId, helpId, required }}>
+      <FieldContext.Provider value={{ fieldId, helpId, errorId, required }}>
         {children}
       </FieldContext.Provider>
       {helpText ? (
@@ -67,7 +75,7 @@ export function VerticalField({
         <></>
       )}
       {error ? (
-        <div className="alert alert-danger mt-3" role="alert">
+        <div id={errorId} className="alert alert-danger mt-3" role="alert">
           {error}
         </div>
       ) : (
@@ -87,9 +95,11 @@ export function HorizontalField({
 }: FieldProps) {
   const helpId = useId();
   const allocatedId = useId();
+  const allocatedErrorId = useId();
   const fieldId = id === undefined ? allocatedId : id;
   const fieldErrors = useContext(FieldErrorContext);
   const error = fieldErrors[fieldId];
+  const errorId = error ? allocatedErrorId : undefined;
   return (
     <div className="row g-3 align-items-center">
       <div className="col-auto">
@@ -106,7 +116,7 @@ export function HorizontalField({
         </label>
       </div>
       <div className="col-auto">
-        <FieldContext.Provider value={{ fieldId, helpId, required }}>
+        <FieldContext.Provider value={{ fieldId, helpId, errorId, required }}>
           {children}
         </FieldContext.Provider>
       </div>
@@ -121,7 +131,7 @@ export function HorizontalField({
       )}
       {error ? (
         <div className="col-auto">
-          <div className="alert alert-danger" role="alert">
+          <div id={errorId} className="alert alert-danger" role="alert">
             {error}
           </div>
         </div>
@@ -177,7 +187,12 @@ export function SelectInput<T>({
   value?: T;
   defaultValue?: T;
 }) {
-  const { fieldId, helpId, required: fieldRequired } = useContext(FieldContext);
+  const {
+    fieldId,
+    helpId,
+    errorId,
+    required: fieldRequired,
+  } = useContext(FieldContext);
   const required = getFirstValue(props.required, fieldRequired);
   const selectedValue =
     value === undefined
@@ -199,9 +214,10 @@ export function SelectInput<T>({
       defaultValue={selectedDefaultValue}
       required={required}
       aria-required={required}
+      aria-invalid={errorId ? true : undefined}
       className="form-select"
       id={fieldId}
-      aria-describedby={helpId ? helpId : undefined}
+      aria-describedby={describedBy(helpId, errorId)}
     >
       {options.map(({ label }, index) => (
         <option key={index} value={index}>
@@ -218,16 +234,22 @@ export function TextInput(
     HTMLInputElement
   >,
 ) {
-  const { fieldId, helpId, required: fieldRequired } = useContext(FieldContext);
+  const {
+    fieldId,
+    helpId,
+    errorId,
+    required: fieldRequired,
+  } = useContext(FieldContext);
   const required = getFirstValue(props.required, fieldRequired);
   return (
     <input
       {...props}
       required={required}
       aria-required={required}
+      aria-invalid={errorId ? true : undefined}
       className={`form-control ${props.className || ""}`}
       id={fieldId}
-      aria-describedby={helpId ? helpId : undefined}
+      aria-describedby={describedBy(helpId, errorId)}
     />
   );
 }
@@ -238,16 +260,22 @@ export function TextArea(
     HTMLTextAreaElement
   >,
 ) {
-  const { fieldId, helpId, required: fieldRequired } = useContext(FieldContext);
+  const {
+    fieldId,
+    helpId,
+    errorId,
+    required: fieldRequired,
+  } = useContext(FieldContext);
   const required = getFirstValue(props.required, fieldRequired);
   return (
     <textarea
       {...props}
       required={required}
       aria-required={required}
+      aria-invalid={errorId ? true : undefined}
       className={`form-control ${props.className || ""}`}
       id={fieldId}
-      aria-describedby={helpId ? helpId : undefined}
+      aria-describedby={describedBy(helpId, errorId)}
     />
   );
 }
