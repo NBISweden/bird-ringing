@@ -14,12 +14,12 @@ function LicenseViewBase() {
 
   const license: Partial<LicenseFormData> = {
     mnr: "",
-    status: "active",
+    status: "",
     starts_at: "",
     ends_at: "",
     location: "",
     description: "",
-    report_status: "no",
+    report_status: "",
   };
 
   return (
