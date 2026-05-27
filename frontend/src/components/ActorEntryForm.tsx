@@ -1,5 +1,8 @@
-import { useState } from "react";
-import { ActorBase } from "@/app/(system)/common";
+import { useEffect, useMemo, useRef, useState } from "react";
+import useSWRImmutable from "swr/immutable";
+import { ActorBase, Option, Options } from "@/app/(system)/common";
+import { Client } from "@/app/(system)/client";
+import { useClient } from "@/app/(system)/contexts";
 import { useObjectState } from "@/app/(system)/hooks";
 import { useTranslation } from "@/app/(system)/internationalization";
 import {
@@ -10,70 +13,80 @@ import {
   FormSection,
   TextArea,
 } from "./InputFields";
+import { Alert } from "./Alert";
 
-// The list of languages was provided by the Bird Ringing Central.
-// It's all languages used within the European bird ringing network (EURING).
-const languageOptions: { value: string; label: string }[] = [
-  { value: "unknown", label: "Unknown" },
-  { value: "sv", label: "Swedish" },
-  { value: "en", label: "English" },
-  { value: "sq", label: "Albanian" },
-  { value: "ar", label: "Arabic" },
-  { value: "az", label: "Azerbaijani" },
-  { value: "eu", label: "Basque" },
-  { value: "be", label: "Belarusian" },
-  { value: "bs", label: "Bosnian" },
-  { value: "bg", label: "Bulgarian" },
-  { value: "ca", label: "Catalan" },
-  { value: "hr", label: "Croatian" },
-  { value: "cs", label: "Czech" },
-  { value: "da", label: "Danish" },
-  { value: "nl", label: "Dutch" },
-  { value: "et", label: "Estonian" },
-  { value: "fi", label: "Finnish" },
-  { value: "fr", label: "French" },
-  { value: "ka", label: "Georgian" },
-  { value: "de", label: "German" },
-  { value: "el", label: "Greek" },
-  { value: "he", label: "Hebrew" },
-  { value: "hu", label: "Hungarian" },
-  { value: "is", label: "Icelandic" },
-  { value: "it", label: "Italian" },
-  { value: "kk", label: "Kazakh" },
-  { value: "lv", label: "Latvian" },
-  { value: "lt", label: "Lithuanian" },
-  { value: "mk", label: "Macedonian" },
-  { value: "mt", label: "Maltese" },
-  { value: "cnr", label: "Montenegrin" },
-  { value: "no", label: "Norwegian" },
-  { value: "pl", label: "Polish" },
-  { value: "pt", label: "Portuguese" },
-  { value: "ro", label: "Romanian" },
-  { value: "ru", label: "Russian" },
-  { value: "sr", label: "Serbian" },
-  { value: "sk", label: "Slovak" },
-  { value: "sl", label: "Slovenian" },
-  { value: "es", label: "Spanish" },
-  { value: "tr", label: "Turkish" },
-  { value: "uk", label: "Ukrainian" },
-];
+export type ActorEntryFormErrors = {
+  fields: Record<string, string[]>;
+  nonField: string[];
+};
+
+function toSelectOptions(v: Option): { value: string; label: string } {
+  return { value: v.id, label: v.label };
+}
+
+async function fetchOptions<T extends keyof Options>([client, option]: [
+  Client,
+  T,
+]): Promise<Options[T][]> {
+  return client.fetchOptions<T>(option);
+}
+
+function useOptions<T extends keyof Options>(option: T): Options[T][] {
+  const client = useClient();
+  const { data } = useSWRImmutable([client, option], fetchOptions<T>, {
+    fallback: [],
+  });
+  return data || [];
+}
 
 export function ActorEntryForm({
   initialActor,
   onSubmit,
   title,
+  errors,
 }: {
   initialActor: Partial<ActorBase>;
   onSubmit: (actor: Partial<ActorBase>) => void | Promise<void>;
   title: string;
+  errors?: ActorEntryFormErrors;
 }) {
   const { t } = useTranslation();
   const [actor, updateValue] = useObjectState(initialActor);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const isPerson = actor.type === "person";
+  const formRef = useRef<HTMLFormElement | null>(null);
+  const alertRef = useRef<HTMLDivElement | null>(null);
+
+  const languageOptions = useOptions("language").map(toSelectOptions);
+  const sexOptions = useOptions("sex").map(toSelectOptions);
+  const actorTypeOptions = [
+    { value: "", label: t("selectOption") },
+    ...useOptions("actor_type").map(toSelectOptions),
+  ];
+
+  const fieldErrors = useMemo<Record<string, string | undefined>>(() => {
+    if (!errors) return {};
+    const flat: Record<string, string | undefined> = {};
+    for (const [field, messages] of Object.entries(errors.fields)) {
+      flat[field] = messages.join(", ");
+    }
+    return flat;
+  }, [errors]);
+
+  useEffect(() => {
+    if (!errors) return;
+    const target =
+      errors.nonField.length > 0
+        ? alertRef.current
+        : formRef.current?.querySelector<HTMLElement>('[aria-invalid="true"]');
+    target?.scrollIntoView({ behavior: "smooth", block: "center" });
+    target?.focus({ preventScroll: true });
+  }, [errors]);
 
   return (
     <form
+      ref={formRef}
+      tabIndex={-1}
       onSubmit={async (e) => {
         e.preventDefault();
         setIsSubmitting(true);
@@ -84,13 +97,28 @@ export function ActorEntryForm({
         }
       }}
     >
-      <FieldErrorContext.Provider value={{}}>
+      <FieldErrorContext.Provider value={fieldErrors}>
         <div className="col-12 col-xl-6">
           <div className="card my-4">
             <div className="card-header py-3">
               <h3 className="m-0">{title}</h3>
             </div>
             <div className="card-body">
+              {errors && errors.nonField.length > 0 ? (
+                <div ref={alertRef} tabIndex={-1}>
+                  <Alert type="danger">
+                    {errors.nonField.length === 1 ? (
+                      <p className="mb-0">{errors.nonField[0]}</p>
+                    ) : (
+                      <ul className="mb-0">
+                        {errors.nonField.map((message, i) => (
+                          <li key={i}>{message}</li>
+                        ))}
+                      </ul>
+                    )}
+                  </Alert>
+                </div>
+              ) : null}
               <FormSection
                 icon="info-circle"
                 title={t("actorFormInfoSubtitle")}
@@ -113,11 +141,7 @@ export function ActorEntryForm({
                               : [actor.first_name, actor.last_name].join(" "),
                         })
                       }
-                      options={[
-                        { value: "", label: t("selectOption") },
-                        { value: "person", label: t("actorTypePerson") },
-                        { value: "station", label: t("actorTypeStation") },
-                      ]}
+                      options={actorTypeOptions}
                     />
                   </VerticalField>
                   <VerticalField
@@ -170,21 +194,7 @@ export function ActorEntryForm({
                         <SelectInput
                           value={actor.sex || "undisclosed"}
                           onChange={(value) => updateValue({ sex: value })}
-                          options={[
-                            { value: "male", label: t("actorGenderMale") },
-                            {
-                              value: "female",
-                              label: t("actorGenderFemale"),
-                            },
-                            {
-                              value: "undisclosed",
-                              label: t("actorGenderUndisclosed"),
-                            },
-                            {
-                              value: "not_applicable",
-                              label: t("actorGenderNA"),
-                            },
-                          ]}
+                          options={sexOptions}
                         />
                       </VerticalField>
                     </>

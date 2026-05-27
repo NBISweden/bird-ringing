@@ -24,13 +24,6 @@ const actorTypeOptions = {
   actorTypeStation: "Station",
 };
 
-const actorGenderOptions = {
-  actorGenderMale: "Man",
-  actorGenderFemale: "Kvinna",
-  actorGenderUndisclosed: "Okänt",
-  actorGenderNA: "Ej tillämpligt",
-};
-
 const actorFields = {
   actorAddress: "Adress",
   actorAlternativeEmail: "Alternativ e-postadress",
@@ -131,7 +124,6 @@ export const locale: TranslationMap = {
   ...licenseStatusOptions,
   ...licenseRoleOptions,
   ...actorTypeOptions,
-  ...actorGenderOptions,
   ...actorFields,
   ...actorForm,
   ...licenseFields,

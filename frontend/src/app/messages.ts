@@ -27,13 +27,6 @@ const actorTypeOptions = {
   actorTypeStation: "Station",
 };
 
-const actorGenderOptions = {
-  actorGenderMale: "Male",
-  actorGenderFemale: "Female",
-  actorGenderUndisclosed: "Undisclosed",
-  actorGenderNA: "N/A",
-};
-
 const actorFields = {
   actorAddress: "Address",
   actorAlternativeEmail: "Alternative e-mail",
@@ -134,7 +127,6 @@ const messagesBase = {
   ...licenseStatusOptions,
   ...licenseRoleOptions,
   ...actorTypeOptions,
-  ...actorGenderOptions,
   ...actorFields,
   ...actorForm,
   ...licenseForm,

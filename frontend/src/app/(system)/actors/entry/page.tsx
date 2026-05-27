@@ -13,13 +13,16 @@ import {
   convertDateToLocale,
   convertOnlyDateToLocale,
 } from "../../common";
-import { Client } from "../../client";
+import { Client, FieldValidationError } from "../../client";
 import Spinner from "@/components/Spinner";
 import { useTranslation } from "../../internationalization";
 import { Alert } from "@/components/Alert";
 import { PaginationContainer, usePagination } from "@/components/Pagination";
 import Icon from "@/components/Icon";
-import { ActorEntryForm } from "@/components/ActorEntryForm";
+import {
+  ActorEntryForm,
+  ActorEntryFormErrors,
+} from "@/components/ActorEntryForm";
 
 async function fetchActor([client, _ctx, entryId]: [Client, "actor", string]) {
   return client.fetchActorById(entryId);
@@ -78,6 +81,9 @@ function ActorViewBase() {
   const client = useClient();
   const { t } = useTranslation();
   const [isEditing, setIsEditing] = useState<boolean>(false);
+  const [editErrors, setEditErrors] = useState<
+    ActorEntryFormErrors | undefined
+  >(undefined);
   const modals = useModalsContext();
 
   const { data, isLoading, error, mutate } = useSWR(
@@ -128,6 +134,7 @@ function ActorViewBase() {
   const roles = new Set<Role>(licenses.map((l) => l.role));
 
   const handleEditSubmit = async (actor: Partial<ActorBase>) => {
+    setEditErrors(undefined);
     try {
       await client.updateActor(data!.id, actor);
       await mutate(); // refetch so the view reflects the saved changes
@@ -144,6 +151,13 @@ function ActorViewBase() {
         ],
       });
     } catch (error) {
+      if (error instanceof FieldValidationError) {
+        setEditErrors({
+          fields: error.fieldErrors,
+          nonField: error.nonFieldErrors,
+        });
+        return;
+      }
       const message = error instanceof Error ? error.message : String(error);
       const lines = message.split("\n").filter(Boolean);
 
@@ -175,7 +189,10 @@ function ActorViewBase() {
             </h2>
             <button
               className="btn btn-outline-secondary ms-2 flex-shrink-0"
-              onClick={() => setIsEditing(!isEditing)}
+              onClick={() => {
+                setEditErrors(undefined);
+                setIsEditing(!isEditing);
+              }}
             >
               <Icon icon={isEditing ? "arrow-left" : "pencil-square"} />
               <span className="ms-2">{!isEditing ? t("edit") : t("done")}</span>
@@ -187,6 +204,7 @@ function ActorViewBase() {
             initialActor={data}
             onSubmit={handleEditSubmit}
             title={t("actorFormEditTitle")}
+            errors={editErrors}
           />
         ) : (
           <ActorEntry actor={data} roles={Array.from(roles)} />
