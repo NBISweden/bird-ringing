@@ -5,7 +5,7 @@ import useSWR from "swr";
 import { notFound, useSearchParams } from "next/navigation";
 import Spinner from "@/components/Spinner";
 
-import { useClient, useFlags } from "../../contexts";
+import { useClient } from "../../contexts";
 import { Client } from "../../client";
 import { LicenceView } from "@/components/LicenceView";
 import { Alert } from "@/components/Alert";
@@ -30,7 +30,6 @@ function LicenseViewInner() {
   const client = useClient();
   const { t, format, formatOption } = useTranslation();
   const [isEditing, setIsEditing] = useState<boolean>(false);
-  const flags = useFlags();
   const notImplementedAction = useNotImplementedModal();
 
   const { data, isLoading, error } = useSWR(
@@ -82,40 +81,50 @@ function LicenseViewInner() {
     <div className="container">
       <div className="row ">
         <div className="col-12 col-xl-10 col-xxl-9">
-          <h1 className="h2">
-            {t("licenseView", {
-              licenseId: data.mnr,
-              licenseHolder: data.license_holder,
-            })}
-            <Badge
-              rounded
-              outline
-              color="primary"
-              className="inline-block ms-4"
-            >
-              {formatOption(String(data.latest.report_status), {
-                yes: "licenseReportStatusYes",
-                no: "licenseReportStatusNo",
-                incomplete: "licenseReportStatusIncomplete",
+          <div className="d-flex justify-content-between align-items-center mb-3">
+            <h1 className="h2 mb-0">
+              {t("licenseView", {
+                licenseId: data.mnr,
+                licenseHolder: data.license_holder,
               })}
-            </Badge>
-            {flags.has("mock-license-editing") ? (
-              <button
-                className="btn btn-outline-secondary ms-2"
-                onClick={() => setIsEditing(!isEditing)}
+              <Badge
+                rounded
+                outline
+                color="primary"
+                className="inline-block ms-4"
               >
-                <Icon icon={isEditing ? "eye" : "pencil-square"} />
-              </button>
-            ) : (
-              <></>
-            )}
-          </h1>
+                {formatOption(String(data.latest.report_status), {
+                  yes: "licenseReportStatusYes",
+                  no: "licenseReportStatusNo",
+                  incomplete: "licenseReportStatusIncomplete",
+                })}
+              </Badge>
+            </h1>
+
+            <button
+              type="button"
+              className="btn btn-outline-secondary ms-2 flex-shrink-0"
+              onClick={() => setIsEditing(!isEditing)}
+            >
+              <Icon icon={isEditing ? "arrow-left" : "pencil-square"} />
+              <span className="ms-2">{!isEditing ? t("edit") : t("done")}</span>
+            </button>
+          </div>
           {isEditing ? (
             <LicenseEntryForm
-              initialLicense={data.latest}
-              onSubmit={(a) => {
+              initialLicense={{
+                mnr: data.mnr,
+                status: data.status,
+                starts_at: data.latest.starts_at,
+                ends_at: data.latest.ends_at,
+                location: data.latest.location,
+                description: data.latest.description,
+                report_status: data.latest.report_status,
+              }}
+              title={t("licenseFormTitle")}
+              onSubmit={(license) => {
                 notImplementedAction(t("licenseFormTitle"));
-                console.log(a);
+                console.log(license);
               }}
             />
           ) : (
