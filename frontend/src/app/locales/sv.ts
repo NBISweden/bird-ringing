@@ -103,6 +103,11 @@ const actorForm = {
   actorFormGenderNA: "Ej tillämpligt",
 };
 
+
+const licenseRelationForm = {
+  licenseRelationFormSave: "Updatera relationer",
+}
+
 export const locale: TranslationMap = {
   ...licenseReportStatusOptions,
   ...licenseStatusOptions,
@@ -112,6 +117,7 @@ export const locale: TranslationMap = {
   ...actorForm,
   ...licenseFields,
   ...licenseForm,
+  ...licenseRelationForm,
 
   birdRinging: "Ringmärkning",
   userPermissions: "Användarrättigheter",

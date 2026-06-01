@@ -11,6 +11,8 @@ import { useSendLicenseEmailForActorsAction } from "../app/(system)/licenses/act
 import { useTranslation } from "@/app/(system)/internationalization";
 import { LicensePermissionItem } from "./LicensePermissionItem";
 import { useState } from "react";
+import { LicensRelationsForm } from "./LicenseRelationsForm";
+import Icon from "./Icon";
 
 type LicenceViewProps = {
   license: LicenseInstance;
@@ -19,6 +21,7 @@ type LicenceViewProps = {
 
 export function LicenceView({ license, mnr }: LicenceViewProps) {
   const client = useClient();
+  const [editSection, setEditSection] = useState<null | "relations" | "basic" | "permissions">(null);
 
   const sendEmailForActorsAction = useSendLicenseEmailForActorsAction(client);
   const { t, format } = useTranslation();
@@ -103,11 +106,71 @@ export function LicenceView({ license, mnr }: LicenceViewProps) {
         {/* Actors */}
         <div className="card border-primary">
           <div className="card-body">
-            <div className="row">
-              <h2 className="h3 card-title col-5 col-sm-7 col-md-7">
+            <div className="d-flex">
+              <h2 className="h3 card-title flex-grow-1">
                 {t("licenseActors")}
               </h2>
-              <div className="col-7 col-sm-7 col-md-3 d-flex align-items-center justify-content-end">
+              <button
+                className="btn btn-outline-secondary ms-2"
+                onClick={() => setEditSection(editSection === "relations" ? null : "relations")}
+              >
+                <Icon icon={editSection === "relations" ? "eye" : "pencil-square"} />
+              </button>
+            </div>
+          </div>
+          {editSection === "relations" ? (
+            <LicensRelationsForm
+              initialRelations={(license.actors || []).map(a => ({actor: String(a.actor?.id), mednr: a.mednr, role: a.role}))}
+              onSubmit={(v) => console.log(v)}
+            />
+          ) : (
+            <>
+              <div className="card-body">
+                {license.actors?.length ? (
+                  <ul className="list-group list-group-flush">
+                    {license.actors.map((rel, i) => (
+                      <li className="list-group-item mb-3" key={i}>
+                        <div className="row align-items-center g-2">
+                          <div className="col-12 col-md-3 fw-semibold text-capitalize">
+                            {rel.role}
+                          </div>
+                          <div className="col-10 col-md-7">
+                            <i className="bi bi-person text-primary me-1" />
+                            <Link href={`/actors/entry?entryId=${rel.actor.id}`}>
+                              {rel.actor.full_name}
+                            </Link>
+                            ({rel.mednr})
+                          </div>
+                          <div className="col-2 col-md-2 d-flex justify-content-center">
+                            {isSelectableRelation(rel) ? (
+                              <input
+                                className="form-check-input border border-dark"
+                                type="checkbox"
+                                checked={selectedActorIds.has(rel.actor.id)}
+                                onChange={(e) => {
+                                  const checked = e.target.checked;
+                                  const id = rel.actor.id;
+                                  setSelectedActorIds((prev) => {
+                                    const next = new Set(prev);
+                                    if (checked) next.add(id);
+                                    else next.delete(id);
+                                    return next;
+                                  });
+                                }}
+                              />
+                            ) : null}
+                          </div>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-muted fst-italic">
+                    {t("licenseNoConnectedActors")}
+                  </p>
+                )}
+              </div>
+              <div className="card-body d-flex justify-content-end align-items-center gap-3">
                 <div className="form-check m-0">
                   <input
                     className="form-check-input border border-dark"
@@ -125,10 +188,8 @@ export function LicenceView({ license, mnr }: LicenceViewProps) {
                     {t("licenseNotifyRinger")}
                   </label>
                 </div>
-              </div>
-              <div className="col-5 col-sm-5 col-md-2">
                 <button
-                  className="btn btn-secondary w-100"
+                  className="btn btn-secondary flex-grow-0"
                   onClick={() =>
                     sendEmailForActorsAction(
                       mnr,
@@ -146,51 +207,8 @@ export function LicenceView({ license, mnr }: LicenceViewProps) {
                   {t("licenseSendLicenses")}
                 </button>
               </div>
-            </div>
-            {license.actors?.length ? (
-              <ul className="list-group list-group-flush">
-                {license.actors.map((rel, i) => (
-                  <li className="list-group-item mb-3" key={i}>
-                    <div className="row align-items-center g-2">
-                      <div className="col-12 col-md-3 fw-semibold text-capitalize">
-                        {rel.role}
-                      </div>
-                      <div className="col-10 col-md-7">
-                        <i className="bi bi-person text-primary me-1" />
-                        <Link href={`/actors/entry?entryId=${rel.actor.id}`}>
-                          {rel.actor.full_name}
-                        </Link>
-                        ({rel.mednr})
-                      </div>
-                      <div className="col-2 col-md-2 d-flex justify-content-center">
-                        {isSelectableRelation(rel) ? (
-                          <input
-                            className="form-check-input border border-dark"
-                            type="checkbox"
-                            checked={selectedActorIds.has(rel.actor.id)}
-                            onChange={(e) => {
-                              const checked = e.target.checked;
-                              const id = rel.actor.id;
-                              setSelectedActorIds((prev) => {
-                                const next = new Set(prev);
-                                if (checked) next.add(id);
-                                else next.delete(id);
-                                return next;
-                              });
-                            }}
-                          />
-                        ) : null}
-                      </div>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="text-muted fst-italic">
-                {t("licenseNoConnectedActors")}
-              </p>
-            )}
-          </div>
+            </>
+          )}
         </div>
       </div>
       {/* Permissions */}

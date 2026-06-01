@@ -6,8 +6,11 @@ import {
   useEffect,
 } from "react";
 import useSWRMutation from "swr/mutation";
-import { useModalsContext } from "./contexts";
+import { useClient, useModalsContext } from "./contexts";
 import { useTranslation } from "./internationalization";
+import { Options } from "./common";
+import useSWRImmutable from "swr/immutable";
+import { Client } from "./client";
 
 export function useItemSelections(
   currentSubSet: Set<string>,
@@ -139,5 +142,28 @@ export function useFilter<T>(items: (T & { term: string })[]) {
     filteredItems,
     setFilter,
     filter,
+  };
+}
+
+async function fetchOptions<T extends keyof Options>([client, option]: [
+  Client,
+  T,
+]): Promise<Options[T][]> {
+  return client.fetchOptions<T>(option);
+}
+
+export function useOptions<T extends keyof Options>(
+  option: T,
+): { data: Options[T][]; isLoading: boolean; error: unknown } {
+  const client = useClient();
+  const { data, isLoading, error } = useSWRImmutable(
+    [client, option],
+    fetchOptions<T>,
+    { fallback: [] },
+  );
+  return {
+    data: data || [],
+    isLoading,
+    error,
   };
 }

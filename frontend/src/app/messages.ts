@@ -106,6 +106,10 @@ const licenseForm = {
   licenseFormNoMatchingActors: "No matching actors",
 };
 
+const licenseRelationForm = {
+  licenseRelationFormSave: "Update relations",
+}
+
 const messagesBase = {
   ...licenseReportStatusOptions,
   ...licenseStatusOptions,
@@ -115,6 +119,7 @@ const messagesBase = {
   ...actorForm,
   ...licenseForm,
   ...licenseFields,
+  ...licenseRelationForm,
 
   birdRinging: "Bird Ringing",
   userPermissions: "User permissions",
