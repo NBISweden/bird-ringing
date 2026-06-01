@@ -26,17 +26,7 @@ class LicenseSequenceUpdateTests(TestCase):
         self.user_without_access = create_user("userwithoutaccess", "pwd")
 
     def test_license_sequence_create(self):
-        payload = {
-            "mnr": "1234",
-            "status": "active",
-            "latest": {
-                "location": "Test location",
-                "description": "Test description",
-                "report_status": "yes",
-                "starts_at": "2026-01-01",
-                "ends_at": "2026-12-31",
-            },
-        }
+        payload = self._license_sequence_payload()
 
         self._with_access()
 
@@ -69,28 +59,7 @@ class LicenseSequenceUpdateTests(TestCase):
         self.assertEqual(sequence.latest.location, "Test location")
 
     def test_license_sequence_update(self):
-        sequence = LicenseSequence.objects.create(
-            mnr="1234",
-            status=LicenseStatusChoices.ACTIVE,
-            latest=None,
-            created_by=self.user_with_access,
-            updated_by=self.user_with_access,
-        )
-
-        license = License.objects.create(
-            sequence=sequence,
-            version=0,
-            location="Old location",
-            description="Old description",
-            report_status=ReportStatusChoices.YES,
-            starts_at="2026-01-01",
-            ends_at="2026-12-31",
-            created_by=self.user_with_access,
-            updated_by=self.user_with_access,
-        )
-
-        sequence.latest = license
-        sequence.save()
+        sequence = self._create_license_sequence(mnr="1234")
 
         self._with_access()
 
