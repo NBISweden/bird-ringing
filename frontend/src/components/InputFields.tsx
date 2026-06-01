@@ -185,7 +185,9 @@ export function SelectInput<T>({
   };
 
   const selectedIndex =
-    value === undefined ? undefined : options.findIndex((o) => o.value === value);
+    value === undefined
+      ? undefined
+      : options.findIndex((o) => o.value === value);
   const selectedDefaultIndex =
     defaultValue === undefined
       ? undefined

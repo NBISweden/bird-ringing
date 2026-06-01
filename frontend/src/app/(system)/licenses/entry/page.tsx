@@ -81,37 +81,35 @@ function LicenseViewInner() {
     <div className="container">
       <div className="row ">
         <div className="col-12 col-xl-10 col-xxl-9">
-                  <div className="d-flex justify-content-between align-items-center mb-3">
-          <h1 className="h2 mb-0">
-            {t("licenseView", {
-              licenseId: data.mnr,
-              licenseHolder: data.license_holder,
-            })}
-            <Badge
-              rounded
-              outline
-              color="primary"
-              className="inline-block ms-4"
-            >
-              {formatOption(String(data.latest.report_status), {
-                yes: "licenseReportStatusYes",
-                no: "licenseReportStatusNo",
-                incomplete: "licenseReportStatusIncomplete",
+          <div className="d-flex justify-content-between align-items-center mb-3">
+            <h1 className="h2 mb-0">
+              {t("licenseView", {
+                licenseId: data.mnr,
+                licenseHolder: data.license_holder,
               })}
-            </Badge>
-          </h1>
+              <Badge
+                rounded
+                outline
+                color="primary"
+                className="inline-block ms-4"
+              >
+                {formatOption(String(data.latest.report_status), {
+                  yes: "licenseReportStatusYes",
+                  no: "licenseReportStatusNo",
+                  incomplete: "licenseReportStatusIncomplete",
+                })}
+              </Badge>
+            </h1>
 
-          <button
-            type="button"
-            className="btn btn-outline-secondary ms-2 flex-shrink-0"
-            onClick={() => setIsEditing(!isEditing)}
-          >
-            <Icon icon={isEditing ? "arrow-left" : "pencil-square"} />
-            <span className="ms-2">
-              {!isEditing ? t("edit") : t("done")}
-            </span>
-          </button>
-        </div>
+            <button
+              type="button"
+              className="btn btn-outline-secondary ms-2 flex-shrink-0"
+              onClick={() => setIsEditing(!isEditing)}
+            >
+              <Icon icon={isEditing ? "arrow-left" : "pencil-square"} />
+              <span className="ms-2">{!isEditing ? t("edit") : t("done")}</span>
+            </button>
+          </div>
           {isEditing ? (
             <LicenseEntryForm
               initialLicense={{

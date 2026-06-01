@@ -561,13 +561,19 @@ export function LicenseEntryForm({
                       value={license.mnr || ""}
                       onChange={(event) =>
                         updateValue({
-                          mnr: event.target.value.replace(/\D/g, "").slice(0, 4),
+                          mnr: event.target.value
+                            .replace(/\D/g, "")
+                            .slice(0, 4),
                         })
                       }
                     />
                   </VerticalField>
 
-                  <VerticalField label={t("licenseStatus")} id="status" required>
+                  <VerticalField
+                    label={t("licenseStatus")}
+                    id="status"
+                    required
+                  >
                     <SelectInput
                       value={license.status || ""}
                       onChange={(value) => updateValue({ status: value })}
@@ -596,7 +602,9 @@ export function LicenseEntryForm({
                   >
                     <SelectInput
                       value={license.report_status || ""}
-                      onChange={(value) => updateValue({ report_status: value })}
+                      onChange={(value) =>
+                        updateValue({ report_status: value })
+                      }
                       options={[
                         { value: "", label: t("selectOption") },
                         {
@@ -634,7 +642,11 @@ export function LicenseEntryForm({
                     />
                   </VerticalField>
 
-                  <VerticalField label={t("licenseEndsAt")} id="ends_at" required>
+                  <VerticalField
+                    label={t("licenseEndsAt")}
+                    id="ends_at"
+                    required
+                  >
                     <TextInput
                       type="date"
                       value={license.ends_at || ""}
@@ -668,7 +680,10 @@ export function LicenseEntryForm({
                   icon="card-text"
                   title={t("licenseFormDetailsSubtitle")}
                 >
-                  <VerticalField label={t("licenseDescription")} id="description">
+                  <VerticalField
+                    label={t("licenseDescription")}
+                    id="description"
+                  >
                     <TextArea
                       value={license.description || ""}
                       onChange={(event) =>
