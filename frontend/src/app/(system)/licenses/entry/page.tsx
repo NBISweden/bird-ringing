@@ -81,7 +81,8 @@ function LicenseViewInner() {
     <div className="container">
       <div className="row ">
         <div className="col-12 col-xl-10 col-xxl-9">
-          <h1 className="h2">
+                  <div className="d-flex justify-content-between align-items-center mb-3">
+          <h1 className="h2 mb-0">
             {t("licenseView", {
               licenseId: data.mnr,
               licenseHolder: data.license_holder,
@@ -98,13 +99,19 @@ function LicenseViewInner() {
                 incomplete: "licenseReportStatusIncomplete",
               })}
             </Badge>
-            <button
-              className="btn btn-outline-secondary ms-2"
-              onClick={() => setIsEditing(!isEditing)}
-            >
-              <Icon icon={isEditing ? "eye" : "pencil-square"} />
-            </button>
           </h1>
+
+          <button
+            type="button"
+            className="btn btn-outline-secondary ms-2 flex-shrink-0"
+            onClick={() => setIsEditing(!isEditing)}
+          >
+            <Icon icon={isEditing ? "arrow-left" : "pencil-square"} />
+            <span className="ms-2">
+              {!isEditing ? t("edit") : t("done")}
+            </span>
+          </button>
+        </div>
           {isEditing ? (
             <LicenseEntryForm
               initialLicense={{
