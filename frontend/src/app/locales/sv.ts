@@ -67,7 +67,7 @@ const licenseForm = {
   licenseFormSave: "Spara",
   licenseFormTitle: "Redigerar licens",
   licenseFormAddTitle: "Ny licens",
-  licenseFormBasicInfoSubtitle: "Grundinformation",
+  licenseFormBasicInfoSubtitle: "Om licensen",
   licenseFormValiditySubtitle: "Giltighetsperiod",
   licenseFormLocationSubtitle: "Plats",
   licenseFormDetailsSubtitle: "Detaljer",
