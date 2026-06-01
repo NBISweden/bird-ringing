@@ -226,5 +226,80 @@ class LicenseSequenceUpdateTests(TestCase):
             )
             self.assertEqual(response.json(), expected_error)
 
+    def test_license_sequence_access(self):
+        test_cases = [
+            (
+                "post",
+                "/api/license_sequence/",
+                self._license_sequence_payload(mnr="1234"),
+            ),
+            (
+                "put",
+                "/api/license_sequence/5678/",
+                self._license_sequence_payload(
+                    mnr="5678",
+                    location="Updated location",
+                ),
+            ),
+        ]
+
+        self._create_license_sequence(mnr="5678")
+
+        for method, path, payload in test_cases:
+            with self.subTest(method=method, path=path):
+                self._without_access()
+
+                response = getattr(self.client, method)(
+                    path,
+                    data=payload,
+                    format="json",
+                )
+
+                self.assertEqual(response.status_code, 403)
+
     def _with_access(self):
         self.client.login(username="userwithaccess", password="pwd")
+
+    def _without_access(self):
+        self.client.login(username="userwithoutaccess", password="pwd")
+
+    def _create_license_sequence(self, mnr="1234"):
+        sequence = LicenseSequence.objects.create(
+            mnr=mnr,
+            status=LicenseStatusChoices.ACTIVE,
+            latest=None,
+            created_by=self.user_with_access,
+            updated_by=self.user_with_access,
+        )
+
+        license = License.objects.create(
+            sequence=sequence,
+            version=0,
+            location="Old location",
+            description="Old description",
+            report_status=ReportStatusChoices.YES,
+            starts_at="2026-01-01",
+            ends_at="2026-12-31",
+            created_by=self.user_with_access,
+            updated_by=self.user_with_access,
+        )
+
+        sequence.latest = license
+        sequence.save()
+
+        return sequence
+
+    def _license_sequence_payload( self, mnr="1234", location="Test location"):
+        payload = {
+            "mnr": mnr,
+            "status": "active",
+            "latest": {
+                "location": location,
+                "description": "Test description",
+                "report_status": "yes",
+                "starts_at": "2026-01-01",
+                "ends_at": "2026-12-31",
+            },
+        }
+
+        return payload
