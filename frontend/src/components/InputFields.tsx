@@ -179,32 +179,60 @@ export function SelectInput<T>({
 }) {
   const { fieldId, helpId, required: fieldRequired } = useContext(FieldContext);
   const required = getFirstValue(props.required, fieldRequired);
-  const selectedValue =
-    value === undefined
-      ? undefined
-      : options.findIndex((o) => o.value === value);
-  const selectedDefaultValue =
+
+  const toHtmlOptionValue = (optionValue: T, index: number) => {
+    return optionValue === "" ? "" : String(index);
+  };
+
+  const selectedIndex =
+    value === undefined ? undefined : options.findIndex((o) => o.value === value);
+  const selectedDefaultIndex =
     defaultValue === undefined
       ? undefined
       : options.findIndex((o) => o.value === defaultValue);
+
+  const selectedHtmlValue =
+    selectedIndex === undefined || selectedIndex < 0
+      ? undefined
+      : toHtmlOptionValue(options[selectedIndex].value, selectedIndex);
+
+  const selectedDefaultHtmlValue =
+    selectedDefaultIndex === undefined || selectedDefaultIndex < 0
+      ? undefined
+      : toHtmlOptionValue(
+          options[selectedDefaultIndex].value,
+          selectedDefaultIndex,
+        );
+
   return (
     <select
       {...props}
       onChange={(event) => {
         if (onChange) {
-          onChange(options[parseInt(event.target.value)].value, event);
+          const htmlValue = event.target.value;
+
+          const selectedIndex =
+            htmlValue === ""
+              ? options.findIndex((o) => o.value === "")
+              : parseInt(htmlValue, 10);
+
+          const selectedOption = options[selectedIndex];
+
+          if (selectedOption !== undefined) {
+            onChange(selectedOption.value, event);
+          }
         }
       }}
-      value={selectedValue}
-      defaultValue={selectedDefaultValue}
+      value={selectedHtmlValue}
+      defaultValue={selectedDefaultHtmlValue}
       required={required}
       aria-required={required}
       className="form-select"
       id={fieldId}
       aria-describedby={helpId ? helpId : undefined}
     >
-      {options.map(({ label }, index) => (
-        <option key={index} value={index}>
+      {options.map(({ value, label }, index) => (
+        <option key={index} value={toHtmlOptionValue(value, index)}>
           {label}
         </option>
       ))}
