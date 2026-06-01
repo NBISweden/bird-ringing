@@ -27,7 +27,7 @@ export function LicensRelationsForm({
   onSubmit,
 }: {
   initialRelations: Partial<LicenseRelation>[];
-  onSubmit: (license: Partial<LicenseRelation>[]) => void;
+  onSubmit: (license: Partial<LicenseRelation>[]) => void | Promise<void>;
 }) {
   const { t } = useTranslation();
   const { data: actors } = useOptions("actor");
@@ -37,6 +37,7 @@ export function LicensRelationsForm({
     licenseRoles
   }
   const [relations, setRelations] = useState(initialRelations);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const actorIds = relations.map((r) => String(r.actor));
   const availableActorOptions = options.actors
     .filter((actor) => !actorIds.includes(actor.id))
@@ -44,100 +45,107 @@ export function LicensRelationsForm({
   const { filteredItems, setFilter, filter } = useFilter(availableActorOptions);
   return (
     <div className="card-body">
-      <VerticalField label={t("licenseFormActor")} icon="person">
-        <div className="input-group mb-3">
-          <TextInput
-            value={filter}
-            onChange={(e) => setFilter(e.target.value)}
-            placeholder={t("licenseFormFilterActors")}
-          />
+      <form
+        onSubmit={async (e) => {
+          e.preventDefault();
+          setIsSubmitting(true);
+          await onSubmit(relations);
+          setIsSubmitting(false);
+        }}
+      >
+        <VerticalField label={t("licenseFormActor")} icon="person">
+          <div className="input-group mb-3">
+            <TextInput
+              value={filter}
+              onChange={(e) => setFilter(e.target.value)}
+              placeholder={t("licenseFormFilterActors")}
+            />
+            <button
+              className="btn btn-outline-secondary"
+              onClick={(e) => {
+                e.preventDefault();
+                setFilter("");
+              }}
+            >
+              <Icon icon="x-circle" />
+            </button>
+          </div>
+        </VerticalField>
+        {filter ? (
+          filteredItems.length > 0 ? (
+            <ul className="list-group list-group-flush overflow-auto" style={{maxHeight: "30vh", minHeight: "38px"}}>
+              {filteredItems.map((option, key) => (
+                <li className="list-group-item" key={key}>
+                  <div className="d-flex align-items-center">
+                    <label className="flex-fill">{option.label}</label>
+                    <button
+                      className="btn btn-outline-secondary"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setRelations([
+                            ...relations,
+                            {actor: option.id},
+                          ],
+                        );
+                      }}
+                    >
+                      {t("licenseFormAddActor")}
+                    </button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <Alert type="info">{t("licenseFormNoMatchingActors")}</Alert>
+          )
+        ) : (
+          <></>
+        )}
+        <ul className="list-group list-group-flush mt-3">
+          {relations.map((relation, key) => (
+            <li className="list-group-item mb-3" key={key}>
+              <span className="d-flex gap-3 align-items-start">
+                <button
+                  className="btn btn-danger ms-2"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    const rs = relations.filter(
+                      (_, i) => i !== key,
+                    );
+                    setRelations(rs);
+                  }}
+                >
+                  <Icon icon="trash" />
+                </button>
+                <ActorEntrySubform
+                  relation={{
+                    ...relation,
+                    actor: options.actors.filter(
+                      (a) => relation.actor === a.id,
+                    )[0]?.id,
+                  }}
+                  options={options}
+                  updateValue={(v) => {
+                    const rs = relations.map<Partial<LicenseRelation>>(
+                      (relation, i) => i !== key ? relation : {...relation, ...v},
+                    );
+                    setRelations(rs);
+                  }}
+                />
+              </span>
+            </li>
+          ))}
+        </ul>
+        <div className="d-flex justify-content-end">
           <button
-            className="btn btn-outline-secondary"
-            onClick={(e) => {
-              e.preventDefault();
-              setFilter("");
-            }}
+            type="submit"
+            className="btn btn-secondary flex-grow-0"
+            disabled={isSubmitting ? true : undefined}
           >
-            <Icon icon="x-circle" />
+            {t("licenseRelationFormSave")}
           </button>
         </div>
-      </VerticalField>
-      {filter ? (
-        filteredItems.length > 0 ? (
-          <ul className="list-group list-group-flush">
-            {filteredItems.map((option, key) => (
-              <li className="list-group-item" key={key}>
-                <div className="d-flex align-items-center">
-                  <label className="flex-fill">{option.label}</label>
-                  <button
-                    className="btn btn-outline-secondary"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      setRelations([
-                          ...relations,
-                          {actor: option.id},
-                        ],
-                      );
-                    }}
-                  >
-                    {t("licenseFormAddActor")}
-                  </button>
-                </div>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <Alert type="info">{t("licenseFormNoMatchingActors")}</Alert>
-        )
-      ) : (
-        <></>
-      )}
-      <ul className="list-group list-group-flush mt-3">
-        {relations.map((relation, key) => (
-          <li className="list-group-item mb-3" key={key}>
-            <span className="d-flex gap-3 align-items-start">
-              <button
-                className="btn btn-danger ms-2"
-                onClick={(e) => {
-                  e.preventDefault();
-                  const rs = relations.filter(
-                    (_, i) => i !== key,
-                  );
-                  setRelations(rs);
-                }}
-              >
-                <Icon icon="trash" />
-              </button>
-              <ActorEntrySubform
-                relation={{
-                  ...relation,
-                  actor: options.actors.filter(
-                    (a) => relation.actor === a.id,
-                  )[0]?.id,
-                }}
-                options={options}
-                updateValue={(v) => {
-                  const rs = relations.map<Partial<LicenseRelation>>(
-                    (relation, i) => i !== key ? relation : {...relation, ...v},
-                  );
-                  setRelations(rs);
-                }}
-              />
-            </span>
-          </li>
-        ))}
-      </ul>
-      <div className="d-flex justify-content-end">
-        <button
-          className="btn btn-secondary flex-grow-0"
-          onClick={(e) => {
-            e.preventDefault();
-            onSubmit(relations);
-          }}
-        >
-          {t("licenseRelationFormSave")}
-        </button>
-      </div>
+      </form>
     </div>
   )
 }
@@ -160,12 +168,12 @@ function ActorEntrySubform({
         <VerticalField label={t("licenseFormRole")} icon="journal">
           <SelectInput
             options={[
-              { value: "", label: t("selectOption") },
+              { value: "", label: t("selectOption"), disabled: true },
               ...options.licenseRoles.map(toSelectOptions),
             ]}
             value={
               options.licenseRoles.filter((r) => r.label === relation.role)[0]
-                ?.id
+                ?.id || ""
             }
             onChange={(v) =>
               v &&
@@ -173,17 +181,16 @@ function ActorEntrySubform({
                 role: options.licenseRoles.filter((r) => r.id === v)[0].label,
               })
             }
+            required
           />
         </VerticalField>
       </div>
       <div className="col-12 col-md-4">
         <VerticalField label={t("licenseFormActor")} icon="person">
           <SelectInput
-            options={[
-              { value: "", label: t("selectOption") },
-              ...options.actors.map(toSelectOptions),
-            ]}
+            options={options.actors.map(toSelectOptions)}
             value={currentActor?.id}
+            required
             onChange={(v) => v && updateValue({ actor: v })}
             disabled
           />
@@ -194,6 +201,7 @@ function ActorEntrySubform({
           <TextInput
             type="string"
             value={relation.mednr || ""}
+            required
             maxLength={4}
             onChange={(e) =>
               updateValue({ mednr: e.target.value.toUpperCase() })
