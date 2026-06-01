@@ -169,7 +169,7 @@ export function SelectInput<T>({
   DetailedHTMLProps<SelectHTMLAttributes<HTMLSelectElement>, HTMLSelectElement>,
   "onChange" | "value" | "defaultValue"
 > & {
-  options: { value: T; label: string }[];
+  options: { value: T; label: string, disabled?: true }[];
   onChange?: (
     v: T,
     event: ChangeEvent<HTMLSelectElement, HTMLSelectElement>,
@@ -203,8 +203,8 @@ export function SelectInput<T>({
       id={fieldId}
       aria-describedby={helpId ? helpId : undefined}
     >
-      {options.map(({ label }, index) => (
-        <option key={index} value={index}>
+      {options.map(({ label, disabled }, index) => (
+        <option key={index} value={index} disabled={disabled}>
           {label}
         </option>
       ))}
