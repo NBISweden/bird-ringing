@@ -239,22 +239,8 @@ function validateLicense(
 ): LicenseFormErrors {
   const nextErrors: LicenseFormErrors = {};
 
-  if (!value.mnr?.trim()) {
-    nextErrors.mnr = t("licenseFormRequired");
-  } else if (!/^\d{4}$/.test(value.mnr.trim())) {
+  if (value.mnr && !/^\d{4}$/.test(value.mnr.trim())) {
     nextErrors.mnr = t("licenseFormMnrInvalid");
-  }
-
-  if (!value.status) {
-    nextErrors.status = t("licenseFormRequired");
-  }
-
-  if (!value.starts_at) {
-    nextErrors.starts_at = t("licenseFormRequired");
-  }
-
-  if (!value.ends_at) {
-    nextErrors.ends_at = t("licenseFormRequired");
   }
 
   if (value.starts_at && value.ends_at) {
@@ -264,14 +250,6 @@ function validateLicense(
     if (endsAt < startsAt) {
       nextErrors.ends_at = t("licenseFormEndsAtBeforeStartsAt");
     }
-  }
-
-  if (!value.location?.trim()) {
-    nextErrors.location = t("licenseFormRequired");
-  }
-
-  if (!value.report_status) {
-    nextErrors.report_status = t("licenseFormRequired");
   }
 
   return nextErrors;
