@@ -1,6 +1,9 @@
 import { ReadonlyURLSearchParams } from "next/navigation";
 import React from "react";
 import { Translation } from "./internationalization";
+import { Client } from "./client";
+import useSWRImmutable from "swr/immutable";
+import { useClient } from "@/app/(system)/contexts";
 
 export type ActorBase = {
   id: number;
@@ -292,4 +295,34 @@ export function convertOnlyDateToLocale(dateStr: string | null | undefined) {
     });
   }
   return "";
+}
+
+export async function fetchOptions<T extends keyof Options>([client, option]: [
+  Client,
+  T,
+]): Promise<Options[T][]> {
+  return client.fetchOptions<T>(option);
+}
+
+export function useOptions<T extends keyof Options>(
+  option: T,
+): { data: Options[T][]; isLoading: boolean; error: unknown } {
+  const client = useClient();
+  const { data, isLoading, error } = useSWRImmutable(
+    [client, option],
+    fetchOptions<T>,
+    { fallback: [] },
+  );
+  return {
+    data: data || [],
+    isLoading,
+    error,
+  };
+}
+
+export function toSelectOptions(v: Option): { value: string; label: string } {
+  return {
+    value: v.id,
+    label: v.label,
+  };
 }

@@ -1,8 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import useSWRImmutable from "swr/immutable";
-import { ActorBase, Option, Options } from "@/app/(system)/common";
-import { Client } from "@/app/(system)/client";
-import { useClient } from "@/app/(system)/contexts";
+import { ActorBase, useOptions, toSelectOptions } from "@/app/(system)/common";
 import { useObjectState } from "@/app/(system)/hooks";
 import { useTranslation } from "@/app/(system)/internationalization";
 import {
@@ -19,25 +16,6 @@ export type ActorEntryFormErrors = {
   fields: Record<string, string[]>;
   nonField: string[];
 };
-
-function toSelectOptions(v: Option): { value: string; label: string } {
-  return { value: v.id, label: v.label };
-}
-
-async function fetchOptions<T extends keyof Options>([client, option]: [
-  Client,
-  T,
-]): Promise<Options[T][]> {
-  return client.fetchOptions<T>(option);
-}
-
-function useOptions<T extends keyof Options>(option: T): Options[T][] {
-  const client = useClient();
-  const { data } = useSWRImmutable([client, option], fetchOptions<T>, {
-    fallback: [],
-  });
-  return data || [];
-}
 
 export function ActorEntryForm({
   initialActor,
@@ -57,12 +35,11 @@ export function ActorEntryForm({
   const formRef = useRef<HTMLFormElement | null>(null);
   const alertRef = useRef<HTMLDivElement | null>(null);
 
-  const languageOptions = useOptions("language").map(toSelectOptions);
-  const sexOptions = useOptions("sex").map(toSelectOptions);
-  const actorTypeOptions = [
-    { value: "", label: t("selectOption") },
-    ...useOptions("actor_type").map(toSelectOptions),
-  ];
+  const { data: languageOptions, isLoading: langIsLoading } =
+    useOptions("language");
+  const { data: sexOptions, isLoading: sexIsLoading } = useOptions("sex");
+  const { data: actorTypeOptions, isLoading: atIsLoading } =
+    useOptions("actor_type");
 
   const fieldErrors = useMemo<Record<string, string | undefined>>(() => {
     if (!errors) return {};
@@ -83,7 +60,9 @@ export function ActorEntryForm({
     target?.focus({ preventScroll: true });
   }, [errors]);
 
-  return (
+  return langIsLoading || sexIsLoading || atIsLoading ? (
+    <></>
+  ) : (
     <form
       ref={formRef}
       tabIndex={-1}
@@ -141,7 +120,10 @@ export function ActorEntryForm({
                               : [actor.first_name, actor.last_name].join(" "),
                         })
                       }
-                      options={actorTypeOptions}
+                      options={[
+                        { value: "", label: t("selectOption") },
+                        ...actorTypeOptions.map(toSelectOptions),
+                      ]}
                     />
                   </VerticalField>
                   <VerticalField
@@ -194,7 +176,7 @@ export function ActorEntryForm({
                         <SelectInput
                           value={actor.sex || "undisclosed"}
                           onChange={(value) => updateValue({ sex: value })}
-                          options={sexOptions}
+                          options={sexOptions.map(toSelectOptions)}
                         />
                       </VerticalField>
                     </>
@@ -394,7 +376,7 @@ export function ActorEntryForm({
                     <SelectInput
                       value={actor.language || "unknown"}
                       onChange={(value) => updateValue({ language: value })}
-                      options={languageOptions}
+                      options={languageOptions.map(toSelectOptions)}
                     />
                   </VerticalField>
                   <VerticalField label={t("actorDescription")} id="description">
