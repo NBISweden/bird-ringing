@@ -2,7 +2,8 @@ import {
   ActorBase,
   LicenseInstance,
   Options,
-  Option,
+  useOptions,
+  toSelectOptions,
 } from "@/app/(system)/common";
 import { useFilter, useObjectState } from "@/app/(system)/hooks";
 import { useTranslation } from "@/app/(system)/internationalization";
@@ -17,9 +18,7 @@ import {
 } from "./InputFields";
 import Icon from "./Icon";
 import { MultiSelectField } from "./MultiSelectField";
-import useSWRImmutable from "swr/immutable";
-import { Client } from "@/app/(system)/client";
-import { useClient, useFlags } from "@/app/(system)/contexts";
+import { useFlags } from "@/app/(system)/contexts";
 import { useEffect, useState } from "react";
 import { Alert } from "./Alert";
 
@@ -51,13 +50,6 @@ type ActorOptions = {
   actors: Options["actor"][];
   licenseRoles: Options["license_role"][];
 };
-
-function toSelectOptions(v: Option): { value: string; label: string } {
-  return {
-    value: v.id,
-    label: v.label,
-  };
-}
 
 function PermissionEntrySubform({
   permission,
@@ -434,29 +426,6 @@ function MockLicenseSections({
       </div>
     </>
   );
-}
-
-async function fetchOptions<T extends keyof Options>([client, option]: [
-  Client,
-  T,
-]): Promise<Options[T][]> {
-  return client.fetchOptions<T>(option);
-}
-
-function useOptions<T extends keyof Options>(
-  option: T,
-): { data: Options[T][]; isLoading: boolean; error: unknown } {
-  const client = useClient();
-  const { data, isLoading, error } = useSWRImmutable(
-    [client, option],
-    fetchOptions<T>,
-    { fallback: [] },
-  );
-  return {
-    data: data || [],
-    isLoading,
-    error,
-  };
 }
 
 function MockLicenseOptionsLoader({
