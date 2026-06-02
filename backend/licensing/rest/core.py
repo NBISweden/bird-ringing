@@ -575,17 +575,17 @@ class LicenseSequenceSerializer(serializers.HyperlinkedModelSerializer):
             **validated_data,
         )
 
-        license = License.objects.create(
+        current_license = License.objects.create(
             sequence=sequence,
             version=0,
             **latest_data,
         )
 
-        sequence.latest = license
-        sequence.save()
+        sequence.commit(current_license)
 
         return sequence
 
+    @transaction.atomic
     @transaction.atomic
     def update(self, instance, validated_data):
         latest_data = validated_data.pop("latest", None)
@@ -596,20 +596,20 @@ class LicenseSequenceSerializer(serializers.HyperlinkedModelSerializer):
         instance.save()
 
         if latest_data is not None:
-            latest = instance.latest
+            current_license = instance.current
 
-            if latest is None:
+            if current_license is None:
                 raise serializers.ValidationError(
                     {"latest": "License sequence has no current license."}
                 )
 
             for attr, value in latest_data.items():
-                setattr(latest, attr, value)
+                setattr(current_license, attr, value)
 
-            latest.save()
+            current_license.save()
+            instance.commit(current_license)
 
         return instance
-
 
 class LicenseCardRenderSerializer(serializers.Serializer):
     actor_id = serializers.IntegerField(required=True, min_value=1)
