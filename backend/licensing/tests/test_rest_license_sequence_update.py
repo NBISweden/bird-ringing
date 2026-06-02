@@ -51,11 +51,11 @@ class LicenseSequenceUpdateTests(TestCase):
         self.assertEqual(created["latest"]["report_status"], payload["latest"]["report_status"])
         self.assertEqual(created["latest"]["starts_at"], payload["latest"]["starts_at"])
         self.assertEqual(created["latest"]["ends_at"], payload["latest"]["ends_at"])
-        self.assertEqual(created["latest"]["version"], 0)
+        self.assertEqual(created["latest"]["version"], 1)
 
         sequence = LicenseSequence.objects.get(mnr="1234")
         self.assertIsNotNone(sequence.latest)
-        self.assertEqual(sequence.latest.version, 0)
+        self.assertEqual(sequence.latest.version, 1)
         self.assertEqual(sequence.latest.location, "Test location")
 
     def test_license_sequence_update(self):
