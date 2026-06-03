@@ -293,3 +293,10 @@ export function convertOnlyDateToLocale(dateStr: string | null | undefined) {
   }
   return "";
 }
+
+export function toSelectOptions(v: Option): { value: string; label: string } {
+  return {
+    value: v.id,
+    label: v.label,
+  };
+}
