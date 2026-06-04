@@ -96,7 +96,7 @@ class LicenseSequenceUpdateTests(TestCase):
         self.assertEqual(updated["latest"]["report_status"], "incomplete")
         self.assertEqual(updated["latest"]["starts_at"], "2026-02-01")
         self.assertEqual(updated["latest"]["ends_at"], "2026-11-30")
-        self.assertEqual(updated["latest"]["version"], 0)
+        self.assertEqual(updated["latest"]["version"], 2)
 
         sequence.refresh_from_db()
         sequence.latest.refresh_from_db()
@@ -241,7 +241,7 @@ class LicenseSequenceUpdateTests(TestCase):
             updated_by=self.user_with_access,
         )
 
-        license = License.objects.create(
+        current_license = License.objects.create(
             sequence=sequence,
             version=0,
             location="Old location",
@@ -253,8 +253,8 @@ class LicenseSequenceUpdateTests(TestCase):
             updated_by=self.user_with_access,
         )
 
-        sequence.latest = license
-        sequence.save()
+        sequence.commit(current_license)
+        sequence.refresh_from_db()
 
         return sequence
 

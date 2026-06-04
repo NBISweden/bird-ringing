@@ -4,7 +4,7 @@ from rest_framework.reverse import reverse
 
 from licensing.message_builder import MessageBuilder, LicenseAndPermitMessageBuilder, RingerBundleMessageBuilder
 from licensing.communication_service import CommunicationService
-from licensing.utils import get_flattened_license_and_relations, communication_language_context
+from licensing.utils import get_flattened_license_and_relations, communication_language_context, default_document_copy_policy
 from django.core import mail
 from django.core.mail import EmailMessage
 from django.utils.translation import gettext as _
@@ -493,7 +493,9 @@ class LicenseSerializer(serializers.ModelSerializer):
     communication = LicenseCommunicationSerializer(many=True, read_only=True)
     report_status = NameBasedChoiceField(choices=ReportStatusChoices)
 
-    created_by = serializers.HiddenField(default=serializers.CurrentUserDefault())
+    created_by = serializers.HiddenField(
+        default=serializers.CreateOnlyDefault(serializers.CurrentUserDefault())
+    )
     updated_by = serializers.HiddenField(default=serializers.CurrentUserDefault())
 
 
@@ -531,7 +533,9 @@ class LicenseSequenceSerializer(serializers.HyperlinkedModelSerializer):
     has_license_card = serializers.BooleanField(read_only=True)
     has_permit = serializers.BooleanField(read_only=True)
 
-    created_by = serializers.HiddenField(default=serializers.CurrentUserDefault())
+    created_by = serializers.HiddenField(
+        default=serializers.CreateOnlyDefault(serializers.CurrentUserDefault())
+    )
     updated_by = serializers.HiddenField(default=serializers.CurrentUserDefault())
 
     class Meta:
@@ -581,7 +585,7 @@ class LicenseSequenceSerializer(serializers.HyperlinkedModelSerializer):
             **latest_data,
         )
 
-        sequence.commit(current_license)
+        sequence.commit(current_license, default_document_copy_policy)
 
         return sequence
 
@@ -606,7 +610,7 @@ class LicenseSequenceSerializer(serializers.HyperlinkedModelSerializer):
                 setattr(current_license, attr, value)
 
             current_license.save()
-            instance.commit(current_license)
+            instance.commit(current_license, default_document_copy_policy)
 
         return instance
 
