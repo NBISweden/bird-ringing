@@ -4,7 +4,7 @@ from rest_framework.reverse import reverse
 
 from licensing.message_builder import MessageBuilder, LicenseAndPermitMessageBuilder, RingerBundleMessageBuilder
 from licensing.communication_service import CommunicationService
-from licensing.utils import get_flattened_license_and_relations, communication_language_context
+from licensing.utils import get_flattened_license_and_relations, communication_language_context, default_document_copy_policy
 from django.core import mail
 from django.core.mail import EmailMessage
 from django.utils.translation import gettext as _
@@ -45,7 +45,7 @@ from licensing.models import (
 from rest_framework.authentication import SessionAuthentication, BasicAuthentication
 
 from rest_framework import routers, serializers, viewsets, filters, pagination, response
-from django.db import models
+from django.db import models, transaction
 from django.http import HttpResponse
 from django.template.exceptions import TemplateDoesNotExist
 from django.contrib.postgres.aggregates import StringAgg
@@ -492,15 +492,28 @@ class LicenseSerializer(serializers.ModelSerializer):
     permissions = LicenseLicensePermissionSerializer(many=True, read_only=True)
     documents = LicenseDocumentSerializer(many=True, read_only=True)
     communication = LicenseCommunicationSerializer(many=True, read_only=True)
-    report_status = serializers.ChoiceField(
-        choices=ReportStatusChoices, source="get_report_status_display"
+    report_status = NameBasedChoiceField(choices=ReportStatusChoices)
+
+    created_by = serializers.HiddenField(
+        default=serializers.CreateOnlyDefault(serializers.CurrentUserDefault())
     )
+    updated_by = serializers.HiddenField(default=serializers.CurrentUserDefault())
+
 
     class Meta:
         model = License
         fields = ["actors", "permissions", "documents", "communication", "version", "location", "description",
-                  "report_status", "starts_at", "ends_at", "created_at", "updated_at"]
-
+                  "report_status", "starts_at", "ends_at", "created_at", "updated_at", "created_by",
+                  "updated_by",]
+        read_only_fields = [
+            "actors",
+            "permissions",
+            "documents",
+            "communication",
+            "version",
+            "created_at",
+            "updated_at",
+        ]
 
 class LicenseHistoryItemSerializer(serializers.ModelSerializer):
     class Meta:
@@ -509,18 +522,22 @@ class LicenseHistoryItemSerializer(serializers.ModelSerializer):
 
 
 class LicenseSequenceSerializer(serializers.HyperlinkedModelSerializer):
-    latest = LicenseSerializer(read_only=True)
+    latest = LicenseSerializer()
     history = serializers.SerializerMethodField()
     license_holder = serializers.CharField(read_only=True)
     license_holder_type = serializers.CharField(read_only=True)
     associate_ringer_count = serializers.IntegerField(read_only=True)
-    status = serializers.ChoiceField(
-        choices=LicenseStatusChoices, source="get_status_display"
-    )
-    methods = serializers.CharField()
+    status = NameBasedChoiceField(choices=LicenseStatusChoices)
+
+    methods = serializers.CharField(read_only=True)
     last_email_sent_at = serializers.DateTimeField(read_only=True)
     has_license_card = serializers.BooleanField(read_only=True)
     has_permit = serializers.BooleanField(read_only=True)
+
+    created_by = serializers.HiddenField(
+        default=serializers.CreateOnlyDefault(serializers.CurrentUserDefault())
+    )
+    updated_by = serializers.HiddenField(default=serializers.CurrentUserDefault())
 
     class Meta:
         model = LicenseSequence
@@ -536,12 +553,67 @@ class LicenseSequenceSerializer(serializers.HyperlinkedModelSerializer):
             "last_email_sent_at",
             "has_license_card",
             "has_permit",
+            "created_by",
+            "updated_by",
+        ]
+        read_only_fields = [
+            "history",
+            "license_holder",
+            "license_holder_type",
+            "associate_ringer_count",
+            "methods",
+            "last_email_sent_at",
+            "has_license_card",
+            "has_permit",
         ]
 
     def get_history(self, obj):
         qs = obj.instances.exclude(pk=models.F("sequence__latest__pk")).order_by("-version")
         return LicenseHistoryItemSerializer(qs, many=True).data
 
+    @transaction.atomic
+    def create(self, validated_data):
+        latest_data = validated_data.pop("latest")
+
+        sequence = LicenseSequence.objects.create(
+            latest=None,
+            **validated_data,
+        )
+
+        current_license = License.objects.create(
+            sequence=sequence,
+            version=0,
+            **latest_data,
+        )
+
+        sequence.commit(current_license, default_document_copy_policy)
+
+        return sequence
+
+    @transaction.atomic
+    def update(self, instance, validated_data):
+        latest_data = validated_data.pop("latest", None)
+
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+
+        instance.save()
+
+        if latest_data is not None:
+            current_license = instance.current
+
+            if current_license is None:
+                raise serializers.ValidationError(
+                    {"latest": "License sequence has no current license."}
+                )
+
+            for attr, value in latest_data.items():
+                setattr(current_license, attr, value)
+
+            current_license.save()
+            instance.commit(current_license, default_document_copy_policy)
+
+        return instance
 
 class LicenseCardRenderSerializer(serializers.Serializer):
     actor_id = serializers.IntegerField(required=True, min_value=1)
@@ -580,6 +652,9 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         queryset = super().get_queryset()
+
+        if self.action in ["create", "update", "partial_update"]:
+            return queryset
 
         search = self.request.query_params.get("search", None)
 
