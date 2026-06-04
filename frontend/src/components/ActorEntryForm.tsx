@@ -1,5 +1,6 @@
-import { ActorBase } from "@/app/(system)/common";
-import { useObjectState } from "@/app/(system)/hooks";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { ActorBase, toSelectOptions } from "@/app/(system)/common";
+import { useObjectState, useOptions } from "@/app/(system)/hooks";
 import { useTranslation } from "@/app/(system)/internationalization";
 import {
   FieldErrorContext,
@@ -9,81 +10,94 @@ import {
   FormSection,
   TextArea,
 } from "./InputFields";
+import { Alert } from "./Alert";
+
+export type ActorEntryFormErrors = {
+  fields: Record<string, string[]>;
+  nonField: string[];
+};
 
 export function ActorEntryForm({
   initialActor,
   onSubmit,
   title,
+  errors,
 }: {
   initialActor: Partial<ActorBase>;
-  onSubmit: (actor: Partial<ActorBase>) => void;
+  onSubmit: (actor: Partial<ActorBase>) => void | Promise<void>;
   title: string;
+  errors?: ActorEntryFormErrors;
 }) {
   const { t } = useTranslation();
   const [actor, updateValue] = useObjectState(initialActor);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const isPerson = actor.type === "person";
+  const formRef = useRef<HTMLFormElement | null>(null);
+  const alertRef = useRef<HTMLDivElement | null>(null);
 
-  // The list of languages was provided by the Bird Ringing Central.
-  // It's all languages used within the European bird ringing network (EURING).
-  const languageOptions = [
-    "Swedish",
-    "English",
-    "Unknown",
-    "Albanian",
-    "Arabic",
-    "Azerbaijani",
-    "Basque",
-    "Belarusian",
-    "Bosnian",
-    "Bulgarian",
-    "Catalan",
-    "Croatian",
-    "Czech",
-    "Danish",
-    "Dutch",
-    "Estonian",
-    "Finnish",
-    "French",
-    "Georgian",
-    "German",
-    "Greek",
-    "Hebrew",
-    "Hungarian",
-    "Icelandic",
-    "Italian",
-    "Kazakh",
-    "Latvian",
-    "Lithuanian",
-    "Macedonian",
-    "Maltese",
-    "Montenegrin",
-    "Norwegian",
-    "Polish",
-    "Portuguese",
-    "Romanian",
-    "Russian",
-    "Serbian",
-    "Slovak",
-    "Slovenian",
-    "Spanish",
-    "Turkish",
-    "Ukrainian",
-  ];
+  const { data: languageOptions, isLoading: langIsLoading } =
+    useOptions("language");
+  const { data: sexOptions, isLoading: sexIsLoading } = useOptions("sex");
+  const { data: actorTypeOptions, isLoading: atIsLoading } =
+    useOptions("actor_type");
 
-  return (
+  const fieldErrors = useMemo<Record<string, string | undefined>>(() => {
+    if (!errors) return {};
+    const flat: Record<string, string | undefined> = {};
+    for (const [field, messages] of Object.entries(errors.fields)) {
+      flat[field] = messages.join(", ");
+    }
+    return flat;
+  }, [errors]);
+
+  useEffect(() => {
+    if (!errors) return;
+    const target =
+      errors.nonField.length > 0
+        ? alertRef.current
+        : formRef.current?.querySelector<HTMLElement>('[aria-invalid="true"]');
+    target?.scrollIntoView({ behavior: "smooth", block: "center" });
+    target?.focus({ preventScroll: true });
+  }, [errors]);
+
+  return langIsLoading || sexIsLoading || atIsLoading ? (
+    <></>
+  ) : (
     <form
-      onSubmit={(e) => {
+      ref={formRef}
+      tabIndex={-1}
+      onSubmit={async (e) => {
         e.preventDefault();
-        onSubmit(actor);
+        setIsSubmitting(true);
+        try {
+          await onSubmit(actor);
+        } finally {
+          setIsSubmitting(false);
+        }
       }}
     >
-      <FieldErrorContext.Provider value={{}}>
+      <FieldErrorContext.Provider value={fieldErrors}>
         <div className="col-12 col-xl-6">
           <div className="card my-4">
             <div className="card-header py-3">
               <h3 className="m-0">{title}</h3>
             </div>
             <div className="card-body">
+              {errors && errors.nonField.length > 0 ? (
+                <div ref={alertRef} tabIndex={-1}>
+                  <Alert type="danger">
+                    {errors.nonField.length === 1 ? (
+                      <p className="mb-0">{errors.nonField[0]}</p>
+                    ) : (
+                      <ul className="mb-0">
+                        {errors.nonField.map((message, i) => (
+                          <li key={i}>{message}</li>
+                        ))}
+                      </ul>
+                    )}
+                  </Alert>
+                </div>
+              ) : null}
               <FormSection
                 icon="info-circle"
                 title={t("actorFormInfoSubtitle")}
@@ -91,11 +105,14 @@ export function ActorEntryForm({
                 <div>
                   <VerticalField label={t("actorType")} id="type" required>
                     <SelectInput
-                      value={actor.type || "-"}
+                      value={actor.type || ""}
                       onChange={(value) =>
                         updateValue({
                           type: value,
-                          sex: value === "person" ? "unspecified" : "n/a",
+                          sex:
+                            value === "person"
+                              ? "undisclosed"
+                              : "not_applicable",
                           last_name: value === "station" ? "" : actor.last_name,
                           full_name:
                             value === "station"
@@ -104,9 +121,8 @@ export function ActorEntryForm({
                         })
                       }
                       options={[
-                        { value: "-", label: "-" },
-                        { value: "person", label: t("actorTypePerson") },
-                        { value: "station", label: t("actorTypeStation") },
+                        { value: "", label: t("selectOption") },
+                        ...actorTypeOptions.map(toSelectOptions),
                       ]}
                     />
                   </VerticalField>
@@ -145,7 +161,6 @@ export function ActorEntryForm({
                           type="text"
                           placeholder={t("actorFormLastNamePlaceholder")}
                           value={actor.last_name || ""}
-                          disabled={!isPerson}
                           onChange={(event) => {
                             const value = event.target.value;
                             updateValue({
@@ -159,23 +174,9 @@ export function ActorEntryForm({
                       </VerticalField>
                       <VerticalField label={t("actorGender")} id="sex">
                         <SelectInput
-                          value={actor.sex || "-"}
-                          required
+                          value={actor.sex || "undisclosed"}
                           onChange={(value) => updateValue({ sex: value })}
-                          disabled={!isPerson}
-                          options={[
-                            { value: "-", label: "-" },
-                            { value: "male", label: t("actorFormGenderMale") },
-                            {
-                              value: "female",
-                              label: t("actorFormGenderFemale"),
-                            },
-                            {
-                              value: "unspecified",
-                              label: t("actorFormGenderUnspecified"),
-                            },
-                            { value: "n/a", label: t("actorFormGenderNA") },
-                          ]}
+                          options={sexOptions.map(toSelectOptions)}
                         />
                       </VerticalField>
                     </>
@@ -200,14 +201,15 @@ export function ActorEntryForm({
                               : t("actorFormCreationDatePlaceholder")
                           }
                           value={actor.birth_date || ""}
-                          onChange={(event) =>
+                          onChange={(event) => {
+                            const value = event.target.value;
                             updateValue({
-                              birth_date: event.target.value,
-                              birth_year: new Date(
-                                event.target.value,
-                              ).getFullYear(),
-                            })
-                          }
+                              birth_date: value || null,
+                              birth_year: value
+                                ? new Date(value).getFullYear()
+                                : null,
+                            });
+                          }}
                         />
                       </VerticalField>
                       <VerticalField
@@ -230,11 +232,12 @@ export function ActorEntryForm({
                             actor.birth_year ||
                             (actor.birth_date &&
                               new Date(actor.birth_date).getFullYear()) ||
-                            undefined
+                            ""
                           }
-                          onChange={(event) =>
-                            updateValue({ birth_year: +event.target.value })
-                          }
+                          onChange={(event) => {
+                            const value = event.target.value;
+                            updateValue({ birth_year: value ? +value : null });
+                          }}
                         />
                       </VerticalField>
                     </>
@@ -279,7 +282,7 @@ export function ActorEntryForm({
                     required
                   >
                     <TextInput
-                      type="phonenumber"
+                      type="tel"
                       placeholder={t("actorFormPhoneNumberPlaceholder")}
                       value={actor.phone_number1 || ""}
                       onChange={(event) =>
@@ -292,7 +295,7 @@ export function ActorEntryForm({
                     id="phone_number2"
                   >
                     <TextInput
-                      type="phonenumber"
+                      type="tel"
                       placeholder={t("actorFormPhoneNumberPlaceholder")}
                       value={actor.phone_number2 || ""}
                       onChange={(event) =>
@@ -373,16 +376,13 @@ export function ActorEntryForm({
                     <SelectInput
                       value={actor.language || "unknown"}
                       onChange={(value) => updateValue({ language: value })}
-                      options={languageOptions.map((o) => ({
-                        value: o.toLowerCase(),
-                        label: o,
-                      }))}
+                      options={languageOptions.map(toSelectOptions)}
                     />
                   </VerticalField>
                   <VerticalField label={t("actorDescription")} id="description">
                     <TextArea
                       placeholder={t("actorFormDescriptionPlaceholder")}
-                      value={actor.description}
+                      value={actor.description || ""}
                       onChange={(event) =>
                         updateValue({ description: event.target.value })
                       }
@@ -391,8 +391,11 @@ export function ActorEntryForm({
                 </div>
               </FormSection>
             </div>
-            <button className="btn btn-secondary align-self-end me-3 mb-3">
-              {t("actorFormSave")}
+            <button
+              className="btn btn-secondary align-self-end me-3 mb-3"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? t("actorFormSaving") : t("actorFormSave")}
             </button>
           </div>
         </div>
