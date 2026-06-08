@@ -1,6 +1,7 @@
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
+from rest_framework.settings import api_settings
 
 from licensing.message_builder import MessageBuilder, LicenseAndPermitMessageBuilder, RingerBundleMessageBuilder
 from licensing.communication_service import CommunicationService
@@ -43,14 +44,13 @@ from licensing.models import (
     MonthDay,
 )
 from rest_framework.authentication import SessionAuthentication, BasicAuthentication
-
 from rest_framework import routers, serializers, viewsets, filters, pagination, response
-from django.db import models, transaction
+from django.db import models, transaction, IntegrityError
 from django.http import HttpResponse
 from django.template.exceptions import TemplateDoesNotExist
 from django.contrib.postgres.aggregates import StringAgg
 from collections import OrderedDict
-from .utils import DjangoProtectedModelPermissions, NameBasedChoiceField
+from .utils import DjangoProtectedModelPermissions, NameBasedChoiceField, RelatedFieldSerializer
 import logging
 
 
@@ -390,10 +390,11 @@ class ActorDetailSerializer(ActorSerializer):
 
 
 class LicenseActorSerializer(serializers.ModelSerializer):
-    type = serializers.ChoiceField(choices=ActorTypeChoices, source="get_type_display")
-    sex = serializers.ChoiceField(choices=SexChoices, source="get_sex_display")
+    type = NameBasedChoiceField(choices=ActorTypeChoices, read_only=True)
+    sex = NameBasedChoiceField(choices=SexChoices, read_only=True)
     language = serializers.ChoiceField(
-        choices=LanguageChoices, source="get_language_display"
+        choices=LanguageChoices, source="get_language_display",
+        read_only=True
     )
 
     class Meta:
@@ -418,18 +419,60 @@ class LicenseActorSerializer(serializers.ModelSerializer):
             "city",
             "country",
         ]
+        read_only_fields = [
+            "id",
+            "full_name",
+            "first_name",
+            "last_name",
+            "type",
+            "sex",
+            "birth_date",
+            "birth_year",
+            "language",
+            "phone_number1",
+            "phone_number2",
+            "email",
+            "alternative_email",
+            "address",
+            "co_address",
+            "postal_code",
+            "city",
+            "country",
+        ]
+
+
+class CurrentLicenseDefault:
+    requires_context = True
+
+    def __call__(self, serializer_field):
+        try:
+            return serializer_field.context["license_id"]
+        except KeyError:
+            raise serializers.ValidationError("License is required.")
 
 
 class LicenseActorRelationSerializer(serializers.ModelSerializer):
-    actor = LicenseActorSerializer()
-    role = serializers.ChoiceField(
-        choices=LicenseRoleChoices, source="get_role_display"
+    actor = RelatedFieldSerializer(
+        serializer_class=LicenseActorSerializer,
+        queryset=Actor.objects.all(),
+    )
+    role = NameBasedChoiceField(choices=LicenseRoleChoices)
+    created_by = serializers.HiddenField(
+        default=serializers.CreateOnlyDefault(serializers.CurrentUserDefault()),
+        write_only=True
+    )
+    updated_by = serializers.HiddenField(
+        default=serializers.CurrentUserDefault(),
+        write_only=True
+    )
+    license_id = serializers.HiddenField(
+        default=CurrentLicenseDefault(),
+        write_only=True
     )
 
     class Meta:
         model = LicenseRelation
-        fields = ["actor", "role", "mednr"]
-
+        fields = ["actor", "role", "mednr", "created_by", "updated_by", "license_id"]
 
 class LicensePermissionTypeSerializer(serializers.ModelSerializer):
     class Meta:
@@ -488,8 +531,8 @@ class LicenseCommunicationSerializer(serializers.ModelSerializer):
 
 
 class LicenseSerializer(serializers.ModelSerializer):
-    actors = LicenseActorRelationSerializer(many=True, read_only=True)
-    permissions = LicenseLicensePermissionSerializer(many=True, read_only=True)
+    actors = LicenseActorRelationSerializer(many=True, required=False)
+    permissions = LicenseLicensePermissionSerializer(many=True, required=False)
     documents = LicenseDocumentSerializer(many=True, read_only=True)
     communication = LicenseCommunicationSerializer(many=True, read_only=True)
     report_status = NameBasedChoiceField(choices=ReportStatusChoices)
@@ -499,14 +542,14 @@ class LicenseSerializer(serializers.ModelSerializer):
     )
     updated_by = serializers.HiddenField(default=serializers.CurrentUserDefault())
 
-
     class Meta:
         model = License
-        fields = ["actors", "permissions", "documents", "communication", "version", "location", "description",
-                  "report_status", "starts_at", "ends_at", "created_at", "updated_at", "created_by",
-                  "updated_by",]
+        fields = [
+            "actors", "permissions", "documents", "communication", "version", "location", "description",
+            "report_status", "starts_at", "ends_at", "created_at", "updated_at", "created_by",
+            "updated_by",
+        ]
         read_only_fields = [
-            "actors",
             "permissions",
             "documents",
             "communication",
@@ -515,6 +558,39 @@ class LicenseSerializer(serializers.ModelSerializer):
             "updated_at",
         ]
 
+    @transaction.atomic
+    def update(self, instance, validated_data):
+        actors = validated_data.pop("actors", None)
+        permissions = validated_data.pop("permissions", None)
+
+        super().update(instance, validated_data)
+
+        if actors is not None:
+            instance.actors.all().delete()
+            
+            for relation in actors:
+                relation_serialzer = LicenseActorRelationSerializer(
+                    data=relation,
+                    context={
+                        **self.context,
+                        "license_id": instance.id,
+                    },
+                )
+                relation_serialzer.is_valid(raise_exception=True)
+                try:
+                    relation_serialzer.save()
+                except IntegrityError as e:
+                    raise serializers.ValidationError({
+                        api_settings.NON_FIELD_ERRORS_KEY: [f"Integrity error: {e}"]
+                    })
+        
+        if permissions is not None:
+            # TODO: Work updating permissions later
+            pass
+
+        return instance
+
+
 class LicenseHistoryItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = License
@@ -522,7 +598,7 @@ class LicenseHistoryItemSerializer(serializers.ModelSerializer):
 
 
 class LicenseSequenceSerializer(serializers.HyperlinkedModelSerializer):
-    latest = LicenseSerializer()
+    latest = LicenseSerializer(required=False)
     history = serializers.SerializerMethodField()
     license_holder = serializers.CharField(read_only=True)
     license_holder_type = serializers.CharField(read_only=True)
@@ -594,23 +670,25 @@ class LicenseSequenceSerializer(serializers.HyperlinkedModelSerializer):
     def update(self, instance, validated_data):
         latest_data = validated_data.pop("latest", None)
 
-        for attr, value in validated_data.items():
-            setattr(instance, attr, value)
-
-        instance.save()
+        super().update(instance, validated_data)
 
         if latest_data is not None:
             current_license = instance.current
-
             if current_license is None:
                 raise serializers.ValidationError(
                     {"latest": "License sequence has no current license."}
                 )
 
-            for attr, value in latest_data.items():
-                setattr(current_license, attr, value)
+            license_serializer = LicenseSerializer(
+                instance.current,
+                data=latest_data,
+                partial=True,
+                context=self.context,
+            )
 
-            current_license.save()
+            license_serializer.is_valid(raise_exception=True)
+            license_serializer.save()
+
             instance.commit(current_license, default_document_copy_policy)
 
         return instance
