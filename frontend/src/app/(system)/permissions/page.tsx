@@ -5,10 +5,12 @@ import {
   TextInput,
   VerticalField,
 } from "@/components/InputFields";
-import { useModalsContext } from "../contexts";
+import { useFlags, useModalsContext } from "../contexts";
 
 export default function PermissionListView() {
   const modals = useModalsContext();
+  const flags = useFlags();
+  console.log(flags);
   const permissionTypes = [
     {
       name: "Biological Sample Extraction",
@@ -130,64 +132,74 @@ export default function PermissionListView() {
 
   return (
     <>
-      <div>
-        <h2>Permission types</h2>
-        <table className="table">
-          <thead>
-            <tr>
-              <th></th>
-              <th>Name</th>
-              <th>Description</th>
-            </tr>
-          </thead>
-          <tbody>
-            {permissionTypes.map((item) => {
-              return (
+      {flags.has("mock-permission-editing") ? (
+        <>
+          <div>
+            <h2>Permission types</h2>
+            <table className="table">
+              <thead>
                 <tr>
-                  <td>
-                    <button className="btn btn-outline-primary">Edit</button>
-                  </td>
-                  <td>{item.name}</td>
-                  <td>{item.description}</td>
+                  <th></th>
+                  <th>Name</th>
+                  <th>Description</th>
                 </tr>
-              );
-            })}
-          </tbody>
-        </table>
-        <button className="btn btn-primary" onClick={openTypeAddForm}>
-          + Add
-        </button>
-      </div>
-      <div className="mt-5">
-        <h2>Permission properties</h2>
-        <table className="table">
-          <thead>
-            <tr>
-              <th></th>
-              <th>Name</th>
-              <th>Related to</th>
-              <th>Description</th>
-            </tr>
-          </thead>
-          <tbody>
-            {properties.map((item) => {
-              return (
+              </thead>
+              <tbody>
+                {permissionTypes.map((item) => {
+                  return (
+                    <tr>
+                      <td>
+                        <button className="btn btn-outline-primary">
+                          Edit
+                        </button>
+                      </td>
+                      <td>{item.name}</td>
+                      <td>{item.description}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+            <button className="btn btn-primary" onClick={openTypeAddForm}>
+              + Add
+            </button>
+          </div>
+          <div className="mt-5">
+            <h2>Permission properties</h2>
+            <table className="table">
+              <thead>
                 <tr>
-                  <td>
-                    <button className="btn btn-outline-primary">Edit</button>
-                  </td>
-                  <td>{item.name}</td>
-                  <td>{item.relatedType ? item.relatedType : "-"}</td>
-                  <td>{item.description}</td>
+                  <th></th>
+                  <th>Name</th>
+                  <th>Related to</th>
+                  <th>Description</th>
                 </tr>
-              );
-            })}
-          </tbody>
-        </table>
-        <button className="btn btn-primary" onClick={openPropertyAddForm}>
-          + Add
-        </button>
-      </div>
+              </thead>
+              <tbody>
+                {properties.map((item) => {
+                  return (
+                    <tr>
+                      <td>
+                        <button className="btn btn-outline-primary">
+                          Edit
+                        </button>
+                      </td>
+                      <td>{item.name}</td>
+                      <td>{item.relatedType ? item.relatedType : "-"}</td>
+                      <td>{item.description}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+            <button className="btn btn-primary" onClick={openPropertyAddForm}>
+              + Add
+            </button>
+          </div>
+        </>
+      ) : (
+        <div>This feature is not yet implemented.</div>
+      )}
     </>
   );
 }

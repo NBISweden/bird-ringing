@@ -40,7 +40,7 @@ export default function SystemLayout({
       href: "/permissions",
       id: "permissions",
       icon: "bi-award",
-      permissions: ["view_actor"],
+      permissions: ["view_licensepermissiontype"],
     },
   ];
   return (
