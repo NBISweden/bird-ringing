@@ -4,12 +4,13 @@ import {
   ChangeEventHandler,
   useRef,
   useEffect,
+  useTransition,
 } from "react";
 import useSWRMutation from "swr/mutation";
 import { useClient, useModalsContext } from "./contexts";
 import { useTranslation } from "./internationalization";
-import { Options } from "./common";
-import { Client } from "./client";
+import { FormErrors, Options } from "./common";
+import { Client, FieldValidationError } from "./client";
 import useSWRImmutable from "swr/immutable";
 
 export function useItemSelections(
@@ -165,5 +166,51 @@ export function useOptions<T extends keyof Options>(
     data: data || [],
     isLoading,
     error,
+  };
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type AnyFunc = (...args: any[]) => any | Promise<any>;
+
+export function useFormSubmission<T extends AnyFunc>(
+  submitAction: T,
+  onSuccess: (r: ReturnType<T>) => void,
+  onFail: (e: FormErrors) => void,
+) {
+  const [isSubmitting, startSubmitting] = useTransition();
+  const [errors, setErrors] = useState<FormErrors | undefined>(undefined);
+
+  const submit = (...args: Parameters<T>) => {
+    setErrors(undefined);
+    startSubmitting(async () => {
+      try {
+        const result = await submitAction(...args);
+        onSuccess(result);
+      } catch (error) {
+        let fieldErrors: FormErrors["fields"] = {};
+        let nonFieldErrors: FormErrors["nonField"] = [];
+        if (error instanceof FieldValidationError) {
+          fieldErrors = error.fieldErrors;
+          nonFieldErrors = error.nonFieldErrors;
+        } else {
+          const message =
+            error instanceof Error ? error.message : String(error);
+          nonFieldErrors = message.split("\n").filter(Boolean);
+        }
+        const nextErrors = {
+          fields: fieldErrors,
+          nonField: nonFieldErrors,
+        };
+        setErrors(nextErrors);
+        onFail(nextErrors);
+      }
+    });
+  };
+  const reset = useCallback(() => setErrors(undefined), [setErrors]);
+  return {
+    submit,
+    errors,
+    isSubmitting,
+    reset,
   };
 }
