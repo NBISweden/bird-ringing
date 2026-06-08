@@ -69,8 +69,8 @@ export default function PermissionListView() {
           <div className="flex-column">
             {properties.map((p) => {
               return (
-                <div className="form-check">
-                  <label className="form-check-label" key={p.name}>
+                <div className="form-check" key={p.name}>
+                  <label className="form-check-label">
                     <input className="form-check-input" type="checkbox" />
                     {p.name}
                   </label>
@@ -147,7 +147,7 @@ export default function PermissionListView() {
               <tbody>
                 {permissionTypes.map((item) => {
                   return (
-                    <tr>
+                    <tr key={item.name}>
                       <td>
                         <button className="btn btn-outline-primary">
                           Edit
@@ -178,7 +178,7 @@ export default function PermissionListView() {
               <tbody>
                 {properties.map((item) => {
                   return (
-                    <tr>
+                    <tr key={item.name}>
                       <td>
                         <button className="btn btn-outline-primary">
                           Edit
