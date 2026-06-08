@@ -1,7 +1,6 @@
 "use client";
 import { useState, Suspense, useMemo, useEffect } from "react";
 import Link from "next/link";
-import { Fragment } from "react";
 import { useItemSelections, useDebouncedValue } from "../hooks";
 import { Pagination } from "../../../components/Pagination";
 import useSWR from "swr";
@@ -93,7 +92,7 @@ function toActorTable(
               <Badge color="info" rounded outline key={r}>
                 {formatOption(r, {
                   affiliate: "licenseRoleAffiliate",
-                  "associate ringer": "licenseRoleAssociateRinger",
+                  associate_ringer: "licenseRoleAssociateRinger",
                   communication: "licenseRoleCommunication",
                   ringer: "licenseRoleRinger",
                 })}
