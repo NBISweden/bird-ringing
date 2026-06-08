@@ -120,6 +120,13 @@ const modals = {
   actorUpdateSuccessTitle: "Actor updated",
   actorUpdateSuccessMessage: "The actor has been updated successfully.",
   actorUpdateErrorTitle: "Failed to update actor",
+  licenseUpdateSuccessTitle: "License updated",
+  licenseUpdateSuccessMessage: "The license has been updated successfully",
+  licenseUpdateErrorTitle: "Failed to update license",
+};
+const licenseRelationForm = {
+  licenseRelationFormSave: "Update relations",
+  licenseRelationAddPermission: "Add permission",
 };
 
 const messagesBase = {
@@ -132,6 +139,7 @@ const messagesBase = {
   ...licenseForm,
   ...licenseFields,
   ...modals,
+  ...licenseRelationForm,
 
   birdRinging: "Bird Ringing",
   userPermissions: "User permissions",
