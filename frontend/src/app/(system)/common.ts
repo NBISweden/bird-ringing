@@ -201,7 +201,7 @@ export type LicenceCommunication = {
 };
 
 export type LicenseInstance = {
-  actors: LicenseActorRelation[];
+  actors: (LicenseActorRelation & { actor: ActorBase })[];
   permissions: LicensePermission[];
   documents: LicenseDocument[];
   communication: LicenceCommunication[];
@@ -215,10 +215,14 @@ export type LicenseInstance = {
   updated_at: string;
 };
 
+export type ObjectReference = {
+  id: number;
+};
+
 export type LicenseActorRelation = {
-  actor: ActorBase;
+  actor: ObjectReference;
   role: string;
-  mednr?: string;
+  mednr: string;
 };
 
 export type BSColor =
@@ -267,6 +271,11 @@ export interface SendEmailResult {
   ringer_bundle_failed_messages?: FailedMessage[];
   ringer_bundle_error?: string;
 }
+
+export type FormErrors = {
+  fields: Record<string, string[]>;
+  nonField: string[];
+};
 
 export function convertDateToLocale(dateStr: string) {
   if (dateStr) {
