@@ -309,3 +309,22 @@ export function toSelectOptions(v: Option): { value: string; label: string } {
     label: v.label,
   };
 }
+
+export type PermissionPropertyItem = {
+  id: string;
+  label: string;
+  description: string;
+};
+
+export type PermissionTypeWithProperties = {
+  id: string;
+  label: string;
+  description: string;
+  properties: PermissionPropertyItem[];
+};
+
+export type UnrelatedPermissionProperty = {
+  id: string;
+  label: string;
+  related_type: null;
+};

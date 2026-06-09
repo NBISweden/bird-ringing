@@ -1,38 +1,60 @@
 "use client";
 
+import useSWR from "swr";
 import {
   SelectInput,
   TextInput,
   VerticalField,
 } from "@/components/InputFields";
-import { useFlags, useModalsContext } from "../contexts";
+import { useFlags, useClient, useModalsContext } from "../contexts";
+import { Client } from "../client";
 import { notFound } from "next/navigation";
+import { useState } from "react";
+import { PermissionTypeWithProperties } from "../common";
+
+async function fetchPermissionTypes([client]: [Client]) {
+  return client.fetchPermissionTypesWithProperties();
+}
 
 export default function PermissionListView() {
   const modals = useModalsContext();
   const flags = useFlags();
+  const client = useClient();
 
   if (!flags.has("mock-permission-editing")) {
     notFound();
   }
 
-  const permissionTypes = [
-    {
-      name: "Biological Sample Extraction",
-      description:
-        "Covers removal of biological material from a living bird, including fluids, tissues, or feathers, for research or diagnostic purposes.",
-    },
-    {
-      name: "Restricted Species Interaction",
-      description:
-        "Applies to species designated as protected, experimental, or ecologically critical, requiring heightened authorization.",
-    },
-    {
-      name: "Environmental Condition Manipulation",
-      description:
-        "Authorizes deliberate deviation from established environmental baselines such as temperature, humidity, or atmospheric composition within a habitat.",
-    },
-  ];
+  const { data, isLoading, error } = useSWR([client], fetchPermissionTypes);
+
+  if (error) {
+    return <p>{error.message}</p>;
+  }
+
+  if (!data) {
+    return <div>No data collected.</div>;
+  }
+
+  const permissionTypes = data;
+  console.log(permissionTypes);
+
+  // const permissionTypes = [
+  //   {
+  //     name: "Biological Sample Extraction",
+  //     description:
+  //       "Covers removal of biological material from a living bird, including fluids, tissues, or feathers, for research or diagnostic purposes.",
+  //   },
+  //   {
+  //     name: "Restricted Species Interaction",
+  //     description:
+  //       "Applies to species designated as protected, experimental, or ecologically critical, requiring heightened authorization.",
+  //   },
+  //   {
+  //     name: "Environmental Condition Manipulation",
+  //     description:
+  //       "Authorizes deliberate deviation from established environmental baselines such as temperature, humidity, or atmospheric composition within a habitat.",
+  //   },
+  // ];
 
   const properties = [
     {
@@ -110,6 +132,51 @@ export default function PermissionListView() {
     );
   };
 
+  const ExpandableRow = ({ item }: { item: PermissionTypeWithProperties }) => {
+    const [isExpanded, setIsExpanded] = useState(false);
+
+    return (
+      <div className="row border-bottom g-0">
+        <div className="col-12 col-md-6 col-lg-8 ">
+          <div className="py-4 pe-3 pe-xl-5">
+            <p className="fw-bold mb-1">{item.label}</p>
+            <p className="text-muted mb-0">{item.description}</p>
+          </div>
+        </div>
+        <div className="col-12 col-md-6 col-lg-4 ">
+          <div className="accordion pt-4 ps-xl-5">
+            <div className="accordion-item">
+              <h3 className="accordion-header">
+                <button
+                  type="button"
+                  className={`accordion-button ${isExpanded ? "" : "collapsed"}`}
+                  onClick={() => setIsExpanded((v) => !v)}
+                  aria-expanded={isExpanded}
+                >
+                  {`${item.properties.length} properties`}
+                </button>
+              </h3>
+              <div
+                className={`accordion-collapse collapse ${isExpanded ? "show" : ""}`}
+              >
+                <div className="accordion-body">
+                  <ul className="ps-3">
+                    {item.properties.map((p) => (
+                      <li key={p.id}>{p.label}</li>
+                    ))}
+                  </ul>
+                  <button className="btn btn-outline-primary">
+                    Add property
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const openTypeAddForm = () => {
     modals.add({
       title: "Add permission type",
@@ -138,33 +205,19 @@ export default function PermissionListView() {
   return (
     <>
       <div>
-        <h2>Permission types</h2>
-        <table className="table">
-          <thead>
-            <tr>
-              <th></th>
-              <th>Name</th>
-              <th>Description</th>
-            </tr>
-          </thead>
-          <tbody>
-            {permissionTypes.map((item) => {
-              return (
-                <tr key={item.name}>
-                  <td>
-                    <button className="btn btn-outline-primary">Edit</button>
-                  </td>
-                  <td>{item.name}</td>
-                  <td>{item.description}</td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-        <button className="btn btn-primary" onClick={openTypeAddForm}>
-          + Add
-        </button>
+        <div className="d-flex align-items-start mb-5">
+          <h2>Permission types</h2>
+          <button className="btn btn-primary ms-5" onClick={openTypeAddForm}>
+            + Add permission type
+          </button>
+        </div>
+        <div className="border-top">
+          {permissionTypes.map((item) => (
+            <ExpandableRow key={item.id} item={item} />
+          ))}
+        </div>
       </div>
+
       <div className="mt-5">
         <h2>Permission properties</h2>
         <table className="table">

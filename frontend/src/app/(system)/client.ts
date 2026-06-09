@@ -7,6 +7,8 @@ import {
   Options,
   PagedResponse,
   SendEmailResult,
+  PermissionTypeWithProperties,
+  UnrelatedPermissionProperty,
 } from "./common";
 import { getCookie, parseCompleteUrl } from "./utils";
 
@@ -413,5 +415,21 @@ export class Client {
       },
       body: JSON.stringify({ latest: { actors: relations } }),
     });
+  }
+
+  async fetchPermissionTypesWithProperties(): Promise<
+    PermissionTypeWithProperties[]
+  > {
+    return this._getJson<PermissionTypeWithProperties[]>(
+      "property/permission_type/",
+    );
+  }
+
+  async fetchUnrelatedPermissionProperties(): Promise<
+    UnrelatedPermissionProperty[]
+  > {
+    return this._getJson<UnrelatedPermissionProperty[]>(
+      "property/permission_property/?unrelated=1",
+    );
   }
 }

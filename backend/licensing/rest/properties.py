@@ -43,31 +43,52 @@ class SpeciesSerializer(serializers.ModelSerializer):
         return obj.name
 
 
-class PermissionTypeSerializer(serializers.ModelSerializer):
+class PermissionPropertyNestedSerializer(serializers.ModelSerializer):
     id = serializers.CharField(read_only=True)
     label = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
-        model = LicensePermissionType
-        fields = ["id", "label"]
+        model = LicensePermissionProperty
+        fields = ["id", "label", "description"]
 
     def get_label(self, obj):
         return obj.name
+
+
+class PermissionTypeSerializer(serializers.ModelSerializer):
+    id = serializers.CharField(read_only=True)
+    label = serializers.SerializerMethodField(read_only=True)
+    properties = serializers.SerializerMethodField(read_only=True)
+
+    class Meta:
+        model = LicensePermissionType
+        fields = ["id", "label", "description", "properties"]
+
+    def get_label(self, obj):
+        return obj.name
+    
+    def get_properties(self, obj):
+        qs = obj.licensepermissionproperty_set.all().order_by("name")
+        return PermissionPropertyNestedSerializer(qs, many=True).data
 
 
 class PermissionPropertySerializer(serializers.ModelSerializer):
     id = serializers.CharField(read_only=True)
     label = serializers.SerializerMethodField(read_only=True)
+    description = serializers.CharField(read_only=True)
     related_type = serializers.SerializerMethodField(read_only=True)
     queryset = LicensePermissionProperty.objects.all().select_related("related_type")
 
     class Meta:
         model = LicensePermissionProperty
-        fields = ["id", "label", "related_type"]
+        fields = ["id", "label", "description", "related_type"]
 
     def get_label(self, obj):
         return obj.name
-    
+
+    def get_description(self, obj):
+        return obj.description
+
     def get_related_type(self, obj):
         return (
             {
@@ -107,7 +128,7 @@ class PermissionTypeViewSet(viewsets.ModelViewSet):
     filter_backends = [filters.SearchFilter]
     search_fields = ["name"]
 
-    queryset = LicensePermissionType.objects.all()
+    queryset = LicensePermissionType.objects.prefetch_related("licensepermissionproperty_set").all()    
     serializer_class = PermissionTypeSerializer
 
 
@@ -118,9 +139,15 @@ class PermissionPropertyViewSet(viewsets.ModelViewSet):
     filter_backends = [filters.SearchFilter]
     search_fields = ["name"]
 
-    queryset = LicensePermissionProperty.objects.all()
+    queryset = LicensePermissionProperty.objects.select_related("related_type").all()
     serializer_class = PermissionPropertySerializer
 
+    def get_queryset(self):
+        qs = super().get_queryset()
+        unrelated = self.request.query_params.get("unrelated")
+        if unrelated in ("1", "true", "True"):
+            qs = qs.filter(related_type__isnull=True)
+        return qs.order_by("name")
 
 def register_choice_view_sets(router):
     choice_classes = [
