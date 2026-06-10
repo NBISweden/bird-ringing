@@ -9,8 +9,9 @@ import {
 import { useFlags, useClient, useModalsContext } from "../contexts";
 import { Client } from "../client";
 import { notFound } from "next/navigation";
-import { useState } from "react";
+import { Fragment } from "react";
 import { PermissionTypeWithProperties } from "../common";
+import { Accordion, AccordionEntry } from "@/components/Accordion";
 
 async function fetchPermissionTypes([client]: [Client]) {
   return client.fetchPermissionTypesWithProperties();
@@ -108,54 +109,6 @@ export default function PermissionListView() {
     );
   };
 
-  const ExpandableRow = ({ item }: { item: PermissionTypeWithProperties }) => {
-    const [isExpanded, setIsExpanded] = useState(false);
-
-    return (
-      <div className="row border-bottom g-0">
-        <div className="col-12 col-md-6 col-lg-8 ">
-          <div className="py-4 pe-3 pe-xl-5">
-            <p className="fw-bold mb-1">{item.label}</p>
-            <p className="text-muted mb-0">{item.description}</p>
-          </div>
-        </div>
-        <div className="col-12 col-md-6 col-lg-4 ">
-          <div className="accordion py-4 ps-xl-5">
-            <div className="accordion-item">
-              <h3 className="accordion-header">
-                <button
-                  type="button"
-                  className={`accordion-button ${isExpanded ? "" : "collapsed"}`}
-                  onClick={() => setIsExpanded((v) => !v)}
-                  aria-expanded={isExpanded}
-                >
-                  {`${item.properties.length} properties`}
-                </button>
-              </h3>
-              <div
-                className={`accordion-collapse collapse ${isExpanded ? "show" : ""}`}
-              >
-                <div className="accordion-body">
-                  <ul className="ps-3">
-                    {item.properties.map((p) => (
-                      <li key={p.id}>{p.label}</li>
-                    ))}
-                  </ul>
-                  <button
-                    className="btn btn-outline-primary"
-                    onClick={() => openPropertyAddForm(item)}
-                  >
-                    Add property
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
   const openTypeAddForm = () => {
     modals.add({
       title: "Add permission type",
@@ -192,11 +145,42 @@ export default function PermissionListView() {
             + Add permission type
           </button>
         </div>
-        <div className="border-top">
-          {permissionTypes.map((item) => (
-            <ExpandableRow key={item.id} item={item} />
-          ))}
-        </div>
+        <Accordion
+          items={permissionTypes.reduce<Record<string, AccordionEntry>>((acc, item) => {
+            acc[item.id] = {
+              header: (
+                <div className="d-flex gap-3 justify-content-between align-items-center w-100 me-5">
+                  <div className="flex-grow-0">
+                    <p className="fw-bold mb-1">{item.label}</p>
+                    <p className="text-muted mb-0">{item.description}</p>
+                  </div>
+                  <div className="flex-grow-0 flex-shrink-0">
+                    <span className="badge text-bg-secondary">{item.properties.length} properties</span>
+                  </div>
+                </div>
+              ),
+              content:(
+                <>
+                  <ul>
+                    {item.properties.map(property => (
+                      <Fragment key={property.id}>
+                        <p className="fw-bold mb-1">{property.label}</p>
+                        <p>{property.description}</p>
+                      </Fragment>
+                    ))}
+                  </ul>
+                  <button
+                    className="btn btn-outline-primary"
+                    onClick={() => openPropertyAddForm(item)}
+                  >
+                    Add property
+                  </button>
+                </>
+              )
+            }
+            return acc;
+          }, {})}
+        />
 
         <div className="d-flex align-items-start mt-5">
           <h2>Global properties</h2>
