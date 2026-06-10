@@ -16,6 +16,10 @@ async function fetchPermissionTypes([client]: [Client]) {
   return client.fetchPermissionTypesWithProperties();
 }
 
+async function fetchUnrelatedProperties([client]: [Client]) {
+  return client.fetchUnrelatedPermissionProperties();
+}
+
 export default function PermissionListView() {
   const modals = useModalsContext();
   const flags = useFlags();
@@ -25,36 +29,31 @@ export default function PermissionListView() {
     notFound();
   }
 
-  const { data, isLoading, error } = useSWR([client], fetchPermissionTypes);
+  const {
+    data: permissionTypes,
+    isLoading: typesLoading,
+    error: typesError,
+  } = useSWR([client, "permission-types"], fetchPermissionTypes);
+  const {
+    data: unrelatedProperties,
+    isLoading: unrelatedPropertiesLoading,
+    error: unrelatedPropertiesError,
+  } = useSWR([client, "unrelated-properties"], fetchUnrelatedProperties);
 
-  if (error) {
-    return <p>{error.message}</p>;
+  if (typesError) {
+    return <p>{typesError.message}</p>;
+  }
+  if (unrelatedPropertiesError) {
+    return <p>{unrelatedPropertiesError.message}</p>;
   }
 
-  if (!data) {
-    return <div>No data collected.</div>;
+  if (!permissionTypes) {
+    return <div>No permission types collected.</div>;
   }
 
-  const permissionTypes = data;
-  console.log(permissionTypes);
-
-  // const permissionTypes = [
-  //   {
-  //     name: "Biological Sample Extraction",
-  //     description:
-  //       "Covers removal of biological material from a living bird, including fluids, tissues, or feathers, for research or diagnostic purposes.",
-  //   },
-  //   {
-  //     name: "Restricted Species Interaction",
-  //     description:
-  //       "Applies to species designated as protected, experimental, or ecologically critical, requiring heightened authorization.",
-  //   },
-  //   {
-  //     name: "Environmental Condition Manipulation",
-  //     description:
-  //       "Authorizes deliberate deviation from established environmental baselines such as temperature, humidity, or atmospheric composition within a habitat.",
-  //   },
-  // ];
+  if (!unrelatedProperties) {
+    return <div>No permission types collected.</div>;
+  }
 
   const properties = [
     {
@@ -92,23 +91,10 @@ export default function PermissionListView() {
         <VerticalField label="Description" id="description" required>
           <TextInput type="text" placeholder="Add a description" />
         </VerticalField>
-        <VerticalField label="Add permission properties">
-          <div className="flex-column">
-            {properties.map((p) => {
-              return (
-                <div className="form-check" key={p.name}>
-                  <label className="form-check-label">
-                    <input className="form-check-input" type="checkbox" />
-                    {p.name}
-                  </label>
-                </div>
-              );
-            })}
-          </div>
-        </VerticalField>
       </form>
     );
   };
+
   const PropertiesForm = () => {
     return (
       <form>
@@ -117,16 +103,6 @@ export default function PermissionListView() {
         </VerticalField>
         <VerticalField label="Description" id="description" required>
           <TextInput type="text" placeholder="Add a description" />
-        </VerticalField>
-        <VerticalField label="Related permission type">
-          <SelectInput
-            options={[
-              { value: null, label: "no related permission type" },
-              ...permissionTypes.map((p) => {
-                return { value: p.name, label: p.name };
-              }),
-            ]}
-          />
         </VerticalField>
       </form>
     );
@@ -144,7 +120,7 @@ export default function PermissionListView() {
           </div>
         </div>
         <div className="col-12 col-md-6 col-lg-4 ">
-          <div className="accordion pt-4 ps-xl-5">
+          <div className="accordion py-4 ps-xl-5">
             <div className="accordion-item">
               <h3 className="accordion-header">
                 <button
@@ -165,7 +141,10 @@ export default function PermissionListView() {
                       <li key={p.id}>{p.label}</li>
                     ))}
                   </ul>
-                  <button className="btn btn-outline-primary">
+                  <button
+                    className="btn btn-outline-primary"
+                    onClick={() => openPropertyAddForm(item)}
+                  >
                     Add property
                   </button>
                 </div>
@@ -189,9 +168,11 @@ export default function PermissionListView() {
       ],
     });
   };
-  const openPropertyAddForm = () => {
+  const openPropertyAddForm = (type: PermissionTypeWithProperties | null) => {
     modals.add({
-      title: "Add permission property",
+      title: type
+        ? `Add property to "${type.label}"`
+        : `Add global permission property`,
       content: PropertiesForm(),
       actions: [
         {
@@ -204,7 +185,7 @@ export default function PermissionListView() {
 
   return (
     <>
-      <div>
+      <div className="container">
         <div className="d-flex align-items-start mb-5">
           <h2>Permission types</h2>
           <button className="btn btn-primary ms-5" onClick={openTypeAddForm}>
@@ -216,37 +197,32 @@ export default function PermissionListView() {
             <ExpandableRow key={item.id} item={item} />
           ))}
         </div>
-      </div>
 
-      <div className="mt-5">
-        <h2>Permission properties</h2>
-        <table className="table">
-          <thead>
-            <tr>
-              <th></th>
-              <th>Name</th>
-              <th>Related to</th>
-              <th>Description</th>
-            </tr>
-          </thead>
-          <tbody>
-            {properties.map((item) => {
-              return (
-                <tr key={item.name}>
-                  <td>
-                    <button className="btn btn-outline-primary">Edit</button>
-                  </td>
-                  <td>{item.name}</td>
-                  <td>{item.relatedType ? item.relatedType : "-"}</td>
-                  <td>{item.description}</td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-        <button className="btn btn-primary" onClick={openPropertyAddForm}>
-          + Add
-        </button>
+        <div className="d-flex align-items-start mt-5">
+          <h2>Global properties</h2>
+          <button
+            className="btn btn-primary ms-5"
+            onClick={() => openPropertyAddForm(null)}
+          >
+            + Add property
+          </button>
+        </div>
+        <div className="border-top mt-3">
+          {unrelatedProperties.map((item) => (
+            <div key={item.id} className="row border-bottom g-0">
+              <div className="col-12 col-md-6 col-lg-4">
+                <div className="py-4 pe-3 pe-xl-5">
+                  <p className="fw-bold mb-0">{item.label}</p>
+                </div>
+              </div>
+              <div className="col-12 col-md-6 col-lg-8">
+                <div className="py-4 ps-xl-5">
+                  <p className="text-muted mb-0">{item.description}</p>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     </>
   );
