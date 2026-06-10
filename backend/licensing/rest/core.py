@@ -569,16 +569,16 @@ class LicenseSerializer(serializers.ModelSerializer):
             instance.actors.all().delete()
             
             for relation in actors:
-                relation_serialzer = LicenseActorRelationSerializer(
+                relation_serializer = LicenseActorRelationSerializer(
                     data=relation,
                     context={
                         **self.context,
                         "license_id": instance.id,
                     },
                 )
-                relation_serialzer.is_valid(raise_exception=True)
+                relation_serializer.is_valid(raise_exception=True)
                 try:
-                    relation_serialzer.save()
+                    relation_serializer.save()
                 except IntegrityError as e:
                     raise serializers.ValidationError({
                         api_settings.NON_FIELD_ERRORS_KEY: [f"Integrity error: {e}"]
