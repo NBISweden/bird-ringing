@@ -392,10 +392,7 @@ class ActorDetailSerializer(ActorSerializer):
 class LicenseActorSerializer(serializers.ModelSerializer):
     type = NameBasedChoiceField(choices=ActorTypeChoices, read_only=True)
     sex = NameBasedChoiceField(choices=SexChoices, read_only=True)
-    language = serializers.ChoiceField(
-        choices=LanguageChoices, source="get_language_display",
-        read_only=True
-    )
+    language = NameBasedChoiceField(choices=LanguageChoices, read_only=True)
 
     class Meta:
         model = Actor
