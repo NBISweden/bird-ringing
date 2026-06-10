@@ -317,5 +317,6 @@ export type PermissionTypeWithProperties = {
 export type UnrelatedPermissionProperty = {
   id: string;
   label: string;
+  description: string;
   related_type: null;
 };
