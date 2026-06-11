@@ -56,33 +56,6 @@ export default function PermissionListView() {
     return <div>No permission types collected.</div>;
   }
 
-  const properties = [
-    {
-      name: "manual handling required",
-      description:
-        "The activity requires physically holding the bird with hands, directly controlling its movement.",
-      relatedType: "Biological Sample Extraction",
-    },
-    {
-      name: "mechanical restraint permitted",
-      description:
-        "Use of devices such as nets, cages, or other mechanical methods to restrain birds is allowed.",
-      relatedType: "Biological Sample Extraction",
-    },
-    {
-      name: "sedation permitted",
-      description:
-        "Temporary pharmacological restraint is allowed to reduce stress or facilitate handling.",
-      relatedType: "Restricted Species Interaction",
-    },
-    {
-      name: "juveniles included",
-      description:
-        "Dependent young birds may be captured and handled under this permit.",
-      relatedType: null,
-    },
-  ];
-
   const PermissionTypeForm = () => {
     return (
       <form>
@@ -146,40 +119,42 @@ export default function PermissionListView() {
           </button>
         </div>
         <Accordion
-          items={permissionTypes.reduce<Record<string, AccordionEntry>>((acc, item) => {
-            acc[item.id] = {
-              header: (
-                <div className="d-flex gap-3 justify-content-between align-items-center w-100 me-5">
-                  <div className="flex-grow-0">
-                    <p className="fw-bold mb-1">{item.label}</p>
-                    <p className="text-muted mb-0">{item.description}</p>
+          items={permissionTypes.reduce<Record<string, AccordionEntry>>(
+            (acc, item) => {
+              acc[item.id] = {
+                header: (
+                  <div className="d-flex gap-3 justify-content-between align-items-center w-100 me-3 me-lg-5">
+                    <div className="flex-grow-0">
+                      <p className="fw-bold my-3">{item.label}</p>
+                      <p className="text-muted mb-3 lh-base">
+                        {item.description}
+                      </p>
+                    </div>
                   </div>
-                  <div className="flex-grow-0 flex-shrink-0">
-                    <span className="badge text-bg-secondary">{item.properties.length} properties</span>
-                  </div>
-                </div>
-              ),
-              content:(
-                <>
-                  <ul>
-                    {item.properties.map(property => (
-                      <Fragment key={property.id}>
-                        <p className="fw-bold mb-1">{property.label}</p>
-                        <p>{property.description}</p>
-                      </Fragment>
-                    ))}
-                  </ul>
-                  <button
-                    className="btn btn-outline-primary"
-                    onClick={() => openPropertyAddForm(item)}
-                  >
-                    Add property
-                  </button>
-                </>
-              )
-            }
-            return acc;
-          }, {})}
+                ),
+                content: (
+                  <>
+                    <ul className="my-3">
+                      {item.properties.map((property) => (
+                        <Fragment key={property.id}>
+                          <p className="fw-bold mb-1">{property.label}</p>
+                          <p className="text-muted">{property.description}</p>
+                        </Fragment>
+                      ))}
+                    </ul>
+                    <button
+                      className="btn btn-outline-primary my-3"
+                      onClick={() => openPropertyAddForm(item)}
+                    >
+                      Add property
+                    </button>
+                  </>
+                ),
+              };
+              return acc;
+            },
+            {},
+          )}
         />
 
         <div className="d-flex align-items-start mt-5">
@@ -188,7 +163,7 @@ export default function PermissionListView() {
             className="btn btn-primary ms-5"
             onClick={() => openPropertyAddForm(null)}
           >
-            + Add property
+            + Add global property
           </button>
         </div>
         <div className="border-top mt-3">
