@@ -1,7 +1,6 @@
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
-from rest_framework.settings import api_settings
 
 from licensing.message_builder import MessageBuilder, LicenseAndPermitMessageBuilder, RingerBundleMessageBuilder
 from licensing.communication_service import CommunicationService
@@ -45,7 +44,7 @@ from licensing.models import (
 )
 from rest_framework.authentication import SessionAuthentication, BasicAuthentication
 from rest_framework import routers, serializers, viewsets, filters, pagination, response
-from django.db import models, transaction, IntegrityError
+from django.db import models, transaction
 from django.http import HttpResponse
 from django.template.exceptions import TemplateDoesNotExist
 from django.contrib.postgres.aggregates import StringAgg
@@ -437,17 +436,6 @@ class LicenseActorSerializer(serializers.ModelSerializer):
             "country",
         ]
 
-
-class CurrentLicenseDefault:
-    requires_context = True
-
-    def __call__(self, serializer_field):
-        try:
-            return serializer_field.context["license_id"]
-        except KeyError:
-            raise serializers.ValidationError("License is required.")
-
-
 class LicenseActorRelationSerializer(serializers.ModelSerializer):
     actor = RelatedFieldSerializer(
         serializer_class=LicenseActorSerializer,
@@ -460,10 +448,6 @@ class LicenseActorRelationSerializer(serializers.ModelSerializer):
     )
     updated_by = serializers.HiddenField(
         default=serializers.CurrentUserDefault(),
-        write_only=True
-    )
-    license_id = serializers.HiddenField(
-        default=CurrentLicenseDefault(),
         write_only=True
     )
 
@@ -538,6 +522,7 @@ class LicenseSerializer(serializers.ModelSerializer):
         default=serializers.CreateOnlyDefault(serializers.CurrentUserDefault())
     )
     updated_by = serializers.HiddenField(default=serializers.CurrentUserDefault())
+    version = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = License
@@ -550,42 +535,101 @@ class LicenseSerializer(serializers.ModelSerializer):
             "permissions",
             "documents",
             "communication",
-            "version",
             "created_at",
             "updated_at",
         ]
+    
+    def validate_actors(self, actors):
+        initial_data = getattr(self, "initial_data", None)
+        if initial_data is not None and "actors" in initial_data:
+            raw_actors = initial_data["actors"]
+            actor_serializer = LicenseActorRelationSerializer(
+                data=raw_actors,
+                many=True,
+                context=self.context,
+                partial=False,
+            )
+            actor_serializer.is_valid(raise_exception=True)
+            actors = actor_serializer.validated_data
+
+        actor_count: dict[int, int] = dict()
+        code_count: dict[int, int] = dict()
+        for actor in actors:
+            actor_id = actor["actor"].id
+            actor_code = actor["mednr"]
+            actor_count[actor_id] = actor_count.get(actor_id, 0) + 1
+            code_count[actor_code] = code_count.get(actor_code, 0) + 1
+
+        actors_errors: dict[int, dict[str, list[str]]] = dict()
+        for index, actor in enumerate(actors):
+            actor_id = actor["actor"].id
+            actor_code = actor["mednr"]
+            error = dict()
+            if actor_count[actor_id] > 1:
+                error["actor"] = ["Duplicate actor"]
+            if code_count[actor_code] > 1:
+                error["mednr"] = ["Duplicate MedNr"]
+            if len(error) > 0:
+                actors_errors[index] = error
+
+        if len(actors_errors) > 0:
+            raise serializers.ValidationError([
+                actors_errors.get(index, {})
+                for index, _ in enumerate(actors)
+            ])
+
+        return actors
+
+    @transaction.atomic
+    def create(self, validated_data):
+        validated_data.setdefault("version", 0)
+        actors = validated_data.pop("actors", None)
+        permissions = validated_data.pop("permissions", None)
+        instance = super().create(validated_data)
+
+        self.write_actors(instance, actors)
+        self.write_permissions(instance, permissions)
+
+        return instance
 
     @transaction.atomic
     def update(self, instance, validated_data):
         actors = validated_data.pop("actors", None)
         permissions = validated_data.pop("permissions", None)
 
-        super().update(instance, validated_data)
+        instance = super().update(instance, validated_data)
 
-        if actors is not None:
-            instance.actors.all().delete()
-            
-            for relation in actors:
-                relation_serializer = LicenseActorRelationSerializer(
-                    data=relation,
-                    context={
-                        **self.context,
-                        "license_id": instance.id,
-                    },
-                )
-                relation_serializer.is_valid(raise_exception=True)
-                try:
-                    relation_serializer.save()
-                except IntegrityError as e:
-                    raise serializers.ValidationError({
-                        api_settings.NON_FIELD_ERRORS_KEY: [f"Integrity error: {e}"]
-                    })
-        
-        if permissions is not None:
-            # TODO: Work updating permissions later
-            pass
+        self.write_actors(instance, actors)
+        self.write_permissions(instance, permissions)
 
         return instance
+    
+    @transaction.atomic
+    def write_actors(self, instance, actors):
+        """
+        Actor relations need to be written using an existing license
+        instance and thus can not be serialized with the standard flow.
+        """
+        if actors is not None:
+            instance.actors.all().delete()
+
+            relation_serializer = LicenseActorRelationSerializer(
+                data=actors,
+                context=self.context,
+                many=True
+            )
+            relation_serializer.is_valid(raise_exception=True)
+            relation_serializer.save(license=instance)
+    
+    @transaction.atomic
+    def write_permissions(self, instance, permissions):
+        """
+        Permissions need to be written using an existing license
+        instance and thus can not be serialized with the standard flow.
+        """
+        if permissions is not None:
+            # TODO: Work on updating permissions later
+            pass
 
 
 class LicenseHistoryItemSerializer(serializers.ModelSerializer):
@@ -646,20 +690,22 @@ class LicenseSequenceSerializer(serializers.HyperlinkedModelSerializer):
 
     @transaction.atomic
     def create(self, validated_data):
-        latest_data = validated_data.pop("latest")
+        latest_data = validated_data.pop("latest", None)
 
-        sequence = LicenseSequence.objects.create(
-            latest=None,
-            **validated_data,
-        )
+        sequence = super().create(validated_data)
 
-        current_license = License.objects.create(
-            sequence=sequence,
-            version=0,
-            **latest_data,
-        )
+        if latest_data is not None:
+            license_serializer = LicenseSerializer(
+                data=latest_data,
+                context=self.context,
+            )
+            try:
+                license_serializer.is_valid(raise_exception=True)
+                current_license = license_serializer.save(sequence=sequence)
+            except serializers.ValidationError as e:
+                raise serializers.ValidationError({"latest": e.detail})
 
-        sequence.commit(current_license, default_document_copy_policy)
+            sequence.commit(current_license, default_document_copy_policy)
 
         return sequence
 
@@ -677,14 +723,16 @@ class LicenseSequenceSerializer(serializers.HyperlinkedModelSerializer):
                 )
 
             license_serializer = LicenseSerializer(
-                instance.current,
+                instance=current_license,
                 data=latest_data,
                 partial=True,
                 context=self.context,
             )
-
-            license_serializer.is_valid(raise_exception=True)
-            license_serializer.save()
+            try:
+                license_serializer.is_valid(raise_exception=True)
+                current_license = license_serializer.save()
+            except serializers.ValidationError as e:
+                raise serializers.ValidationError({"latest": e.detail})
 
             instance.commit(current_license, default_document_copy_policy)
 

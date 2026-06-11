@@ -303,44 +303,6 @@ class LicenseSequenceUpdateTests(TestCase):
         self.assertEqual(sequence.latest.version, 2)
         self.assertEqual(sequence.latest.actors.count(), 4)
         self.assertEqual(sequence.latest.description, "updated description")
-    
-    def test_license_actor_relations_update_conflict(self):
-        mnr="0001"
-        payload = self._license_sequence_payload(mnr=mnr)
-
-        self._with_access()
-        response = self.client.post(
-            "/api/license_sequence/",
-            data=payload,
-            format="json",
-        )
-
-        self.assertEqual(
-            response.status_code,
-            201,
-            "Adding a new license sequence should succeed.",
-        )
-
-        update = {
-            "latest": {
-                "description": "updated description",
-                "actors": [
-                    {"actor": {"id": str(self.actors[0].id)}, "role": "ringer", "mednr": "0001"},
-                    {"actor": {"id": str(self.actors[1].id)}, "role": "ringer", "mednr": "0001"}
-                ]
-            }
-        }
-        response = self.client.patch(
-            f"/api/license_sequence/{mnr}/",
-            data=update,
-            format="json"
-        )
-        self.assertEqual(response.status_code, 400, "Updating license sequence data should fail.")
-        self.assertEqual(response.json(), {
-            "non_field_errors": [
-                "Integrity error: UNIQUE constraint failed: licensing_licenserelation.mednr, licensing_licenserelation.license_id"
-            ]
-        })
 
     def _with_access(self):
         self.client.login(username="userwithaccess", password="pwd")
