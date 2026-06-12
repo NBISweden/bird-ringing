@@ -19,6 +19,7 @@ import {
   PermissionTypeWithProperties,
 } from "../common";
 import { useObjectState } from "../hooks";
+import { useTranslation } from "../internationalization";
 import { Accordion, AccordionEntry } from "@/components/Accordion";
 import Spinner from "@/components/Spinner";
 
@@ -46,6 +47,7 @@ function PermissionEntryForm({
   successMessage: string;
   onSubmit: (values: PermissionTypeInput) => Promise<void>;
 }) {
+  const { t } = useTranslation();
   const modals = useModalsContext();
   const [values, updateValue] = useObjectState(initialValues);
   const [errors, setErrors] = useState<PermissionFormErrors | undefined>(
@@ -76,7 +78,7 @@ function PermissionEntryForm({
         <Alert type="success">{successMessage}</Alert>
         <div className="d-flex justify-content-end mt-4">
           <button type="button" className="btn btn-primary" onClick={close}>
-            OK
+            {t("okModal")}
           </button>
         </div>
       </>
@@ -122,17 +124,20 @@ function PermissionEntryForm({
             )}
           </Alert>
         ) : null}
-        <VerticalField label="Name" id="label" required>
+        <VerticalField label={t("permissionFormNameLabel")} id="label" required>
           <TextInput
             type="text"
-            placeholder="Add a name"
+            placeholder={t("permissionFormNamePlaceholder")}
             value={values.label || ""}
             onChange={(e) => updateValue({ label: e.target.value })}
           />
         </VerticalField>
-        <VerticalField label="Description" id="description">
+        <VerticalField
+          label={t("permissionFormDescriptionLabel")}
+          id="description"
+        >
           <TextArea
-            placeholder="Add a description"
+            placeholder={t("permissionFormDescriptionPlaceholder")}
             value={values.description || ""}
             onChange={(e) => updateValue({ description: e.target.value })}
           />
@@ -144,7 +149,7 @@ function PermissionEntryForm({
             onClick={close}
             disabled={isSubmitting}
           >
-            Cancel
+            {t("abortModal")}
           </button>
           <button
             type="submit"
@@ -160,6 +165,7 @@ function PermissionEntryForm({
 }
 
 export default function PermissionListView() {
+  const { t } = useTranslation();
   const modals = useModalsContext();
   const flags = useFlags();
   const client = useClient();
@@ -192,27 +198,29 @@ export default function PermissionListView() {
     return (
       <div className="container my-5 d-flex align-items-center">
         <Spinner />
-        <span className="ms-3">Loading permissions…</span>
+        <span className="ms-3">{t("permissionLoading")}</span>
       </div>
     );
   }
 
   if (!permissionTypes || !unrelatedProperties) {
-    return <div>Could not load permissions.</div>;
+    return <div>{t("permissionLoadError")}</div>;
   }
 
   const openTypeForm = (type: PermissionTypeWithProperties | null) => {
     modals.add({
-      title: type ? "Edit permission type" : "Add permission type",
+      title: type ? t("permissionTypeEditTitle") : t("permissionTypeAddTitle"),
       content: (
         <PermissionEntryForm
           initialValues={{
             label: type?.label ?? "",
             description: type?.description ?? "",
           }}
-          submitLabel={type ? "Save" : "Add"}
+          submitLabel={type ? t("permissionFormSave") : t("permissionFormAdd")}
           successMessage={
-            type ? "Permission type updated." : "Permission type added."
+            type
+              ? t("permissionTypeUpdatedMessage")
+              : t("permissionTypeAddedMessage")
           }
           onSubmit={async (values) => {
             if (type) {
@@ -237,18 +245,24 @@ export default function PermissionListView() {
   }) => {
     modals.add({
       title: property
-        ? "Edit property"
+        ? t("permissionPropertyEditTitle")
         : type
-          ? `Add property to "${type.label}"`
-          : "Add global permission property",
+          ? t("permissionPropertyAddToTypeTitle", { label: type.label })
+          : t("permissionPropertyAddGlobalTitle"),
       content: (
         <PermissionEntryForm
           initialValues={{
             label: property?.label ?? "",
             description: property?.description ?? "",
           }}
-          submitLabel={property ? "Save" : "Add"}
-          successMessage={property ? "Property updated." : "Property added."}
+          submitLabel={
+            property ? t("permissionFormSave") : t("permissionFormAdd")
+          }
+          successMessage={
+            property
+              ? t("permissionPropertyUpdatedMessage")
+              : t("permissionPropertyAddedMessage")
+          }
           onSubmit={async (values) => {
             if (property) {
               await client.updatePermissionProperty(property.id, values);
@@ -274,16 +288,17 @@ export default function PermissionListView() {
     <>
       <div className="container">
         <div className="d-flex align-items-start my-5">
-          <h2>Permission types</h2>
+          <h2>{t("permissionTypesHeading")}</h2>
           <button
             className="btn btn-primary ms-5"
             onClick={() => openTypeForm(null)}
           >
-            + Add permission type
+            <i className={`bi bi-plus-lg me-2`} />
+            {t("permissionTypeAddTitle")}
           </button>
         </div>
         {permissionTypes.length === 0 ? (
-          <p className="fst-italic">No permission types yet.</p>
+          <p className="fst-italic">{t("permissionTypesEmpty")}</p>
         ) : null}
         <Accordion
           items={permissionTypes.reduce<Record<string, AccordionEntry>>(
@@ -320,14 +335,16 @@ export default function PermissionListView() {
                                   openPropertyForm({ property, type: item })
                                 }
                               >
-                                Edit
+                                {t("edit")}
                               </button>
                             </div>
                           </Fragment>
                         ))
                       ) : (
                         <p className="fst-italic">
-                          {item.label} has no properties yet.
+                          {t("permissionTypeNoPropertiesYet", {
+                            label: item.label,
+                          })}
                         </p>
                       )}
                     </ul>
@@ -338,13 +355,13 @@ export default function PermissionListView() {
                           openPropertyForm({ property: null, type: item })
                         }
                       >
-                        Add property
+                        {t("permissionPropertyAddButton")}
                       </button>
                       <button
                         className="btn btn-outline-secondary"
                         onClick={() => openTypeForm(item)}
                       >
-                        Edit permission type
+                        {t("permissionTypeEditTitle")}
                       </button>
                     </div>
                   </>
@@ -357,44 +374,51 @@ export default function PermissionListView() {
         />
 
         <div className="d-flex align-items-start my-5">
-          <h2 className="mt-5">Global properties</h2>
+          <h2 className="mt-5">{t("permissionGlobalPropertiesHeading")}</h2>
           <button
             className="btn btn-primary ms-5 mt-5"
             onClick={() => openPropertyForm({ property: null, type: null })}
           >
-            + Add global property
+            <i className={`bi bi-plus-lg me-2`} />
+            {t("permissionPropertyAddGlobalButton")}
           </button>
         </div>
         <div className="border-top mt-3">
-          {unrelatedProperties.map((item) => (
-            <div key={item.id} className="row border-bottom g-0">
-              <div className="col-12 col-md-6 col-lg-4">
-                <div className="py-4 pe-3 pe-xl-5">
-                  <p className="fw-bold mb-0">{item.label}</p>
+          {unrelatedProperties.length > 0 ? (
+            unrelatedProperties.map((item) => (
+              <div key={item.id} className="row border-bottom g-0">
+                <div className="col-12 col-md-6 col-lg-4">
+                  <div className="py-4 pe-3 pe-xl-5">
+                    <p className="fw-bold mb-0">{item.label}</p>
+                  </div>
+                </div>
+                <div className="col-12 col-md-6 col-lg-8">
+                  <div className="py-4 ps-xl-5 d-flex justify-content-between align-items-start gap-3">
+                    <p className="text-muted mb-0">{item.description}</p>
+                    <button
+                      className="btn btn-outline-secondary btn-sm"
+                      onClick={() =>
+                        openPropertyForm({
+                          property: {
+                            id: item.id,
+                            label: item.label,
+                            description: item.description,
+                          },
+                          type: null,
+                        })
+                      }
+                    >
+                      {t("edit")}
+                    </button>
+                  </div>
                 </div>
               </div>
-              <div className="col-12 col-md-6 col-lg-8">
-                <div className="py-4 ps-xl-5 d-flex justify-content-between align-items-start gap-3">
-                  <p className="text-muted mb-0">{item.description}</p>
-                  <button
-                    className="btn btn-outline-secondary btn-sm"
-                    onClick={() =>
-                      openPropertyForm({
-                        property: {
-                          id: item.id,
-                          label: item.label,
-                          description: item.description,
-                        },
-                        type: null,
-                      })
-                    }
-                  >
-                    Edit
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
+            ))
+          ) : (
+            <p className="fst-italic p-5">
+              {t("permissionPropertiesGlobalEmpty")}
+            </p>
+          )}
         </div>
       </div>
     </>
