@@ -57,16 +57,25 @@ class PermissionPropertyNestedSerializer(serializers.ModelSerializer):
 
 class PermissionTypeSerializer(serializers.ModelSerializer):
     id = serializers.CharField(read_only=True)
-    label = serializers.SerializerMethodField(read_only=True)
+    label = serializers.CharField(source="name")
+    description = serializers.CharField(required=False, allow_blank=True)
     properties = serializers.SerializerMethodField(read_only=True)
+    created_by = serializers.HiddenField(
+        default=serializers.CreateOnlyDefault(serializers.CurrentUserDefault())
+    )
+    updated_by = serializers.HiddenField(default=serializers.CurrentUserDefault())
 
     class Meta:
         model = LicensePermissionType
-        fields = ["id", "label", "description", "properties"]
+        fields = [
+            "id",
+            "label",
+            "description",
+            "properties",
+            "created_by",
+            "updated_by",
+        ]
 
-    def get_label(self, obj):
-        return obj.name
-    
     def get_properties(self, obj):
         qs = obj.licensepermissionproperty_set.all().order_by("name")
         return PermissionPropertyNestedSerializer(qs, many=True).data
@@ -74,20 +83,32 @@ class PermissionTypeSerializer(serializers.ModelSerializer):
 
 class PermissionPropertySerializer(serializers.ModelSerializer):
     id = serializers.CharField(read_only=True)
-    label = serializers.SerializerMethodField(read_only=True)
-    description = serializers.CharField(read_only=True)
+    label = serializers.CharField(source="name")
+    description = serializers.CharField(required=False, allow_blank=True)
     related_type = serializers.SerializerMethodField(read_only=True)
-    queryset = LicensePermissionProperty.objects.all().select_related("related_type")
+    related_type_id = serializers.PrimaryKeyRelatedField(
+        source="related_type",
+        queryset=LicensePermissionType.objects.all(),
+        write_only=True,
+        required=False,
+        allow_null=True,
+    )
+    created_by = serializers.HiddenField(
+        default=serializers.CreateOnlyDefault(serializers.CurrentUserDefault())
+    )
+    updated_by = serializers.HiddenField(default=serializers.CurrentUserDefault())
 
     class Meta:
         model = LicensePermissionProperty
-        fields = ["id", "label", "description", "related_type"]
-
-    def get_label(self, obj):
-        return obj.name
-
-    def get_description(self, obj):
-        return obj.description
+        fields = [
+            "id",
+            "label",
+            "description",
+            "related_type",
+            "related_type_id",
+            "created_by",
+            "updated_by",
+        ]
 
     def get_related_type(self, obj):
         return (

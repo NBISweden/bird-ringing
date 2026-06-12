@@ -323,9 +323,24 @@ export type PermissionTypeWithProperties = {
   properties: PermissionPropertyItem[];
 };
 
-export type UnrelatedPermissionProperty = {
+export type PermissionProperty = {
   id: string;
   label: string;
   description: string;
+  related_type: { id: string } | null;
+};
+
+export type UnrelatedPermissionProperty = PermissionProperty & {
   related_type: null;
+};
+
+export type PermissionTypeInput = {
+  label: string;
+  description: string;
+};
+
+export type PermissionPropertyInput = {
+  label: string;
+  description: string;
+  related_type_id?: string | null;
 };

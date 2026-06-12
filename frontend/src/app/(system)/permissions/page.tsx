@@ -1,16 +1,23 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import useSWR from "swr";
 import {
-  SelectInput,
+  FieldErrorContext,
   TextInput,
   VerticalField,
 } from "@/components/InputFields";
+import { Alert } from "@/components/Alert";
 import { useFlags, useClient, useModalsContext } from "../contexts";
-import { Client } from "../client";
+import { Client, FieldValidationError } from "../client";
 import { notFound } from "next/navigation";
 import { Fragment } from "react";
-import { PermissionTypeWithProperties } from "../common";
+import {
+  PermissionPropertyItem,
+  PermissionTypeInput,
+  PermissionTypeWithProperties,
+} from "../common";
+import { useObjectState } from "../hooks";
 import { Accordion, AccordionEntry } from "@/components/Accordion";
 
 async function fetchPermissionTypes([client]: [Client]) {
@@ -19,6 +26,113 @@ async function fetchPermissionTypes([client]: [Client]) {
 
 async function fetchUnrelatedProperties([client]: [Client]) {
   return client.fetchUnrelatedPermissionProperties();
+}
+
+type PermissionFormErrors = {
+  fields: Record<string, string[]>;
+  nonField: string[];
+};
+
+function PermissionEntryForm({
+  initialValues,
+  submitLabel,
+  onSubmit,
+  onCancel,
+}: {
+  initialValues: PermissionTypeInput;
+  submitLabel: string;
+  onSubmit: (values: PermissionTypeInput) => Promise<void>;
+  onCancel: () => void;
+}) {
+  const [values, updateValue] = useObjectState(initialValues);
+  const [errors, setErrors] = useState<PermissionFormErrors | undefined>(
+    undefined,
+  );
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const fieldErrors = useMemo<Record<string, string | undefined>>(() => {
+    if (!errors) return {};
+    const flat: Record<string, string | undefined> = {};
+    for (const [field, messages] of Object.entries(errors.fields)) {
+      flat[field] = messages.join(", ");
+    }
+    return flat;
+  }, [errors]);
+
+  return (
+    <form
+      onSubmit={async (e) => {
+        e.preventDefault();
+        setErrors(undefined);
+        setIsSubmitting(true);
+        try {
+          await onSubmit(values);
+        } catch (error) {
+          if (error instanceof FieldValidationError) {
+            setErrors({
+              fields: error.fieldErrors,
+              nonField: error.nonFieldErrors,
+            });
+          } else {
+            const message =
+              error instanceof Error ? error.message : String(error);
+            setErrors({ fields: {}, nonField: [message] });
+          }
+        } finally {
+          setIsSubmitting(false);
+        }
+      }}
+    >
+      <FieldErrorContext.Provider value={fieldErrors}>
+        {errors && errors.nonField.length > 0 ? (
+          <Alert type="danger">
+            {errors.nonField.length === 1 ? (
+              <p className="mb-0">{errors.nonField[0]}</p>
+            ) : (
+              <ul className="mb-0">
+                {errors.nonField.map((message, i) => (
+                  <li key={i}>{message}</li>
+                ))}
+              </ul>
+            )}
+          </Alert>
+        ) : null}
+        <VerticalField label="Name" id="label" required>
+          <TextInput
+            type="text"
+            placeholder="Add a name"
+            value={values.label || ""}
+            onChange={(e) => updateValue({ label: e.target.value })}
+          />
+        </VerticalField>
+        <VerticalField label="Description" id="description">
+          <TextInput
+            type="text"
+            placeholder="Add a description"
+            value={values.description || ""}
+            onChange={(e) => updateValue({ description: e.target.value })}
+          />
+        </VerticalField>
+        <div className="d-flex justify-content-end gap-2 mt-4">
+          <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={onCancel}
+            disabled={isSubmitting}
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            className="btn btn-primary"
+            disabled={isSubmitting}
+          >
+            {submitLabel}
+          </button>
+        </div>
+      </FieldErrorContext.Provider>
+    </form>
+  );
 }
 
 export default function PermissionListView() {
@@ -34,11 +148,13 @@ export default function PermissionListView() {
     data: permissionTypes,
     isLoading: typesLoading,
     error: typesError,
+    mutate: mutateTypes,
   } = useSWR([client, "permission-types"], fetchPermissionTypes);
   const {
     data: unrelatedProperties,
     isLoading: unrelatedPropertiesLoading,
     error: unrelatedPropertiesError,
+    mutate: mutateUnrelated,
   } = useSWR([client, "unrelated-properties"], fetchUnrelatedProperties);
 
   if (typesError) {
@@ -56,65 +172,84 @@ export default function PermissionListView() {
     return <div>No permission types collected.</div>;
   }
 
-  const PermissionTypeForm = () => {
-    return (
-      <form>
-        <VerticalField label="Name" id="name" required>
-          <TextInput type="text" placeholder="Add a name" />
-        </VerticalField>
-        <VerticalField label="Description" id="description" required>
-          <TextInput type="text" placeholder="Add a description" />
-        </VerticalField>
-      </form>
-    );
-  };
-
-  const PropertiesForm = () => {
-    return (
-      <form>
-        <VerticalField label="Name" id="name" required>
-          <TextInput type="text" placeholder="Add a name" />
-        </VerticalField>
-        <VerticalField label="Description" id="description" required>
-          <TextInput type="text" placeholder="Add a description" />
-        </VerticalField>
-      </form>
-    );
-  };
-
-  const openTypeAddForm = () => {
-    modals.add({
-      title: "Add permission type",
-      content: PermissionTypeForm(),
-      actions: [
-        {
-          label: "Save",
-          action: () => {},
-        },
-      ],
+  const openTypeForm = (type: PermissionTypeWithProperties | null) => {
+    const ref = modals.add({
+      title: type ? "Edit permission type" : "Add permission type",
+      content: (
+        <PermissionEntryForm
+          initialValues={{
+            label: type?.label ?? "",
+            description: type?.description ?? "",
+          }}
+          submitLabel={type ? "Save" : "Add"}
+          onCancel={() => modals.remove(ref)}
+          onSubmit={async (values) => {
+            if (type) {
+              await client.updatePermissionType(type.id, values);
+            } else {
+              await client.createPermissionType(values);
+            }
+            await mutateTypes();
+            modals.remove(ref);
+          }}
+        />
+      ),
+      actions: [],
     });
   };
-  const openPropertyAddForm = (type: PermissionTypeWithProperties | null) => {
-    modals.add({
-      title: type
-        ? `Add property to "${type.label}"`
-        : `Add global permission property`,
-      content: PropertiesForm(),
-      actions: [
-        {
-          label: "Save",
-          action: () => {},
-        },
-      ],
+
+  const openPropertyForm = ({
+    property,
+    type,
+  }: {
+    property: PermissionPropertyItem | null;
+    type: PermissionTypeWithProperties | null;
+  }) => {
+    const ref = modals.add({
+      title: property
+        ? "Edit property"
+        : type
+          ? `Add property to "${type.label}"`
+          : "Add global permission property",
+      content: (
+        <PermissionEntryForm
+          initialValues={{
+            label: property?.label ?? "",
+            description: property?.description ?? "",
+          }}
+          submitLabel={property ? "Save" : "Add"}
+          onCancel={() => modals.remove(ref)}
+          onSubmit={async (values) => {
+            if (property) {
+              await client.updatePermissionProperty(property.id, values);
+            } else {
+              await client.createPermissionProperty({
+                ...values,
+                related_type_id: type ? type.id : null,
+              });
+            }
+            if (type) {
+              await mutateTypes();
+            } else {
+              await mutateUnrelated();
+            }
+            modals.remove(ref);
+          }}
+        />
+      ),
+      actions: [],
     });
   };
 
   return (
     <>
       <div className="container">
-        <div className="d-flex align-items-start mb-5">
+        <div className="d-flex align-items-start my-5">
           <h2>Permission types</h2>
-          <button className="btn btn-primary ms-5" onClick={openTypeAddForm}>
+          <button
+            className="btn btn-primary ms-5"
+            onClick={() => openTypeForm(null)}
+          >
             + Add permission type
           </button>
         </div>
@@ -137,17 +272,43 @@ export default function PermissionListView() {
                     <ul className="my-3">
                       {item.properties.map((property) => (
                         <Fragment key={property.id}>
-                          <p className="fw-bold mb-1">{property.label}</p>
-                          <p className="text-muted">{property.description}</p>
+                          <div className="d-flex justify-content-between align-items-start gap-3 border-bottom">
+                            <div>
+                              <p className="fw-bold mb-1 pt-3">
+                                {property.label}
+                              </p>
+                              <p className="text-muted">
+                                {property.description}
+                              </p>
+                            </div>
+                            <button
+                              className="btn btn-outline-secondary btn-sm align-self-md-center mt-3 mt-md-0"
+                              onClick={() =>
+                                openPropertyForm({ property, type: item })
+                              }
+                            >
+                              Edit
+                            </button>
+                          </div>
                         </Fragment>
                       ))}
                     </ul>
-                    <button
-                      className="btn btn-outline-primary my-3"
-                      onClick={() => openPropertyAddForm(item)}
-                    >
-                      Add property
-                    </button>
+                    <div className="d-flex gap-2 mb-3 mt-4 mt-md-5">
+                      <button
+                        className="btn btn-outline-primary"
+                        onClick={() =>
+                          openPropertyForm({ property: null, type: item })
+                        }
+                      >
+                        Add property
+                      </button>
+                      <button
+                        className="btn btn-outline-secondary"
+                        onClick={() => openTypeForm(item)}
+                      >
+                        Edit permission type
+                      </button>
+                    </div>
                   </>
                 ),
               };
@@ -157,11 +318,11 @@ export default function PermissionListView() {
           )}
         />
 
-        <div className="d-flex align-items-start mt-5">
-          <h2>Global properties</h2>
+        <div className="d-flex align-items-start my-5">
+          <h2 className="mt-5">Global properties</h2>
           <button
-            className="btn btn-primary ms-5"
-            onClick={() => openPropertyAddForm(null)}
+            className="btn btn-primary ms-5 mt-5"
+            onClick={() => openPropertyForm({ property: null, type: null })}
           >
             + Add global property
           </button>
@@ -175,8 +336,23 @@ export default function PermissionListView() {
                 </div>
               </div>
               <div className="col-12 col-md-6 col-lg-8">
-                <div className="py-4 ps-xl-5">
+                <div className="py-4 ps-xl-5 d-flex justify-content-between align-items-start gap-3">
                   <p className="text-muted mb-0">{item.description}</p>
+                  <button
+                    className="btn btn-outline-secondary btn-sm"
+                    onClick={() =>
+                      openPropertyForm({
+                        property: {
+                          id: item.id,
+                          label: item.label,
+                          description: item.description,
+                        },
+                        type: null,
+                      })
+                    }
+                  >
+                    Edit
+                  </button>
                 </div>
               </div>
             </div>

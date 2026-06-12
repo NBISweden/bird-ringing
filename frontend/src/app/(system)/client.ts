@@ -9,6 +9,9 @@ import {
   SendEmailResult,
   PermissionTypeWithProperties,
   UnrelatedPermissionProperty,
+  PermissionTypeInput,
+  PermissionPropertyInput,
+  PermissionProperty,
 } from "./common";
 import { getCookie, parseCompleteUrl } from "./utils";
 
@@ -430,6 +433,76 @@ export class Client {
   > {
     return this._getJson<UnrelatedPermissionProperty[]>(
       "property/permission_property/?unrelated=1",
+    );
+  }
+
+  async createPermissionType(
+    type: PermissionTypeInput,
+  ): Promise<PermissionTypeWithProperties> {
+    const csrf = getCookie("csrftoken");
+    return this.fetchJson<PermissionTypeWithProperties>(
+      "property/permission_type/",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(csrf ? { "X-CSRFToken": csrf } : {}),
+        },
+        body: JSON.stringify(type),
+      },
+    );
+  }
+
+  async updatePermissionType(
+    typeId: string,
+    type: PermissionTypeInput,
+  ): Promise<PermissionTypeWithProperties> {
+    const csrf = getCookie("csrftoken");
+    return this.fetchJson<PermissionTypeWithProperties>(
+      `property/permission_type/${typeId}/`,
+      {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          ...(csrf ? { "X-CSRFToken": csrf } : {}),
+        },
+        body: JSON.stringify(type),
+      },
+    );
+  }
+
+  async createPermissionProperty(
+    property: PermissionPropertyInput,
+  ): Promise<PermissionProperty> {
+    const csrf = getCookie("csrftoken");
+    return this.fetchJson<PermissionProperty>(
+      "property/permission_property/",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(csrf ? { "X-CSRFToken": csrf } : {}),
+        },
+        body: JSON.stringify(property),
+      },
+    );
+  }
+
+  async updatePermissionProperty(
+    propertyId: string,
+    property: PermissionPropertyInput,
+  ): Promise<PermissionProperty> {
+    const csrf = getCookie("csrftoken");
+    return this.fetchJson<PermissionProperty>(
+      `property/permission_property/${propertyId}/`,
+      {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          ...(csrf ? { "X-CSRFToken": csrf } : {}),
+        },
+        body: JSON.stringify(property),
+      },
     );
   }
 }
