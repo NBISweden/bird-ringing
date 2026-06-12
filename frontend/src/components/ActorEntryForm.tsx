@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { ActorBase, toSelectOptions } from "@/app/(system)/common";
+import { useEffect, useRef, useState } from "react";
+import { ActorBase, FormErrors, toSelectOptions } from "@/app/(system)/common";
 import { useObjectState, useOptions } from "@/app/(system)/hooks";
 import { useTranslation } from "@/app/(system)/internationalization";
 import {
@@ -12,11 +12,6 @@ import {
 } from "./InputFields";
 import { Alert } from "./Alert";
 
-export type ActorEntryFormErrors = {
-  fields: Record<string, string[]>;
-  nonField: string[];
-};
-
 export function ActorEntryForm({
   initialActor,
   onSubmit,
@@ -26,7 +21,7 @@ export function ActorEntryForm({
   initialActor: Partial<ActorBase>;
   onSubmit: (actor: Partial<ActorBase>) => void | Promise<void>;
   title: string;
-  errors?: ActorEntryFormErrors;
+  errors?: FormErrors;
 }) {
   const { t } = useTranslation();
   const [actor, updateValue] = useObjectState(initialActor);
@@ -40,15 +35,6 @@ export function ActorEntryForm({
   const { data: sexOptions, isLoading: sexIsLoading } = useOptions("sex");
   const { data: actorTypeOptions, isLoading: atIsLoading } =
     useOptions("actor_type");
-
-  const fieldErrors = useMemo<Record<string, string | undefined>>(() => {
-    if (!errors) return {};
-    const flat: Record<string, string | undefined> = {};
-    for (const [field, messages] of Object.entries(errors.fields)) {
-      flat[field] = messages.join(", ");
-    }
-    return flat;
-  }, [errors]);
 
   useEffect(() => {
     if (!errors) return;
@@ -76,7 +62,7 @@ export function ActorEntryForm({
         }
       }}
     >
-      <FieldErrorContext.Provider value={fieldErrors}>
+      <FieldErrorContext.Provider value={errors?.fields || {}}>
         <div className="col-12 col-xl-6">
           <div className="card my-4">
             <div className="card-header py-3">

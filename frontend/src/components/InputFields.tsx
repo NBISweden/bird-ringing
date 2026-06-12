@@ -18,10 +18,9 @@ type FieldContext = {
   errorId?: string;
   required?: boolean;
 };
+export type FieldErrorGroup = Record<string, string | string[] | undefined>;
 export const FieldContext = createContext<FieldContext>({});
-export const FieldErrorContext = createContext<
-  Record<string, string | undefined>
->({});
+export const FieldErrorContext = createContext<FieldErrorGroup>({});
 
 function describedBy(...ids: (string | undefined)[]): string | undefined {
   const joined = ids.filter(Boolean).join(" ");
@@ -36,6 +35,31 @@ type FieldProps = PropsWithChildren<{
   required?: boolean;
 }>;
 
+function useFieldError(fieldId: string) {
+  const fieldErrors = useContext(FieldErrorContext);
+  const errors = fieldErrors[fieldId];
+  return (errors ? (Array.isArray(errors) ? errors : [errors]) : []).join(", ");
+}
+
+export function FieldErrors({
+  errors,
+  children,
+}: React.PropsWithChildren<{ errors: FieldErrorGroup }>) {
+  const previousErrors = useContext(FieldErrorContext);
+  const allErrors = Object.entries(errors).reduce<FieldErrorGroup>(
+    (acc, [key, value]) => {
+      acc[key] = [...(acc[key] ?? []), ...(value ?? [])];
+      return acc;
+    },
+    { ...previousErrors },
+  );
+  return (
+    <FieldErrorContext.Provider value={allErrors}>
+      {children}
+    </FieldErrorContext.Provider>
+  );
+}
+
 export function VerticalField({
   children,
   label,
@@ -48,8 +72,7 @@ export function VerticalField({
   const allocatedId = useId();
   const allocatedErrorId = useId();
   const fieldId = id === undefined ? allocatedId : id;
-  const fieldErrors = useContext(FieldErrorContext);
-  const error = fieldErrors[fieldId];
+  const error = useFieldError(fieldId);
   const errorId = error ? allocatedErrorId : undefined;
   return (
     <div className="mb-3">
@@ -97,8 +120,7 @@ export function HorizontalField({
   const allocatedId = useId();
   const allocatedErrorId = useId();
   const fieldId = id === undefined ? allocatedId : id;
-  const fieldErrors = useContext(FieldErrorContext);
-  const error = fieldErrors[fieldId];
+  const error = useFieldError(fieldId);
   const errorId = error ? allocatedErrorId : undefined;
   return (
     <div className="row g-3 align-items-center">
@@ -179,7 +201,7 @@ export function SelectInput<T>({
   DetailedHTMLProps<SelectHTMLAttributes<HTMLSelectElement>, HTMLSelectElement>,
   "onChange" | "value" | "defaultValue"
 > & {
-  options: { value: T; label: string }[];
+  options: { value: T; label: string; disabled?: true }[];
   onChange?: (
     v: T,
     event: ChangeEvent<HTMLSelectElement, HTMLSelectElement>,
@@ -249,8 +271,12 @@ export function SelectInput<T>({
       id={fieldId}
       aria-describedby={describedBy(helpId, errorId)}
     >
-      {options.map(({ value, label }, index) => (
-        <option key={index} value={toHtmlOptionValue(value, index)}>
+      {options.map(({ value, label, disabled }, index) => (
+        <option
+          key={index}
+          value={toHtmlOptionValue(value, index)}
+          disabled={disabled}
+        >
           {label}
         </option>
       ))}

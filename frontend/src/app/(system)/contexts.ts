@@ -86,6 +86,24 @@ export type ModalStack = {
   remove(modal: ModalRef): void;
 };
 
+export function AlertModal(
+  title: string,
+  content: React.ReactNode,
+  actionLabel: string,
+  action?: () => void,
+): Modal {
+  return {
+    title,
+    content,
+    actions: [
+      {
+        label: actionLabel,
+        action: action ?? (() => {}),
+      },
+    ],
+  };
+}
+
 export const ModalsContext = createContext<ModalStack>({
   stack: [],
   add() {

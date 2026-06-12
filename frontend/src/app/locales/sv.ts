@@ -117,6 +117,17 @@ const modals = {
   actorUpdateSuccessTitle: "Ringmärkare uppdaterad",
   actorUpdateSuccessMessage: "Ringmärkaren har uppdaterats.",
   actorUpdateErrorTitle: "Misslyckades att uppdatera ringmärkare",
+  licenseCreateSuccessTitle: "Licens skapad",
+  licenseCreateSuccessMessage: "Licensen har skapats.",
+  licenseCreateErrorTitle: "Misslyckades att skapa licens",
+  licenseUpdateSuccessTitle: "Licens uppdaterad",
+  licenseUpdateSuccessMessage: "Licensen har uppdaterats.",
+  licenseUpdateErrorTitle: "Misslyckades att uppdatera licens",
+};
+
+const licenseRelationForm = {
+  licenseRelationFormSave: "Updatera relationer",
+  licenseRelationAddPermission: "Lägg till tillstånd",
 };
 
 export const locale: TranslationMap = {
@@ -129,6 +140,7 @@ export const locale: TranslationMap = {
   ...licenseFields,
   ...licenseForm,
   ...modals,
+  ...licenseRelationForm,
 
   birdRinging: "Ringmärkning",
   userPermissions: "Användarrättigheter",

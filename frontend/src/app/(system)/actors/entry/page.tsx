@@ -9,6 +9,7 @@ import {
   ActorBase,
   ActorLicenseRelation,
   ActorListItem,
+  FormErrors,
   Role,
   convertDateToLocale,
   convertOnlyDateToLocale,
@@ -19,10 +20,7 @@ import { useTranslation } from "../../internationalization";
 import { Alert } from "@/components/Alert";
 import { PaginationContainer, usePagination } from "@/components/Pagination";
 import Icon from "@/components/Icon";
-import {
-  ActorEntryForm,
-  ActorEntryFormErrors,
-} from "@/components/ActorEntryForm";
+import { ActorEntryForm } from "@/components/ActorEntryForm";
 
 async function fetchActor([client, _ctx, entryId]: [Client, "actor", string]) {
   return client.fetchActorById(entryId);
@@ -81,9 +79,9 @@ function ActorViewBase() {
   const client = useClient();
   const { t } = useTranslation();
   const [isEditing, setIsEditing] = useState<boolean>(false);
-  const [editErrors, setEditErrors] = useState<
-    ActorEntryFormErrors | undefined
-  >(undefined);
+  const [editErrors, setEditErrors] = useState<FormErrors | undefined>(
+    undefined,
+  );
   const modals = useModalsContext();
 
   const { data, isLoading, error, mutate } = useSWR(

@@ -6,6 +6,9 @@ from licensing.models import (
     LicenseSequence,
     LicenseStatusChoices,
     ReportStatusChoices,
+    Actor,
+    SexChoices,
+    ActorTypeChoices,
 )
 
 from .utils import create_user
@@ -24,6 +27,19 @@ class LicenseSequenceUpdateTests(TestCase):
             ],
         )
         self.user_without_access = create_user("userwithoutaccess", "pwd")
+
+        self.actors = [
+            Actor.objects.create(
+                full_name=name,
+                first_name=name,
+                email=f"{name.lower()}@example.com",
+                sex=SexChoices.UNDISCLOSED,
+                type=ActorTypeChoices.PERSON,
+                created_by=self.user_with_access,
+                updated_by=self.user_with_access
+            )
+            for name in ["Adam", "Bertil", "Carl", "Daniel"]
+        ]
 
     def test_license_sequence_create(self):
         payload = self._license_sequence_payload()
@@ -57,6 +73,28 @@ class LicenseSequenceUpdateTests(TestCase):
         self.assertIsNotNone(sequence.latest)
         self.assertEqual(sequence.latest.version, 1)
         self.assertEqual(sequence.latest.location, "Test location")
+    
+    def test_license_sequence_create_with_empty_description(self):
+        payload = self._license_sequence_payload(description="")
+
+        self._with_access()
+
+        response = self.client.post(
+            "/api/license_sequence/",
+            data=payload,
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            201,
+            "Adding a new license sequence should succeed.",
+        )
+
+        sequence = LicenseSequence.objects.get(mnr="1234")
+        self.assertIsNotNone(sequence.latest)
+        self.assertEqual(sequence.latest.version, 1)
+        self.assertEqual(sequence.latest.description, "")
 
     def test_license_sequence_update(self):
         sequence = self._create_license_sequence(mnr="1234")
@@ -225,6 +263,46 @@ class LicenseSequenceUpdateTests(TestCase):
                 )
 
                 self.assertEqual(response.status_code, 403)
+    
+    def test_license_actor_relations_update(self):
+        mnr="0001"
+        payload = self._license_sequence_payload(mnr=mnr)
+
+        self._with_access()
+        response = self.client.post(
+            "/api/license_sequence/",
+            data=payload,
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            201,
+            "Adding a new license sequence should succeed.",
+        )
+
+        update = {
+            "latest": {
+                "description": "updated description",
+                "actors": [
+                    {"actor": {"id": str(self.actors[0].id)}, "role": "ringer", "mednr": "0000"},
+                    {"actor": {"id": str(self.actors[1].id)}, "role": "associate_ringer", "mednr": "0001"},
+                    {"actor": {"id": str(self.actors[2].id)}, "role": "affiliate", "mednr": "0002"},
+                    {"actor": {"id": str(self.actors[3].id)}, "role": "communication", "mednr": "0003"}
+                ]
+            }
+        }
+        response = self.client.patch(
+            f"/api/license_sequence/{mnr}/",
+            data=update,
+            format="json"
+        )
+        self.assertEqual(response.status_code, 200, "Updating license sequence data should succeed.")
+
+        sequence = LicenseSequence.objects.filter(mnr=mnr).get()
+        self.assertEqual(sequence.latest.version, 2)
+        self.assertEqual(sequence.latest.actors.count(), 4)
+        self.assertEqual(sequence.latest.description, "updated description")
 
     def _with_access(self):
         self.client.login(username="userwithaccess", password="pwd")
@@ -258,13 +336,18 @@ class LicenseSequenceUpdateTests(TestCase):
 
         return sequence
 
-    def _license_sequence_payload( self, mnr="1234", location="Test location"):
+    def _license_sequence_payload(
+        self,
+        mnr="1234",
+        location="Test location",
+        description="Test description",
+    ):
         payload = {
             "mnr": mnr,
             "status": "active",
             "latest": {
                 "location": location,
-                "description": "Test description",
+                "description": description,
                 "report_status": "yes",
                 "starts_at": "2026-01-01",
                 "ends_at": "2026-12-31",

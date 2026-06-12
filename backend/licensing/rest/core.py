@@ -43,14 +43,13 @@ from licensing.models import (
     MonthDay,
 )
 from rest_framework.authentication import SessionAuthentication, BasicAuthentication
-
 from rest_framework import routers, serializers, viewsets, filters, pagination, response
 from django.db import models, transaction
 from django.http import HttpResponse
 from django.template.exceptions import TemplateDoesNotExist
 from django.contrib.postgres.aggregates import StringAgg
 from collections import OrderedDict
-from .utils import DjangoProtectedModelPermissions, NameBasedChoiceField
+from .utils import DjangoProtectedModelPermissions, NameBasedChoiceField, RelatedFieldSerializer
 import logging
 
 
@@ -390,11 +389,9 @@ class ActorDetailSerializer(ActorSerializer):
 
 
 class LicenseActorSerializer(serializers.ModelSerializer):
-    type = serializers.ChoiceField(choices=ActorTypeChoices, source="get_type_display")
-    sex = serializers.ChoiceField(choices=SexChoices, source="get_sex_display")
-    language = serializers.ChoiceField(
-        choices=LanguageChoices, source="get_language_display"
-    )
+    type = NameBasedChoiceField(choices=ActorTypeChoices, read_only=True)
+    sex = NameBasedChoiceField(choices=SexChoices, read_only=True)
+    language = NameBasedChoiceField(choices=LanguageChoices, read_only=True)
 
     class Meta:
         model = Actor
@@ -418,18 +415,45 @@ class LicenseActorSerializer(serializers.ModelSerializer):
             "city",
             "country",
         ]
-
+        read_only_fields = [
+            "id",
+            "full_name",
+            "first_name",
+            "last_name",
+            "type",
+            "sex",
+            "birth_date",
+            "birth_year",
+            "language",
+            "phone_number1",
+            "phone_number2",
+            "email",
+            "alternative_email",
+            "address",
+            "co_address",
+            "postal_code",
+            "city",
+            "country",
+        ]
 
 class LicenseActorRelationSerializer(serializers.ModelSerializer):
-    actor = LicenseActorSerializer()
-    role = serializers.ChoiceField(
-        choices=LicenseRoleChoices, source="get_role_display"
+    actor = RelatedFieldSerializer(
+        serializer_class=LicenseActorSerializer,
+        queryset=Actor.objects.all(),
+    )
+    role = NameBasedChoiceField(choices=LicenseRoleChoices)
+    created_by = serializers.HiddenField(
+        default=serializers.CreateOnlyDefault(serializers.CurrentUserDefault()),
+        write_only=True
+    )
+    updated_by = serializers.HiddenField(
+        default=serializers.CurrentUserDefault(),
+        write_only=True
     )
 
     class Meta:
         model = LicenseRelation
-        fields = ["actor", "role", "mednr"]
-
+        fields = ["actor", "role", "mednr", "created_by", "updated_by", "license_id"]
 
 class LicensePermissionTypeSerializer(serializers.ModelSerializer):
     class Meta:
@@ -488,8 +512,8 @@ class LicenseCommunicationSerializer(serializers.ModelSerializer):
 
 
 class LicenseSerializer(serializers.ModelSerializer):
-    actors = LicenseActorRelationSerializer(many=True, read_only=True)
-    permissions = LicenseLicensePermissionSerializer(many=True, read_only=True)
+    actors = LicenseActorRelationSerializer(many=True, required=False)
+    permissions = LicenseLicensePermissionSerializer(many=True, required=False)
     documents = LicenseDocumentSerializer(many=True, read_only=True)
     communication = LicenseCommunicationSerializer(many=True, read_only=True)
     report_status = NameBasedChoiceField(choices=ReportStatusChoices)
@@ -498,22 +522,115 @@ class LicenseSerializer(serializers.ModelSerializer):
         default=serializers.CreateOnlyDefault(serializers.CurrentUserDefault())
     )
     updated_by = serializers.HiddenField(default=serializers.CurrentUserDefault())
-
+    version = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = License
-        fields = ["actors", "permissions", "documents", "communication", "version", "location", "description",
-                  "report_status", "starts_at", "ends_at", "created_at", "updated_at", "created_by",
-                  "updated_by",]
+        fields = [
+            "actors", "permissions", "documents", "communication", "version", "location", "description",
+            "report_status", "starts_at", "ends_at", "created_at", "updated_at", "created_by",
+            "updated_by",
+        ]
         read_only_fields = [
-            "actors",
             "permissions",
             "documents",
             "communication",
-            "version",
             "created_at",
             "updated_at",
         ]
+    
+    def validate_actors(self, actors):
+        initial_data = getattr(self, "initial_data", None)
+        if initial_data is not None and "actors" in initial_data:
+            raw_actors = initial_data["actors"]
+            actor_serializer = LicenseActorRelationSerializer(
+                data=raw_actors,
+                many=True,
+                context=self.context,
+                partial=False,
+            )
+            actor_serializer.is_valid(raise_exception=True)
+            actors = actor_serializer.validated_data
+
+        actor_count: dict[int, int] = dict()
+        code_count: dict[int, int] = dict()
+        for actor in actors:
+            actor_id = actor["actor"].id
+            actor_code = actor["mednr"]
+            actor_count[actor_id] = actor_count.get(actor_id, 0) + 1
+            code_count[actor_code] = code_count.get(actor_code, 0) + 1
+
+        actors_errors: dict[int, dict[str, list[str]]] = dict()
+        for index, actor in enumerate(actors):
+            actor_id = actor["actor"].id
+            actor_code = actor["mednr"]
+            error = dict()
+            if actor_count[actor_id] > 1:
+                error["actor"] = ["Duplicate actor"]
+            if code_count[actor_code] > 1:
+                error["mednr"] = ["Duplicate MedNr"]
+            if len(error) > 0:
+                actors_errors[index] = error
+
+        if len(actors_errors) > 0:
+            raise serializers.ValidationError([
+                actors_errors.get(index, {})
+                for index, _ in enumerate(actors)
+            ])
+
+        return actors
+
+    @transaction.atomic
+    def create(self, validated_data):
+        validated_data.setdefault("version", 0)
+        actors = validated_data.pop("actors", None)
+        permissions = validated_data.pop("permissions", None)
+        instance = super().create(validated_data)
+
+        self.write_actors(instance, actors)
+        self.write_permissions(instance, permissions)
+
+        return instance
+
+    @transaction.atomic
+    def update(self, instance, validated_data):
+        actors = validated_data.pop("actors", None)
+        permissions = validated_data.pop("permissions", None)
+
+        instance = super().update(instance, validated_data)
+
+        self.write_actors(instance, actors)
+        self.write_permissions(instance, permissions)
+
+        return instance
+    
+    @transaction.atomic
+    def write_actors(self, instance, actors):
+        """
+        Actor relations need to be written using an existing license
+        instance and thus can not be serialized with the standard flow.
+        """
+        if actors is not None:
+            instance.actors.all().delete()
+
+            relation_serializer = LicenseActorRelationSerializer(
+                data=actors,
+                context=self.context,
+                many=True
+            )
+            relation_serializer.is_valid(raise_exception=True)
+            relation_serializer.save(license=instance)
+    
+    @transaction.atomic
+    def write_permissions(self, instance, permissions):
+        """
+        Permissions need to be written using an existing license
+        instance and thus can not be serialized with the standard flow.
+        """
+        if permissions is not None:
+            # TODO: Work on updating permissions later
+            pass
+
 
 class LicenseHistoryItemSerializer(serializers.ModelSerializer):
     class Meta:
@@ -522,7 +639,7 @@ class LicenseHistoryItemSerializer(serializers.ModelSerializer):
 
 
 class LicenseSequenceSerializer(serializers.HyperlinkedModelSerializer):
-    latest = LicenseSerializer()
+    latest = LicenseSerializer(required=False)
     history = serializers.SerializerMethodField()
     license_holder = serializers.CharField(read_only=True)
     license_holder_type = serializers.CharField(read_only=True)
@@ -573,20 +690,22 @@ class LicenseSequenceSerializer(serializers.HyperlinkedModelSerializer):
 
     @transaction.atomic
     def create(self, validated_data):
-        latest_data = validated_data.pop("latest")
+        latest_data = validated_data.pop("latest", None)
 
-        sequence = LicenseSequence.objects.create(
-            latest=None,
-            **validated_data,
-        )
+        sequence = super().create(validated_data)
 
-        current_license = License.objects.create(
-            sequence=sequence,
-            version=0,
-            **latest_data,
-        )
+        if latest_data is not None:
+            license_serializer = LicenseSerializer(
+                data=latest_data,
+                context=self.context,
+            )
+            try:
+                license_serializer.is_valid(raise_exception=True)
+                current_license = license_serializer.save(sequence=sequence)
+            except serializers.ValidationError as e:
+                raise serializers.ValidationError({"latest": e.detail})
 
-        sequence.commit(current_license, default_document_copy_policy)
+            sequence.commit(current_license, default_document_copy_policy)
 
         return sequence
 
@@ -594,23 +713,27 @@ class LicenseSequenceSerializer(serializers.HyperlinkedModelSerializer):
     def update(self, instance, validated_data):
         latest_data = validated_data.pop("latest", None)
 
-        for attr, value in validated_data.items():
-            setattr(instance, attr, value)
-
-        instance.save()
+        super().update(instance, validated_data)
 
         if latest_data is not None:
             current_license = instance.current
-
             if current_license is None:
                 raise serializers.ValidationError(
                     {"latest": "License sequence has no current license."}
                 )
 
-            for attr, value in latest_data.items():
-                setattr(current_license, attr, value)
+            license_serializer = LicenseSerializer(
+                instance=current_license,
+                data=latest_data,
+                partial=True,
+                context=self.context,
+            )
+            try:
+                license_serializer.is_valid(raise_exception=True)
+                current_license = license_serializer.save()
+            except serializers.ValidationError as e:
+                raise serializers.ValidationError({"latest": e.detail})
 
-            current_license.save()
             instance.commit(current_license, default_document_copy_policy)
 
         return instance

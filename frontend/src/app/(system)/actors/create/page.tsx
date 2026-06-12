@@ -1,12 +1,9 @@
 "use client";
 
 import { Suspense, useState } from "react";
-import { ActorBase } from "../../common";
+import { ActorBase, FormErrors } from "../../common";
 import { useTranslation } from "../../internationalization";
-import {
-  ActorEntryForm,
-  ActorEntryFormErrors,
-} from "@/components/ActorEntryForm";
+import { ActorEntryForm } from "@/components/ActorEntryForm";
 import { useClient, useModalsContext } from "../../contexts";
 import { useRouter } from "next/navigation";
 import { FieldValidationError } from "../../client";
@@ -16,9 +13,7 @@ function ActorViewBase() {
   const client = useClient();
   const modals = useModalsContext();
   const router = useRouter();
-  const [errors, setErrors] = useState<ActorEntryFormErrors | undefined>(
-    undefined,
-  );
+  const [errors, setErrors] = useState<FormErrors | undefined>(undefined);
 
   const handleSubmit = async (actor: Partial<ActorBase>) => {
     setErrors(undefined);

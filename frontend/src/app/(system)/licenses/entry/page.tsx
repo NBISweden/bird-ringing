@@ -12,9 +12,6 @@ import { Alert } from "@/components/Alert";
 import { useTranslation } from "../../internationalization";
 import { convertOnlyDateToLocale } from "../../common";
 import { Badge } from "@/components/Badge";
-import Icon from "@/components/Icon";
-import { LicenseEntryForm } from "@/components/LiceneseEntryForm";
-import { useNotImplementedModal } from "../../hooks";
 
 async function fetchLicense([client, _ctx, entryId]: [
   Client,
@@ -29,10 +26,7 @@ function LicenseViewInner() {
   const mnr = params.get("mnr");
   const client = useClient();
   const { t, format, formatOption } = useTranslation();
-  const [isEditing, setIsEditing] = useState<boolean>(false);
-  const notImplementedAction = useNotImplementedModal();
-
-  const { data, isLoading, error } = useSWR(
+  const { data, isLoading, error, mutate } = useSWR(
     mnr ? [client, "license", mnr] : null,
     fetchLicense,
   );
@@ -81,55 +75,30 @@ function LicenseViewInner() {
     <div className="container">
       <div className="row ">
         <div className="col-12 col-xl-10 col-xxl-9">
-          <div className="d-flex justify-content-between align-items-center mb-3">
-            <h1 className="h2 mb-0">
-              {t("licenseView", {
-                licenseId: data.mnr,
-                licenseHolder: data.license_holder,
-              })}
-              <Badge
-                rounded
-                outline
-                color="primary"
-                className="inline-block ms-4"
-              >
-                {formatOption(String(data.latest.report_status), {
-                  yes: "licenseReportStatusYes",
-                  no: "licenseReportStatusNo",
-                  incomplete: "licenseReportStatusIncomplete",
-                })}
-              </Badge>
-            </h1>
-
-            <button
-              type="button"
-              className="btn btn-outline-secondary ms-2 flex-shrink-0"
-              onClick={() => setIsEditing(!isEditing)}
+          <h1 className="h2">
+            {t("licenseView", {
+              licenseId: data.mnr,
+              licenseHolder: data.license_holder,
+            })}
+            <Badge
+              rounded
+              outline
+              color="primary"
+              className="inline-block ms-4"
             >
-              <Icon icon={isEditing ? "arrow-left" : "pencil-square"} />
-              <span className="ms-2">{!isEditing ? t("edit") : t("done")}</span>
-            </button>
-          </div>
-          {isEditing ? (
-            <LicenseEntryForm
-              initialLicense={{
-                mnr: data.mnr,
-                status: data.status,
-                starts_at: data.latest.starts_at,
-                ends_at: data.latest.ends_at,
-                location: data.latest.location,
-                description: data.latest.description,
-                report_status: data.latest.report_status,
-              }}
-              title={t("licenseFormTitle")}
-              onSubmit={(license) => {
-                notImplementedAction(t("licenseFormTitle"));
-                console.log(license);
-              }}
-            />
-          ) : (
-            <LicenceView license={data.latest} mnr={data.mnr} />
-          )}
+              {formatOption(String(data.latest.report_status), {
+                yes: "licenseReportStatusYes",
+                no: "licenseReportStatusNo",
+                incomplete: "licenseReportStatusIncomplete",
+              })}
+            </Badge>
+          </h1>
+          <LicenceView
+            license={data.latest}
+            mnr={data.mnr}
+            status={data.status}
+            onUpdated={() => mutate()}
+          />
           {/* History */}
           <div className="py-3">
             <h3 className="h2">{t("licenseHistory")}</h3>

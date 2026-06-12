@@ -85,3 +85,32 @@ class DjangoProtectedModelPermissions(DjangoModelPermissions):
         "PATCH": ["%(app_label)s.change_%(model_name)s"],
         "DELETE": ["%(app_label)s.delete_%(model_name)s"],
     }
+
+
+class RelatedFieldSerializer(serializers.PrimaryKeyRelatedField):
+    def __init__(self, *args, serializer_class=None, **kwargs):
+        if serializer_class is None:
+            raise TypeError("serializer_class is required")
+        self.serializer_class = serializer_class
+        super().__init__(*args, **kwargs)
+    
+    def use_pk_only_optimization(self):
+        return False
+
+    def to_representation(self, value):
+        serializer = self.serializer_class(value, context=getattr(self, "context", {}))
+        return serializer.data
+
+    def to_internal_value(self, data):
+        queryset = self.get_queryset()
+        model_class = queryset.model if queryset is not None else None
+
+        if model_class is not None and isinstance(data, model_class):
+            return data
+    
+        if not isinstance(data, dict):
+            raise serializers.ValidationError("Expected an object.")
+        if "id" not in data:
+            raise serializers.ValidationError({"id": "This field is required."})
+
+        return super().to_internal_value(data["id"])
