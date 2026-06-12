@@ -1,6 +1,6 @@
 from django.test import TestCase
 from licensing.rest.core import (
-    LicenseLicensePermissionSerializer,
+    LicensePermissionSerializer,
     LicenseSerializer,
     LicenseActorRelationSerializer,
     LicenseSequenceSerializer
@@ -62,7 +62,7 @@ class TestSerializers(TestCase):
         )
     
     def test_permission_serializer_success(self):
-        permission_serializer = LicenseLicensePermissionSerializer(
+        permission_serializer = LicensePermissionSerializer(
             data={
                 "type": {"id": self.permission_type.id},
                 "properties": [
@@ -72,12 +72,19 @@ class TestSerializers(TestCase):
                     {"id": self.species.id}
                 ],
             },
-            context={
-                **self._get_context(),
-                "license_id": 0,
-            }
+            context=self._get_context()
+        )
+        license = License.objects.create(
+            sequence=self.sequence,
+            version=0,
+            report_status=ReportStatusChoices.YES,
+            starts_at=datetime.date.today(),
+            ends_at=datetime.date.today(),
+            created_by=self.user,
+            updated_by=self.user,
         )
         permission_serializer.is_valid(raise_exception=True)
+        permission_serializer.save(license=license)
 
     def test_license_actor_relation_serializer(self):
         good_data = {
@@ -280,6 +287,10 @@ class TestSerializers(TestCase):
             "ends_at": "2026-12-31",
             "permissions": [{
                 "type": {"id": self.permission_type.id},
+                "period": [
+                    "2026-01-01",
+                    "2026-12-31"
+                ],
                 "properties": [
                     {"id": self.permission_property.id}
                 ],
@@ -322,6 +333,26 @@ class TestSerializers(TestCase):
                         {},
                         {"actor": ["invalid"], "mednr": ["invalid"]}
                     ]
+                }
+            ),
+            (
+                "expect permission period to be invalid",
+                {
+                    **good_data,
+                    "permissions": [{
+                        "type": {"id": self.permission_type.id},
+                        "period": [
+                            "2026-12-31"
+                            "2026-01-01",
+                        ],
+                        "properties": [],
+                        "species_list": [],
+                    }]
+                },
+                {
+                    "permissions": [{
+                        "period": {0: ["invalid"]}
+                    }]
                 }
             ),
             (
@@ -374,6 +405,21 @@ class TestSerializers(TestCase):
                 {
                     "actors": [
                         {"mednr": ["min_length"]},
+                    ]
+                }
+            ),
+            (
+                "expect permission type to be missing",
+                {
+                    **good_data,
+                    "permissions": [{
+                        "properties": [],
+                        "species_list": [],
+                    }],
+                },
+                {
+                    "permissions": [
+                        {"type": ["required"]},
                     ]
                 }
             ),

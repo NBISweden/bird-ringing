@@ -29,15 +29,12 @@ class ActorSerializer(serializers.ModelSerializer):
 
 
 class SpeciesSerializer(serializers.ModelSerializer):
-    id = serializers.SerializerMethodField(read_only=True)
+    id = serializers.CharField(read_only=True)
     label = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Species
         fields = ["id", "label"]
-
-    def get_id(self, obj):
-        return obj.scientific_code
 
     def get_label(self, obj):
         return obj.name
