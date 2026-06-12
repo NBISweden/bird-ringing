@@ -561,6 +561,7 @@ class LicenseRelation(ChangeTracking):
         return base
 
     class Meta:
+        ordering = ["pk"]
         constraints = [
             models.UniqueConstraint(
                 fields=["actor", "role", "license"],
@@ -691,6 +692,9 @@ class LicensePermission(ChangeTracking):
                 for prop in self.properties.order_by("id").values_list("id", flat=True)
             ))
         )
+    
+    class Meta:
+        ordering = ["pk"]
 
 
 class PermitDnr(ChangeTracking):
