@@ -6,6 +6,7 @@ import {
   FieldErrorContext,
   TextInput,
   VerticalField,
+  TextArea,
 } from "@/components/InputFields";
 import { Alert } from "@/components/Alert";
 import { useFlags, useClient, useModalsContext } from "../contexts";
@@ -19,6 +20,7 @@ import {
 } from "../common";
 import { useObjectState } from "../hooks";
 import { Accordion, AccordionEntry } from "@/components/Accordion";
+import Spinner from "@/components/Spinner";
 
 async function fetchPermissionTypes([client]: [Client]) {
   return client.fetchPermissionTypesWithProperties();
@@ -36,19 +38,28 @@ type PermissionFormErrors = {
 function PermissionEntryForm({
   initialValues,
   submitLabel,
+  successMessage,
   onSubmit,
-  onCancel,
 }: {
   initialValues: PermissionTypeInput;
   submitLabel: string;
+  successMessage: string;
   onSubmit: (values: PermissionTypeInput) => Promise<void>;
-  onCancel: () => void;
 }) {
+  const modals = useModalsContext();
   const [values, updateValue] = useObjectState(initialValues);
   const [errors, setErrors] = useState<PermissionFormErrors | undefined>(
     undefined,
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+
+  const close = () => {
+    const current = modals.stack[0];
+    if (current) {
+      modals.remove(current);
+    }
+  };
 
   const fieldErrors = useMemo<Record<string, string | undefined>>(() => {
     if (!errors) return {};
@@ -59,6 +70,19 @@ function PermissionEntryForm({
     return flat;
   }, [errors]);
 
+  if (submitted) {
+    return (
+      <>
+        <Alert type="success">{successMessage}</Alert>
+        <div className="d-flex justify-content-end mt-4">
+          <button type="button" className="btn btn-primary" onClick={close}>
+            OK
+          </button>
+        </div>
+      </>
+    );
+  }
+
   return (
     <form
       onSubmit={async (e) => {
@@ -67,6 +91,7 @@ function PermissionEntryForm({
         setIsSubmitting(true);
         try {
           await onSubmit(values);
+          setSubmitted(true);
         } catch (error) {
           if (error instanceof FieldValidationError) {
             setErrors({
@@ -106,8 +131,7 @@ function PermissionEntryForm({
           />
         </VerticalField>
         <VerticalField label="Description" id="description">
-          <TextInput
-            type="text"
+          <TextArea
             placeholder="Add a description"
             value={values.description || ""}
             onChange={(e) => updateValue({ description: e.target.value })}
@@ -117,7 +141,7 @@ function PermissionEntryForm({
           <button
             type="button"
             className="btn btn-secondary"
-            onClick={onCancel}
+            onClick={close}
             disabled={isSubmitting}
           >
             Cancel
@@ -164,16 +188,21 @@ export default function PermissionListView() {
     return <p>{unrelatedPropertiesError.message}</p>;
   }
 
-  if (!permissionTypes) {
-    return <div>No permission types collected.</div>;
+  if (typesLoading || unrelatedPropertiesLoading) {
+    return (
+      <div className="container my-5 d-flex align-items-center">
+        <Spinner />
+        <span className="ms-3">Loading permissions…</span>
+      </div>
+    );
   }
 
-  if (!unrelatedProperties) {
-    return <div>No permission types collected.</div>;
+  if (!permissionTypes || !unrelatedProperties) {
+    return <div>Could not load permissions.</div>;
   }
 
   const openTypeForm = (type: PermissionTypeWithProperties | null) => {
-    const ref = modals.add({
+    modals.add({
       title: type ? "Edit permission type" : "Add permission type",
       content: (
         <PermissionEntryForm
@@ -182,7 +211,9 @@ export default function PermissionListView() {
             description: type?.description ?? "",
           }}
           submitLabel={type ? "Save" : "Add"}
-          onCancel={() => modals.remove(ref)}
+          successMessage={
+            type ? "Permission type updated." : "Permission type added."
+          }
           onSubmit={async (values) => {
             if (type) {
               await client.updatePermissionType(type.id, values);
@@ -190,7 +221,6 @@ export default function PermissionListView() {
               await client.createPermissionType(values);
             }
             await mutateTypes();
-            modals.remove(ref);
           }}
         />
       ),
@@ -205,7 +235,7 @@ export default function PermissionListView() {
     property: PermissionPropertyItem | null;
     type: PermissionTypeWithProperties | null;
   }) => {
-    const ref = modals.add({
+    modals.add({
       title: property
         ? "Edit property"
         : type
@@ -218,7 +248,7 @@ export default function PermissionListView() {
             description: property?.description ?? "",
           }}
           submitLabel={property ? "Save" : "Add"}
-          onCancel={() => modals.remove(ref)}
+          successMessage={property ? "Property updated." : "Property added."}
           onSubmit={async (values) => {
             if (property) {
               await client.updatePermissionProperty(property.id, values);
@@ -233,7 +263,6 @@ export default function PermissionListView() {
             } else {
               await mutateUnrelated();
             }
-            modals.remove(ref);
           }}
         />
       ),
@@ -253,6 +282,9 @@ export default function PermissionListView() {
             + Add permission type
           </button>
         </div>
+        {permissionTypes.length === 0 ? (
+          <p className="fst-italic">No permission types yet.</p>
+        ) : null}
         <Accordion
           items={permissionTypes.reduce<Record<string, AccordionEntry>>(
             (acc, item) => {
@@ -270,28 +302,34 @@ export default function PermissionListView() {
                 content: (
                   <>
                     <ul className="my-3">
-                      {item.properties.map((property) => (
-                        <Fragment key={property.id}>
-                          <div className="d-flex justify-content-between align-items-start gap-3 border-bottom">
-                            <div>
-                              <p className="fw-bold mb-1 pt-3">
-                                {property.label}
-                              </p>
-                              <p className="text-muted">
-                                {property.description}
-                              </p>
+                      {item.properties.length > 0 ? (
+                        item.properties.map((property) => (
+                          <Fragment key={property.id}>
+                            <div className="d-flex justify-content-between align-items-start gap-3 border-bottom">
+                              <div>
+                                <p className="fw-bold mb-1 pt-3">
+                                  {property.label}
+                                </p>
+                                <p className="text-muted">
+                                  {property.description}
+                                </p>
+                              </div>
+                              <button
+                                className="btn btn-outline-secondary btn-sm align-self-md-center mt-3 mt-md-0"
+                                onClick={() =>
+                                  openPropertyForm({ property, type: item })
+                                }
+                              >
+                                Edit
+                              </button>
                             </div>
-                            <button
-                              className="btn btn-outline-secondary btn-sm align-self-md-center mt-3 mt-md-0"
-                              onClick={() =>
-                                openPropertyForm({ property, type: item })
-                              }
-                            >
-                              Edit
-                            </button>
-                          </div>
-                        </Fragment>
-                      ))}
+                          </Fragment>
+                        ))
+                      ) : (
+                        <p className="fst-italic">
+                          {item.label} has no properties yet.
+                        </p>
+                      )}
                     </ul>
                     <div className="d-flex gap-2 mb-3 mt-4 mt-md-5">
                       <button
