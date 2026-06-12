@@ -652,6 +652,18 @@ class LicensePermission(ChangeTracking):
     starts_at = MonthDayField(blank=True, null=True)
     ends_at = MonthDayField(blank=True, null=True)
 
+    @property
+    def period(self):
+        return MonthDay.get_period(
+            (self.license.starts_at, self.license.ends_at),
+            (self.starts_at, self.ends_at)
+        )
+
+    @period.setter
+    def period(self, period: list[datetime.date]):
+        self.starts_at = MonthDay.from_date(period[0])
+        self.ends_at = MonthDay.from_date(period[1])
+
     def copy_to(self, license: License):
         base = LicensePermission.objects.get(pk=self.pk)
         properties = list(base.properties.all())
