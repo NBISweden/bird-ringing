@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import useSWR from "swr";
 import {
   FieldErrorContext,
@@ -12,7 +12,6 @@ import { Alert } from "@/components/Alert";
 import { useFlags, useClient, useModalsContext } from "../contexts";
 import { Client, FieldValidationError } from "../client";
 import { notFound } from "next/navigation";
-import { Fragment } from "react";
 import {
   PermissionPropertyItem,
   PermissionTypeInput,
@@ -55,6 +54,15 @@ function PermissionEntryForm({
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const okButtonRef = useRef<HTMLButtonElement | null>(null);
+
+  // Move focus to the confirmation's OK button so keyboard/SR users aren't
+  // stranded when the form is replaced by the success message.
+  useEffect(() => {
+    if (submitted) {
+      okButtonRef.current?.focus();
+    }
+  }, [submitted]);
 
   const close = () => {
     const current = modals.stack[0];
@@ -77,7 +85,12 @@ function PermissionEntryForm({
       <>
         <Alert type="success">{successMessage}</Alert>
         <div className="d-flex justify-content-end mt-4">
-          <button type="button" className="btn btn-primary" onClick={close}>
+          <button
+            ref={okButtonRef}
+            type="button"
+            className="btn btn-primary"
+            onClick={close}
+          >
             {t("okModal")}
           </button>
         </div>
@@ -287,13 +300,14 @@ export default function PermissionListView() {
   return (
     <>
       <div className="container">
-        <div className="d-flex align-items-start my-5">
+        <h1 className="mt-5 mb-4">{t("permissionsHeading")}</h1>
+        <div className="d-flex align-items-start mb-3">
           <h2>{t("permissionTypesHeading")}</h2>
           <button
             className="btn btn-primary ms-5"
             onClick={() => openTypeForm(null)}
           >
-            <i className={`bi bi-plus-lg me-2`} />
+            <i className="bi bi-plus-lg me-2" aria-hidden="true" />
             {t("permissionTypeAddTitle")}
           </button>
         </div>
@@ -316,41 +330,48 @@ export default function PermissionListView() {
                 ),
                 content: (
                   <>
-                    <ul className="my-3">
+                    <ul className="my-3 list-unstyled">
                       {item.properties.length > 0 ? (
                         item.properties.map((property) => (
-                          <Fragment key={property.id}>
-                            <div className="d-flex justify-content-between align-items-start gap-3 border-bottom">
-                              <div>
-                                <p className="fw-bold mb-1 pt-3">
-                                  {property.label}
-                                </p>
-                                <p className="text-muted">
-                                  {property.description}
-                                </p>
-                              </div>
-                              <button
-                                className="btn btn-outline-secondary btn-sm align-self-md-center mt-3 mt-md-0"
-                                onClick={() =>
-                                  openPropertyForm({ property, type: item })
-                                }
-                              >
-                                {t("edit")}
-                              </button>
+                          <li
+                            key={property.id}
+                            className="d-flex justify-content-between align-items-start gap-3 border-bottom"
+                          >
+                            <div>
+                              <p className="fw-bold mb-1 pt-3">
+                                {property.label}
+                              </p>
+                              <p className="text-muted">
+                                {property.description}
+                              </p>
                             </div>
-                          </Fragment>
+                            <button
+                              className="btn btn-outline-secondary btn-sm align-self-md-center mt-3 mt-md-0"
+                              aria-label={t("permissionPropertyEditAriaLabel", {
+                                label: property.label,
+                              })}
+                              onClick={() =>
+                                openPropertyForm({ property, type: item })
+                              }
+                            >
+                              {t("edit")}
+                            </button>
+                          </li>
                         ))
                       ) : (
-                        <p className="fst-italic">
+                        <li className="fst-italic">
                           {t("permissionTypeNoPropertiesYet", {
                             label: item.label,
                           })}
-                        </p>
+                        </li>
                       )}
                     </ul>
                     <div className="d-flex gap-2 mb-3 mt-4 mt-md-5">
                       <button
                         className="btn btn-outline-primary"
+                        aria-label={t("permissionPropertyAddToTypeTitle", {
+                          label: item.label,
+                        })}
                         onClick={() =>
                           openPropertyForm({ property: null, type: item })
                         }
@@ -359,6 +380,9 @@ export default function PermissionListView() {
                       </button>
                       <button
                         className="btn btn-outline-secondary"
+                        aria-label={t("permissionTypeEditAriaLabel", {
+                          label: item.label,
+                        })}
                         onClick={() => openTypeForm(item)}
                       >
                         {t("permissionTypeEditTitle")}
@@ -379,7 +403,7 @@ export default function PermissionListView() {
             className="btn btn-primary ms-5 mt-5"
             onClick={() => openPropertyForm({ property: null, type: null })}
           >
-            <i className={`bi bi-plus-lg me-2`} />
+            <i className="bi bi-plus-lg me-2" aria-hidden="true" />
             {t("permissionPropertyAddGlobalButton")}
           </button>
         </div>
@@ -397,6 +421,9 @@ export default function PermissionListView() {
                     <p className="text-muted mb-0">{item.description}</p>
                     <button
                       className="btn btn-outline-secondary btn-sm"
+                      aria-label={t("permissionPropertyEditAriaLabel", {
+                        label: item.label,
+                      })}
                       onClick={() =>
                         openPropertyForm({
                           property: {

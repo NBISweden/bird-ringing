@@ -1,6 +1,6 @@
 "use client";
 
-import { PropsWithChildren, useState } from "react";
+import { PropsWithChildren, useId, useState } from "react";
 
 export type AccordionEntry = {
   header: React.ReactNode;
@@ -21,11 +21,14 @@ function AccordionItem({
 }>) {
   const [isExpanded, setIsExpanded] = useState<boolean>(!!defaultExpanded);
   const actualIsExpanded = expanded === undefined ? isExpanded : expanded;
+  const headerId = useId();
+  const panelId = useId();
   return (
     <div className="accordion-item">
       <h3 className="accordion-header">
         <button
           type="button"
+          id={headerId}
           className={`accordion-button ${actualIsExpanded ? "" : "collapsed"} px-lg-5`}
           onClick={
             onExpandedChange
@@ -33,11 +36,15 @@ function AccordionItem({
               : () => setIsExpanded(!actualIsExpanded)
           }
           aria-expanded={actualIsExpanded}
+          aria-controls={panelId}
         >
           {header}
         </button>
       </h3>
       <div
+        id={panelId}
+        role="region"
+        aria-labelledby={headerId}
         className={`accordion-collapse collapse ${actualIsExpanded ? "show" : ""}`}
       >
         <div className="accordion-body px-5">{children}</div>

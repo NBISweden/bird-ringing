@@ -324,6 +324,9 @@ const messagesBase = {
   permissionTypeNoPropertiesYet: "{label} has no properties yet.",
   permissionLoading: "Loading permissions…",
   permissionLoadError: "Could not load permissions.",
+  permissionsHeading: "Permissions",
+  permissionPropertyEditAriaLabel: 'Edit property "{label}"',
+  permissionTypeEditAriaLabel: 'Edit permission type "{label}"',
 };
 
 function makeMessageMap<T extends { [P in keyof T]: Message | string }>(

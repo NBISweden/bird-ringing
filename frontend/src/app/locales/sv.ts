@@ -323,4 +323,7 @@ export const locale: TranslationMap = {
   permissionTypeNoPropertiesYet: "{label} har inga egenskaper ännu.",
   permissionLoading: "Laddar tillstånd…",
   permissionLoadError: "Kunde inte ladda tillstånd.",
+  permissionsHeading: "Tillstånd",
+  permissionPropertyEditAriaLabel: 'Redigera egenskap "{label}"',
+  permissionTypeEditAriaLabel: 'Redigera tillståndstyp "{label}"',
 };
