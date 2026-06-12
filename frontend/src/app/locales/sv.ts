@@ -81,6 +81,9 @@ const licenseForm = {
   licenseFormFilterProperties: "Sök efter egenskap",
   licenseFormAddActor: "Lägg till ringmärkare",
   licenseFormNoMatchingActors: "Inga matchande ringmärkare",
+  licenseFormSaveRelations: "Spara relationer",
+  licenseFormSavePermissions: "Spara tillstånd",
+  licenseFormAddPermission: "Lägg till tillstånd",
 };
 
 const actorForm = {
@@ -125,11 +128,6 @@ const modals = {
   licenseUpdateErrorTitle: "Misslyckades att uppdatera licens",
 };
 
-const licenseRelationForm = {
-  licenseRelationFormSave: "Updatera relationer",
-  licenseRelationAddPermission: "Lägg till tillstånd",
-};
-
 export const locale: TranslationMap = {
   ...licenseReportStatusOptions,
   ...licenseStatusOptions,
@@ -140,7 +138,6 @@ export const locale: TranslationMap = {
   ...licenseFields,
   ...licenseForm,
   ...modals,
-  ...licenseRelationForm,
 
   birdRinging: "Ringmärkning",
   userPermissions: "Användarrättigheter",

@@ -1,7 +1,8 @@
 import {
+  idToReference,
   LicenseActorRelation,
-  ObjectReference,
   Options,
+  referenceToId,
   toSelectOptions,
 } from "@/app/(system)/common";
 import Icon from "./Icon";
@@ -15,14 +16,6 @@ export type ActorOptions = {
   actors: Options["actor"][];
   licenseRoles: Options["license_role"][];
 };
-
-function actorToId(actor?: ObjectReference) {
-  return actor ? String(actor.id) : "";
-}
-
-function idToActor(id?: string | number): ObjectReference | undefined {
-  return id ? { id: parseInt(String(id)) } : undefined;
-}
 
 function isLicenseActorRelation(
   relation: Partial<LicenseActorRelation>,
@@ -109,7 +102,7 @@ export function LicenseRelationsForm({
                       e.preventDefault();
                       setRelations([
                         ...relations,
-                        { actor: idToActor(option.id) },
+                        { actor: idToReference(option.id) },
                       ]);
                     }}
                   >
@@ -143,9 +136,9 @@ export function LicenseRelationsForm({
                 id={`latest.actors.${key}`}
                 relation={{
                   ...relation,
-                  actor: idToActor(
+                  actor: idToReference(
                     options.actors.filter(
-                      (a) => actorToId(relation.actor) === a.id,
+                      (a) => referenceToId(relation.actor) === a.id,
                     )[0]?.id,
                   ),
                 }}
@@ -168,7 +161,7 @@ export function LicenseRelationsForm({
           className="btn btn-secondary flex-grow-0"
           disabled={isSubmitting ? true : undefined}
         >
-          {t("licenseRelationFormSave")}
+          {t("licenseFormSaveRelations")}
         </button>
       </div>
     </form>
@@ -188,7 +181,7 @@ function ActorEntrySubform({
 }) {
   const { t } = useTranslation();
   const currentActor = options.actors.filter(
-    (r) => r.id === actorToId(relation.actor),
+    (r) => r.id === referenceToId(relation.actor),
   )[0];
 
   return (
@@ -228,7 +221,7 @@ function ActorEntrySubform({
             options={options.actors.map(toSelectOptions)}
             value={currentActor?.id}
             required
-            onChange={(v) => v && updateValue({ actor: idToActor(v) })}
+            onChange={(v) => v && updateValue({ actor: idToReference(v) })}
             disabled
           />
         </VerticalField>

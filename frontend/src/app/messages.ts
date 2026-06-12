@@ -111,6 +111,9 @@ const licenseForm = {
   licenseFormFilterProperties: "Search for property",
   licenseFormAddActor: "Add actor",
   licenseFormNoMatchingActors: "No matching actors",
+  licenseFormSaveRelations: "Save relations",
+  licenseFormSavePermissions: "Save permissions",
+  licenseFormAddPermission: "Add permission",
 };
 
 const modals = {
@@ -127,11 +130,6 @@ const modals = {
   licenseUpdateSuccessMessage: "The license has been updated successfully",
   licenseUpdateErrorTitle: "Failed to update license",
 };
-const licenseRelationForm = {
-  licenseRelationFormSave: "Update relations",
-  licenseRelationAddPermission: "Add permission",
-};
-
 const messagesBase = {
   ...licenseReportStatusOptions,
   ...licenseStatusOptions,
@@ -142,7 +140,6 @@ const messagesBase = {
   ...licenseForm,
   ...licenseFields,
   ...modals,
-  ...licenseRelationForm,
 
   birdRinging: "Bird Ringing",
   userPermissions: "User permissions",
