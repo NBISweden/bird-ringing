@@ -475,17 +475,14 @@ export class Client {
     property: PermissionPropertyInput,
   ): Promise<PermissionProperty> {
     const csrf = getCookie("csrftoken");
-    return this.fetchJson<PermissionProperty>(
-      "property/permission_property/",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(csrf ? { "X-CSRFToken": csrf } : {}),
-        },
-        body: JSON.stringify(property),
+    return this.fetchJson<PermissionProperty>("property/permission_property/", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(csrf ? { "X-CSRFToken": csrf } : {}),
       },
-    );
+      body: JSON.stringify(property),
+    });
   }
 
   async updatePermissionProperty(
