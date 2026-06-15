@@ -7,6 +7,11 @@ import {
   Options,
   PagedResponse,
   SendEmailResult,
+  PermissionTypeWithProperties,
+  UnrelatedPermissionProperty,
+  PermissionInput,
+  PermissionPropertyInput,
+  PermissionProperty,
 } from "./common";
 import { getCookie, parseCompleteUrl } from "./utils";
 
@@ -413,5 +418,88 @@ export class Client {
       },
       body: JSON.stringify({ latest: { actors: relations } }),
     });
+  }
+
+  async fetchPermissionTypesWithProperties(): Promise<
+    PermissionTypeWithProperties[]
+  > {
+    return this._getJson<PermissionTypeWithProperties[]>(
+      "property/permission_type/",
+    );
+  }
+
+  async fetchUnrelatedPermissionProperties(): Promise<
+    UnrelatedPermissionProperty[]
+  > {
+    return this._getJson<UnrelatedPermissionProperty[]>(
+      "property/permission_property/?unrelated=1",
+    );
+  }
+
+  async createPermissionType(
+    type: PermissionInput,
+  ): Promise<PermissionTypeWithProperties> {
+    const csrf = getCookie("csrftoken");
+    return this.fetchJson<PermissionTypeWithProperties>(
+      "property/permission_type/",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(csrf ? { "X-CSRFToken": csrf } : {}),
+        },
+        body: JSON.stringify(type),
+      },
+    );
+  }
+
+  async updatePermissionType(
+    typeId: string,
+    type: PermissionInput,
+  ): Promise<PermissionTypeWithProperties> {
+    const csrf = getCookie("csrftoken");
+    return this.fetchJson<PermissionTypeWithProperties>(
+      `property/permission_type/${typeId}/`,
+      {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          ...(csrf ? { "X-CSRFToken": csrf } : {}),
+        },
+        body: JSON.stringify(type),
+      },
+    );
+  }
+
+  async createPermissionProperty(
+    property: PermissionPropertyInput,
+  ): Promise<PermissionProperty> {
+    const csrf = getCookie("csrftoken");
+    return this.fetchJson<PermissionProperty>("property/permission_property/", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(csrf ? { "X-CSRFToken": csrf } : {}),
+      },
+      body: JSON.stringify(property),
+    });
+  }
+
+  async updatePermissionProperty(
+    propertyId: string,
+    property: PermissionPropertyInput,
+  ): Promise<PermissionProperty> {
+    const csrf = getCookie("csrftoken");
+    return this.fetchJson<PermissionProperty>(
+      `property/permission_property/${propertyId}/`,
+      {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          ...(csrf ? { "X-CSRFToken": csrf } : {}),
+        },
+        body: JSON.stringify(property),
+      },
+    );
   }
 }

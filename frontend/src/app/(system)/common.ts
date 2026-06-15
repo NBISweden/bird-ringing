@@ -309,3 +309,30 @@ export function toSelectOptions(v: Option): { value: string; label: string } {
     label: v.label,
   };
 }
+
+export type PermissionBase = {
+  id: string;
+  label: string;
+  description: string;
+};
+
+export type PermissionTypeWithProperties = PermissionBase & {
+  properties: PermissionBase[];
+};
+
+export type PermissionProperty = PermissionBase & {
+  related_type: { id: string } | null;
+};
+
+export type UnrelatedPermissionProperty = PermissionProperty & {
+  related_type: null;
+};
+
+export type PermissionInput = {
+  label: string;
+  description: string;
+};
+
+export type PermissionPropertyInput = PermissionInput & {
+  related_type_id?: string | null;
+};
