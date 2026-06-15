@@ -3,7 +3,6 @@ import Sidebar, { NavItem } from "@/components/Sidebar";
 import { RequireAuth } from "../../components/AuthProvider";
 import { ClientProvider } from "@/components/ClientProvider";
 import { useTranslation } from "./internationalization";
-import { useFlags } from "./contexts";
 
 export default function SystemLayout({
   children,
@@ -11,7 +10,6 @@ export default function SystemLayout({
   children: React.ReactNode;
 }>) {
   const { t } = useTranslation();
-  const flags = useFlags();
   const navItems: NavItem[] = [
     {
       type: "item",
@@ -36,18 +34,15 @@ export default function SystemLayout({
       icon: "bi-person-lines-fill",
       permissions: ["view_actor"],
     },
-  ];
-
-  if (flags.has("mock-permission-editing")) {
-    navItems.push({
+    {
       type: "item",
       label: "Permissions",
       href: "/permissions",
       id: "permissions",
       icon: "bi-award",
       permissions: ["view_licensepermissiontype"],
-    });
-  }
+    },
+  ];
 
   return (
     <RequireAuth>

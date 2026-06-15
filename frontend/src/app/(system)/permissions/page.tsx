@@ -9,9 +9,8 @@ import {
   TextArea,
 } from "@/components/InputFields";
 import { Alert } from "@/components/Alert";
-import { useFlags, useClient, useModalsContext } from "../contexts";
+import { useClient, useModalsContext } from "../contexts";
 import { Client, FieldValidationError } from "../client";
-import { notFound } from "next/navigation";
 import {
   PermissionPropertyItem,
   PermissionTypeInput,
@@ -180,12 +179,7 @@ function PermissionEntryForm({
 export default function PermissionListView() {
   const { t } = useTranslation();
   const modals = useModalsContext();
-  const flags = useFlags();
   const client = useClient();
-
-  if (!flags.has("mock-permission-editing")) {
-    notFound();
-  }
 
   const {
     data: permissionTypes,
