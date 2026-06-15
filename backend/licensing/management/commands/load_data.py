@@ -89,11 +89,7 @@ class Command(BaseCommand):
                 *(self._get_legacy_permission_types() if self.include_legacy_permissions else [])
             ]
             self.permit_type_map = self.load_permit_types(permit_types_data)
-            permit_property_data = [
-                *loader.get_dict_list("TillstProp"),
-                *self._get_mock_unrelated_properties(),
-            ]
-            self.permit_property_map = self.load_permit_properties(permit_property_data)
+            self.permit_property_map = self.load_permit_properties(loader.get_dict_list("TillstProp"))
             permit_data = [
                 *loader.get_dict_list("Tillstand"),
                 *(self._get_legacy_permit_data(ringer_license_entries) if self.include_legacy_permissions else [])
@@ -570,28 +566,6 @@ class Command(BaseCommand):
                 "description": description
             }
             for name, description in permission_types
-        ]
-    
-    def _get_mock_unrelated_properties(self):
-        properties = [
-            ("juveniles included", "Dependent young birds may be captured and handled under this permit."),
-            ("adults only", "Only adult birds may be captured and handled under this permit."),
-            ("nocturnal activity permitted", "Activities may be carried out during night-time hours."),
-            ("diurnal activity only", "Activities must be carried out during daylight hours only."),
-            ("breeding season excluded", "Activities are not permitted during the breeding season."),
-            ("non-invasive only", "Only non-invasive methods may be used during the activity."),
-            ("sample storage required", "Collected biological samples must be stored according to protocol."),
-            ("photographic documentation required", "All activity must be documented with photographs."),
-            ("group handling permitted", "Multiple individuals may be handled simultaneously."),
-            ("solo handling required", "Each individual must be handled separately."),
-        ]
-        return [
-            {
-                "property_code": f"mock-unrelated-{i:02d}",
-                "name": name,
-                "description": description,
-            }
-            for i, (name, description) in enumerate(properties, start=1)
         ]
     
     def _get_legacy_permit_data(self, license_entries: list[dict]):
