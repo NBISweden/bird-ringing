@@ -10,15 +10,6 @@ import {
   useEffect,
 } from "react";
 
-const FOCUSABLE_SELECTOR =
-  'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
-
-function getFocusable(container: HTMLElement): HTMLElement[] {
-  return Array.from(
-    container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR),
-  );
-}
-
 export function ModalView() {
   const modals = useModalsContext();
   const modal = modals.stack[0] || null;
@@ -88,33 +79,6 @@ export function ModalView() {
       if (event.key === "Escape") {
         event.preventDefault();
         handleClose();
-        return;
-      }
-      if (event.key !== "Tab") {
-        return;
-      }
-      const container = modalRef.current;
-      if (!container) {
-        return;
-      }
-      const focusable = getFocusable(container);
-      if (focusable.length === 0) {
-        event.preventDefault();
-        container.focus();
-        return;
-      }
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-      const active = document.activeElement;
-      if (!container.contains(active)) {
-        event.preventDefault();
-        first.focus();
-      } else if (event.shiftKey && active === first) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && active === last) {
-        event.preventDefault();
-        first.focus();
       }
     };
     document.addEventListener("keydown", onKeyDown);
