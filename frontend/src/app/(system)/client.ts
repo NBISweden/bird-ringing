@@ -9,7 +9,7 @@ import {
   SendEmailResult,
   PermissionTypeWithProperties,
   UnrelatedPermissionProperty,
-  PermissionTypeInput,
+  PermissionInput,
   PermissionPropertyInput,
   PermissionProperty,
 } from "./common";
@@ -437,7 +437,7 @@ export class Client {
   }
 
   async createPermissionType(
-    type: PermissionTypeInput,
+    type: PermissionInput,
   ): Promise<PermissionTypeWithProperties> {
     const csrf = getCookie("csrftoken");
     return this.fetchJson<PermissionTypeWithProperties>(
@@ -455,7 +455,7 @@ export class Client {
 
   async updatePermissionType(
     typeId: string,
-    type: PermissionTypeInput,
+    type: PermissionInput,
   ): Promise<PermissionTypeWithProperties> {
     const csrf = getCookie("csrftoken");
     return this.fetchJson<PermissionTypeWithProperties>(

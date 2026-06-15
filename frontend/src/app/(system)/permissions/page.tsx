@@ -12,8 +12,8 @@ import { Alert } from "@/components/Alert";
 import { useClient, useModalsContext } from "../contexts";
 import { Client, FieldValidationError } from "../client";
 import {
-  PermissionPropertyItem,
-  PermissionTypeInput,
+  PermissionBase,
+  PermissionInput,
   PermissionTypeWithProperties,
 } from "../common";
 import { useObjectState } from "../hooks";
@@ -40,10 +40,10 @@ function PermissionEntryForm({
   successMessage,
   onSubmit,
 }: {
-  initialValues: PermissionTypeInput;
+  initialValues: PermissionInput;
   submitLabel: string;
   successMessage: string;
-  onSubmit: (values: PermissionTypeInput) => Promise<void>;
+  onSubmit: (values: PermissionInput) => Promise<void>;
 }) {
   const { t } = useTranslation();
   const modals = useModalsContext();
@@ -247,7 +247,7 @@ export default function PermissionListView() {
     property,
     type,
   }: {
-    property: PermissionPropertyItem | null;
+    property: PermissionBase | null;
     type: PermissionTypeWithProperties | null;
   }) => {
     modals.add({
