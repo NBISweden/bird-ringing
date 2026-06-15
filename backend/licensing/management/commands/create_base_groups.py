@@ -34,7 +34,11 @@ class Command(BaseCommand):
                 "view_species",
                 "add_licensesequence",
                 "view_licensepermissiontype",
+                "add_licensepermissiontype",
+                "change_licensepermissiontype",
                 "view_licensepermissionproperty"
+                "add_licensepermissionproperty"
+                "change_licensepermissionproperty"
             ]
 
             for _, group_name in group_names.items():
