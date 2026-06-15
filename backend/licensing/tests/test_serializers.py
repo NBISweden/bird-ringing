@@ -361,15 +361,33 @@ class TestSerializers(TestCase):
                     **good_data,
                     "actors": [
                         {
-                            "actor": {},
+                            "actor": {"id": self.actors[0].id},
                             "role": "ringer",
                             "mednr": "0001"
-                        }
+                        },
+                        {
+                            "actor": {},
+                            "role": "ringer",
+                            "mednr": "0002"
+                        },
+                        {
+                            "actor": {"id": "abc"},
+                            "role": "ringer",
+                            "mednr": "0003"
+                        },
+                        {
+                            "actor": {"id": 2000},
+                            "role": "ringer",
+                            "mednr": "0003"
+                        },
                     ]
                 },
                 {
                     "actors": [
-                        {"actor": {"id": "invalid"}},
+                        {},
+                        {"actor": ["missing_id"]},
+                        {"actor": ["incorrect_type"]},
+                        {"actor": ["does_not_exist"]},
                     ]
                 }
             ),

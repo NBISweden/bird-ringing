@@ -88,6 +88,11 @@ class DjangoProtectedModelPermissions(DjangoModelPermissions):
 
 
 class RelatedFieldSerializer(serializers.PrimaryKeyRelatedField):
+    default_error_messages = {
+        "invalid": "Expected an object like.",
+        "missing_id": "Expected an 'id' key.",
+    }
+
     def __init__(self, *args, serializer_class=None, **kwargs):
         if serializer_class is None:
             raise TypeError("serializer_class is required")
@@ -109,8 +114,8 @@ class RelatedFieldSerializer(serializers.PrimaryKeyRelatedField):
             return data
     
         if not isinstance(data, dict):
-            raise serializers.ValidationError("Expected an object.")
+            self.fail("invalid")
         if "id" not in data:
-            raise serializers.ValidationError({"id": "This field is required."})
+            self.fail("missing_id")
 
         return super().to_internal_value(data["id"])
