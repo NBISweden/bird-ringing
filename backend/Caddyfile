@@ -1,0 +1,9 @@
+# Backend Caddyfile.
+# Serves backend static data in production.
+
+:8001
+
+handle_path /static/* {
+    root * /static
+    file_server
+}

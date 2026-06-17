@@ -101,6 +101,7 @@ USER "$BUILD_ID"
 
 WORKDIR "$HOME"
 
+COPY --chown="$BUILD_ID" Caddyfile .
 COPY --from=prod-build --chown="$BUILD_ID" "$HOME" .
 
 ENV PATH="$HOME/.venv/bin:$PATH"

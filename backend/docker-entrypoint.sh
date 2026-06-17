@@ -32,7 +32,8 @@ case $SERVICE_MODE in
 	production*)
 		TIMEOUT=${GUNICORN_TIMEOUT:-30}
 		WORKERS=${GUNICORN_WORKERS:-1}
-		exec gunicorn --bind 0.0.0.0:8000 bird_ringing.wsgi --timeout "$TIMEOUT" --workers "$WORKERS"
+		caddy start -a caddyfile -c Caddyfile
+		exec gunicorn --bind 127.0.0.1:8000 bird_ringing.wsgi --timeout "$TIMEOUT" --workers "$WORKERS"
 		;;
 	*)
 		printf "Unknown SERVICE_MODE: %s\n" "$SERVICE_MODE" >&2
