@@ -97,11 +97,11 @@ RUN install -d -o "$UID" -g "$GID" "$HOME" /static
 
 RUN fc-cache -f
 
-USER "$UID:$GID"
+USER "$BUILD_ID"
 
 WORKDIR "$HOME"
 
-COPY --from=prod-build --chown="$UID:$GID" "$HOME" .
+COPY --from=prod-build --chown="$BUILD_ID" "$HOME" .
 
 ENV PATH="$HOME/.venv/bin:$PATH"
 
