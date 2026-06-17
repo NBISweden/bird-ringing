@@ -41,7 +41,7 @@ function PermissionEntrySubform({
     type === undefined
       ? []
       : options.permissionProperties.filter(
-          (p) => String(p.related_type.id) === type,
+          (p) => String(p.related_type?.id) === type || !p.related_type,
         );
   return (
     <div className="row mb-3">
