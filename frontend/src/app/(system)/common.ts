@@ -48,7 +48,7 @@ export type Options = {
   actor: Option;
   permission_type: Option;
   permission_property: Option & {
-    related_type: { id: string };
+    related_type?: { id: string };
   };
   actor_type: Option;
   sex: Option;
