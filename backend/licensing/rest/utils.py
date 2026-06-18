@@ -89,7 +89,7 @@ class DjangoProtectedModelPermissions(DjangoModelPermissions):
 
 class RelatedFieldSerializer(serializers.PrimaryKeyRelatedField):
     default_error_messages = {
-        "invalid": "Expected an object like.",
+        "invalid": "Expected an object.",
         "missing_id": "Expected an 'id' key.",
     }
 
