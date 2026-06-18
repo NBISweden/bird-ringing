@@ -55,7 +55,7 @@ function PermissionEntrySubform({
           (p) => p.related_type?.id === type || !p.related_type,
         );
   const [periodStart, periodEnd] = (permission.period
-    ? permission.period.map((e) => new Date(e))
+    ? permission.period.map((e) => (e ? new Date(e) : undefined))
     : undefined) || [startsAt, endsAt];
   const permissionStartsAt = periodStart
     ? new Date(Math.max(startsAt.getTime(), periodStart.getTime()))
@@ -99,7 +99,7 @@ function PermissionEntrySubform({
           <i className="bi bi-calendar2-week text-primary me-2" />
           <VerticalField
             label={t("licensePermissionStartsAt")}
-            id={`${id}.period`}
+            id={`${id}.period.0`}
           >
             <TextInput
               type="date"
@@ -115,7 +115,7 @@ function PermissionEntrySubform({
           </VerticalField>
           <VerticalField
             label={t("licensePermissionEndsAt")}
-            id={`${id}.period`}
+            id={`${id}.period.1`}
           >
             <TextInput
               type="date"
@@ -190,7 +190,9 @@ function PermissionEntrySubform({
       >
         <TextArea
           value={permission.description}
-          onChange={(event) => updateValue({ description: event.target.value })}
+          onChange={(event) => {
+            updateValue({ description: event.target.value });
+          }}
         />
       </VerticalField>
     </div>
@@ -240,6 +242,7 @@ export function LicensePermissionEntryForm({
               <span className="d-flex gap-3 align-items-start">
                 <button
                   className="btn btn-danger ms-2"
+                  type="button"
                   onClick={(e) => {
                     e.preventDefault();
                     if (permissions) {
