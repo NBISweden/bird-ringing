@@ -342,7 +342,7 @@ class TestSerializers(TestCase):
                     "permissions": [{
                         "type": {"id": self.permission_type.id},
                         "period": [
-                            "2026-12-31"
+                            "2026-12-31",
                             "2026-01-01",
                         ],
                         "properties": [],
@@ -351,7 +351,7 @@ class TestSerializers(TestCase):
                 },
                 {
                     "permissions": [{
-                        "period": {0: ["invalid"]}
+                        "period": ["invalid"]
                     }]
                 }
             ),
