@@ -6,25 +6,24 @@ import {
   convertOnlyDateToLocale,
   LicenseActorRelation,
   LicenseInstance,
-  LicensePermission,
+  LicensePermissionByRef,
 } from "@/app/(system)/common";
 import {
   AlertModal,
   useClient,
-  useFlags,
   useModalsContext,
 } from "../app/(system)/contexts";
 import { useSendLicenseEmailForActorsAction } from "../app/(system)/licenses/actions";
 import { useTranslation } from "@/app/(system)/internationalization";
 import { LicensePermissionItem } from "./LicensePermissionItem";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { LicenseRelationsForm } from "./LicenseRelationsForm";
-import Icon from "./Icon";
 import { LicensePermissionEntryForm } from "./LicensePermissionEntryForm";
 import { LicenseEntryForm, LicenseFormData } from "./LiceneseEntryForm";
 import { useFormSubmission } from "@/app/(system)/hooks";
 import { FieldErrors } from "./InputFields";
 import { Alert } from "./Alert";
+import { EditSection } from "./EditSection";
 
 type LicenceViewProps = {
   license: LicenseInstance;
@@ -33,42 +32,22 @@ type LicenceViewProps = {
   onUpdated: () => unknown | Promise<unknown>;
 };
 
-function EditButton({
-  isEditing,
-  onChange,
-}: {
-  isEditing: boolean;
-  onChange: (v: boolean) => void;
-}) {
-  const { t } = useTranslation();
-  return (
-    <button
-      className="btn btn-outline-secondary ms-2"
-      onClick={() => onChange(!isEditing)}
-    >
-      <Icon icon={isEditing ? "eye" : "pencil-square"} />
-      <span className="ms-2">{isEditing ? t("done") : t("edit")}</span>
-    </button>
-  );
-}
-
-type LicenseSectionProps = {
+type LicenseDisplayProps = {
   mnr: string;
-  edit: boolean;
-  setEdit: (v: boolean) => void;
   license: LicenseInstance;
+};
+
+type LicenseEditProps = LicenseDisplayProps & {
   onUpdated: () => unknown | Promise<unknown>;
 };
 
-function LicenseInfoView({
+function LicenseInfoEdit({
   mnr,
-  status,
-  edit,
   license,
-  setEdit,
+  status,
   onUpdated,
-}: { status: string } & LicenseSectionProps) {
-  const { t, format } = useTranslation();
+}: { status: string } & LicenseEditProps) {
+  const { t } = useTranslation();
   const client = useClient();
   const modals = useModalsContext();
 
@@ -77,8 +56,6 @@ function LicenseInfoView({
       await client.updateLicense(mnr, license),
     async (response) => {
       await response;
-      setEdit(false);
-      onUpdated();
       modals.add(
         AlertModal(
           t("licenseUpdateSuccessTitle"),
@@ -112,109 +89,148 @@ function LicenseInfoView({
   );
 
   return (
-    <div className="card">
-      <div className="card-header">
-        <div className="d-flex gap-4 justify-content-between align-items-center">
-          {edit ? (
-            <h3 className="m-0">{t("licenseFormTitle")}</h3>
-          ) : (
-            <>
-              <div className="flex-grow-0">
-                {format("licenseValidityPeriod", {
-                  startsAt: convertOnlyDateToLocale(license.starts_at),
-                  endsAt: convertOnlyDateToLocale(license.ends_at),
-                  from: (chunks) => (
-                    <span className="fst-italic">{chunks}</span>
-                  ),
-                  to: (chunks) => <span className="fst-italic">{chunks}</span>,
-                })}
-              </div>
-              <div className="flex-grow-0 fw-light">
-                {license.location || " "}
-              </div>
-            </>
-          )}
-          <EditButton isEditing={edit} onChange={() => setEdit(!edit)} />
+    <div className="card-body">
+      {errors && errors.nonField.length > 0 ? (
+        <div tabIndex={-1}>
+          <Alert type="danger">
+            {errors.nonField.length === 1 ? (
+              <p className="mb-0">{errors.nonField[0]}</p>
+            ) : (
+              <ul className="mb-0">
+                {errors.nonField.map((message, i) => (
+                  <li key={i}>{message}</li>
+                ))}
+              </ul>
+            )}
+          </Alert>
         </div>
-      </div>
-      <div className="card-body">
-        {edit ? (
-          <>
-            {errors && errors.nonField.length > 0 ? (
-              <div tabIndex={-1}>
-                <Alert type="danger">
-                  {errors.nonField.length === 1 ? (
-                    <p className="mb-0">{errors.nonField[0]}</p>
-                  ) : (
-                    <ul className="mb-0">
-                      {errors.nonField.map((message, i) => (
-                        <li key={i}>{message}</li>
-                      ))}
-                    </ul>
-                  )}
-                </Alert>
-              </div>
-            ) : null}
-            <FieldErrors errors={errors?.fields || {}}>
-              <LicenseEntryForm
-                initialLicense={{
-                  mnr: mnr,
-                  status: status,
-                  starts_at: license.starts_at,
-                  ends_at: license.ends_at,
-                  location: license.location,
-                  description: license.description,
-                  report_status: license.report_status,
-                }}
-                onSubmit={(license) => submit(license)}
-                isSubmitting={isSubmitting}
-              />
-            </FieldErrors>
-          </>
-        ) : (
-          <ul className="list-group list-group-flush">
-            {license.description ? (
-              <li className="list-group-item">{license.description}</li>
-            ) : null}
-            <li className="list-group-item ">
-              <div className="d-flex align-items-center">
-                <div className="me-auto">
-                  <span className="me-2">{t("licenseReportStatus")}</span>
-                  <span className="badge rounded-pill border border-primary text-primary text-capitalize">
-                    {String(license.report_status)}
-                  </span>
-                </div>
-                <div className="d-flex gap-3 text-muted small">
-                  <span>
-                    {t("licenseCreatedAt", {
-                      date: convertDateToLocale(license.created_at),
-                    })}
-                  </span>
-                  <span>
-                    {t("licenseUpdatedAt", {
-                      date: convertDateToLocale(license.updated_at),
-                    })}
-                  </span>
-                </div>
-              </div>
-            </li>
-          </ul>
-        )}
-      </div>
+      ) : null}
+      <FieldErrors errors={errors?.fields || {}}>
+        <LicenseEntryForm
+          initialLicense={{
+            mnr: mnr,
+            status: status,
+            starts_at: license.starts_at,
+            ends_at: license.ends_at,
+            location: license.location,
+            description: license.description,
+            report_status: license.report_status,
+          }}
+          onSubmit={(license) => submit(license)}
+          isSubmitting={isSubmitting}
+        />
+      </FieldErrors>
     </div>
   );
 }
 
-function LicenseRelationsView({
-  mnr,
-  edit,
-  license,
-  setEdit,
-  onUpdated,
-}: LicenseSectionProps) {
-  const { t, formatOption } = useTranslation();
+function LicenseInfoDisplay({ license }: LicenseDisplayProps) {
+  const { t } = useTranslation();
+
+  return (
+    <div className="card-body">
+      <ul className="list-group list-group-flush">
+        {license.description ? (
+          <li className="list-group-item">{license.description}</li>
+        ) : null}
+        <li className="list-group-item ">
+          <div className="d-flex align-items-center">
+            <div className="me-auto">
+              <span className="me-2">{t("licenseReportStatus")}</span>
+              <span className="badge rounded-pill border border-primary text-primary text-capitalize">
+                {String(license.report_status)}
+              </span>
+            </div>
+            <div className="d-flex gap-3 text-muted small">
+              <span>
+                {t("licenseCreatedAt", {
+                  date: convertDateToLocale(license.created_at),
+                })}
+              </span>
+              <span>
+                {t("licenseUpdatedAt", {
+                  date: convertDateToLocale(license.updated_at),
+                })}
+              </span>
+            </div>
+          </div>
+        </li>
+      </ul>
+    </div>
+  );
+}
+
+function LicenseRelationEdit({ mnr, license, onUpdated }: LicenseEditProps) {
+  const { t } = useTranslation();
   const client = useClient();
   const modals = useModalsContext();
+  const { submit, isSubmitting, errors } = useFormSubmission(
+    (relations: LicenseActorRelation[]) =>
+      client.updateLicenseRelations(mnr, relations),
+    async (response) => {
+      await response;
+      modals.add(
+        AlertModal(
+          t("licenseUpdateSuccessTitle"),
+          <p className="mb-0">{t("licenseUpdateSuccessMessage")}</p>,
+          t("closeModal"),
+        ),
+      );
+      await onUpdated();
+    },
+    async (errors) => {
+      const lines = errors.nonField;
+
+      if (lines.length > 0) {
+        modals.add(
+          AlertModal(
+            t("licenseUpdateErrorTitle"),
+            lines.length > 1 ? (
+              <ul className="mb-0">
+                {lines.map((line, i) => (
+                  <li key={i}>{line}</li>
+                ))}
+              </ul>
+            ) : (
+              <p className="mb-0">{lines[0]}</p>
+            ),
+            t("closeModal"),
+          ),
+        );
+      }
+    },
+  );
+  return (
+    <div className="card-body">
+      {errors && errors.nonField.length > 0 ? (
+        <div tabIndex={-1}>
+          <Alert type="danger">
+            {errors.nonField.length === 1 ? (
+              <p className="mb-0">{errors.nonField[0]}</p>
+            ) : (
+              <ul className="mb-0">
+                {errors.nonField.map((message, i) => (
+                  <li key={i}>{message}</li>
+                ))}
+              </ul>
+            )}
+          </Alert>
+        </div>
+      ) : null}
+      <FieldErrors errors={errors?.fields || {}}>
+        <LicenseRelationsForm
+          initialRelations={license.actors || []}
+          onSubmit={submit}
+          isSubmitting={isSubmitting}
+        />
+      </FieldErrors>
+    </div>
+  );
+}
+
+function LicenseRelationDisplay({ license, mnr }: LicenseDisplayProps) {
+  const { t, formatOption } = useTranslation();
+  const client = useClient();
 
   const sendEmailForActorsAction = useSendLicenseEmailForActorsAction(client);
 
@@ -236,13 +252,108 @@ function LicenseRelationsView({
       rel.role === "associate_ringer" && selectedActorIds.has(rel.actor.id),
   );
   const effectiveNotifyRinger = notifyRinger && hasSelectedAssociateRinger;
+  return (
+    <>
+      <div className="card-body">
+        {license.actors?.length ? (
+          <ul className="list-group list-group-flush">
+            {license.actors.map((rel, i) => (
+              <li className="list-group-item mb-3" key={i}>
+                <div className="row align-items-center g-2">
+                  <div className="col-12 col-md-3 fw-semibold text-capitalize">
+                    {formatOption(rel.role, {
+                      affiliate: "licenseRoleAffiliate",
+                      associate_ringer: "licenseRoleAssociateRinger",
+                      communication: "licenseRoleCommunication",
+                      ringer: "licenseRoleRinger",
+                    })}
+                  </div>
+                  <div className="col-10 col-md-7">
+                    <i className="bi bi-person text-primary me-1" />
+                    <Link href={`/actors/entry?entryId=${rel.actor.id}`}>
+                      {rel.actor.full_name}
+                    </Link>
+                    ({rel.mednr})
+                  </div>
+                  <div className="col-2 col-md-2 d-flex justify-content-center">
+                    {isSelectableRelation(rel) ? (
+                      <input
+                        className="form-check-input border border-dark"
+                        type="checkbox"
+                        checked={selectedActorIds.has(rel.actor.id)}
+                        onChange={(e) => {
+                          const checked = e.target.checked;
+                          const id = rel.actor.id;
+                          setSelectedActorIds((prev) => {
+                            const next = new Set(prev);
+                            if (checked) next.add(id);
+                            else next.delete(id);
+                            return next;
+                          });
+                        }}
+                      />
+                    ) : null}
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-muted fst-italic">
+            {t("licenseNoConnectedActors")}
+          </p>
+        )}
+      </div>
+      <div className="card-body d-flex justify-content-end align-items-center gap-3">
+        <div className="form-check m-0">
+          <input
+            className="form-check-input border border-dark"
+            type="checkbox"
+            checked={effectiveNotifyRinger}
+            disabled={!hasSelectedAssociateRinger}
+            onChange={(e) => setNotifyRinger(e.target.checked)}
+            id="notify-ringer"
+          />
+          <label
+            className={`form-check-label small text-muted ${!hasSelectedAssociateRinger ? "opacity-50" : ""}`}
+            htmlFor="notify-ringer"
+            title={t("licenseNotifyRingerHelp")}
+          >
+            {t("licenseNotifyRinger")}
+          </label>
+        </div>
+        <button
+          className="btn btn-secondary flex-grow-0"
+          onClick={() =>
+            sendEmailForActorsAction(
+              mnr,
+              license.actors
+                .filter((rel) => isSelectableRelation(rel))
+                .filter((rel) => selectedActorIds.has(rel.actor.id))
+                .map((rel) => ({
+                  id: rel.actor.id,
+                  name: rel.actor.full_name,
+                })),
+              effectiveNotifyRinger,
+            )
+          }
+        >
+          {t("licenseSendLicenses")}
+        </button>
+      </div>
+    </>
+  );
+}
 
+function LicensePermissionsEdit({ mnr, onUpdated, license }: LicenseEditProps) {
+  const { t } = useTranslation();
+  const client = useClient();
+  const modals = useModalsContext();
   const { submit, isSubmitting, errors } = useFormSubmission(
-    (relations: LicenseActorRelation[]) =>
-      client.updateLicenseRelations(mnr, relations),
+    async (permissions: LicensePermissionByRef[]) =>
+      client.updateLicensePermissions(mnr, permissions),
     async (response) => {
       await response;
-      setEdit(false);
       modals.add(
         AlertModal(
           t("licenseUpdateSuccessTitle"),
@@ -274,186 +385,51 @@ function LicenseRelationsView({
       }
     },
   );
-
   return (
-    <div className="card border-primary">
-      <div className="card-body">
-        <div className="d-flex">
-          <h2 className="h3 card-title flex-grow-1">{t("licenseActors")}</h2>
-          <EditButton isEditing={edit} onChange={() => setEdit(!edit)} />
-        </div>
-      </div>
-      {edit ? (
-        <div className="card-body">
-          {errors && errors.nonField.length > 0 ? (
-            <div tabIndex={-1}>
-              <Alert type="danger">
-                {errors.nonField.length === 1 ? (
-                  <p className="mb-0">{errors.nonField[0]}</p>
-                ) : (
-                  <ul className="mb-0">
-                    {errors.nonField.map((message, i) => (
-                      <li key={i}>{message}</li>
-                    ))}
-                  </ul>
-                )}
-              </Alert>
-            </div>
-          ) : null}
-          <FieldErrors errors={errors?.fields || {}}>
-            <LicenseRelationsForm
-              initialRelations={license.actors || []}
-              onSubmit={submit}
-              isSubmitting={isSubmitting}
-            />
-          </FieldErrors>
-        </div>
-      ) : (
-        <>
-          <div className="card-body">
-            {license.actors?.length ? (
-              <ul className="list-group list-group-flush">
-                {license.actors.map((rel, i) => (
-                  <li className="list-group-item mb-3" key={i}>
-                    <div className="row align-items-center g-2">
-                      <div className="col-12 col-md-3 fw-semibold text-capitalize">
-                        {formatOption(rel.role, {
-                          affiliate: "licenseRoleAffiliate",
-                          associate_ringer: "licenseRoleAssociateRinger",
-                          communication: "licenseRoleCommunication",
-                          ringer: "licenseRoleRinger",
-                        })}
-                      </div>
-                      <div className="col-10 col-md-7">
-                        <i className="bi bi-person text-primary me-1" />
-                        <Link href={`/actors/entry?entryId=${rel.actor.id}`}>
-                          {rel.actor.full_name}
-                        </Link>
-                        ({rel.mednr})
-                      </div>
-                      <div className="col-2 col-md-2 d-flex justify-content-center">
-                        {isSelectableRelation(rel) ? (
-                          <input
-                            className="form-check-input border border-dark"
-                            type="checkbox"
-                            checked={selectedActorIds.has(rel.actor.id)}
-                            onChange={(e) => {
-                              const checked = e.target.checked;
-                              const id = rel.actor.id;
-                              setSelectedActorIds((prev) => {
-                                const next = new Set(prev);
-                                if (checked) next.add(id);
-                                else next.delete(id);
-                                return next;
-                              });
-                            }}
-                          />
-                        ) : null}
-                      </div>
-                    </div>
-                  </li>
+    <>
+      {errors && errors.nonField.length > 0 ? (
+        <div className="card-body" tabIndex={-1}>
+          <Alert type="danger">
+            {errors.nonField.length === 1 ? (
+              <p className="mb-0">{errors.nonField[0]}</p>
+            ) : (
+              <ul className="mb-0">
+                {errors.nonField.map((message, i) => (
+                  <li key={i}>{message}</li>
                 ))}
               </ul>
-            ) : (
-              <p className="text-muted fst-italic">
-                {t("licenseNoConnectedActors")}
-              </p>
             )}
-          </div>
-          <div className="card-body d-flex justify-content-end align-items-center gap-3">
-            <div className="form-check m-0">
-              <input
-                className="form-check-input border border-dark"
-                type="checkbox"
-                checked={effectiveNotifyRinger}
-                disabled={!hasSelectedAssociateRinger}
-                onChange={(e) => setNotifyRinger(e.target.checked)}
-                id="notify-ringer"
-              />
-              <label
-                className={`form-check-label small text-muted ${!hasSelectedAssociateRinger ? "opacity-50" : ""}`}
-                htmlFor="notify-ringer"
-                title={t("licenseNotifyRingerHelp")}
-              >
-                {t("licenseNotifyRinger")}
-              </label>
-            </div>
-            <button
-              className="btn btn-secondary flex-grow-0"
-              onClick={() =>
-                sendEmailForActorsAction(
-                  mnr,
-                  license.actors
-                    .filter((rel) => isSelectableRelation(rel))
-                    .filter((rel) => selectedActorIds.has(rel.actor.id))
-                    .map((rel) => ({
-                      id: rel.actor.id,
-                      name: rel.actor.full_name,
-                    })),
-                  effectiveNotifyRinger,
-                )
-              }
-            >
-              {t("licenseSendLicenses")}
-            </button>
-          </div>
-        </>
-      )}
-    </div>
+          </Alert>
+        </div>
+      ) : null}
+      <FieldErrors errors={errors?.fields || {}}>
+        <LicensePermissionEntryForm
+          startsAt={new Date(license.starts_at)}
+          endsAt={new Date(license.ends_at)}
+          initialPermissions={license.permissions}
+          onSubmit={submit}
+          isSubmitting={isSubmitting}
+        />
+      </FieldErrors>
+    </>
   );
 }
 
-function LicensePermissionsView({
-  edit,
-  license,
-  setEdit,
-}: LicenseSectionProps) {
+function LicensePermissionsDisplay({ license }: LicenseDisplayProps) {
   const { t } = useTranslation();
-  const flags = useFlags();
-  const showMockEditing = flags.has("mock-license-editing");
-  const { submit, isSubmitting, errors } = useFormSubmission(
-    async (permissions: Partial<LicensePermission>[]) =>
-      console.log(permissions),
-    async (response) => {
-      console.log(await response);
-    },
-    async (errors) => {
-      console.log(errors);
-    },
-  );
   return (
-    <div className="card border-primary">
-      <div className="card-body">
-        <div className="d-flex">
-          <h2 className="h3 card-title flex-grow-1">
-            {t("licensePermissions")}
-          </h2>
-          {showMockEditing ? (
-            <EditButton isEditing={edit} onChange={() => setEdit(!edit)} />
-          ) : (
-            <></>
-          )}
-        </div>
-        {showMockEditing && edit ? (
-          <FieldErrors errors={errors?.fields || {}}>
-            <LicensePermissionEntryForm
-              initialPermissions={license.permissions}
-              onSubmit={submit}
-              isSubmitting={isSubmitting}
-            />
-          </FieldErrors>
-        ) : license.permissions?.length ? (
-          <ul className="list-group list-group-flush">
-            {license.permissions.map((p, i) => (
-              <li className="list-group-item mb-3" key={i}>
-                <LicensePermissionItem permission={p} />
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="text-muted fst-italic">{t("licenseNoPermissions")}</p>
-        )}
-      </div>
+    <div className="card-body">
+      {license.permissions?.length ? (
+        <ul className="list-group list-group-flush">
+          {license.permissions.map((p, i) => (
+            <li className="list-group-item mb-3" key={i}>
+              <LicensePermissionItem permission={p} />
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="text-muted fst-italic">{t("licenseNoPermissions")}</p>
+      )}
     </div>
   );
 }
@@ -467,37 +443,87 @@ export function LicenceView({
   const [editSection, setEditSection] = useState<
     null | "relations" | "basic" | "permissions"
   >(null);
-  const { t } = useTranslation();
+  const { t, format } = useTranslation();
+
+  const handleUpdated = useCallback(() => {
+    setEditSection(null);
+    onUpdated();
+  }, [onUpdated, setEditSection]);
 
   return (
     <>
       <div className="mb-4">
-        <LicenseInfoView
-          license={license}
-          mnr={mnr}
-          status={status}
+        <EditSection
+          editHeader={() => (
+            <h2 className="h3 card-title m-0">{t("licenseFormTitle")}</h2>
+          )}
+          displayHeader={() => (
+            <>
+              <div className="flex-grow-0">
+                {format("licenseValidityPeriod", {
+                  startsAt: convertOnlyDateToLocale(license.starts_at),
+                  endsAt: convertOnlyDateToLocale(license.ends_at),
+                  from: (chunks) => (
+                    <span className="fst-italic">{chunks}</span>
+                  ),
+                  to: (chunks) => <span className="fst-italic">{chunks}</span>,
+                })}
+              </div>
+              <div className="flex-grow-0 fw-light">
+                {license.location || " "}
+              </div>
+            </>
+          )}
           edit={editSection === "basic"}
           setEdit={(edit) => setEditSection(edit ? "basic" : null)}
-          onUpdated={onUpdated}
+          editView={() => (
+            <LicenseInfoEdit
+              license={license}
+              status={status}
+              mnr={mnr}
+              onUpdated={handleUpdated}
+            />
+          )}
+          displayView={() => <LicenseInfoDisplay license={license} mnr={mnr} />}
         />
       </div>
       <div className="mb-4">
-        <LicenseRelationsView
-          license={license}
-          mnr={mnr}
+        <EditSection
+          title={t("licenseActors")}
           edit={editSection === "relations"}
           setEdit={(edit) => setEditSection(edit ? "relations" : null)}
-          onUpdated={onUpdated}
+          editView={() => (
+            <LicenseRelationEdit
+              license={license}
+              mnr={mnr}
+              onUpdated={handleUpdated}
+            />
+          )}
+          displayView={() => (
+            <LicenseRelationDisplay license={license} mnr={mnr} />
+          )}
+          isFlat
+          isAccented
         />
       </div>
       {/* Permissions */}
       <div className="mb-4">
-        <LicensePermissionsView
-          license={license}
-          mnr={mnr}
+        <EditSection
+          title={t("licensePermissions")}
           edit={editSection === "permissions"}
           setEdit={(edit) => setEditSection(edit ? "permissions" : null)}
-          onUpdated={onUpdated}
+          editView={() => (
+            <LicensePermissionsEdit
+              license={license}
+              mnr={mnr}
+              onUpdated={handleUpdated}
+            />
+          )}
+          displayView={() => (
+            <LicensePermissionsDisplay license={license} mnr={mnr} />
+          )}
+          isFlat
+          isAccented
         />
       </div>
       {/* Documents */}

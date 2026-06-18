@@ -32,12 +32,11 @@ class Command(BaseCommand):
                 "add_actor",
                 "change_actor",
                 "view_species",
-                "add_licensesequence",
                 "view_licensepermissiontype",
                 "add_licensepermissiontype",
                 "change_licensepermissiontype",
-                "view_licensepermissionproperty"
-                "add_licensepermissionproperty"
+                "view_licensepermissionproperty",
+                "add_licensepermissionproperty",
                 "change_licensepermissionproperty"
             ]
 

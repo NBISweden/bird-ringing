@@ -40,7 +40,7 @@ from licensing.models import (
     LicenseCommunication,
     CommunicationTypeChoices,
     DocumentTypeChoices,
-    MonthDay,
+    Species,
 )
 from rest_framework.authentication import SessionAuthentication, BasicAuthentication
 from rest_framework import routers, serializers, viewsets, filters, pagination, response
@@ -458,38 +458,63 @@ class LicenseActorRelationSerializer(serializers.ModelSerializer):
 class LicensePermissionTypeSerializer(serializers.ModelSerializer):
     class Meta:
         model = LicensePermissionType
-        fields = ['name', 'description']
+        fields = ["id", "name", "description"]
+        read_only_fields = [
+            "id",
+            "name",
+            "description",
+        ]
 
 class LicensePermissionPropertySerializer(serializers.ModelSerializer):
     class Meta:
         model = LicensePermissionProperty
-        fields = ["name", "description"]
+        fields = ["id", "name", "description"]
+        read_only_fields = [
+            "id",
+            "name",
+            "description",
+        ]
 
-class LicenseLicensePermissionSerializer(serializers.ModelSerializer):
-    type = LicensePermissionTypeSerializer(read_only=True)
-    species = serializers.SerializerMethodField()
-    properties = LicensePermissionPropertySerializer(many=True, read_only=True)
-    starts_at = serializers.SerializerMethodField()
-    ends_at = serializers.SerializerMethodField()
+class SpeciesSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Species
+        fields = ["id", "name"]
+        read_only_fields = [
+            "id",
+            "name",
+        ]
+
+class LicensePermissionSerializer(serializers.ModelSerializer):
+    type = RelatedFieldSerializer(
+        serializer_class=LicensePermissionTypeSerializer,
+        queryset=LicensePermissionType.objects.all(),
+    )
+    species_list = RelatedFieldSerializer(
+        serializer_class=SpeciesSerializer,
+        queryset=Species.objects.all(),
+        many=True,
+        required=False,
+    )
+    properties = RelatedFieldSerializer(
+        serializer_class=LicensePermissionPropertySerializer,
+        queryset=LicensePermissionProperty.objects.all(),
+        many=True,
+        required=False,
+    )
+    period = serializers.ListField(child=serializers.DateField(), required=False)
+    created_by = serializers.HiddenField(
+        default=serializers.CreateOnlyDefault(serializers.CurrentUserDefault()),
+        write_only=True
+    )
+    updated_by = serializers.HiddenField(
+        default=serializers.CurrentUserDefault(),
+        write_only=True
+    )
 
     class Meta:
         model = LicensePermission
-        fields = ["type", "description", "location", "starts_at", "ends_at", "species", "properties"]
+        fields = ["type", "description", "location", "period", "properties", "species_list", "created_by", "updated_by"]
 
-    def get_species(self, obj):
-        return list(obj.species_list.values_list('name', flat=True))
-    
-    def get_starts_at(self, obj):
-        return MonthDay.get_starts_at(
-            (obj.license.starts_at, obj.license.ends_at),
-            obj.starts_at
-        )
-
-    def get_ends_at(self, obj):
-        return MonthDay.get_period(
-            (obj.license.starts_at, obj.license.ends_at),
-            (obj.starts_at, obj.ends_at)
-        )[1]
 
 class LicenseDocumentSerializer(serializers.ModelSerializer):
     actor = serializers.CharField(source="actor.full_name", read_only=True)
@@ -513,7 +538,7 @@ class LicenseCommunicationSerializer(serializers.ModelSerializer):
 
 class LicenseSerializer(serializers.ModelSerializer):
     actors = LicenseActorRelationSerializer(many=True, required=False)
-    permissions = LicenseLicensePermissionSerializer(many=True, required=False)
+    permissions = LicensePermissionSerializer(many=True, required=False)
     documents = LicenseDocumentSerializer(many=True, read_only=True)
     communication = LicenseCommunicationSerializer(many=True, read_only=True)
     report_status = NameBasedChoiceField(choices=ReportStatusChoices)
@@ -532,7 +557,6 @@ class LicenseSerializer(serializers.ModelSerializer):
             "updated_by",
         ]
         read_only_fields = [
-            "permissions",
             "documents",
             "communication",
             "created_at",
@@ -579,6 +603,36 @@ class LicenseSerializer(serializers.ModelSerializer):
             ])
 
         return actors
+    
+    def validate_permissions(self, permissions):
+        initial_data = getattr(self, "initial_data", None)
+        if initial_data is not None and "permissions" in initial_data:
+            raw_permissions = initial_data["permissions"]
+            permissions_serializer = LicensePermissionSerializer(
+                data=raw_permissions,
+                many=True,
+                context=self.context,
+                partial=False,
+            )
+            permissions_serializer.is_valid(raise_exception=True)
+            permissions = permissions_serializer.validated_data
+        
+        permission_errors: dict[int, dict[str, list[str]]] = dict()
+        for index, permission in enumerate(permissions):
+            period = permission.get("period", None)
+            if period is not None:
+                [starts_at, ends_at] = period
+                if starts_at > ends_at:
+                    permission_errors[index] = {
+                        "period": ["Date period start should be before the end"],
+                    }
+        if len(permission_errors) > 0:
+            raise serializers.ValidationError([
+                permission_errors.get(index, {})
+                for index, _ in enumerate(permissions)
+            ])
+
+        return permissions
 
     @transaction.atomic
     def create(self, validated_data):
@@ -628,8 +682,15 @@ class LicenseSerializer(serializers.ModelSerializer):
         instance and thus can not be serialized with the standard flow.
         """
         if permissions is not None:
-            # TODO: Work on updating permissions later
-            pass
+            instance.permissions.all().delete()
+
+            permission_serializer = LicensePermissionSerializer(
+                data=permissions,
+                context=self.context,
+                many=True
+            )
+            permission_serializer.is_valid(raise_exception=True)
+            permission_serializer.save(license=instance)
 
 
 class LicenseHistoryItemSerializer(serializers.ModelSerializer):

@@ -1,6 +1,9 @@
 import {
-  LicenseInstance,
+  idToReference,
+  LicensePermissionByRef,
+  ObjectReference,
   Options,
+  referenceToId,
   toSelectOptions,
 } from "@/app/(system)/common";
 import { useOptions } from "@/app/(system)/hooks";
@@ -22,31 +25,48 @@ type PermissionOptions = {
   species: Options["species"][];
 };
 
+function toDateString(d: Date | undefined): string {
+  return d?.toISOString().slice(0, 10) || "";
+}
+
 function PermissionEntrySubform({
   permission,
   updateValue,
   options,
+  id,
+  startsAt,
+  endsAt,
 }: {
-  permission: Partial<LicenseInstance["permissions"][number]>;
-  updateValue: (p: Partial<LicenseInstance["permissions"][number]>) => void;
+  id: string;
+  startsAt: Date;
+  endsAt: Date;
+  permission: Partial<LicensePermissionByRef>;
+  updateValue: (p: Partial<LicensePermissionByRef>) => void;
   options: PermissionOptions;
 }) {
   const { t } = useTranslation();
-  const [type, setType] = useState(
-    options.permissionTypes.filter(
-      (pt) => pt.label === permission.type?.name,
-    )[0]?.id,
-  );
+  const type = options.permissionTypes.filter(
+    (pt) => pt.id === referenceToId(permission.type),
+  )[0]?.id;
   const permissionProperties =
     type === undefined
       ? []
       : options.permissionProperties.filter(
-          (p) => String(p.related_type?.id) === type || !p.related_type,
+          (p) => p.related_type?.id === type || !p.related_type,
         );
+  const [periodStart, periodEnd] = (permission.period
+    ? permission.period.map((e) => (e ? new Date(e) : undefined))
+    : undefined) || [startsAt, endsAt];
+  const permissionStartsAt = periodStart
+    ? new Date(Math.max(startsAt.getTime(), periodStart.getTime()))
+    : undefined;
+  const permissionEndsAt = periodEnd
+    ? new Date(Math.min(endsAt.getTime(), periodEnd.getTime()))
+    : undefined;
   return (
-    <div className="row mb-3">
+    <div className="row">
       <div className="pb-2">
-        <HorizontalField label={t("licensePermissionType")}>
+        <HorizontalField label={t("licensePermissionType")} id={`${id}.type`}>
           <SelectInput
             options={[
               { value: "", label: t("selectOption") },
@@ -54,44 +74,85 @@ function PermissionEntrySubform({
             ]}
             value={type}
             onChange={(v) => {
-              setType(v);
+              updateValue({
+                type: idToReference(v),
+                properties: [],
+              });
             }}
           />
         </HorizontalField>
       </div>
       <div className="col-12">
         <div className="py-1">
-          <HorizontalField label="" icon="geo-alt">
-            <TextInput value={permission.location} onChange={() => {}} />
+          <HorizontalField label="" icon="geo-alt" id={`${id}.location`}>
+            <TextInput
+              value={permission.location}
+              onChange={(v) => {
+                updateValue({
+                  location: v.target.value,
+                });
+              }}
+            />
           </HorizontalField>
         </div>
         <div className="py-1 d-flex gap-3">
           <i className="bi bi-calendar2-week text-primary me-2" />
-          <VerticalField label={t("licensePermissionStartsAt")}>
+          <VerticalField
+            label={t("licensePermissionStartsAt")}
+            id={`${id}.period.0`}
+          >
             <TextInput
               type="date"
-              value={permission.starts_at}
-              onChange={() => {}}
+              value={toDateString(permissionStartsAt)}
+              min={toDateString(startsAt)}
+              max={toDateString(endsAt)}
+              onChange={(v) => {
+                updateValue({
+                  period: [v.target.value, toDateString(permissionEndsAt)],
+                });
+              }}
             />
           </VerticalField>
-          <VerticalField label={t("licensePermissionEndsAt")}>
+          <VerticalField
+            label={t("licensePermissionEndsAt")}
+            id={`${id}.period.1`}
+          >
             <TextInput
               type="date"
-              value={permission.ends_at}
-              onChange={() => {}}
+              value={toDateString(permissionEndsAt)}
+              min={toDateString(permissionStartsAt ?? startsAt)}
+              max={toDateString(endsAt)}
+              onChange={(v) => {
+                updateValue({
+                  period: [toDateString(permissionStartsAt), v.target.value],
+                });
+              }}
             />
           </VerticalField>
         </div>
       </div>
 
       <div className="col-12 col-lg-6 py-3 py-lg-0">
-        <VerticalField label={t("licensePermissionSpecies")} icon="twitter">
+        <VerticalField
+          label={t("licensePermissionSpecies")}
+          icon="twitter"
+          id={`${id}.species_list`}
+        >
           <MultiSelectField
             name={t("licensePermissionSpecies")}
             options={options.species.map(toSelectOptions)}
             filterText={t("licenseFormFilterSpecies")}
+            onChange={(v) => {
+              updateValue({
+                species_list: v
+                  .map((id) => idToReference(id))
+                  .filter((ref): ref is ObjectReference => ref !== undefined),
+              });
+            }}
             value={options.species
-              .filter((v) => permission.species?.includes(v.label))
+              .filter((v) =>
+                permission.species_list?.some((s) => referenceToId(s) === v.id),
+              )
               .map((v) => v.id)}
             minified
           />
@@ -101,24 +162,37 @@ function PermissionEntrySubform({
         <VerticalField
           label={t("licensePermissionProperties")}
           icon="list-stars"
+          id={`${id}.properties`}
         >
           <MultiSelectField
             name={t("licensePermissionProperties")}
             options={permissionProperties.map(toSelectOptions)}
             filterText={t("licenseFormFilterProperties")}
+            onChange={(v) => {
+              updateValue({
+                properties: v
+                  .map((id) => idToReference(id))
+                  .filter((ref): ref is ObjectReference => ref !== undefined),
+              });
+            }}
             value={permissionProperties
               .filter((v) =>
-                permission.properties?.some((p) => p.name === v.label),
+                permission.properties?.some((p) => referenceToId(p) === v.id),
               )
               .map((v) => v.id)}
             minified
           />
         </VerticalField>
       </div>
-      <VerticalField label={t("licensePermissionDescription")}>
+      <VerticalField
+        label={t("licensePermissionDescription")}
+        id={`${id}.description`}
+      >
         <TextArea
           value={permission.description}
-          onChange={(event) => updateValue({ description: event.target.value })}
+          onChange={(event) => {
+            updateValue({ description: event.target.value });
+          }}
         />
       </VerticalField>
     </div>
@@ -129,11 +203,13 @@ export function LicensePermissionEntryForm({
   initialPermissions,
   onSubmit,
   isSubmitting,
+  startsAt,
+  endsAt,
 }: {
-  initialPermissions: Partial<LicenseInstance["permissions"][number]>[];
-  onSubmit: (
-    license: Partial<LicenseInstance["permissions"][number]>[],
-  ) => Promise<void> | void;
+  startsAt: Date;
+  endsAt: Date;
+  initialPermissions: Partial<LicensePermissionByRef>[];
+  onSubmit: (license: LicensePermissionByRef[]) => Promise<void> | void;
   isSubmitting?: boolean;
 }) {
   const { t } = useTranslation();
@@ -156,16 +232,17 @@ export function LicensePermissionEntryForm({
     <form
       onSubmit={(e) => {
         e.preventDefault();
-        onSubmit(permissions);
+        onSubmit(permissions as LicensePermissionByRef[]);
       }}
     >
       {permissions?.length ? (
-        <ul className="list-group list-group-flush">
+        <>
           {permissions.map((p, key) => (
-            <li className="list-group-item mb-3" key={key}>
+            <div className="card-body" key={key}>
               <span className="d-flex gap-3 align-items-start">
                 <button
                   className="btn btn-danger ms-2"
+                  type="button"
                   onClick={(e) => {
                     e.preventDefault();
                     if (permissions) {
@@ -179,43 +256,47 @@ export function LicensePermissionEntryForm({
                   <Icon icon="trash" />
                 </button>
                 <PermissionEntrySubform
+                  id={`latest.permissions.${key}`}
+                  startsAt={startsAt}
+                  endsAt={endsAt}
                   options={options}
                   permission={p}
                   updateValue={(next) => {
                     if (permissions) {
-                      setPermissions(
-                        permissions.map((prev, i) =>
-                          i === key ? { ...prev, ...next } : prev,
-                        ),
+                      const nextPermissions = permissions.map((prev, i) =>
+                        i === key ? { ...prev, ...next } : prev,
                       );
+                      setPermissions(nextPermissions);
                     }
                   }}
                 />
               </span>
-            </li>
+            </div>
           ))}
-        </ul>
+        </>
       ) : (
         <></>
       )}
-      <div className="d-flex justify-content-between gap-3">
-        <button
-          type="button"
-          className="btn btn-outline-secondary flex-grow-0"
-          onClick={() => {
-            setPermissions((pp) => [...pp, {}]);
-          }}
-        >
-          <Icon icon="file-earmark-plus" />
-          {t("licenseRelationAddPermission")}
-        </button>
-        <button
-          type="submit"
-          className="btn btn-secondary flex-grow-0"
-          disabled={isSubmitting ? true : undefined}
-        >
-          {t("licenseRelationFormSave")}
-        </button>
+      <div className="card-body">
+        <div className="d-flex justify-content-between gap-3">
+          <button
+            type="button"
+            className="btn btn-outline-secondary flex-grow-0"
+            onClick={() => {
+              setPermissions((pp) => [...pp, {}]);
+            }}
+          >
+            <Icon icon="file-earmark-plus me-2" />
+            {t("licenseFormAddPermission")}
+          </button>
+          <button
+            type="submit"
+            className="btn btn-secondary flex-grow-0"
+            disabled={isSubmitting ? true : undefined}
+          >
+            {t("licenseFormSavePermissions")}
+          </button>
+        </div>
       </div>
     </form>
   );

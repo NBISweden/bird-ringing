@@ -4,6 +4,7 @@ import {
   ActorListItem,
   LicenseActorRelation,
   LicenseListItem,
+  LicensePermissionByRef,
   Options,
   PagedResponse,
   SendEmailResult,
@@ -31,7 +32,7 @@ export class FieldValidationError extends Error {
   }
 }
 
-type ErrorTree = { [x: string]: ErrorTree | ErrorTree[] | string[] };
+type ErrorTree = { [x: string]: ErrorTree | ErrorTree[] | string[] | string };
 
 export class Client {
   private _apiRoot: string;
@@ -177,6 +178,8 @@ export class Client {
   ): Record<string, string[]> {
     if (Array.isArray(node) && this._isStringArray(node)) {
       return { [path]: node };
+    } else if (typeof node === "string") {
+      return { [path]: [node] };
     } else {
       return Object.entries(node).reduce<Record<string, string[]>>(
         (acc, [key, value]) => {
@@ -417,6 +420,21 @@ export class Client {
         ...(csrf ? { "X-CSRFToken": csrf } : {}),
       },
       body: JSON.stringify({ latest: { actors: relations } }),
+    });
+  }
+
+  async updateLicensePermissions(
+    mnr: string,
+    permissions: LicensePermissionByRef[],
+  ): Promise<LicenseListItem> {
+    const csrf = getCookie("csrftoken");
+    return this.fetchJson<LicenseListItem>(`license_sequence/${mnr}/`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        ...(csrf ? { "X-CSRFToken": csrf } : {}),
+      },
+      body: JSON.stringify({ latest: { permissions: permissions } }),
     });
   }
 

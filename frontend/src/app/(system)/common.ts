@@ -165,24 +165,27 @@ export type LicenseListItem = {
   has_license_card: boolean;
   has_permit: boolean;
 };
-export type LicensePermissionType = {
+export type LicensePermissionType = ObjectReference & {
   name: string;
   description: string;
 };
 
-export type LicensePermissionProperty = {
+export type LicensePermissionProperty = ObjectReference & {
   name: string;
   description: string;
 };
 
-export type LicensePermission = {
-  type: LicensePermissionType;
-  description: string;
-  location: string;
-  starts_at: string;
-  ends_at: string;
-  species: string[];
-  properties: LicensePermissionProperty[];
+export type Species = {
+  name: string;
+};
+
+export type LicensePermission = Omit<
+  LicensePermissionByRef,
+  "type" | "species_list" | "properties"
+> & {
+  type: LicensePermissionType & ObjectReference;
+  species_list: (Species & ObjectReference)[];
+  properties: (LicensePermissionProperty & ObjectReference)[];
 };
 
 export type LicenseDocument = {
@@ -223,6 +226,15 @@ export type LicenseActorRelation = {
   actor: ObjectReference;
   role: string;
   mednr: string;
+};
+
+export type LicensePermissionByRef = {
+  type: ObjectReference;
+  description: string;
+  location: string;
+  period: [string, string];
+  species_list: ObjectReference[];
+  properties: ObjectReference[];
 };
 
 export type BSColor =
@@ -308,6 +320,16 @@ export function toSelectOptions(v: Option): { value: string; label: string } {
     value: v.id,
     label: v.label,
   };
+}
+
+export function referenceToId(ref?: ObjectReference) {
+  return ref ? String(ref.id) : "";
+}
+
+export function idToReference(
+  id?: string | number,
+): ObjectReference | undefined {
+  return id ? { id: parseInt(String(id)) } : undefined;
 }
 
 export type PermissionBase = {
