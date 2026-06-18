@@ -85,7 +85,14 @@ function PermissionEntrySubform({
       <div className="col-12">
         <div className="py-1">
           <HorizontalField label="" icon="geo-alt" id={`${id}.location`}>
-            <TextInput value={permission.location} onChange={() => {}} />
+            <TextInput
+              value={permission.location}
+              onChange={(v) => {
+                updateValue({
+                  location: v.target.value,
+                });
+              }}
+            />
           </HorizontalField>
         </div>
         <div className="py-1 d-flex gap-3">
