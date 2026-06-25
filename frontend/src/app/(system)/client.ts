@@ -1,11 +1,38 @@
+import { LicenseFormData } from "@/components/LiceneseEntryForm";
 import {
+  ActorBase,
   ActorListItem,
+  LicenseActorRelation,
   LicenseListItem,
+  LicensePermissionByRef,
   Options,
   PagedResponse,
   SendEmailResult,
+  PermissionTypeWithProperties,
+  UnrelatedPermissionProperty,
+  PermissionInput,
+  PermissionPropertyInput,
+  PermissionProperty,
 } from "./common";
 import { getCookie, parseCompleteUrl } from "./utils";
+
+export class FieldValidationError extends Error {
+  fieldErrors: Record<string, string[]>;
+  nonFieldErrors: string[];
+
+  constructor(
+    fieldErrors: Record<string, string[]>,
+    nonFieldErrors: string[],
+    message: string,
+  ) {
+    super(message);
+    this.name = "FieldValidationError";
+    this.fieldErrors = fieldErrors;
+    this.nonFieldErrors = nonFieldErrors;
+  }
+}
+
+type ErrorTree = { [x: string]: ErrorTree | ErrorTree[] | string[] | string };
 
 export class Client {
   private _apiRoot: string;
@@ -141,6 +168,48 @@ export class Client {
     );
   }
 
+  private _isStringArray(arr: string[] | ErrorTree[]): arr is string[] {
+    return typeof arr[0] === "string";
+  }
+
+  private _flattenErrors(
+    node: ErrorTree["string"],
+    path: string = "",
+  ): Record<string, string[]> {
+    if (Array.isArray(node) && this._isStringArray(node)) {
+      return { [path]: node };
+    } else if (typeof node === "string") {
+      return { [path]: [node] };
+    } else {
+      return Object.entries(node).reduce<Record<string, string[]>>(
+        (acc, [key, value]) => {
+          const nextPath = path ? `${path}.${key}` : key;
+          return {
+            ...acc,
+            ...this._flattenErrors(value, nextPath),
+          };
+        },
+        {},
+      );
+    }
+  }
+
+  private _flattenMessage(
+    data: object | string | (object | string)[],
+  ): string | null {
+    if (Array.isArray(data)) {
+      return data
+        .map((d) => this._flattenMessage(d))
+        .filter((d) => d !== null)
+        .join("\n");
+    } else if (typeof data === "string") {
+      return data;
+    } else if ("detail" in data) {
+      return data.detail as string;
+    }
+    return data && typeof data === "object" ? JSON.stringify(data) : null;
+  }
+
   private async fetchJson<T>(path: string, init?: RequestInit): Promise<T> {
     const url = new URL(path, this._apiRoot);
 
@@ -161,10 +230,25 @@ export class Client {
       const contentType = response.headers.get("content-type") || "";
       if (contentType.includes("application/json")) {
         const data = await response.json().catch(() => null);
+
+        if (
+          response.status === 400 &&
+          data &&
+          typeof data === "object" &&
+          !Array.isArray(data) &&
+          !("detail" in data)
+        ) {
+          const normalized = this._flattenErrors(data);
+          const { non_field_errors: nonFieldErrors = [], ...fieldErrors } =
+            normalized;
+          const message =
+            Object.entries(normalized)
+              .map(([k, v]) => `${k}: ${v.join(", ")}`)
+              .join("\n") || `Request failed (${response.status})`;
+          throw new FieldValidationError(fieldErrors, nonFieldErrors, message);
+        }
         const detail =
-          data?.detail ??
-          (data && typeof data === "object" ? JSON.stringify(data) : null) ??
-          `Request failed (${response.status})`;
+          this._flattenMessage(data) ?? `Request failed (${response.status})`;
 
         throw new Error(detail);
       }
@@ -247,6 +331,193 @@ export class Client {
     return this.fetchJson<SendEmailResult>(
       `license_sequence/${encodeURIComponent(mnr)}/send-license-emails/?${qs.toString()}`,
       { method: "PUT", headers: csrf ? { "X-CSRFToken": csrf } : {} },
+    );
+  }
+
+  async createActor(actor: Partial<ActorBase>): Promise<ActorListItem> {
+    const csrf = getCookie("csrftoken");
+    return this.fetchJson<ActorListItem>("actor/", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(csrf ? { "X-CSRFToken": csrf } : {}),
+      },
+      body: JSON.stringify(actor),
+    });
+  }
+
+  async updateActor(
+    actorId: number,
+    actor: Partial<ActorBase>,
+  ): Promise<ActorListItem> {
+    const csrf = getCookie("csrftoken");
+    return this.fetchJson<ActorListItem>(`actor/${actorId}/`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        ...(csrf ? { "X-CSRFToken": csrf } : {}),
+      },
+      body: JSON.stringify(actor),
+    });
+  }
+
+  async createLicense(license: LicenseFormData): Promise<LicenseListItem> {
+    const csrf = getCookie("csrftoken");
+    return this.fetchJson<LicenseListItem>("license_sequence/", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(csrf ? { "X-CSRFToken": csrf } : {}),
+      },
+      body: JSON.stringify({
+        mnr: license.mnr,
+        status: license.status,
+        latest: {
+          location: license.location,
+          description: license.description,
+          report_status: license.report_status,
+          starts_at: license.starts_at,
+          ends_at: license.ends_at,
+        },
+      }),
+    });
+  }
+
+  async updateLicense(
+    mnr: string,
+    license: LicenseFormData,
+  ): Promise<LicenseListItem> {
+    const csrf = getCookie("csrftoken");
+    return this.fetchJson<LicenseListItem>(`license_sequence/${mnr}/`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        ...(csrf ? { "X-CSRFToken": csrf } : {}),
+      },
+      body: JSON.stringify({
+        mnr: license.mnr,
+        status: license.status,
+        latest: {
+          location: license.location,
+          description: license.description,
+          report_status: license.report_status,
+          starts_at: license.starts_at,
+          ends_at: license.ends_at,
+        },
+      }),
+    });
+  }
+
+  async updateLicenseRelations(
+    mnr: string,
+    relations: LicenseActorRelation[],
+  ): Promise<LicenseListItem> {
+    const csrf = getCookie("csrftoken");
+    return this.fetchJson<LicenseListItem>(`license_sequence/${mnr}/`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        ...(csrf ? { "X-CSRFToken": csrf } : {}),
+      },
+      body: JSON.stringify({ latest: { actors: relations } }),
+    });
+  }
+
+  async updateLicensePermissions(
+    mnr: string,
+    permissions: LicensePermissionByRef[],
+  ): Promise<LicenseListItem> {
+    const csrf = getCookie("csrftoken");
+    return this.fetchJson<LicenseListItem>(`license_sequence/${mnr}/`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        ...(csrf ? { "X-CSRFToken": csrf } : {}),
+      },
+      body: JSON.stringify({ latest: { permissions: permissions } }),
+    });
+  }
+
+  async fetchPermissionTypesWithProperties(): Promise<
+    PermissionTypeWithProperties[]
+  > {
+    return this._getJson<PermissionTypeWithProperties[]>(
+      "property/permission_type/",
+    );
+  }
+
+  async fetchUnrelatedPermissionProperties(): Promise<
+    UnrelatedPermissionProperty[]
+  > {
+    return this._getJson<UnrelatedPermissionProperty[]>(
+      "property/permission_property/?unrelated=1",
+    );
+  }
+
+  async createPermissionType(
+    type: PermissionInput,
+  ): Promise<PermissionTypeWithProperties> {
+    const csrf = getCookie("csrftoken");
+    return this.fetchJson<PermissionTypeWithProperties>(
+      "property/permission_type/",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(csrf ? { "X-CSRFToken": csrf } : {}),
+        },
+        body: JSON.stringify(type),
+      },
+    );
+  }
+
+  async updatePermissionType(
+    typeId: string,
+    type: PermissionInput,
+  ): Promise<PermissionTypeWithProperties> {
+    const csrf = getCookie("csrftoken");
+    return this.fetchJson<PermissionTypeWithProperties>(
+      `property/permission_type/${typeId}/`,
+      {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          ...(csrf ? { "X-CSRFToken": csrf } : {}),
+        },
+        body: JSON.stringify(type),
+      },
+    );
+  }
+
+  async createPermissionProperty(
+    property: PermissionPropertyInput,
+  ): Promise<PermissionProperty> {
+    const csrf = getCookie("csrftoken");
+    return this.fetchJson<PermissionProperty>("property/permission_property/", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(csrf ? { "X-CSRFToken": csrf } : {}),
+      },
+      body: JSON.stringify(property),
+    });
+  }
+
+  async updatePermissionProperty(
+    propertyId: string,
+    property: PermissionPropertyInput,
+  ): Promise<PermissionProperty> {
+    const csrf = getCookie("csrftoken");
+    return this.fetchJson<PermissionProperty>(
+      `property/permission_property/${propertyId}/`,
+      {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          ...(csrf ? { "X-CSRFToken": csrf } : {}),
+        },
+        body: JSON.stringify(property),
+      },
     );
   }
 }

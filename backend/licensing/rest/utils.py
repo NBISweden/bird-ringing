@@ -3,25 +3,31 @@ from rest_framework.response import Response
 from rest_framework.permissions import DjangoModelPermissions
 
 
-class LabeledChoiceField(serializers.Field):
+class NameBasedChoiceField(serializers.Field):
     def __init__(self, choices, **kwargs):
         self.choices = choices
         super().__init__(**kwargs)
 
     def to_representation(self, obj):
         if obj is not None:
-            return {
-                "id": str(self.choices(obj).name).lower(),
-                "label": self.choices(obj).label,
-            }
+            return self._to_id(self.choices(obj).name)
         else:
             return None
     
     def to_internal_value(self, data):
+        try:
+            choice = self.choices(data)
+            return choice.value
+        except ValueError:
+            pass
+
         for choice_value, choice in self.choices.__members__.items():
-            if data == choice.name:
+            if data == self._to_id(choice.name):
                 return choice.value
-        raise serializers.ValidationError("Choice not valid.")
+        raise serializers.ValidationError(f"Choice, '{data}', is not valid.")
+
+    def _to_id(self, value):
+        return str(value).lower()
 
 
 class LabeledChoiceSerializer(serializers.Serializer):
@@ -79,3 +85,37 @@ class DjangoProtectedModelPermissions(DjangoModelPermissions):
         "PATCH": ["%(app_label)s.change_%(model_name)s"],
         "DELETE": ["%(app_label)s.delete_%(model_name)s"],
     }
+
+
+class RelatedFieldSerializer(serializers.PrimaryKeyRelatedField):
+    default_error_messages = {
+        "invalid": "Expected an object.",
+        "missing_id": "Expected an 'id' key.",
+    }
+
+    def __init__(self, *args, serializer_class=None, **kwargs):
+        if serializer_class is None:
+            raise TypeError("serializer_class is required")
+        self.serializer_class = serializer_class
+        super().__init__(*args, **kwargs)
+    
+    def use_pk_only_optimization(self):
+        return False
+
+    def to_representation(self, value):
+        serializer = self.serializer_class(value, context=getattr(self, "context", {}))
+        return serializer.data
+
+    def to_internal_value(self, data):
+        queryset = self.get_queryset()
+        model_class = queryset.model if queryset is not None else None
+
+        if model_class is not None and isinstance(data, model_class):
+            return data
+    
+        if not isinstance(data, dict):
+            self.fail("invalid")
+        if "id" not in data:
+            self.fail("missing_id")
+
+        return super().to_internal_value(data["id"])

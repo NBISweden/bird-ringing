@@ -19,7 +19,7 @@ export interface Translation {
   ): Array<React.ReactNode>;
   formatOption<T extends string | number | symbol>(
     value: T,
-    mapping: Record<T, keyof TranslationMap>,
+    mapping: Record<T, keyof TranslationMap | undefined>,
     values?: Record<string, PrimitiveType>,
   ): string;
 }
@@ -37,7 +37,13 @@ export function useTranslation() {
       },
       formatOption: (value, mapping, values) => {
         const messageId = mapping[value];
-        return intl.formatMessage(messages[messageId], values);
+        if (messageId) {
+          return intl.formatMessage(messages[messageId], values);
+        }
+        console.warn(
+          `Missing messageId for value '${String(value)}' in ${JSON.stringify(values)}`,
+        );
+        return String(value);
       },
     };
   }, [intl]);

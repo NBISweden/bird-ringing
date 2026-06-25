@@ -229,7 +229,12 @@ class PermitDocxRenderer:
             blocks: "OrderedDict[tuple[tuple[str, ...], str], list[LicensePermission]]" = OrderedDict()
             for p in ordered_rows:
                 props = self._norm_props([x.name for x in p.properties.all()])
-                period = self._period_label(starts_at=p.starts_at.as_date(lic.starts_at.year), ends_at=p.ends_at.as_date(lic.starts_at.year), props=props)
+                [starts_at, ends_at] = p.period
+                period = self._period_label(
+                    starts_at=starts_at,
+                    ends_at=ends_at,
+                    props=props
+                )
                 blocks.setdefault((props, period), []).append(p)
 
             first_cond = True

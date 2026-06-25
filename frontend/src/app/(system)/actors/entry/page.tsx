@@ -4,22 +4,23 @@ import { Suspense, useState } from "react";
 import Link from "next/link";
 import useSWR from "swr";
 import { notFound, useSearchParams } from "next/navigation";
-import { useClient, useFlags } from "../../contexts";
+import { useClient, useModalsContext } from "../../contexts";
 import {
+  ActorBase,
   ActorLicenseRelation,
   ActorListItem,
+  FormErrors,
   Role,
   convertDateToLocale,
   convertOnlyDateToLocale,
 } from "../../common";
-import { Client } from "../../client";
+import { Client, FieldValidationError } from "../../client";
 import Spinner from "@/components/Spinner";
 import { useTranslation } from "../../internationalization";
 import { Alert } from "@/components/Alert";
 import { PaginationContainer, usePagination } from "@/components/Pagination";
 import Icon from "@/components/Icon";
 import { ActorEntryForm } from "@/components/ActorEntryForm";
-import { useNotImplementedModal } from "../../hooks";
 
 async function fetchActor([client, _ctx, entryId]: [Client, "actor", string]) {
   return client.fetchActorById(entryId);
@@ -78,10 +79,12 @@ function ActorViewBase() {
   const client = useClient();
   const { t } = useTranslation();
   const [isEditing, setIsEditing] = useState<boolean>(false);
-  const notImplementedAction = useNotImplementedModal();
-  const flags = useFlags();
+  const [editErrors, setEditErrors] = useState<FormErrors | undefined>(
+    undefined,
+  );
+  const modals = useModalsContext();
 
-  const { data, isLoading, error } = useSWR(
+  const { data, isLoading, error, mutate } = useSWR(
     actorId ? [client, "actor", actorId] : null,
     fetchActor,
   );
@@ -128,34 +131,83 @@ function ActorViewBase() {
 
   const roles = new Set<Role>(licenses.map((l) => l.role));
 
+  const handleEditSubmit = async (actor: Partial<ActorBase>) => {
+    setEditErrors(undefined);
+    try {
+      await client.updateActor(data!.id, actor);
+      await mutate(); // refetch so the view reflects the saved changes
+
+      modals.add({
+        title: t("actorUpdateSuccessTitle"),
+        content: <p className="mb-0">{t("actorUpdateSuccessMessage")}</p>,
+        closeAction: () => setIsEditing(false),
+        actions: [
+          {
+            label: t("closeModal"),
+            action: () => setIsEditing(false),
+          },
+        ],
+      });
+    } catch (error) {
+      if (error instanceof FieldValidationError) {
+        setEditErrors({
+          fields: error.fieldErrors,
+          nonField: error.nonFieldErrors,
+        });
+        return;
+      }
+      const message = error instanceof Error ? error.message : String(error);
+      const lines = message.split("\n").filter(Boolean);
+
+      modals.add({
+        title: t("actorUpdateErrorTitle"),
+        content:
+          lines.length > 1 ? (
+            <ul className="mb-0">
+              {lines.map((line, i) => (
+                <li key={i}>{line}</li>
+              ))}
+            </ul>
+          ) : (
+            <p className="mb-0">{message}</p>
+          ),
+        actions: [{ label: t("closeModal"), action: () => {} }],
+      });
+    }
+  };
+
   return (
     <div className="container">
       <div className="row">
-        <h2 className="fw-bold">
-          <i className={`bi bi-${getActorIcon(data.type)} me-3`} />
-          {data.full_name}
-          {flags.has("mock-actor-editing") ? (
+        <div className="col-12 col-xxl-9">
+          <div className="d-flex justify-content-between align-items-center mb-3">
+            <h2 className="fw-bold mb-0">
+              <i className={`bi bi-${getActorIcon(data.type)} me-3`} />
+              {data.full_name}
+            </h2>
             <button
-              className="btn btn-outline-secondary ms-2"
-              onClick={() => setIsEditing(!isEditing)}
+              className="btn btn-outline-secondary ms-2 flex-shrink-0"
+              onClick={() => {
+                setEditErrors(undefined);
+                setIsEditing(!isEditing);
+              }}
             >
-              <Icon icon={isEditing ? "eye" : "pencil-square"} />
+              <Icon icon={isEditing ? "arrow-left" : "pencil-square"} />
+              <span className="ms-2">{!isEditing ? t("edit") : t("done")}</span>
             </button>
-          ) : (
-            <></>
-          )}
-        </h2>
+          </div>
+        </div>
         {isEditing ? (
           <ActorEntryForm
             initialActor={data}
-            onSubmit={(a) => {
-              notImplementedAction(t("actorFormTitle"));
-              console.log(a);
-            }}
+            onSubmit={handleEditSubmit}
+            title={t("actorFormEditTitle")}
+            errors={editErrors}
           />
         ) : (
           <ActorEntry actor={data} roles={Array.from(roles)} />
         )}
+
         <div className="col-12 col-xxl-9">
           <h3 className="pt-4 fw-bold">{t("actorLicenses")}</h3>
           <ul className="list-group list-group-flush">
