@@ -152,17 +152,17 @@ export class Client {
 
   async batchCreateLicenseCards(
     mnrs: string[],
-  ): Promise<{ filenames: string[] }> {
+  ): Promise<{ filenames: string[]; inactive_licenses: string[] }> {
     return this._batchCreateDocuments("license_sequence/card-create", mnrs);
   }
 
   private async _batchCreateDocuments(
     endpoint: string,
     mnrs: string[],
-  ): Promise<{ filenames: string[] }> {
+  ): Promise<{ filenames: string[]; inactive_licenses: string[] }> {
     const qs = new URLSearchParams({ mnrs: mnrs.join(",") });
     const csrf = getCookie("csrftoken");
-    return this.fetchJson<{ filenames: string[] }>(
+    return this.fetchJson<{ filenames: string[]; inactive_licenses: string[] }>(
       `${endpoint}/?${qs.toString()}`,
       { method: "PUT", headers: csrf ? { "X-CSRFToken": csrf } : {} },
     );
@@ -281,7 +281,9 @@ export class Client {
     return await resp.blob();
   }
 
-  async batchCreatePermits(mnrs: string[]): Promise<{ filenames: string[] }> {
+  async batchCreatePermits(
+    mnrs: string[],
+  ): Promise<{ filenames: string[]; inactive_licenses: string[] }> {
     return this._batchCreateDocuments("license_sequence/permit-create", mnrs);
   }
 

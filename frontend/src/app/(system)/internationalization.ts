@@ -3,13 +3,12 @@ import { PrimitiveType, useIntl } from "react-intl";
 import { TranslationMap, messages } from "../messages";
 import type { FormatXMLElementFn } from "intl-messageformat";
 
+export type TranslationId = keyof TranslationMap;
+
 export interface Translation {
-  t(
-    messageId: keyof TranslationMap,
-    values?: Record<string, PrimitiveType>,
-  ): string;
+  t(messageId: TranslationId, values?: Record<string, PrimitiveType>): string;
   format(
-    messageId: keyof TranslationMap,
+    messageId: TranslationId,
     values?: Record<
       string,
       | React.ReactNode
@@ -19,7 +18,7 @@ export interface Translation {
   ): Array<React.ReactNode>;
   formatOption<T extends string | number | symbol>(
     value: T,
-    mapping: Record<T, keyof TranslationMap | undefined>,
+    mapping: Record<T, TranslationId | undefined>,
     values?: Record<string, PrimitiveType>,
   ): string;
 }
