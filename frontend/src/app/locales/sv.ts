@@ -295,6 +295,12 @@ export const locale: TranslationMap = {
   unknownError: "Ett okänt fel inträffade.",
   edit: "Redigera",
   done: "Klart",
+  standardBatchResponse: `<h>Skapade filer:</h>
+    <box>{filenames}</box>
+    {has_inactive_licenses, select,
+      true {<h>Inaktiva licenser:</h><box>{inactive_licenses}</box>}
+      other {}
+    }`,
 
   permissionTypesHeading: "Tillståndsstyper",
   permissionGlobalPropertiesHeading: "Globala egenskaper",

@@ -296,6 +296,12 @@ const messagesBase = {
   unknownError: "An unknown error occurred.",
   edit: "Edit",
   done: "Done",
+  standardBatchResponse: `<h>Files created:</h>
+    <box>{filenames}</box>
+    {has_inactive_licenses, select,
+      true {<h>Inactive licenses:</h><box>{inactive_licenses}</box>}
+      other {}
+    }`,
 
   permissionTypesHeading: "Permission types",
   permissionGlobalPropertiesHeading: "Global properties",

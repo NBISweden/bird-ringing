@@ -4,7 +4,7 @@ from rest_framework.reverse import reverse
 
 from licensing.message_builder import MessageBuilder, LicenseAndPermitMessageBuilder, RingerBundleMessageBuilder
 from licensing.communication_service import CommunicationService
-from licensing.utils import get_flattened_license_and_relations, communication_language_context, default_document_copy_policy
+from licensing.utils import get_flattened_license_and_relations, communication_language_context, default_document_copy_policy, split_items
 from django.core import mail
 from django.core.mail import EmailMessage
 from django.utils.translation import gettext as _
@@ -1063,10 +1063,15 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
         except serializers.ValidationError as e:
             return Response(e.detail, status=400)
 
+        (
+            active_licenses,
+            inactive_licenses
+        ) = split_items(licenses, lambda lic: lic.sequence.status == LicenseStatusChoices.ACTIVE)
+
         service = LicenseCardService()
         try:
             docs = service.batch_get_or_create_license_card_documents(
-                licenses=licenses,
+                licenses=active_licenses,
                 created_by=request.user,
                 updated_by=request.user,
                 allowed_roles=(LicenseRoleChoices.RINGER, LicenseRoleChoices.ASSOCIATE_RINGER),
@@ -1080,7 +1085,10 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
             return Response({"detail": str(e)}, status=400)
 
         return Response(
-            {"filenames": [d.reference for d in docs]},
+            {
+                "filenames": [d.reference for d in docs],
+                "inactive_licenses": [lic.sequence.mnr for lic in inactive_licenses]
+            },
             status=200,
         )
     
@@ -1222,33 +1230,6 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
             except ValueError as e:
                 return Response({"detail": str(e)}, status=400)
 
-    @action(detail=True, methods=["put"], url_path="permit-create")
-    def permit_create(self, request, mnr=None):
-        seq = self.get_object()
-        actor = self._get_actor_from_request(request)
-
-        service = PermitService()
-        try:
-            lic = seq.latest
-            if not lic:
-                raise PermitNoLicense("No current license found.")
-
-            doc = service.get_or_create_permit_document(
-                lic=lic,
-                actor=actor,
-                created_by=request.user,
-                updated_by=request.user,
-            )
-        except PermitNoLicense as e:
-            return Response({"detail": str(e)}, status=404)
-        except PermitActorNotOnLicense as e:
-            return Response({"detail": str(e)}, status=400)
-
-        pdf_url = reverse("licensesequence-permit-pdf", kwargs={"mnr": seq.mnr}, request=request)
-        pdf_url = f"{pdf_url}?actor_id={actor.id}"
-
-        return Response({"filename": doc.reference, "pdf_url": pdf_url}, status=200)
-
     @action(detail=True, methods=["get"], url_path="permit-pdf")
     def permit_pdf(self, request, mnr=None):
         seq = self.get_object()
@@ -1287,10 +1268,15 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
         except serializers.ValidationError as e:
             return Response(e.detail, status=400)
 
+        (
+            active_licenses,
+            inactive_licenses
+        ) = split_items(licenses, lambda lic: lic.sequence.status == LicenseStatusChoices.ACTIVE)
+
         service = PermitService()
         try:
             docs = service.batch_get_or_create_permit_documents(
-                licenses=licenses,
+                licenses=active_licenses,
                 created_by=request.user,
                 updated_by=request.user,
                 allowed_roles=(LicenseRoleChoices.RINGER, LicenseRoleChoices.ASSOCIATE_RINGER),
@@ -1302,7 +1288,12 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
         except ValueError as e:
             return Response({"detail": str(e)}, status=400)
 
-        return Response({"filenames": [d.reference for d in docs]}, status=200)
+        return Response({
+                "filenames": [d.reference for d in docs],
+                "inactive_licenses": [lic.sequence.mnr for lic in inactive_licenses]
+            },
+            status=200
+        )
 
     @action(detail=False, methods=["get"], url_path="permit-pdf")
     def permit_pdf_batch(self, request):
