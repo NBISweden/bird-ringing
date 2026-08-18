@@ -42,7 +42,7 @@ available at `http://localhost:3210/`.
 ### Creating users
 
 From the project root (the bird-ringing directory), run:
-`/create-test-users`
+`./create-test-users`
 Then open http://localhost:3210/admin/ and log in to the Django admin
 using the credentials admin:test.
 Create a new user and add that user to the bird-ringer expert group.
@@ -134,6 +134,7 @@ The following file is required and must be created before attempting to deploy t
 The file should only contain the secret value itself.
 
 - `secrets/django-secret-key.txt` - This is used to provide cryptographic signing, and should be set to a unique, unpredictable value.
+- `secrets/django-email-password.txt` - The password for the SMTP account used by Django to send outgoing application emails, including licensing communications. The file should contain only the password.
 
 ## Database management
 
