@@ -814,7 +814,7 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
     serializer_class = LicenseSequenceSerializer
     pagination_class = StandardResultsSetPagination
 
-    filter_backends = [DynamicOrderingFilter]
+    filter_backends = [DynamicOrderingFilter, IdSelectionFilter]
 
     allowed_ordering = DynamicOrderingFilter.include_reverse(
         [
@@ -833,6 +833,7 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
         ]
     )
     default_ordering = ["mnr"]
+    id_filter_target = "mnr"
 
     def get_queryset(self):
         queryset = super().get_queryset()

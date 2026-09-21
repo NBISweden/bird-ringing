@@ -82,8 +82,19 @@ export class Client {
     page: number,
     search?: string,
     ordering?: string,
+    ids?: string[],
   ): Promise<PagedResponse<LicenseListItem>> {
-    return await this._fetchPage("license_sequence", page, search, ordering);
+    const params = new URLSearchParams();
+    if (ids) {
+      params.set("ids", ids.join(","));
+    }
+    return await this._fetchPage(
+      "license_sequence",
+      page,
+      search,
+      ordering,
+      params,
+    );
   }
 
   async _fetchPage<T>(
