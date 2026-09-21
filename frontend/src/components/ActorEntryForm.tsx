@@ -265,7 +265,6 @@ export function ActorEntryForm({
                   <VerticalField
                     label={t("actorPhoneNumber1")}
                     id="phone_number1"
-                    required
                   >
                     <TextInput
                       type="tel"
@@ -296,7 +295,7 @@ export function ActorEntryForm({
                 title={t("actorFormLocationSubtitle")}
               >
                 <div>
-                  <VerticalField label={t("actorCity")} id="city" required>
+                  <VerticalField label={t("actorCity")} id="city">
                     <TextInput
                       type="text"
                       placeholder={t("actorFormCityPlaceholder")}
@@ -306,11 +305,7 @@ export function ActorEntryForm({
                       }
                     />
                   </VerticalField>
-                  <VerticalField
-                    label={t("actorPostalCode")}
-                    id="postal_code"
-                    required
-                  >
+                  <VerticalField label={t("actorPostalCode")} id="postal_code">
                     <TextInput
                       type="text"
                       placeholder={t("actorFormPostalCodePlaceholder")}
@@ -320,11 +315,7 @@ export function ActorEntryForm({
                       }
                     />
                   </VerticalField>
-                  <VerticalField
-                    label={t("actorAddress")}
-                    id="address"
-                    required
-                  >
+                  <VerticalField label={t("actorAddress")} id="address">
                     <TextInput
                       type="text"
                       placeholder={t("actorFormAddressPlaceholder")}
