@@ -7,9 +7,11 @@ import {
   SendLicenseForActorsModalContent,
 } from "@/components/SendLicenseModalContent";
 import { Alert } from "@/components/Alert";
-import { downloadData } from "../utils";
+import { chunkArray, downloadData } from "../utils";
 import { TranslationId, useTranslation } from "../internationalization";
 import { useActionWithoutCache } from "../hooks";
+import { ActorBase } from "../common";
+import { EmailList } from "@/components/EmailList";
 
 type BatchCreateResponse = {
   filenames: string[];
@@ -504,4 +506,64 @@ export function useSendLicenseEmailForActorsAction(client: Client) {
     },
     [modalStack, t, sendEmails],
   );
+}
+
+export function useFetchEmailAddressesAction(client: Client) {
+  const modalStack = useModalsContext();
+  const { t } = useTranslation();
+
+  const action = useCallback(
+    (itemIds: Set<string>) => {
+      modalStack.add({
+        title: t("licenseFetchEmailAddresses"),
+        content: (
+          <ClientContext.Provider value={client}>
+            <EmailList
+              ids={Array.from(itemIds)}
+              dataFetchFunc={fetchLicenseHolderEmail}
+            />
+          </ClientContext.Provider>
+        ),
+        actions: [
+          {
+            label: t("closeModal"),
+            action: () => {},
+            type: "primary",
+          },
+        ],
+      });
+    },
+    [modalStack, client, t],
+  );
+  return action;
+}
+
+async function fetchLicenseHolderEmail([client, ids]: [
+  Client,
+  string[],
+]): Promise<string[]> {
+  const maximumNumberOfIds = 100;
+  const idChunks = chunkArray(ids, maximumNumberOfIds);
+  const license = (
+    await Promise.all(
+      idChunks.map((chunk) =>
+        Client.fetchAll(
+          client.fetchLicensePage(1, undefined, undefined, chunk),
+        ),
+      ),
+    )
+  ).flat();
+
+  const emailList = license
+    .map(
+      (l) =>
+        l.latest.actors.find((a) => a.role === "ringer" && a.actor.email)
+          ?.actor,
+    )
+    .filter((a): a is ActorBase => a !== undefined)
+    .map((a) => `${a.full_name} <${a.email}>`);
+
+  const emailSet = new Set(emailList);
+
+  return Array.from(emailSet);
 }
