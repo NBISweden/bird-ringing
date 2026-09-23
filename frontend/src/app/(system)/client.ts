@@ -13,6 +13,7 @@ import {
   PermissionInput,
   PermissionPropertyInput,
   PermissionProperty,
+  ValueList,
 } from "./common";
 import { getCookie, parseCompleteUrl } from "./utils";
 
@@ -63,6 +64,22 @@ export class Client {
 
   async fetchActorById(actorId: string): Promise<ActorListItem> {
     return await this._getJson<ActorListItem>(`actor/${actorId}/`);
+  }
+
+  async fetchActorValue<T>(
+    valueId: string,
+    search?: string,
+    ids?: string[],
+  ): Promise<ValueList<T>> {
+    return this._fetchResourceValue("actor", valueId, search, ids);
+  }
+
+  async fetchLicenseValue<T>(
+    valueId: string,
+    search?: string,
+    ids?: string[],
+  ): Promise<ValueList<T>> {
+    return this._fetchResourceValue("license_sequence", valueId, search, ids);
   }
 
   async fetchActorPage(
@@ -532,5 +549,25 @@ export class Client {
         body: JSON.stringify(property),
       },
     );
+  }
+
+  private async _fetchResourceValue<T>(
+    resource: "license_sequence" | "actor",
+    valueId: string,
+    search?: string,
+    ids?: string[],
+  ): Promise<ValueList<T>> {
+    const params = new URLSearchParams();
+    if (search) {
+      params.set("search", search);
+    }
+    if (ids) {
+      params.set("ids", ids.join(","));
+    }
+    const url = new URL(
+      `${resource}/value_list/${valueId}/?${String(params)}`,
+      this._apiRoot,
+    );
+    return this.fetchJson(String(url));
   }
 }
