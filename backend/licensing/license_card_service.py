@@ -74,8 +74,9 @@ class LicenseCardService:
         mnr = lic.sequence.mnr
         identifier = f"{mnr}-{rel.mednr}" if rel.role == LicenseRoleChoices.ASSOCIATE_RINGER else f"{mnr}"
         name = slugify(actor.full_name)[:40]
+        year = lic.starts_at.year
 
-        return f"license-card-{identifier}" + (f"-{name}.pdf" if name else ".pdf")
+        return f"license-{identifier}-{year}" + (f"-{name}.pdf" if name else ".pdf")
 
     def render_pdf_for_license_and_actor(
         self,
