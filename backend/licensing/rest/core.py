@@ -1,6 +1,8 @@
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
+from collections.abc import Callable
+from typing import Iterable, Tuple, Any
 
 from licensing.message_builder import MessageBuilder, LicenseAndPermitMessageBuilder, RingerBundleMessageBuilder
 from licensing.communication_service import CommunicationService
@@ -317,6 +319,11 @@ class ValueListMixin:
 
     @action(detail=False, methods=["get"], url_path=r"value_list/(?P<value_id>\w+)",)
     def value_list(self, request, value_id):
+        """
+        Provides a REST API action which fetches a specific value from each entry
+        of a list of Model objects. It respects the filtering options of the
+        associated viewset.
+        """
         available_value_ids = self.get_available_value_ids()
         if value_id not in available_value_ids:
             return Response({"detail": f"The value '{value_id}' can not be aggregated for this resource."}, status=404)
@@ -336,10 +343,21 @@ class ValueListMixin:
             "value_id": value_id
         })
 
-    def get_available_value_ids(self):
+    def get_available_value_ids(self) -> dict[str, str | Callable]:
+        """
+        The available value ids provides a mapping of input param names
+        to the source of the value from the queryset. When the dict values
+        are of type 'str' the lookup will be done using 'value_list' and
+        when the type is 'Callable' the callable function is expected
+        to provide the result.
+        """
         return {}
     
-    def get_value_list(self, queryset, value_source):
+    def get_value_list(self, queryset, value_source) -> Iterable[Tuple[str | int, Any]]:
+        """
+        Takes a queryset and a value source specification and returns an
+        iterable with a tuple mapping from the owner entry to the fetched value.
+        """
         if isinstance(value_source, str):
             values = list(queryset.values_list(self.lookup_field, value_source))
         elif callable(value_source):
