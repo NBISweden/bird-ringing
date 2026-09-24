@@ -26,11 +26,18 @@ class Command(BaseCommand):
 
             permissions = [
                 "view_licensesequence",
-                "view_actor",
-                "view_species",
+                "add_licensesequence",
                 "change_licensesequence",
+                "view_actor",
+                "add_actor",
+                "change_actor",
+                "view_species",
                 "view_licensepermissiontype",
-                "view_licensepermissionproperty"
+                "add_licensepermissiontype",
+                "change_licensepermissiontype",
+                "view_licensepermissionproperty",
+                "add_licensepermissionproperty",
+                "change_licensepermissionproperty"
             ]
 
             for _, group_name in group_names.items():

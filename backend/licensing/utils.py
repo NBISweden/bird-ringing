@@ -1,4 +1,4 @@
-from typing import Iterable, Callable
+from typing import Iterable, Callable, TypeVar
 from licensing.models import (
     License,
     LicenseRoleChoices,
@@ -103,3 +103,26 @@ def communication_language_context():
             yield
     else:
         yield
+
+TSplit = TypeVar("TSplit")
+
+def split_items(
+    items: Iterable[TSplit],
+    condition: Callable[[TSplit], bool],
+) -> tuple[list[TSplit], list[TSplit]]:
+    """
+    Splits a list of items into two lists where the
+    first list matches the given condition and the
+    other does not.
+    """
+    true_items = [
+        item
+        for item in items
+        if condition(item)
+    ]
+    false_items = [
+        item
+        for item in items
+        if not condition(item)
+    ]
+    return (true_items, false_items)

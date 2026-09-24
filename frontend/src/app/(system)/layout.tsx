@@ -34,7 +34,16 @@ export default function SystemLayout({
       icon: "bi-person-lines-fill",
       permissions: ["view_actor"],
     },
+    {
+      type: "item",
+      label: "Permissions",
+      href: "/permissions",
+      id: "permissions",
+      icon: "bi-award",
+      permissions: ["view_licensepermissiontype"],
+    },
   ];
+
   return (
     <RequireAuth>
       <Sidebar items={navItems} />

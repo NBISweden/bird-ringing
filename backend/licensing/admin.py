@@ -37,7 +37,7 @@ class LicensePermissionAdmin(admin.TabularInline):
     model = LicensePermission
 
 
-class LicensePermissionProperty(admin.TabularInline):
+class LicensePermissionPropertyAdmin(admin.TabularInline):
     exclude = COMMON_EXCLUDES
     model = LicensePermissionProperty
 
@@ -102,7 +102,16 @@ class SpeciesAdmin(ModelAdminWithChangeTracking):
 @admin.register(LicensePermissionType)
 class LicensePermissionTypeAdmin(ModelAdminWithChangeTracking):
     exclude = COMMON_EXCLUDES
-    inlines = [LicensePermissionProperty]
+    inlines = [LicensePermissionPropertyAdmin]
+
+
+
+@admin.register(LicensePermissionProperty)
+class LicensePermissionPropertyAdmin(ModelAdminWithChangeTracking):
+    exclude = COMMON_EXCLUDES
+    list_display = ("name", "related_type")
+    list_filter = ("related_type",)
+    search_fields = ("name", "description")
 
 
 @admin.register(LicenseDocument)

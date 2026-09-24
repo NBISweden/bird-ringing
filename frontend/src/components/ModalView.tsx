@@ -16,6 +16,7 @@ export function ModalView() {
   const [isOpen, setIsOpen] = useState(false);
   const modalId = useId();
   const modalRef = useRef<HTMLDivElement | null>(null);
+  const previouslyFocused = useRef<HTMLElement | null>(null);
 
   const handleClose = useCallback(
     (action?: () => void) => {
@@ -55,6 +56,34 @@ export function ModalView() {
       setOpen();
     }
   }, [modal, setIsOpen]);
+
+  // Move focus into the dialog when it opens, and restore it to the element
+  // that opened the modal (the trigger) when it closes.
+  useEffect(() => {
+    if (!modal) {
+      return;
+    }
+    previouslyFocused.current = document.activeElement as HTMLElement | null;
+    modalRef.current?.focus();
+    return () => {
+      previouslyFocused.current?.focus?.();
+    };
+  }, [modal]);
+
+  // Close on Escape and keep Tab focus trapped within the dialog.
+  useEffect(() => {
+    if (!modal) {
+      return;
+    }
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        handleClose();
+      }
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [modal, handleClose]);
 
   const modalProps: DetailedHTMLProps<
     HTMLAttributes<HTMLDivElement>,

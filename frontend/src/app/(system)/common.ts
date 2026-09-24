@@ -22,6 +22,7 @@ export type ActorBase = {
   city: string;
   country: string;
   updated_at: string;
+  description: string;
 };
 
 export type ActorListItem = ActorBase & {
@@ -47,7 +48,7 @@ export type Options = {
   actor: Option;
   permission_type: Option;
   permission_property: Option & {
-    related_type: { id: string };
+    related_type?: { id: string };
   };
   actor_type: Option;
   sex: Option;
@@ -164,24 +165,27 @@ export type LicenseListItem = {
   has_license_card: boolean;
   has_permit: boolean;
 };
-export type LicensePermissionType = {
+export type LicensePermissionType = ObjectReference & {
   name: string;
   description: string;
 };
 
-export type LicensePermissionProperty = {
+export type LicensePermissionProperty = ObjectReference & {
   name: string;
   description: string;
 };
 
-export type LicensePermission = {
-  type: LicensePermissionType;
-  description: string;
-  location: string;
-  starts_at: string;
-  ends_at: string;
-  species: string[];
-  properties: LicensePermissionProperty[];
+export type Species = {
+  name: string;
+};
+
+export type LicensePermission = Omit<
+  LicensePermissionByRef,
+  "type" | "species_list" | "properties"
+> & {
+  type: LicensePermissionType & ObjectReference;
+  species_list: (Species & ObjectReference)[];
+  properties: (LicensePermissionProperty & ObjectReference)[];
 };
 
 export type LicenseDocument = {
@@ -200,7 +204,7 @@ export type LicenceCommunication = {
 };
 
 export type LicenseInstance = {
-  actors: LicenseActorRelation[];
+  actors: (LicenseActorRelation & { actor: ActorBase })[];
   permissions: LicensePermission[];
   documents: LicenseDocument[];
   communication: LicenceCommunication[];
@@ -214,10 +218,23 @@ export type LicenseInstance = {
   updated_at: string;
 };
 
+export type ObjectReference = {
+  id: number;
+};
+
 export type LicenseActorRelation = {
-  actor: ActorBase;
+  actor: ObjectReference;
   role: string;
-  mednr?: string;
+  mednr: string;
+};
+
+export type LicensePermissionByRef = {
+  type: ObjectReference;
+  description: string;
+  location: string;
+  period: [string, string];
+  species_list: ObjectReference[];
+  properties: ObjectReference[];
 };
 
 export type BSColor =
@@ -267,6 +284,11 @@ export interface SendEmailResult {
   ringer_bundle_error?: string;
 }
 
+export type FormErrors = {
+  fields: Record<string, string[]>;
+  nonField: string[];
+};
+
 export function convertDateToLocale(dateStr: string) {
   if (dateStr) {
     return new Date(dateStr).toLocaleString("sv-SE", {
@@ -292,3 +314,47 @@ export function convertOnlyDateToLocale(dateStr: string | null | undefined) {
   }
   return "";
 }
+
+export function toSelectOptions(v: Option): { value: string; label: string } {
+  return {
+    value: v.id,
+    label: v.label,
+  };
+}
+
+export function referenceToId(ref?: ObjectReference) {
+  return ref ? String(ref.id) : "";
+}
+
+export function idToReference(
+  id?: string | number,
+): ObjectReference | undefined {
+  return id ? { id: parseInt(String(id)) } : undefined;
+}
+
+export type PermissionBase = {
+  id: string;
+  label: string;
+  description: string;
+};
+
+export type PermissionTypeWithProperties = PermissionBase & {
+  properties: PermissionBase[];
+};
+
+export type PermissionProperty = PermissionBase & {
+  related_type: { id: string } | null;
+};
+
+export type UnrelatedPermissionProperty = PermissionProperty & {
+  related_type: null;
+};
+
+export type PermissionInput = {
+  label: string;
+  description: string;
+};
+
+export type PermissionPropertyInput = PermissionInput & {
+  related_type_id?: string | null;
+};
