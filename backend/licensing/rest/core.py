@@ -2,6 +2,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
 from collections.abc import Callable
+from collections import defaultdict
 from typing import Iterable, Tuple, Any
 
 from licensing.message_builder import MessageBuilder, LicenseAndPermitMessageBuilder, RingerBundleMessageBuilder
@@ -895,31 +896,31 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet, ValueListMixin):
 
     def get_available_value_ids(self):
         return {
-            "holder_email": LicenseSequenceViewSet.get_holder_email,
-            "holder_full_name": LicenseSequenceViewSet.get_holder_full_name,
+            "holder": LicenseSequenceViewSet.get_holder,
         }
     
     @staticmethod
-    def get_holder_relation_value(queryset, value_id):
+    def get_holder(queryset):
         license_ids = queryset.values_list("latest__id", flat=True)
-        return LicenseRelation.objects.filter(
+        values = LicenseRelation.objects.filter(
             license__in=license_ids,
             role=LicenseRoleChoices.RINGER
-        ).values_list("license__sequence__mnr", value_id)
-    
-    @staticmethod
-    def get_holder_email(queryset):
-        return LicenseSequenceViewSet.get_holder_relation_value(
-            queryset,
-            "actor__email"
+        ).values_list("license__sequence__mnr", "actor__email", "actor__full_name")
+
+        holders = (
+            (mnr, {
+                "email": email,
+                "full_name": full_name
+            })
+            for (mnr, email, full_name) in values
         )
-    
-    @staticmethod
-    def get_holder_full_name(queryset):
-        return LicenseSequenceViewSet.get_holder_relation_value(
-            queryset,
-            "actor__full_name"
-        )
+
+        grouped_holders = defaultdict(list)
+        for (mnr, entry) in holders:
+            grouped_holders[mnr].append(entry)
+
+        return grouped_holders.items()
+
 
     def get_queryset(self):
         queryset = super().get_queryset()

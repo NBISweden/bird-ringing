@@ -10,7 +10,7 @@ import { Alert } from "@/components/Alert";
 import { chunkArray, downloadData } from "../utils";
 import { TranslationId, useTranslation } from "../internationalization";
 import { useActionWithoutCache } from "../hooks";
-import { joinValueLists, mergeValueListObjects } from "../common";
+import { mergeValueListObjects } from "../common";
 import { EmailList } from "@/components/EmailList";
 
 type BatchCreateResponse = {
@@ -545,39 +545,19 @@ async function fetchLicenseHolderEmail([client, ids]: [
   const maximumNumberOfIds = 100;
   const idChunks = chunkArray(ids, maximumNumberOfIds);
 
-  const emailValues = await Promise.all(
+  const holderValues = await Promise.all(
     idChunks.map(
       async (chunk) =>
         (
-          await client.fetchLicenseValue<string>(
-            "holder_email",
-            undefined,
-            chunk,
-          )
+          await client.fetchLicenseValue<
+            { full_name: string; email: string }[]
+          >("holder", undefined, chunk)
         ).values,
     ),
   );
-  const emails = mergeValueListObjects(emailValues);
-  const fullNameValues = await Promise.all(
-    idChunks.map(
-      async (chunk) =>
-        (
-          await client.fetchLicenseValue<string>(
-            "holder_full_name",
-            undefined,
-            chunk,
-          )
-        ).values,
-    ),
-  );
-
-  const fullNames = mergeValueListObjects(fullNameValues);
+  const holders = Object.values(mergeValueListObjects(holderValues)).flat();
   const emailSet = new Set(
-    joinValueLists(
-      emails,
-      fullNames,
-      (_key, email, fullName) => `${fullName} <${email}>`,
-    ),
+    holders.map(({ email, full_name }) => `${full_name} <${email}>`),
   );
   return Array.from(emailSet);
 }
