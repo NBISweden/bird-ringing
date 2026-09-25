@@ -111,7 +111,9 @@ class _EmailTestBase(TestCase):
     def _license_name(self, lic, actor):
         rel = lic.actors.filter(actor=actor).get()
         mednr = "" if rel.role == LicenseRoleChoices.RINGER else f"-{rel.mednr}"
-        return f"license-{lic.sequence.mnr}{mednr}-{slugify(actor.full_name)}.pdf"
+        return (
+            f"license-{lic.sequence.mnr}{mednr}-{slugify(actor.full_name)}-{lic.starts_at.year}.pdf"
+        )
 
     def _add_license_documents(self, actors, licenses):
         for (actor, lic) in zip(actors, licenses):
