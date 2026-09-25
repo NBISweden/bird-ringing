@@ -76,13 +76,21 @@ class MessageBuilder:
             raise ValueError(f"Failed to configure message builder: {e}")
     
     @staticmethod
-    def create_file_name(document_type: str, mnr, mednr: str | None = None, name: str | None = None) -> str:
+    def create_file_name(
+        document_type: str,
+        mnr,
+        year: int,
+        mednr: str | None = None,
+        name: str | None = None,
+    ) -> str:
         identifier = mnr if mednr is None else f"{mnr}-{mednr}"
-        name_slug = None if name is None else slugify(name)[:40] 
+        name_slug = None if name is None else slugify(name)[:40]
         document_type_slug = slugify(document_type)
 
-        return f"{document_type_slug}-{identifier}" + (f"-{name_slug}.pdf" if name_slug else ".pdf")
-
+        return (
+            f"{document_type_slug}-{identifier}-{year}"
+            + (f"-{name_slug}.pdf" if name_slug else ".pdf")
+        )
 
 class LicenseAndPermitMessageBuilder:
     """
@@ -114,7 +122,8 @@ class LicenseAndPermitMessageBuilder:
                         document_type=document_type,
                         mnr=lic.sequence.mnr,
                         mednr=(None if relation.role == LicenseRoleChoices.RINGER else relation.mednr),
-                        name=relation.actor.full_name
+                        name=relation.actor.full_name,
+                        year=lic.starts_at.year,
                     )
                 ),
                 document_type
