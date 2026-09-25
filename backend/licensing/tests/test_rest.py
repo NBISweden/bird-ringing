@@ -112,8 +112,7 @@ class _EmailTestBase(TestCase):
         rel = lic.actors.filter(actor=actor).get()
         mednr = "" if rel.role == LicenseRoleChoices.RINGER else f"-{rel.mednr}"
         return (
-            f"license-{lic.sequence.mnr}{mednr}-"
-            f"{lic.starts_at.year}-{slugify(actor.full_name)}.pdf"
+            f"license-{lic.sequence.mnr}{mednr}-{slugify(actor.full_name)}-{lic.starts_at.year}.pdf"
         )
 
     def _add_license_documents(self, actors, licenses):

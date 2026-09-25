@@ -88,8 +88,9 @@ class MessageBuilder:
         document_type_slug = slugify(document_type)
 
         return (
-            f"{document_type_slug}-{identifier}-{year}"
-            + (f"-{name_slug}.pdf" if name_slug else ".pdf")
+            f"{document_type_slug}-{identifier}-{name_slug}-{year}.pdf"
+            if name_slug
+            else f"{document_type_slug}-{identifier}-{year}.pdf"
         )
 
 class LicenseAndPermitMessageBuilder:
