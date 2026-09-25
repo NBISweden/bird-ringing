@@ -1,6 +1,9 @@
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
+from collections.abc import Callable
+from collections import defaultdict
+from typing import Iterable, Tuple, Any
 
 from licensing.message_builder import MessageBuilder, LicenseAndPermitMessageBuilder, RingerBundleMessageBuilder
 from licensing.communication_service import CommunicationService
@@ -305,6 +308,62 @@ class StandardResultsSetPagination(pagination.PageNumberPagination):
                 ]
             )
         )
+
+
+class ValueListMixin:
+    """
+    The ValueListMixin adds a value_list action which returns a list of 
+    values from a ModelViewSet. The intent is to allow the use of the
+    existing filtering options of a ModelViewSet while enabling fetching
+    single values for every filtered entry.
+    """
+
+    @action(detail=False, methods=["get"], url_path=r"value_list/(?P<value_id>\w+)",)
+    def value_list(self, request, value_id):
+        """
+        Provides a REST API action which fetches a specific value from each entry
+        of a list of Model objects. It respects the filtering options of the
+        associated viewset.
+        """
+        available_value_ids = self.get_available_value_ids()
+        if value_id not in available_value_ids:
+            return Response({"detail": f"The value '{value_id}' can not be aggregated for this resource."}, status=404)
+        
+        value_source = available_value_ids[value_id]
+
+        queryset = self.get_queryset()
+        queryset = self.filter_queryset(queryset)
+
+        values = list(self.get_value_list(queryset, value_source))
+
+        return Response({
+            "values": {
+                entry_id: value
+                for (entry_id, value) in values
+            },
+            "value_id": value_id
+        })
+
+    def get_available_value_ids(self) -> dict[str, str | Callable]:
+        """
+        The available value ids provides a mapping of input param names
+        to the source of the value from the queryset. When the dict values
+        are of type 'str' the lookup will be done using 'value_list' and
+        when the type is 'Callable' the callable function is expected
+        to provide the result.
+        """
+        return {}
+    
+    def get_value_list(self, queryset, value_source) -> Iterable[Tuple[str | int, Any]]:
+        """
+        Takes a queryset and a value source specification and returns an
+        iterable with a tuple mapping from the owner entry to the fetched value.
+        """
+        if isinstance(value_source, str):
+            values = list(queryset.values_list(self.lookup_field, value_source))
+        elif callable(value_source):
+            values = value_source(queryset)
+        return values
 
 
 class ActorLicenseRelationSerializer(serializers.ModelSerializer):
@@ -805,7 +864,7 @@ class LicenseCardRenderSerializer(serializers.Serializer):
 class MnrSerializer(serializers.Serializer):
     mnr = serializers.CharField(min_length=4, max_length=4)
 
-class LicenseSequenceViewSet(viewsets.ModelViewSet):
+class LicenseSequenceViewSet(viewsets.ModelViewSet, ValueListMixin):
     authentication_classes = [SessionAuthentication, BasicAuthentication]
     permission_classes = [DjangoProtectedModelPermissions]
 
@@ -814,7 +873,7 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
     serializer_class = LicenseSequenceSerializer
     pagination_class = StandardResultsSetPagination
 
-    filter_backends = [DynamicOrderingFilter]
+    filter_backends = [DynamicOrderingFilter, IdSelectionFilter]
 
     allowed_ordering = DynamicOrderingFilter.include_reverse(
         [
@@ -833,6 +892,35 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
         ]
     )
     default_ordering = ["mnr"]
+    id_filter_target = "mnr"
+
+    def get_available_value_ids(self):
+        return {
+            "holder": LicenseSequenceViewSet.get_holder,
+        }
+    
+    @staticmethod
+    def get_holder(queryset):
+        license_ids = queryset.values_list("latest__id", flat=True)
+        values = LicenseRelation.objects.filter(
+            license__in=license_ids,
+            role=LicenseRoleChoices.RINGER
+        ).values_list("license__sequence__mnr", "actor__email", "actor__full_name")
+
+        holders = (
+            (mnr, {
+                "email": email,
+                "full_name": full_name
+            })
+            for (mnr, email, full_name) in values
+        )
+
+        grouped_holders = defaultdict(list)
+        for (mnr, entry) in holders:
+            grouped_holders[mnr].append(entry)
+
+        return grouped_holders.items()
+
 
     def get_queryset(self):
         queryset = super().get_queryset()
@@ -1322,7 +1410,7 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet):
         resp["Content-Disposition"] = 'attachment; filename="permits.zip"'
         return resp
 
-class ActorViewSet(viewsets.ModelViewSet):
+class ActorViewSet(viewsets.ModelViewSet, ValueListMixin):
     authentication_classes = [SessionAuthentication, BasicAuthentication]
     permission_classes = [DjangoProtectedModelPermissions]
 
@@ -1356,6 +1444,12 @@ class ActorViewSet(viewsets.ModelViewSet):
         ]
     )
     default_ordering = ["full_name", "city", "country"]
+
+    def get_available_value_ids(self):
+        return {
+            "email": "email",
+            "full_name": "full_name",
+        }
 
     def get_queryset(self):
         actor_type_label = models.Case(

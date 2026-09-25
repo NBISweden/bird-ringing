@@ -200,6 +200,7 @@ export const locale: TranslationMap = {
   licenseErrorLoadingLicenseText:
     "Något gick fel när vi försökte ladda data för licensen med id {licenseId}",
   licenseErrorLoadingLicenseTitle: "Misslyckades att hämta licens",
+  licenseFetchEmailAddresses: "Hämta e-postadresser för licenseinnehavare",
   licenseFilterDescription: "Filtrera licenslistan",
   licenseFilterLabel: "Filtrera",
   licenseFilterPlaceholder:

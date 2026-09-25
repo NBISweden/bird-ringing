@@ -7,9 +7,11 @@ import {
   SendLicenseForActorsModalContent,
 } from "@/components/SendLicenseModalContent";
 import { Alert } from "@/components/Alert";
-import { downloadData } from "../utils";
+import { chunkArray, downloadData } from "../utils";
 import { TranslationId, useTranslation } from "../internationalization";
 import { useActionWithoutCache } from "../hooks";
+import { mergeValueListObjects } from "../common";
+import { EmailList } from "@/components/EmailList";
 
 type BatchCreateResponse = {
   filenames: string[];
@@ -504,4 +506,58 @@ export function useSendLicenseEmailForActorsAction(client: Client) {
     },
     [modalStack, t, sendEmails],
   );
+}
+
+export function useFetchEmailAddressesAction(client: Client) {
+  const modalStack = useModalsContext();
+  const { t } = useTranslation();
+
+  const action = useCallback(
+    (itemIds: Set<string>) => {
+      modalStack.add({
+        title: t("licenseFetchEmailAddresses"),
+        content: (
+          <ClientContext.Provider value={client}>
+            <EmailList
+              ids={Array.from(itemIds)}
+              dataFetchFunc={fetchLicenseHolderEmail}
+            />
+          </ClientContext.Provider>
+        ),
+        actions: [
+          {
+            label: t("closeModal"),
+            action: () => {},
+            type: "primary",
+          },
+        ],
+      });
+    },
+    [modalStack, client, t],
+  );
+  return action;
+}
+
+async function fetchLicenseHolderEmail([client, ids]: [
+  Client,
+  string[],
+]): Promise<string[]> {
+  const maximumNumberOfIds = 100;
+  const idChunks = chunkArray(ids, maximumNumberOfIds);
+
+  const holderValues = await Promise.all(
+    idChunks.map(
+      async (chunk) =>
+        (
+          await client.fetchLicenseValue<
+            { full_name: string; email: string }[]
+          >("holder", undefined, chunk)
+        ).values,
+    ),
+  );
+  const holders = Object.values(mergeValueListObjects(holderValues)).flat();
+  const emailSet = new Set(
+    holders.map(({ email, full_name }) => `${full_name} <${email}>`),
+  );
+  return Array.from(emailSet);
 }

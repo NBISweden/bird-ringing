@@ -206,6 +206,7 @@ const messagesBase = {
   licenseErrorLoadingLicenseText:
     "Something went wrong while loading license with {licenseId}",
   licenseErrorLoadingLicenseTitle: "Failed to load license",
+  licenseFetchEmailAddresses: "Fetch license holder e-mail addresses",
   licenseFilterDescription: "Filter license list",
   licenseFilterLabel: "Filter",
   licenseFilterPlaceholder:
