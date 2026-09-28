@@ -274,6 +274,11 @@ export type SkippedMessage = {
   reason: string;
 };
 
+export type ValueList<T> = {
+  value_id: string;
+  values: { [x: string]: T };
+};
+
 export interface SendEmailResult {
   messages_sent: number;
   failed_messages: FailedMessage[];
@@ -358,3 +363,26 @@ export type PermissionInput = {
 export type PermissionPropertyInput = PermissionInput & {
   related_type_id?: string | null;
 };
+
+export function joinValueLists<TA, TB, TO>(
+  a: ValueList<TA>["values"],
+  b: ValueList<TB>["values"],
+  transform: (id: string, a: TA, b: TB) => TO,
+): TO[] {
+  const commonKeys = new Set(Object.keys(a)).intersection(
+    new Set(Object.keys(b)),
+  );
+
+  return Array.from(commonKeys).map((key) => transform(key, a[key], b[key]));
+}
+
+export function mergeValueListObjects<T>(
+  items: ValueList<T>["values"][],
+): ValueList<T>["values"] {
+  return items.reduce((acc, val) => {
+    return Object.assign<ValueList<T>["values"], ValueList<T>["values"]>(
+      acc,
+      val,
+    );
+  });
+}

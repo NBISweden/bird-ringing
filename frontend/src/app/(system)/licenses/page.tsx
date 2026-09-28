@@ -26,6 +26,7 @@ import {
   useBatchCreatePermitsAction,
   useDownloadPermitsZipAction,
   useSendLicenseEmailAction,
+  useFetchEmailAddressesAction,
 } from "./actions";
 
 import { useTranslation, Translation } from "../internationalization";
@@ -201,8 +202,12 @@ function ConnectedListView() {
   const createPermitDocsAction = useBatchCreatePermitsAction(client);
   const downloadPermitsZipAction = useDownloadPermitsZipAction(client);
   const sendEmailAction = useSendLicenseEmailAction(client);
+  const fetchEmailAction = useFetchEmailAddressesAction(client);
 
   const batchActions: BatchAction[] = [
+    { label: t("licenseFetchEmailAddresses"), action: fetchEmailAction },
+    { type: "divider" },
+
     {
       label: t("licenseCreateLicenseDocuments"),
       action: createDocsAction,

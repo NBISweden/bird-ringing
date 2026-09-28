@@ -1,10 +1,10 @@
 import { useCallback } from "react";
-import { ClientContext, useClient, useModalsContext } from "../contexts";
+import { ClientContext, useModalsContext } from "../contexts";
 import { Client } from "../client";
-import Spinner from "@/components/Spinner";
-import { Alert } from "@/components/Alert";
-import useSWRImmutable from "swr/immutable";
 import { useTranslation } from "../internationalization";
+import { EmailList } from "@/components/EmailList";
+import { chunkArray } from "../utils";
+import { joinValueLists, mergeValueListObjects } from "../common";
 
 export function useFetchEmailAddressesAction(client: Client) {
   const modalStack = useModalsContext();
@@ -16,7 +16,10 @@ export function useFetchEmailAddressesAction(client: Client) {
         title: t("actorFetchEmailAddresses"),
         content: (
           <ClientContext.Provider value={client}>
-            <ActorEmailList ids={Array.from(itemIds)} />
+            <EmailList
+              ids={Array.from(itemIds)}
+              dataFetchFunc={fetchActorEmail}
+            />
           </ClientContext.Provider>
         ),
         actions: [
@@ -33,38 +36,31 @@ export function useFetchEmailAddressesAction(client: Client) {
   return action;
 }
 
-async function fetchActorEmail([client, ids]: [
-  Client,
-  string[],
-  string,
-]): Promise<string[]> {
-  const actors = await Client.fetchAll(
-    client.fetchActorPage(1, undefined, undefined, ids),
+async function fetchActorEmail([client, ids]: [Client, string[]]): Promise<
+  string[]
+> {
+  const maximumNumberOfIds = 100;
+  const idChunks = chunkArray(ids, maximumNumberOfIds);
+
+  const emailValues = await Promise.all(
+    idChunks.map(
+      async (chunk) =>
+        (await client.fetchActorValue<string>("email", undefined, chunk))
+          .values,
+    ),
   );
-  return actors
-    .filter((a) => a.email)
-    .map((a) => `${a.full_name} <${a.email}>`);
-}
-
-function ActorEmailList({ ids }: { ids: string[] }) {
-  const client = useClient();
-  const { t } = useTranslation();
-
-  const { data, isLoading, error } = useSWRImmutable(
-    [client, ids],
-    fetchActorEmail,
+  const emails = mergeValueListObjects(emailValues);
+  const fullNameValues = await Promise.all(
+    idChunks.map(
+      async (chunk) =>
+        (await client.fetchActorValue<string>("full_name", undefined, chunk))
+          .values,
+    ),
   );
-
-  return isLoading ? (
-    <>
-      <Spinner />
-      <span className="ms-3">{t("actorLoadingEmailAddresses")}</span>
-    </>
-  ) : error ? (
-    <Alert type="danger">{String(error)}</Alert>
-  ) : data && data.length > 0 ? (
-    <>{data.join("; ")}</>
-  ) : (
-    <Alert type="secondary">{t("actorNoEmailAddressesFound")}</Alert>
+  const fullNames = mergeValueListObjects(fullNameValues);
+  return joinValueLists(
+    emails,
+    fullNames,
+    (_key, email, fullName) => `${fullName} <${email}>`,
   );
 }
