@@ -48,6 +48,7 @@ from licensing.models import (
 from rest_framework.authentication import SessionAuthentication, BasicAuthentication
 from rest_framework import routers, serializers, viewsets, filters, pagination, response
 from django.db import models, transaction
+from django.db.models.functions import Coalesce, NullIf, Trim
 from django.http import HttpResponse
 from django.template.exceptions import TemplateDoesNotExist
 from django.contrib.postgres.aggregates import StringAgg
@@ -1441,6 +1442,7 @@ class ActorViewSet(viewsets.ModelViewSet, ValueListMixin):
             "last_name",
             "type",
             "updated_at",
+            "ordering_name",
         ]
     )
     default_ordering = ["full_name", "city", "country"]
@@ -1476,6 +1478,10 @@ class ActorViewSet(viewsets.ModelViewSet, ValueListMixin):
 
         return self.queryset.annotate(
             type_label=actor_type_label,
+            ordering_name=Coalesce(
+                NullIf(Trim(models.F("last_name")), models.Value("")),
+                models.F("full_name"),
+            ),
             license_role_label=models.Subquery(
                 latest_license_relation.annotate(
                     role_label=license_role_label
