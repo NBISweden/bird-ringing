@@ -85,10 +85,12 @@ function validateLicense(
 }
 
 export function LicenseEntryForm({
+  isCreating = false,
   initialLicense,
   onSubmit,
   isSubmitting,
 }: {
+  isCreating?: boolean;
   initialLicense: Partial<LicenseFormData>;
   onSubmit: (license: LicenseFormData) => void;
   isSubmitting?: boolean;
@@ -145,7 +147,7 @@ export function LicenseEntryForm({
             />
           </VerticalField>
 
-          <VerticalField label={t("licenseStatus")} id="status" required>
+          {isCreating ? <></> : <VerticalField label={t("licenseStatus")} id="status" required>
             <SelectInput
               value={license.status || ""}
               onChange={(value) => updateValue({ status: value })}
@@ -165,9 +167,9 @@ export function LicenseEntryForm({
                 },
               ]}
             />
-          </VerticalField>
+          </VerticalField>}
 
-          <VerticalField
+          {isCreating ? <></> : <VerticalField
             label={t("licenseReportStatus")}
             id="latest.report_status"
             required
@@ -191,7 +193,7 @@ export function LicenseEntryForm({
                 },
               ]}
             />
-          </VerticalField>
+          </VerticalField>}
         </FormSection>
 
         <FormSection
@@ -229,7 +231,6 @@ export function LicenseEntryForm({
           <VerticalField
             label={t("licenseLocation")}
             id="latest.location"
-            required
           >
             <TextInput
               type="text"

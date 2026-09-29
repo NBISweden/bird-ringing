@@ -410,7 +410,7 @@ class License(ChangeTracking):
     sequence = models.ForeignKey(
         LicenseSequence, on_delete=models.PROTECT, related_name="instances"
     )
-    location = models.TextField()
+    location = models.TextField(blank=True, default="", null=False)
     description = models.TextField(blank=True, default="", null=False)
     report_status = models.PositiveIntegerField(choices=ReportStatusChoices)
     documents = models.ManyToManyField(LicenseDocument, blank=True)

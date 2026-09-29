@@ -209,7 +209,7 @@ export type LicenseInstance = {
   documents: LicenseDocument[];
   communication: LicenceCommunication[];
   version: number;
-  location: string;
+  location?: string;
   description: string;
   report_status: string;
   starts_at: string;
