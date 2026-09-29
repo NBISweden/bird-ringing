@@ -1,5 +1,5 @@
 import { LicenseInstance } from "@/app/(system)/common";
-import { useObjectState } from "@/app/(system)/hooks";
+import { useObjectState, useOptions } from "@/app/(system)/hooks";
 import { useTranslation } from "@/app/(system)/internationalization";
 import {
   SelectInput,
@@ -99,6 +99,9 @@ export function LicenseEntryForm({
   });
 
   const [errors, setErrors] = useState<FieldErrorGroup>({});
+  const { data: locationPresets, isLoading: lpIsLoading } = useOptions(
+    "location_preset_group",
+  );
 
   return (
     <form
@@ -136,53 +139,61 @@ export function LicenseEntryForm({
             />
           </VerticalField>
 
-          {isCreating ? <></> : <VerticalField label={t("licenseStatus")} id="status" required>
-            <SelectInput
-              value={license.status || ""}
-              onChange={(value) => updateValue({ status: value })}
-              options={[
-                { value: "", label: t("selectOption") },
-                {
-                  value: "active",
-                  label: t("licenseStatusActive"),
-                },
-                {
-                  value: "paused",
-                  label: t("licenseStatusPaused"),
-                },
-                {
-                  value: "terminated",
-                  label: t("licenseStatusTerminated"),
-                },
-              ]}
-            />
-          </VerticalField>}
+          {isCreating ? (
+            <></>
+          ) : (
+            <VerticalField label={t("licenseStatus")} id="status" required>
+              <SelectInput
+                value={license.status || ""}
+                onChange={(value) => updateValue({ status: value })}
+                options={[
+                  { value: "", label: t("selectOption") },
+                  {
+                    value: "active",
+                    label: t("licenseStatusActive"),
+                  },
+                  {
+                    value: "paused",
+                    label: t("licenseStatusPaused"),
+                  },
+                  {
+                    value: "terminated",
+                    label: t("licenseStatusTerminated"),
+                  },
+                ]}
+              />
+            </VerticalField>
+          )}
 
-          {isCreating ? <></> : <VerticalField
-            label={t("licenseReportStatus")}
-            id="latest.report_status"
-            required
-          >
-            <SelectInput
-              value={license.report_status || ""}
-              onChange={(value) => updateValue({ report_status: value })}
-              options={[
-                { value: "", label: t("selectOption") },
-                {
-                  value: "yes",
-                  label: t("licenseReportStatusYes"),
-                },
-                {
-                  value: "no",
-                  label: t("licenseReportStatusNo"),
-                },
-                {
-                  value: "incomplete",
-                  label: t("licenseReportStatusIncomplete"),
-                },
-              ]}
-            />
-          </VerticalField>}
+          {isCreating ? (
+            <></>
+          ) : (
+            <VerticalField
+              label={t("licenseReportStatus")}
+              id="latest.report_status"
+              required
+            >
+              <SelectInput
+                value={license.report_status || ""}
+                onChange={(value) => updateValue({ report_status: value })}
+                options={[
+                  { value: "", label: t("selectOption") },
+                  {
+                    value: "yes",
+                    label: t("licenseReportStatusYes"),
+                  },
+                  {
+                    value: "no",
+                    label: t("licenseReportStatusNo"),
+                  },
+                  {
+                    value: "incomplete",
+                    label: t("licenseReportStatusIncomplete"),
+                  },
+                ]}
+              />
+            </VerticalField>
+          )}
           <VerticalField
             label={t("licenseStartsAt")}
             id="latest.starts_at"
@@ -199,10 +210,7 @@ export function LicenseEntryForm({
         </FormSection>
 
         <FormSection icon="geo-alt" title={t("licenseFormLocationSubtitle")}>
-          <VerticalField
-            label={t("licenseLocation")}
-            id="latest.location"
-          >
+          <VerticalField label={t("licenseLocation")} id="latest.location">
             <TextInput
               type="text"
               value={license.location || ""}
@@ -211,6 +219,26 @@ export function LicenseEntryForm({
               }
             />
           </VerticalField>
+          {lpIsLoading ? (
+            <></>
+          ) : (
+            locationPresets.map((lp) => (
+              <VerticalField label={lp.name} key={lp.id}>
+                <SelectInput
+                  options={[
+                    { value: "", label: "-" },
+                    ...lp.items.map((i) => ({ value: i.name, label: i.name })),
+                  ]}
+                  value={
+                    lp.items.some((i) => i.name === license.location)
+                      ? license.location
+                      : ""
+                  }
+                  onChange={(value) => updateValue({ location: value })}
+                />
+              </VerticalField>
+            ))
+          )}
         </FormSection>
 
         <FormSection icon="card-text" title={t("licenseFormDetailsSubtitle")}>
