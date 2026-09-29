@@ -37,7 +37,6 @@ function getUnsetFields(
     "report_status",
     "location",
     "starts_at",
-    "ends_at",
     "description",
   ];
   return keys.filter((key) => license[key] === undefined);
@@ -60,15 +59,6 @@ function validateLicense(
 
   if (value.mnr && !/^\d{4}$/.test(value.mnr.trim())) {
     errors.mnr = t("licenseFormMnrInvalid");
-  }
-
-  if (value.starts_at && value.ends_at) {
-    const startsAt = new Date(value.starts_at);
-    const endsAt = new Date(value.ends_at);
-
-    if (endsAt < startsAt) {
-      errors["latest.ends_at"] = t("licenseFormEndsAtBeforeStartsAt");
-    }
   }
 
   let license: LicenseFormData | undefined = undefined;
@@ -100,7 +90,6 @@ export function LicenseEntryForm({
     mnr: "",
     status: "",
     starts_at: "",
-    ends_at: "",
     location: "",
     description: "",
     report_status: "",
@@ -194,12 +183,6 @@ export function LicenseEntryForm({
               ]}
             />
           </VerticalField>}
-        </FormSection>
-
-        <FormSection
-          icon="calendar2-week"
-          title={t("licenseFormValiditySubtitle")}
-        >
           <VerticalField
             label={t("licenseStartsAt")}
             id="latest.starts_at"
@@ -211,18 +194,6 @@ export function LicenseEntryForm({
               onChange={(event) =>
                 updateValue({ starts_at: event.target.value })
               }
-            />
-          </VerticalField>
-
-          <VerticalField
-            label={t("licenseEndsAt")}
-            id="latest.ends_at"
-            required
-          >
-            <TextInput
-              type="date"
-              value={license.ends_at || ""}
-              onChange={(event) => updateValue({ ends_at: event.target.value })}
             />
           </VerticalField>
         </FormSection>

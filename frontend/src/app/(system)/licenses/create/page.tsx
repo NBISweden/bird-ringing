@@ -22,7 +22,7 @@ function LicenseViewBase() {
     mnr: "",
     status: "active",
     starts_at: "",
-    ends_at: "",
+    ends_at: undefined,
     location: "",
     description: "",
     report_status: "no",

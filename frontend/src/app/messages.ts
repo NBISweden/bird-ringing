@@ -88,9 +88,9 @@ const licenseFields = {
   licensePermissionEndsAt: "Ends at",
   licensePermissionProperties: "Properties",
   licensePermissionSpecies: "Species",
-  licenseFormActor: "Actor",
-  licenseFormRole: "Role",
-  licenseFormRelationId: "MedNr",
+  licenseActor: "Actor",
+  licenseRole: "Role",
+  licenseRelationId: "MedNr",
 };
 
 const licenseForm = {

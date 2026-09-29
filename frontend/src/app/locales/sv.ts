@@ -58,9 +58,9 @@ const licenseFields = {
   licensePermissionEndsAt: "Slutdatum",
   licensePermissionProperties: "Egenskaper",
   licensePermissionSpecies: "Art",
-  licenseFormActor: "Ringmärkare",
-  licenseFormRole: "Roll",
-  licenseFormRelationId: "MedNr",
+  licenseActor: "Ringmärkare",
+  licenseRole: "Roll",
+  licenseRelationId: "MedNr",
 };
 
 const licenseForm = {
