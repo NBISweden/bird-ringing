@@ -171,6 +171,7 @@ export const locale: TranslationMap = {
   actorLicensePending: "Kommande",
   actorLicenseValidityPeriod:
     "<from>{startsAt}</from><to><muted>till</muted> {endsAt}</to>",
+  actorLicensePeriodStart: "<from>Börjar </from> {startsAt}",
   actorLicenses: "Licenser",
   actorLoadingEmailAddresses: "Laddar e-postadresser",
   actorNoEmailAddressesFound: "Inga e-postadresser fanns ",
@@ -266,6 +267,7 @@ export const locale: TranslationMap = {
   licenseUpdatedAt: "Uppdaterad {date}",
   licenseValidityPeriod:
     "<from>Giltig från </from>{startsAt}<to> till </to>{endsAt}",
+  licensePeriodStart: "<from>Starts at</from> {startsAt}",
   buttonCreateDocuments: "Create documents",
   permitCreateDocuments: "Skapa tillstånd",
   permitCreateDocumentsConfirmText:

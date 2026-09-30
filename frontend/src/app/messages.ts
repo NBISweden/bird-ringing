@@ -177,6 +177,7 @@ const messagesBase = {
   actorLicensePending: "Pending",
   actorLicenseValidityPeriod:
     "<from>{startsAt}</from><to><muted>to</muted> {endsAt}</to>",
+  actorLicensePeriodStart: "<from>Starts at</from> {startsAt}",
   actorLicenses: "Licenses",
   actorLoadingEmailAddresses: "Loading e-mail addresses",
   actorNoEmailAddressesFound: "No e-mail addresses were found",
@@ -266,6 +267,7 @@ const messagesBase = {
   licenseUpdatedAt: "Updated at {date}",
   licenseValidityPeriod:
     "<from>Valid from </from>{startsAt}<to> to </to>{endsAt}",
+  licensePeriodStart: "<from>Starts at</from> {startsAt}",
   buttonCreateDocuments: "Create documents",
 
   permitCreateDocuments: "Create permits",

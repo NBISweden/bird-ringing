@@ -460,14 +460,21 @@ export function LicenceView({
           displayHeader={() => (
             <>
               <div className="flex-grow-0">
-                {format("licenseValidityPeriod", {
-                  startsAt: convertOnlyDateToLocale(license.starts_at),
-                  endsAt: convertOnlyDateToLocale(license.ends_at),
-                  from: (chunks) => (
-                    <span className="fst-italic">{chunks}</span>
-                  ),
-                  to: (chunks) => <span className="fst-italic">{chunks}</span>,
-                })}
+                {format(
+                  license.ends_at
+                    ? "licenseValidityPeriod"
+                    : "licensePeriodStart",
+                  {
+                    startsAt: convertOnlyDateToLocale(license.starts_at),
+                    endsAt: convertOnlyDateToLocale(license.ends_at),
+                    from: (chunks) => (
+                      <span className="fst-italic">{chunks}</span>
+                    ),
+                    to: (chunks) => (
+                      <span className="fst-italic">{chunks}</span>
+                    ),
+                  },
+                )}
               </div>
               <div className="flex-grow-0 fw-light">
                 {license.location || " "}
