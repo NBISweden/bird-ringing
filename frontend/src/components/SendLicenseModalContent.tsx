@@ -34,6 +34,18 @@ function SendEmailResultDetails({
 
   return (
     <>
+      {data.skipped_inactive_licenses &&
+        data.skipped_inactive_licenses.length > 0 && (
+          <div className="alert alert-warning">
+            <p className="mb-2">{t("licenseInactiveLicensesSkipped")}:</p>
+            <ul className="mb-0">
+              {data.skipped_inactive_licenses.map((mnr, idx) => (
+                <li key={idx}>{mnr}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+
       {showRingerBundleMessagesSent &&
         typeof data.ringer_bundle_messages_sent === "number" && (
           <div className="alert alert-info">
@@ -89,6 +101,17 @@ function SendEmailResultDetails({
           </ul>
         </div>
       )}
+
+      {/* {data.inactive_licenses && data.inactive_licenses.length > 0 && (
+        <div className="alert alert-warning">
+          <p>{t("licenseInactiveLicensesSkipped")}:</p>
+          <ul>
+            {data.inactive_licenses.map((mnr, idx) => (
+              <li key={idx}>{mnr}</li>
+            ))}
+          </ul>
+        </div>
+      )} */}
 
       {data.skipped_messages && data.skipped_messages.length > 0 && (
         <div className="alert alert-secondary">
