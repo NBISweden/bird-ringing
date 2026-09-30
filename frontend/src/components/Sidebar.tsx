@@ -22,11 +22,11 @@ export type NavItem =
   | { type: "heading"; label: string };
 
 export type Acknowledgement = {
-  text: string;
+  text?: string;
   localeVariants?: Record<
     string,
     {
-      text: string;
+      text?: string;
       alt: string;
     }
   >;
@@ -150,7 +150,7 @@ export default function Sidebar({
         </ul>
       </nav>
       {!collapsed && acknownledgements ? (
-        <div className="flex-shrink-0 d-flex flex-column gap-3 m-3 delayed-show">
+        <div className="flex-shrink-0 d-flex flex-column gap-3 m-3 mb-5 delayed-show">
           {acknownledgements
             .map((ack) => localizeAcknowledgement(ack, intl.locale))
             .map((ack, index) => (
@@ -163,7 +163,7 @@ export default function Sidebar({
                   alt={ack.image.alt}
                   className="w-100 h-auto"
                 />
-                <div>{ack.text}</div>
+                {ack.text ? <div>{ack.text}</div> : <></>}
               </React.Fragment>
             ))}
         </div>
