@@ -1194,15 +1194,22 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet, ValueListMixin):
             except serializers.ValidationError as e:
                 return Response(e.detail, status=400)
 
+            # Only active licenses can receive communication; paused/terminated are skipped.
+            (active_licenses, inactive_licenses) = split_items(licenses, lambda lic: lic.sequence.status == LicenseStatusChoices.ACTIVE)
+            inactive_mnrs = [lic.sequence.mnr for lic in inactive_licenses]
+
             # Always build bundle messages first (validation), then send actor mails, then send bundles.
             try:
                 # For bundle e-mails: include ALL relations (including station ringer),
                 # because the bundle is sent to the ringer and should still go out.
-                lic_rel_pairs_for_bundle = list(get_flattened_license_and_relations(licenses))
+                lic_rel_pairs_for_bundle = list(get_flattened_license_and_relations(active_licenses))
 
                 # For individual e-mails: when include_card=True, skip station ringers
                 # (because we don't create cards for station ringers).
-                lic_rel_pairs_for_individual = list(get_flattened_license_and_relations(licenses, should_skip=skip_station_ringer_card if include_card else None))
+                lic_rel_pairs_for_individual = list(get_flattened_license_and_relations(
+                    active_licenses,
+                    should_skip=skip_station_ringer_card if include_card else None,
+                ))
 
                 bundle_messages = _build_ringer_bundle_messages(
                     lic_rel_pairs=lic_rel_pairs_for_bundle,
@@ -1234,7 +1241,13 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet, ValueListMixin):
                 # Partial failure: actor emails succeeded, connection suceeded but the ringer bundle failed.
                 return _merge_response(resp, {"ringer_bundle_failed_messages": bundle_failed}, status_code=422)
 
-            return _merge_response(resp, {"ringer_bundle_messages_sent": len(bundle_messages)})
+            return _merge_response(
+                resp,
+                {
+                    "ringer_bundle_messages_sent": len(bundle_messages),
+                    "skipped_inactive_licenses": inactive_mnrs,
+                },
+            )
 
     @action(detail=True, methods=["put"], url_path="send-license-emails")
     def send_license_emails_for_actors(self, request, license_number=None):
@@ -1254,9 +1267,17 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet, ValueListMixin):
 
             actor_id_set = set(actor_ids)
 
-            license = self.get_object().latest
+            sequence = self.get_object()
+            license = sequence.latest
             if not license:
                 return Response({"detail": "No current license found."}, status=404)
+
+            # Only active licenses can receive communication; paused/terminated are rejected.
+            if sequence.status != LicenseStatusChoices.ACTIVE:
+                return Response(
+                    {"detail": f"License {sequence.mnr} is not active. E-mails can only be sent for active licenses."},
+                    status=400,
+                )
 
             try:
                 all_pairs_for_bundle = list(get_flattened_license_and_relations([license]))
