@@ -209,37 +209,60 @@ export function LicenseEntryForm({
           </VerticalField>
         </FormSection>
 
-        <FormSection icon="geo-alt" title={t("licenseFormLocationSubtitle")}>
-          <VerticalField label={t("licenseLocation")} id="latest.location">
-            <TextInput
-              type="text"
-              value={license.location || ""}
-              onChange={(event) =>
-                updateValue({ location: event.target.value })
-              }
-            />
-          </VerticalField>
-          {lpIsLoading ? (
-            <></>
-          ) : (
-            locationPresets.map((lp) => (
-              <VerticalField label={lp.name} key={lp.id}>
-                <SelectInput
-                  options={[
-                    { value: "", label: "-" },
-                    ...lp.items.map((i) => ({ value: i.name, label: i.name })),
-                  ]}
-                  value={
-                    lp.items.some((i) => i.name === license.location)
-                      ? license.location
-                      : ""
+        <div className="row">
+          <div
+            className={
+              lpIsLoading || locationPresets.length === 0
+                ? "col-12"
+                : "col-lg-6"
+            }
+          >
+            <FormSection
+              icon="geo-alt"
+              title={t("licenseFormLocationSubtitle")}
+            >
+              <VerticalField label={t("licenseLocation")} id="latest.location">
+                <TextInput
+                  type="text"
+                  value={license.location || ""}
+                  onChange={(event) =>
+                    updateValue({ location: event.target.value })
                   }
-                  onChange={(value) => updateValue({ location: value })}
                 />
               </VerticalField>
-            ))
+            </FormSection>
+          </div>
+          {lpIsLoading || locationPresets.length === 0 ? (
+            <></>
+          ) : (
+            <div className="col-lg-6">
+              <FormSection
+                icon="collection"
+                title={t("licenseFormLocationPresetSubtitle")}
+              >
+                {locationPresets.map((lp) => (
+                  <VerticalField label={lp.name} key={lp.id}>
+                    <SelectInput
+                      options={[
+                        { value: "", label: "-" },
+                        ...lp.items.map((i) => ({
+                          value: i.name,
+                          label: i.name,
+                        })),
+                      ]}
+                      value={
+                        lp.items.some((i) => i.name === license.location)
+                          ? license.location
+                          : ""
+                      }
+                      onChange={(value) => updateValue({ location: value })}
+                    />
+                  </VerticalField>
+                ))}
+              </FormSection>
+            </div>
           )}
-        </FormSection>
+        </div>
 
         <FormSection icon="card-text" title={t("licenseFormDetailsSubtitle")}>
           <VerticalField

@@ -70,6 +70,7 @@ const licenseForm = {
   licenseFormBasicInfoSubtitle: "Om licensen",
   licenseFormValiditySubtitle: "Giltighetsperiod",
   licenseFormLocationSubtitle: "Plats",
+  licenseFormLocationPresetSubtitle: "Platsförslag",
   licenseFormDetailsSubtitle: "Detaljer",
   licenseFormMnrPlaceholder: "Ange ett fyrsiffrigt MNR",
   licenseFormMnrInvalid: "MNR måste bestå av exakt fyra siffror.",

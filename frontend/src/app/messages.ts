@@ -100,6 +100,7 @@ const licenseForm = {
   licenseFormBasicInfoSubtitle: "Basic information",
   licenseFormValiditySubtitle: "Validity period",
   licenseFormLocationSubtitle: "Location",
+  licenseFormLocationPresetSubtitle: "Location presets",
   licenseFormDetailsSubtitle: "Details",
   licenseFormMnrPlaceholder: "Enter a four digit MNR",
   licenseFormMnrInvalid: "MNR must be exactly four digits.",
