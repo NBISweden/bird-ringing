@@ -265,6 +265,8 @@ const messagesBase = {
   licenseUpdatedAt: "Updated at {date}",
   licenseValidityPeriod:
     "<from>Valid from </from>{startsAt}<to> to </to>{endsAt}",
+  licenseSendDisabledInactive: "License must be active to send communication.",
+  licenseInactiveLicensesSkipped: "Inactive licenses skipped",
   buttonCreateDocuments: "Create documents",
 
   permitCreateDocuments: "Create permits",
