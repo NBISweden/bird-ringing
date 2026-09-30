@@ -8,10 +8,13 @@ import {
 } from "@/components/SendLicenseModalContent";
 import { Alert } from "@/components/Alert";
 import { downloadData } from "../utils";
-import { useTranslation } from "../internationalization";
+import { TranslationId, useTranslation } from "../internationalization";
 import { useActionWithoutCache } from "../hooks";
 
-type BatchCreateResponse = { filenames: string[] };
+type BatchCreateResponse = {
+  filenames: string[];
+  inactive_licenses?: string[];
+};
 
 type BatchCreateFn = (
   client: Client,
@@ -24,13 +27,16 @@ type SelectedActor = { id: number; name: string };
 function GenericBatchCreateBody({
   mnrs,
   createFn,
-  loadingText,
+  loadingMessage,
+  resultMessage,
 }: {
   mnrs: string[];
   createFn: BatchCreateFn;
-  loadingText: string;
+  loadingMessage: TranslationId;
+  resultMessage: TranslationId;
 }) {
   const client = useClient();
+  const { t, format } = useTranslation();
 
   const { data, isLoading, error } = useActionWithoutCache(
     "Batch actions: " + mnrs.join(","),
@@ -42,19 +48,39 @@ function GenericBatchCreateBody({
   return isLoading ? (
     <>
       <Spinner />
-      <span className="ms-3">{loadingText}</span>
+      <span className="ms-3">{t(loadingMessage)}</span>
     </>
   ) : error ? (
     <Alert type="danger">
       {error instanceof Error ? error.message : String(error)}
     </Alert>
   ) : (
-    <textarea
-      className="form-control"
-      rows={8}
-      readOnly
-      value={data?.filenames.join("\n")}
-    />
+    format(resultMessage, {
+      filenames: [],
+      inactive_licenses: [],
+      ...(data || {}),
+      has_inactive_licenses: String((data?.inactive_licenses?.length || 0) > 0),
+      h: (chunks: React.ReactNode) => <h2 className="fs-6">{chunks}</h2>,
+      list: (chunks) => {
+        return (
+          <ul>
+            {chunks.map((c, index) => (
+              <li key={index}>{c}</li>
+            ))}
+          </ul>
+        );
+      },
+      box: (chunks) => {
+        return (
+          <textarea
+            className="form-control"
+            rows={Math.min(8, chunks.length)}
+            readOnly
+            value={chunks.map((c) => String(c)).join("\n")}
+          />
+        );
+      },
+    })
   );
 }
 
@@ -85,14 +111,14 @@ function useBatchCreateAction({
   title,
   confirmText,
   selectedLabel,
-  loadingText,
+  loadingMessage,
   createFn,
 }: {
   client: Client;
   title: string;
   confirmText: string;
   selectedLabel: string;
-  loadingText: string;
+  loadingMessage: TranslationId;
   createFn: BatchCreateFn;
 }) {
   const modalStack = useModalsContext();
@@ -108,14 +134,15 @@ function useBatchCreateAction({
             <GenericBatchCreateBody
               mnrs={Array.from(itemIds)}
               createFn={createFn}
-              loadingText={loadingText}
+              loadingMessage={loadingMessage}
+              resultMessage="standardBatchResponse"
             />
           </ClientContext.Provider>
         ),
         actions: [{ label: t("okModal"), action: () => {}, type: "primary" }],
       });
     },
-    [modalStack, client, title, createFn, loadingText, t],
+    [modalStack, client, title, createFn, loadingMessage, t],
   );
 
   return useCallback(
@@ -318,7 +345,7 @@ export function useBatchCreateLicenseCardsAction(client: Client) {
     title: t("licenseCreateLicenseDocuments"),
     confirmText: t("licenseCreateLicenseDocumentsConfirmText"),
     selectedLabel: t("licenseSelectedLicenses"),
-    loadingText: t("licenseCreatingLicenseDocuments"),
+    loadingMessage: "licenseCreatingLicenseDocuments",
     createFn: batchCreateLicenseDocs,
   });
 }
@@ -345,7 +372,7 @@ export function useBatchCreatePermitsAction(client: Client) {
     title: t("permitCreateDocuments"),
     confirmText: t("permitCreateDocumentsConfirmText"),
     selectedLabel: t("licenseSelectedLicenses"),
-    loadingText: t("permitCreatingDocuments"),
+    loadingMessage: "permitCreatingDocuments",
     createFn: batchCreatePermitDocs,
   });
 }

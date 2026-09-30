@@ -29,15 +29,24 @@ class ActorSerializer(serializers.ModelSerializer):
 
 
 class SpeciesSerializer(serializers.ModelSerializer):
-    id = serializers.SerializerMethodField(read_only=True)
+    id = serializers.CharField(read_only=True)
     label = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Species
         fields = ["id", "label"]
 
-    def get_id(self, obj):
-        return obj.scientific_code
+    def get_label(self, obj):
+        return obj.name
+
+
+class PermissionPropertyNestedSerializer(serializers.ModelSerializer):
+    id = serializers.CharField(read_only=True)
+    label = serializers.SerializerMethodField(read_only=True)
+
+    class Meta:
+        model = LicensePermissionProperty
+        fields = ["id", "label", "description"]
 
     def get_label(self, obj):
         return obj.name
@@ -45,29 +54,59 @@ class SpeciesSerializer(serializers.ModelSerializer):
 
 class PermissionTypeSerializer(serializers.ModelSerializer):
     id = serializers.CharField(read_only=True)
-    label = serializers.SerializerMethodField(read_only=True)
+    label = serializers.CharField(source="name")
+    description = serializers.CharField(required=False, allow_blank=True)
+    properties = serializers.SerializerMethodField(read_only=True)
+    created_by = serializers.HiddenField(
+        default=serializers.CreateOnlyDefault(serializers.CurrentUserDefault())
+    )
+    updated_by = serializers.HiddenField(default=serializers.CurrentUserDefault())
 
     class Meta:
         model = LicensePermissionType
-        fields = ["id", "label"]
+        fields = [
+            "id",
+            "label",
+            "description",
+            "properties",
+            "created_by",
+            "updated_by",
+        ]
 
-    def get_label(self, obj):
-        return obj.name
+    def get_properties(self, obj):
+        qs = obj.licensepermissionproperty_set.all().order_by("name")
+        return PermissionPropertyNestedSerializer(qs, many=True).data
 
 
 class PermissionPropertySerializer(serializers.ModelSerializer):
     id = serializers.CharField(read_only=True)
-    label = serializers.SerializerMethodField(read_only=True)
+    label = serializers.CharField(source="name")
+    description = serializers.CharField(required=False, allow_blank=True)
     related_type = serializers.SerializerMethodField(read_only=True)
-    queryset = LicensePermissionProperty.objects.all().select_related("related_type")
+    related_type_id = serializers.PrimaryKeyRelatedField(
+        source="related_type",
+        queryset=LicensePermissionType.objects.all(),
+        write_only=True,
+        required=False,
+        allow_null=True,
+    )
+    created_by = serializers.HiddenField(
+        default=serializers.CreateOnlyDefault(serializers.CurrentUserDefault())
+    )
+    updated_by = serializers.HiddenField(default=serializers.CurrentUserDefault())
 
     class Meta:
         model = LicensePermissionProperty
-        fields = ["id", "label", "related_type"]
+        fields = [
+            "id",
+            "label",
+            "description",
+            "related_type",
+            "related_type_id",
+            "created_by",
+            "updated_by",
+        ]
 
-    def get_label(self, obj):
-        return obj.name
-    
     def get_related_type(self, obj):
         return (
             {
@@ -107,7 +146,7 @@ class PermissionTypeViewSet(viewsets.ModelViewSet):
     filter_backends = [filters.SearchFilter]
     search_fields = ["name"]
 
-    queryset = LicensePermissionType.objects.all()
+    queryset = LicensePermissionType.objects.prefetch_related("licensepermissionproperty_set").all()    
     serializer_class = PermissionTypeSerializer
 
 
@@ -118,9 +157,15 @@ class PermissionPropertyViewSet(viewsets.ModelViewSet):
     filter_backends = [filters.SearchFilter]
     search_fields = ["name"]
 
-    queryset = LicensePermissionProperty.objects.all()
+    queryset = LicensePermissionProperty.objects.select_related("related_type").all()
     serializer_class = PermissionPropertySerializer
 
+    def get_queryset(self):
+        qs = super().get_queryset()
+        unrelated = self.request.query_params.get("unrelated")
+        if unrelated in ("1", "true", "True"):
+            qs = qs.filter(related_type__isnull=True)
+        return qs.order_by("name")
 
 def register_choice_view_sets(router):
     choice_classes = [

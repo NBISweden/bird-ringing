@@ -8,7 +8,7 @@ import {
 import { Client } from "./client";
 import { ButtonType } from "./common";
 
-export type FeatureFlags = "mock-actor-editing" | "mock-license-editing";
+export type FeatureFlags = "mock-license-editing";
 
 export type Config = {
   authUrl: string;
@@ -85,6 +85,24 @@ export type ModalStack = {
   add(modal: Modal): ModalRef;
   remove(modal: ModalRef): void;
 };
+
+export function AlertModal(
+  title: string,
+  content: React.ReactNode,
+  actionLabel: string,
+  action?: () => void,
+): Modal {
+  return {
+    title,
+    content,
+    actions: [
+      {
+        label: actionLabel,
+        action: action ?? (() => {}),
+      },
+    ],
+  };
+}
 
 export const ModalsContext = createContext<ModalStack>({
   stack: [],

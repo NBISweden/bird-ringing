@@ -10,6 +10,7 @@ export function LicensePermissionItem({
   permission,
 }: LicensePermissionItemProps) {
   const { format } = useTranslation();
+  const [startsAt, endsAt] = permission.period ?? [];
   return (
     <>
       <div className="pb-2">
@@ -28,14 +29,14 @@ export function LicensePermissionItem({
               {permission.location}
             </div>
           )}
-          {(permission.starts_at || permission.ends_at) && (
+          {(startsAt || endsAt) && (
             <div className="py-1 d-flex">
               <i className="bi bi-calendar2-week text-primary me-2" />
-              {permission.starts_at && permission.ends_at ? (
+              {startsAt && endsAt ? (
                 <p className="m-0">
                   {format("licensePermissionPeriodClosed", {
-                    startsAt: permission.starts_at,
-                    endsAt: permission.ends_at,
+                    startsAt: startsAt,
+                    endsAt: endsAt,
                     from: (chunks) => (
                       <span className="fst-italic">{chunks}</span>
                     ),
@@ -44,19 +45,19 @@ export function LicensePermissionItem({
                     ),
                   })}
                 </p>
-              ) : !permission.starts_at ? (
+              ) : !startsAt ? (
                 <p className="m-0">
                   {format("licensePermissionPeriodOpenBackward", {
-                    endsAt: permission.ends_at,
+                    endsAt: endsAt,
                     to: (chunks) => (
                       <span className="fst-italic">{chunks}</span>
                     ),
                   })}
                 </p>
-              ) : !permission.ends_at ? (
+              ) : !endsAt ? (
                 <p className="m-0">
                   {format("licensePermissionPeriodOpenForward", {
-                    startsAt: permission.starts_at,
+                    startsAt: startsAt,
                     from: (chunks) => (
                       <span className="fst-italic">{chunks}</span>
                     ),
@@ -67,10 +68,10 @@ export function LicensePermissionItem({
               )}
             </div>
           )}
-          {permission.species.length > 0 && (
+          {permission.species_list.length > 0 && (
             <div className="py-1">
               <i className="bi bi-twitter text-primary me-1" />{" "}
-              {permission.species.join(", ")}
+              {permission.species_list.map((s) => s.name).join(", ")}
             </div>
           )}
           {permission.description && (

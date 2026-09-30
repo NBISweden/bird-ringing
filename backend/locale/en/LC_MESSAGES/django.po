@@ -54,16 +54,164 @@ msgid "n/a"
 msgstr "n/a"
 
 #: licensing/models.py:171
-msgid "unknown"
-msgstr "unknown"
+msgid "Unknown"
+msgstr "Unknown"
 
-#: licensing/models.py:172
-msgid "sv"
-msgstr "swedish"
+#: licensing/models.py:174
+msgid "Albanian"
+msgstr "Albanian"
 
-#: licensing/models.py:173
-msgid "en"
-msgstr "english"
+#: licensing/models.py:175
+msgid "Arabic"
+msgstr "Arabic"
+
+#: licensing/models.py:176
+msgid "Azerbaijani"
+msgstr "Azerbaijani"
+
+#: licensing/models.py:177
+msgid "Basque"
+msgstr "Basque"
+
+#: licensing/models.py:178
+msgid "Belarusian"
+msgstr "Belarusian"
+
+#: licensing/models.py:179
+msgid "Bosnian"
+msgstr "Bosnian"
+
+#: licensing/models.py:180
+msgid "Bulgarian"
+msgstr "Bulgarian"
+
+#: licensing/models.py:181
+msgid "Catalan"
+msgstr "Catalan"
+
+#: licensing/models.py:182
+msgid "Croatian"
+msgstr "Croatian"
+
+#: licensing/models.py:183
+msgid "Czech"
+msgstr "Czech"
+
+#: licensing/models.py:184
+msgid "Danish"
+msgstr "Danish"
+
+#: licensing/models.py:185
+msgid "Dutch"
+msgstr "Dutch"
+
+#: licensing/models.py:186
+msgid "Estonian"
+msgstr "Estonian"
+
+#: licensing/models.py:187
+msgid "Finnish"
+msgstr "Finnish"
+
+#: licensing/models.py:188
+msgid "French"
+msgstr "French"
+
+#: licensing/models.py:189
+msgid "Georgian"
+msgstr "Georgian"
+
+#: licensing/models.py:190
+msgid "German"
+msgstr "German"
+
+#: licensing/models.py:191
+msgid "Greek"
+msgstr "Greek"
+
+#: licensing/models.py:192
+msgid "Hebrew"
+msgstr "Hebrew"
+
+#: licensing/models.py:193
+msgid "Hungarian"
+msgstr "Hungarian"
+
+#: licensing/models.py:194
+msgid "Icelandic"
+msgstr "Icelandic"
+
+#: licensing/models.py:195
+msgid "Italian"
+msgstr "Italian"
+
+#: licensing/models.py:196
+msgid "Kazakh"
+msgstr "Kazakh"
+
+#: licensing/models.py:197
+msgid "Latvian"
+msgstr "Latvian"
+
+#: licensing/models.py:198
+msgid "Lithuanian"
+msgstr "Lithuanian"
+
+#: licensing/models.py:199
+msgid "Macedonian"
+msgstr "Macedonian"
+
+#: licensing/models.py:200
+msgid "Maltese"
+msgstr "Maltese"
+
+#: licensing/models.py:201
+msgid "Montenegrin"
+msgstr "Montenegrin"
+
+#: licensing/models.py:202
+msgid "Norwegian"
+msgstr "Norwegian"
+
+#: licensing/models.py:203
+msgid "Polish"
+msgstr "Polish"
+
+#: licensing/models.py:204
+msgid "Portuguese"
+msgstr "Portuguese"
+
+#: licensing/models.py:205
+msgid "Romanian"
+msgstr "Romanian"
+
+#: licensing/models.py:206
+msgid "Russian"
+msgstr "Russian"
+
+#: licensing/models.py:207
+msgid "Serbian"
+msgstr "Serbian"
+
+#: licensing/models.py:208
+msgid "Slovak"
+msgstr "Slovak"
+
+#: licensing/models.py:209
+msgid "Slovenian"
+msgstr "Slovenian"
+
+#: licensing/models.py:210
+msgid "Spanish"
+msgstr "Spanish"
+
+#: licensing/models.py:211
+msgid "Turkish"
+msgstr "Turkish"
+
+#: licensing/models.py:212
+msgid "Ukrainian"
+msgstr "Ukrainian"
 
 #: licensing/models.py:177
 msgid "yes"

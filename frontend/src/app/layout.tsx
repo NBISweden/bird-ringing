@@ -7,7 +7,7 @@ import { ModalView } from "@/components/ModalView";
 import { AuthProvider } from "@/components/AuthProvider";
 import { ConfigProvider } from "@/components/ConfigProvider";
 import { Alert } from "@/components/Alert";
-import { Config } from "./(system)/contexts";
+import { Config, useModalsContext } from "./(system)/contexts";
 import { LocaleProvider } from "@/components/LocaleProvider";
 
 function ConfigError() {
@@ -17,6 +17,19 @@ function ConfigError() {
       <Alert>
         The site seems to be misconfigured. See console for error details.
       </Alert>
+    </div>
+  );
+}
+
+function PageContent({ children }: { children: React.ReactNode }) {
+  const { stack } = useModalsContext();
+  const modalOpen = stack.length > 0;
+  return (
+    <div className="d-flex flex-column vh-100" inert={modalOpen}>
+      <Header />
+      <div className="flex-grow-1 flex-shrink-1 d-flex overflow-hidden">
+        {children}
+      </div>
     </div>
   );
 }
@@ -44,12 +57,7 @@ export default function RootLayout({
             <AuthProvider>
               <ModalsProvider>
                 <ModalView />
-                <div className="d-flex flex-column vh-100">
-                  <Header />
-                  <div className="flex-grow-1 flex-shrink-1 d-flex overflow-hidden">
-                    {children}
-                  </div>
-                </div>
+                <PageContent>{children}</PageContent>
               </ModalsProvider>
             </AuthProvider>
           </LocaleProvider>
