@@ -282,6 +282,9 @@ export const locale: TranslationMap = {
   licenseValidityPeriod:
     "<from>Giltig från </from>{startsAt}<to> till </to>{endsAt}",
   licensePeriodStart: "<from>Starts at</from> {startsAt}",
+  licenseSendDisabledInactive:
+    "Licensen måste vara aktiv för att kunna skicka kommunikation.",
+  licenseInactiveLicensesSkipped: "Inaktiva licenser hoppades över",
   buttonCreateDocuments: "Create documents",
   permitCreateDocuments: "Skapa tillstånd",
   permitCreateDocumentsConfirmText:

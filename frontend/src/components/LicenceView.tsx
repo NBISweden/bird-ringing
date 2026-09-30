@@ -235,7 +235,8 @@ function LicenseRelationEdit({
 function LicenseRelationDisplay({
   license,
   licenseNumber,
-}: LicenseDisplayProps) {
+  status,
+}: LicenseDisplayProps & { status: string }) {
   const { t, formatOption } = useTranslation();
   const client = useClient();
 
@@ -243,6 +244,7 @@ function LicenseRelationDisplay({
 
   const [selectedActorIds, setSelectedActorIds] = useState(new Set<number>());
   const [notifyRinger, setNotifyRinger] = useState(false);
+  const isActive = status === "active";
 
   const isSelectableRelation = (rel: LicenseInstance["actors"][number]) => {
     const roleOk = rel.role === "ringer" || rel.role === "associate_ringer";
@@ -312,17 +314,24 @@ function LicenseRelationDisplay({
         )}
       </div>
       <div className="card-body d-flex justify-content-end align-items-center gap-3">
+        {!isActive && (
+          <span className="small text-muted fst-italic">
+            {t("licenseSendDisabledInactive")}
+          </span>
+        )}
         <div className="form-check m-0">
           <input
             className="form-check-input border border-dark"
             type="checkbox"
             checked={effectiveNotifyRinger}
-            disabled={!hasSelectedAssociateRinger}
+            disabled={!hasSelectedAssociateRinger || !isActive}
             onChange={(e) => setNotifyRinger(e.target.checked)}
             id="notify-ringer"
           />
           <label
-            className={`form-check-label small text-muted ${!hasSelectedAssociateRinger ? "opacity-50" : ""}`}
+            className={`form-check-label small text-muted ${
+              !hasSelectedAssociateRinger || !isActive ? "opacity-50" : ""
+            }`}
             htmlFor="notify-ringer"
             title={t("licenseNotifyRingerHelp")}
           >
@@ -331,6 +340,8 @@ function LicenseRelationDisplay({
         </div>
         <button
           className="btn btn-secondary flex-grow-0"
+          disabled={!isActive}
+          title={!isActive ? t("licenseSendDisabledInactive") : undefined}
           onClick={() =>
             sendEmailForActorsAction(
               licenseNumber,
@@ -526,6 +537,7 @@ export function LicenceView({
             <LicenseRelationDisplay
               license={license}
               licenseNumber={licenseNumber}
+              status={status}
             />
           )}
           isFlat
