@@ -49,9 +49,9 @@ const actorFields = {
 };
 
 const licenseFields = {
-  licenseStartsAt: "Valid from",
-  licenseEndsAt: "Valid to",
-  licenseDescription: "Description",
+  licenseStartsAt: "Startdatum",
+  licenseEndsAt: "Slutdatum",
+  licenseDescription: "Beskrivning",
   licensePermissionType: "Typ",
   licensePermissionDescription: "Beskrivning",
   licensePermissionStartsAt: "Startdatum",

@@ -79,8 +79,8 @@ const actorForm = {
 };
 
 const licenseFields = {
-  licenseStartsAt: "Valid from",
-  licenseEndsAt: "Valid to",
+  licenseStartsAt: "Start date",
+  licenseEndsAt: "End date",
   licenseDescription: "Description",
   licensePermissionType: "Type",
   licensePermissionDescription: "Description",
