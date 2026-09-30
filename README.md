@@ -1,6 +1,11 @@
 # The Bird Ringing Project
 
+The work in this repository is done is on behalf of the Bird Ringing Centre at the Swedish Museum of Natural History (NRM)
+and implemented together with NBIS, National Bioinformatics Infrastructure Sweden.
+![logo NRM](./docs/images/nrm-logo-liggande-svensk-fullfarg.png)
+
 ## Deployment
+
 Deployment instructions can be found [here](./docs/deployment.md).
 
 ## Development and production environments
