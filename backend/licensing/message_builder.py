@@ -80,10 +80,10 @@ class MessageBuilder:
         document_type: str,
         mnr,
         year: int,
-        mednr: str | None = None,
+        associate_number: str | None = None,
         name: str | None = None,
     ) -> str:
-        identifier = mnr if mednr is None else f"{mnr}-{mednr}"
+        identifier = mnr if associate_number is None else f"{mnr}-{associate_number}"
         name_slug = None if name is None else slugify(name)[:40]
         document_type_slug = slugify(document_type)
 
@@ -105,12 +105,12 @@ class LicenseAndPermitMessageBuilder:
     def build_message(self, lic: License, relation: LicenseRelation, include_card: bool = False, include_permit: bool = False) -> EmailMessage:
         email = relation.actor.email
         if not email:
-            raise ValueError(f"No email address available for {lic.sequence.mnr}:{relation.mednr}")
+            raise ValueError(f"No email address available for {lic.sequence.mnr}:{relation.associate_number}")
 
         card_document = self.card_service.get_license_card_document(lic=lic, actor=relation.actor)
         card_attachment = None
         if card_document is None and include_card:
-            raise ValueError(f"No license card document available for {lic.sequence.mnr}:{relation.mednr}")
+            raise ValueError(f"No license card document available for {lic.sequence.mnr}:{relation.associate_number}")
 
         elif include_card:
             (mimetype, _encoding) = mimetypes.guess_type(card_document.reference)
@@ -122,7 +122,7 @@ class LicenseAndPermitMessageBuilder:
                     filename=MessageBuilder.create_file_name(
                         document_type=document_type,
                         mnr=lic.sequence.mnr,
-                        mednr=(None if relation.role == LicenseRoleChoices.RINGER else relation.mednr),
+                        associate_number=(None if relation.role == LicenseRoleChoices.RINGER else relation.associate_number),
                         name=relation.actor.full_name,
                         year=lic.starts_at.year,
                     )
@@ -184,7 +184,7 @@ class RingerBundleMessageBuilder:
                 card_doc = self.card_service.get_license_card_document(lic=lic, actor=rel.actor)
                 if not card_doc or not card_doc.data:
                     raise ValueError(
-                        f"No license card document available for: {lic.sequence.mnr}:{rel.mednr}"
+                        f"No license card document available for: {lic.sequence.mnr}:{rel.associate_number}"
                     )
                 filename = self.card_service.make_license_card_filename(lic, rel.actor)
                 files.append((filename, bytes(card_doc.data)))

@@ -60,7 +60,7 @@ const licenseFields = {
   licensePermissionSpecies: "Art",
   licenseActor: "Ringmärkare",
   licenseRole: "Roll",
-  licenseRelationId: "MedNr",
+  licenseRelationId: "AssociateNumber",
 };
 
 const licenseForm = {

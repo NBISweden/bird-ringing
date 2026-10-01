@@ -90,7 +90,7 @@ class TestSerializers(TestCase):
         good_data = {
             "actor": {"id": self.actors[0].id},
             "role": "ringer",
-            "mednr": "0001"
+            "associate_number": "0001"
         }
         relation_serializer = LicenseActorRelationSerializer(
             data=good_data,
@@ -152,7 +152,7 @@ class TestSerializers(TestCase):
                 **self._good_license_data(),
                 "actors": [{
                     "actor": {"id": self.actors[0].id},
-                    "mednr": "0001",
+                    "associate_number": "0001",
                 }]
             },
             context=self._get_context(),
@@ -300,7 +300,7 @@ class TestSerializers(TestCase):
                 {
                     "actor": {"id": actor.id},
                     "role": role,
-                    "mednr": str(index).rjust(4, "0")
+                    "associate_number": str(index).rjust(4, "0")
                 }
                 for index, (actor, role) in enumerate(zip(self.actors, ["ringer", "associate_ringer", "communication", "affiliate"]))
             ],
@@ -311,7 +311,7 @@ class TestSerializers(TestCase):
         good_data = self._good_license_data()
         return [
             (
-                "expect actor and mednr to trigger invalid fields due to duplicates",
+                "expect actor and associate_number to trigger invalid fields due to duplicates",
                 {
                     **good_data,
                     "actors": [
@@ -319,17 +319,17 @@ class TestSerializers(TestCase):
                         {
                             "actor": {"id": self.actors[0].id},
                             "role": "ringer",
-                            "mednr": "0001"
+                            "associate_number": "0001"
                         }
                     ]
                 },
                 {
                     "actors": [
                         {"actor": ["invalid"]},
-                        {"mednr": ["invalid"]},
+                        {"associate_number": ["invalid"]},
                         {},
                         {},
-                        {"actor": ["invalid"], "mednr": ["invalid"]}
+                        {"actor": ["invalid"], "associate_number": ["invalid"]}
                     ]
                 }
             ),
@@ -361,22 +361,22 @@ class TestSerializers(TestCase):
                         {
                             "actor": {"id": self.actors[0].id},
                             "role": "ringer",
-                            "mednr": "0001"
+                            "associate_number": "0001"
                         },
                         {
                             "actor": {},
                             "role": "ringer",
-                            "mednr": "0002"
+                            "associate_number": "0002"
                         },
                         {
                             "actor": {"id": "abc"},
                             "role": "ringer",
-                            "mednr": "0003"
+                            "associate_number": "0003"
                         },
                         {
                             "actor": {"id": 2000},
                             "role": "ringer",
-                            "mednr": "0003"
+                            "associate_number": "0003"
                         },
                     ]
                 },
@@ -396,7 +396,7 @@ class TestSerializers(TestCase):
                     "actors": [
                         {
                             "actor": {"id": self.actors[0].id},
-                            "mednr": "0001"
+                            "associate_number": "0001"
                         }
                     ]
                 },
@@ -407,20 +407,20 @@ class TestSerializers(TestCase):
                 }
             ),
             (
-                "expect mednr to be too short",
+                "expect associate_number to be too short",
                 {
                     **good_data,
                     "actors": [
                         {
                             "actor": {"id": self.actors[0].id},
                             "role": "ringer",
-                            "mednr": "BAD"
+                            "associate_number": "BAD"
                         },
                     ]
                 },
                 {
                     "actors": [
-                        {"mednr": ["min_length"]},
+                        {"associate_number": ["min_length"]},
                     ]
                 }
             ),

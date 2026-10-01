@@ -480,7 +480,7 @@ class License(ChangeTracking):
             self.report_status,
             set((
                 relation
-                for relation in self.actors.values_list("actor__id", "mednr", "role")
+                for relation in self.actors.values_list("actor__id", "associate_number", "role")
             )),
         )
     
@@ -541,7 +541,7 @@ class LicenseRelation(ChangeTracking):
     license = models.ForeignKey(
         License, on_delete=models.CASCADE, related_name="actors"
     )
-    mednr = models.CharField(
+    associate_number = models.CharField(
         max_length=4,
         validators=[MinLengthValidator(limit_value=4)],
         blank=True,
@@ -568,7 +568,7 @@ class LicenseRelation(ChangeTracking):
                 name="unique-actors-for-role-and-license",
             ),
             models.UniqueConstraint(
-                fields=["mednr", "license"], name="unique-mednr-for-license"
+                fields=["associate_number", "license"], name="unique-associate-number-for-license"
             ),
         ]
 

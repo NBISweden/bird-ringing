@@ -273,7 +273,7 @@ function LicenseRelationDisplay({ license, mnr }: LicenseDisplayProps) {
                     <Link href={`/actors/entry?entryId=${rel.actor.id}`}>
                       {rel.actor.full_name}
                     </Link>
-                    ({rel.mednr})
+                    ({rel.associate_number})
                   </div>
                   <div className="col-2 col-md-2 d-flex justify-content-center">
                     {isSelectableRelation(rel) ? (

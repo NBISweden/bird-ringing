@@ -380,7 +380,7 @@ class ActorLicenseRelationSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = LicenseRelation
-        fields = ["license_id", "role", "mnr", "mednr", "version", "starts_at", "ends_at", "communication_status", "communication_type"]
+        fields = ["license_id", "role", "mnr", "associate_number", "version", "starts_at", "ends_at", "communication_status", "communication_type"]
 
     def get_communication_status(self, obj):  
         license_communication = LicenseCommunication.objects.filter(license=obj.license, actor=obj.actor).last()
@@ -513,7 +513,7 @@ class LicenseActorRelationSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = LicenseRelation
-        fields = ["actor", "role", "mednr", "created_by", "updated_by", "license_id"]
+        fields = ["actor", "role", "associate_number", "created_by", "updated_by", "license_id"]
 
 class LicensePermissionTypeSerializer(serializers.ModelSerializer):
     class Meta:
@@ -640,19 +640,19 @@ class LicenseSerializer(serializers.ModelSerializer):
         code_count: dict[int, int] = dict()
         for actor in actors:
             actor_id = actor["actor"].id
-            actor_code = actor["mednr"]
+            actor_code = actor["associate_number"]
             actor_count[actor_id] = actor_count.get(actor_id, 0) + 1
             code_count[actor_code] = code_count.get(actor_code, 0) + 1
 
         actors_errors: dict[int, dict[str, list[str]]] = dict()
         for index, actor in enumerate(actors):
             actor_id = actor["actor"].id
-            actor_code = actor["mednr"]
+            actor_code = actor["associate_number"]
             error = dict()
             if actor_count[actor_id] > 1:
                 error["actor"] = ["Duplicate actor"]
             if code_count[actor_code] > 1:
-                error["mednr"] = ["Duplicate MedNr"]
+                error["associate_number"] = ["Duplicate associate number"]
             if len(error) > 0:
                 actors_errors[index] = error
 

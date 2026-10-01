@@ -285,10 +285,10 @@ class LicenseSequenceUpdateTests(TestCase):
             "latest": {
                 "description": "updated description",
                 "actors": [
-                    {"actor": {"id": str(self.actors[0].id)}, "role": "ringer", "mednr": "0000"},
-                    {"actor": {"id": str(self.actors[1].id)}, "role": "associate_ringer", "mednr": "0001"},
-                    {"actor": {"id": str(self.actors[2].id)}, "role": "affiliate", "mednr": "0002"},
-                    {"actor": {"id": str(self.actors[3].id)}, "role": "communication", "mednr": "0003"}
+                    {"actor": {"id": str(self.actors[0].id)}, "role": "ringer", "associate_number": "0000"},
+                    {"actor": {"id": str(self.actors[1].id)}, "role": "associate_ringer", "associate_number": "0001"},
+                    {"actor": {"id": str(self.actors[2].id)}, "role": "affiliate", "associate_number": "0002"},
+                    {"actor": {"id": str(self.actors[3].id)}, "role": "communication", "associate_number": "0003"}
                 ]
             }
         }

@@ -72,7 +72,7 @@ class LicenseCardService:
         rel = self._get_license_relation(lic=lic, actor=actor, allowed_roles=allowed_roles)
 
         mnr = lic.sequence.mnr
-        identifier = f"{mnr}-{rel.mednr}" if rel.role == LicenseRoleChoices.ASSOCIATE_RINGER else f"{mnr}"
+        identifier = f"{mnr}-{rel.associate_number}" if rel.role == LicenseRoleChoices.ASSOCIATE_RINGER else f"{mnr}"
         name = slugify(actor.full_name)[:40]
         year = lic.starts_at.year
 
@@ -103,7 +103,7 @@ class LicenseCardService:
         mnr = lic.sequence.mnr
         mnr_line = f"Märkare nr. {mnr}"
         if rel.role == LicenseRoleChoices.ASSOCIATE_RINGER:
-            mnr_line = f"Märkare nr. {mnr}: {rel.mednr}"
+            mnr_line = f"Märkare nr. {mnr}: {rel.associate_number}"
 
         # station name line (empty if ringer is a person, will be filtered out in renderer if empty)
         station_lines = ("", "")
@@ -157,6 +157,8 @@ class LicenseCardService:
         Define exactly what counts as “license changed” for card generation.
         Anything included here triggers a new document when it changes.
         """
+        # The key "mednr" is kept on purpose: renaming it would change every
+        # fingerprint and regenerate all existing license cards.
         return {
             "template": str(get_template_path("LICENSING_CARD_TEMPLATE")),
 
@@ -170,7 +172,7 @@ class LicenseCardService:
             "ends_at": lic.ends_at.isoformat(),
 
             "role": int(rel.role),
-            "mednr": rel.mednr or "",
+            "mednr": rel.associate_number or "",
         }
 
     def _fingerprint(self, payload: dict) -> str:

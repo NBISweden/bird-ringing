@@ -34,7 +34,7 @@ export type ActorLicenseRelation = {
   license_id: number;
   mnr: string;
   role: string;
-  mednr: string;
+  associate_number: string;
   version: number;
   starts_at: string;
   ends_at: string;
@@ -235,7 +235,7 @@ export type ObjectReference = {
 export type LicenseActorRelation = {
   actor: ObjectReference;
   role: string;
-  mednr: string;
+  associate_number: string;
 };
 
 export type LicensePermissionByRef = {

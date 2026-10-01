@@ -290,10 +290,10 @@ class Command(BaseCommand):
     def load_relations(self, actor_map: dict, relations: list):
         grouped_relations = dict()
         for relation in relations:
-            mnr, actor_key, role, mednr, year = relation
+            mnr, actor_key, role, associate_number, year = relation
             actor = actor_map[actor_key]
             relation_list = grouped_relations.get((mnr, year), [])
-            relation_list.append((actor, role, mednr))
+            relation_list.append((actor, role, associate_number))
             grouped_relations[(mnr, year)] = relation_list
 
         for (mnr, year), relations in sorted(grouped_relations.items(), key=lambda i: i[0][1]):
@@ -343,19 +343,19 @@ class Command(BaseCommand):
         ]
 
         license_mnr = ringer_license_data["Mnr"]
-        for role, key, mednr in roles_and_keys:
+        for role, key, associate_number in roles_and_keys:
             type = ringer_license_data["PriSta"]
             if key in ringer_license_data and type in {"S", "P"}:
                 ringer_mnr = ringer_license_data[key]
                 for year in years:
-                    yield (license_mnr, ringer_mnr, role, mednr, year)
+                    yield (license_mnr, ringer_mnr, role, associate_number, year)
 
     def get_associate_ringer_relation(self, associate_ringer_year_data: dict):
         year_str = associate_ringer_year_data["Ar"]
         year_str = "1996" if year_str == "<97" else year_str
         associate_ringer_key = self._get_associate_ringer_key(associate_ringer_year_data)
-        mnr, mednr = associate_ringer_key
-        return (mnr, associate_ringer_key, models.LicenseRoleChoices.ASSOCIATE_RINGER, mednr, int(year_str))
+        mnr, associate_number = associate_ringer_key
+        return (mnr, associate_ringer_key, models.LicenseRoleChoices.ASSOCIATE_RINGER, associate_number, int(year_str))
 
     def load_associate_ringer(self, associate_ringer_data: dict):
         current_user = self.get_current_user()
@@ -494,13 +494,13 @@ class Command(BaseCommand):
         if relations:
             current_user = self.get_current_user()
             lic.actors.all().delete()
-            for actor, role, mednr in relations:
+            for actor, role, associate_number in relations:
                 models.LicenseRelation.objects.get_or_create(
                     created_by=current_user,
                     updated_by=current_user,
                     license=lic,
                     actor=actor,
-                    mednr=mednr,
+                    associate_number=associate_number,
                     role=role,
                 )
 

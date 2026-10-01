@@ -111,7 +111,9 @@ function toActorTable(
                 className="text-decoration-none"
               >
                 <Badge color="info" rounded outline>
-                  {l.mednr ? `${l.mnr}:${l.mednr}` : l.mnr}
+                  {l.associate_number
+                    ? `${l.mnr}:${l.associate_number}`
+                    : l.mnr}
                 </Badge>
               </Link>
             ))}

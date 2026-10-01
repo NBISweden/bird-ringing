@@ -94,7 +94,7 @@ class _EmailTestBase(TestCase):
                 actor=actor,
                 license=lic,
                 role=LicenseRoleChoices.RINGER,
-                mednr="R001",
+                associate_number="R001",
                 created_by=self.user_with_access,
                 updated_by=self.user_with_access,
             )
@@ -103,16 +103,16 @@ class _EmailTestBase(TestCase):
                 actor=actor,
                 license=lic,
                 role=LicenseRoleChoices.ASSOCIATE_RINGER,
-                mednr="H001",
+                associate_number="H001",
                 created_by=self.user_with_access,
                 updated_by=self.user_with_access,
             )
 
     def _license_name(self, lic, actor):
         rel = lic.actors.filter(actor=actor).get()
-        mednr = "" if rel.role == LicenseRoleChoices.RINGER else f"-{rel.mednr}"
+        associate_number = "" if rel.role == LicenseRoleChoices.RINGER else f"-{rel.associate_number}"
         return (
-            f"license-{lic.sequence.mnr}{mednr}-{slugify(actor.full_name)}-{lic.starts_at.year}.pdf"
+            f"license-{lic.sequence.mnr}{associate_number}-{slugify(actor.full_name)}-{lic.starts_at.year}.pdf"
         )
 
     def _add_license_documents(self, actors, licenses):
@@ -160,7 +160,7 @@ class LicenseDocumentEmailTests(_EmailTestBase):
         sequence = LicenseSequence.objects.filter(mnr=test_mnr).get()
         actor_relation = sequence.latest.actors.filter(actor=self.actors[2]).get()
         self.assertEqual(
-            {"detail": f"No license card document available for: {test_mnr}:{actor_relation.mednr}"},
+            {"detail": f"No license card document available for: {test_mnr}:{actor_relation.associate_number}"},
             response.json(),
             "The action fails if there are missing documents"
         )
@@ -707,7 +707,7 @@ class LicenseDocumentEmailNotifyRingerTests(_EmailTestBase):
         self.assertEqual(resp.status_code, 400)
         self.assertEqual(
             {
-                "detail": f"No license card document available for: {license_obj.sequence.mnr}:{helper_actor_relation.mednr}",
+                "detail": f"No license card document available for: {license_obj.sequence.mnr}:{helper_actor_relation.associate_number}",
             },
             resp.json(),
         )

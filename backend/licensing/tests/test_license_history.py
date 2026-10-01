@@ -75,7 +75,7 @@ class TestLicenseHistory(TestCase):
             models.LicenseRelation.objects.create(
                 actor=actor,
                 license=current,
-                mednr=str(index).zfill(4),
+                associate_number=str(index).zfill(4),
                 role=models.LicenseRoleChoices.RINGER,
                 created_by=self.user,
                 updated_by=self.user
@@ -230,8 +230,8 @@ class TestLicenseHistory(TestCase):
         self.assertNotEqual(current, first_commit, "Expect current and first_commit to be different objects")
         self.assertTrue(first_commit.actors.count() != 0)
         self.assertEqual(
-            set(first_commit.actors.values_list("actor__full_name", "mednr")),
-            set(current.actors.values_list("actor__full_name", "mednr")),
+            set(first_commit.actors.values_list("actor__full_name", "associate_number")),
+            set(current.actors.values_list("actor__full_name", "associate_number")),
             "Expect actor list to be the same, for first_commit, as on current"
         )
 
@@ -239,15 +239,15 @@ class TestLicenseHistory(TestCase):
         second_commit = self.license_sequence.commit(current, default_document_copy_policy)
         self.assertNotEqual(current, second_commit, "Expect current and first_commit to be different objects")
         self.assertEqual(
-            set(second_commit.actors.values_list("actor__full_name", "mednr")),
-            set(current.actors.values_list("actor__full_name", "mednr")),
+            set(second_commit.actors.values_list("actor__full_name", "associate_number")),
+            set(current.actors.values_list("actor__full_name", "associate_number")),
             "Expect actor list to be the same, for second_commit, as on current"
         )
 
         models.LicenseRelation.objects.create(
             actor=self.actors[0],
             license=current,
-            mednr="R001",
+            associate_number="R001",
             role=models.LicenseRoleChoices.RINGER,
             created_by=self.user,
             updated_by=self.user
@@ -256,8 +256,8 @@ class TestLicenseHistory(TestCase):
         self.assertNotEqual(current, third_commit, "Expect current and first_commit to be different objects")
         self.assertTrue(third_commit.actors.count() == 1)
         self.assertEqual(
-            set(third_commit.actors.values_list("actor__full_name", "mednr")),
-            set(current.actors.values_list("actor__full_name", "mednr")),
+            set(third_commit.actors.values_list("actor__full_name", "associate_number")),
+            set(current.actors.values_list("actor__full_name", "associate_number")),
             "Expect actor list to be the same, for third_commit, as on current"
         )
 

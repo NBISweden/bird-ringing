@@ -90,7 +90,7 @@ const licenseFields = {
   licensePermissionSpecies: "Species",
   licenseActor: "Actor",
   licenseRole: "Role",
-  licenseRelationId: "MedNr",
+  licenseRelationId: "Associate Number",
 };
 
 const licenseForm = {

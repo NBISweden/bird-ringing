@@ -60,7 +60,7 @@ class PermitService:
             rel = self._get_license_relation(lic=lic, actor=actor, allowed_roles=allowed_roles)
 
         mnr = lic.sequence.mnr
-        identifier = f"{mnr}-{rel.mednr}" if rel.role == LicenseRoleChoices.ASSOCIATE_RINGER else mnr
+        identifier = f"{mnr}-{rel.associate_number}" if rel.role == LicenseRoleChoices.ASSOCIATE_RINGER else mnr
         name = slugify(actor.full_name)[:40]
         return f"permit-{identifier}" + (f"-{name}.pdf" if name else ".pdf")
 
