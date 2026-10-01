@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import React, { useContext, useState } from "react";
-import nrmLogo from "../../nrm-logo-liggande-svensk-fullfarg.png";
+import nrmLogo from "../resources/nrm-logo-liggande-svensk-fullfarg.png";
 import { StaticImport } from "next/dist/shared/lib/get-img-props";
 import { useIntl } from "react-intl";
 
