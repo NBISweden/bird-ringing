@@ -49,18 +49,18 @@ const actorFields = {
 };
 
 const licenseFields = {
-  licenseStartsAt: "Valid from",
-  licenseEndsAt: "Valid to",
-  licenseDescription: "Description",
+  licenseStartsAt: "Startdatum",
+  licenseEndsAt: "Slutdatum",
+  licenseDescription: "Beskrivning",
   licensePermissionType: "Typ",
   licensePermissionDescription: "Beskrivning",
   licensePermissionStartsAt: "Startdatum",
   licensePermissionEndsAt: "Slutdatum",
   licensePermissionProperties: "Egenskaper",
   licensePermissionSpecies: "Art",
-  licenseFormActor: "Ringmärkare",
-  licenseFormRole: "Roll",
-  licenseFormRelationId: "MedNr",
+  licenseActor: "Ringmärkare",
+  licenseRole: "Roll",
+  licenseRelationId: "MedNr",
 };
 
 const licenseForm = {
@@ -70,6 +70,7 @@ const licenseForm = {
   licenseFormBasicInfoSubtitle: "Om licensen",
   licenseFormValiditySubtitle: "Giltighetsperiod",
   licenseFormLocationSubtitle: "Plats",
+  licenseFormLocationPresetSubtitle: "Platsförslag",
   licenseFormDetailsSubtitle: "Detaljer",
   licenseFormMnrPlaceholder: "Ange ett fyrsiffrigt MNR",
   licenseFormMnrInvalid: "MNR måste bestå av exakt fyra siffror.",
@@ -170,6 +171,7 @@ export const locale: TranslationMap = {
   actorLicensePending: "Kommande",
   actorLicenseValidityPeriod:
     "<from>{startsAt}</from><to><muted>till</muted> {endsAt}</to>",
+  actorLicensePeriodStart: "<from>Börjar </from> {startsAt}",
   actorLicenses: "Licenser",
   actorLoadingEmailAddresses: "Laddar e-postadresser",
   actorNoEmailAddressesFound: "Inga e-postadresser fanns ",
@@ -265,6 +267,7 @@ export const locale: TranslationMap = {
   licenseUpdatedAt: "Uppdaterad {date}",
   licenseValidityPeriod:
     "<from>Giltig från </from>{startsAt}<to> till </to>{endsAt}",
+  licensePeriodStart: "<from>Starts at</from> {startsAt}",
   buttonCreateDocuments: "Create documents",
   permitCreateDocuments: "Skapa tillstånd",
   permitCreateDocumentsConfirmText:

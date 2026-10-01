@@ -377,17 +377,20 @@ function LicenseEntry({ license }: { license: ActorLicenseRelation }) {
       </div>
       <div className="py-2 col-5 d-flex flex-column flex-md-row align-items-center ">
         <div>
-          {format("actorLicenseValidityPeriod", {
-            startsAt: convertOnlyDateToLocale(starts_at),
-            endsAt: convertOnlyDateToLocale(ends_at),
-            from: (chunks: React.ReactNode) => (
-              <p className="m-0 text-end">{chunks}</p>
-            ),
-            to: (chunks) => <p className="m-0">{chunks}</p>,
-            muted: (chunks) => (
-              <span className="text-muted small">{chunks}</span>
-            ),
-          })}
+          {format(
+            ends_at ? "actorLicenseValidityPeriod" : "actorLicensePeriodStart",
+            {
+              startsAt: convertOnlyDateToLocale(starts_at),
+              endsAt: convertOnlyDateToLocale(ends_at),
+              from: (chunks: React.ReactNode) => (
+                <p className="m-0 text-end">{chunks}</p>
+              ),
+              to: (chunks) => <p className="m-0">{chunks}</p>,
+              muted: (chunks) => (
+                <span className="text-muted small">{chunks}</span>
+              ),
+            },
+          )}
         </div>
         <div className="ms-3">
           <span

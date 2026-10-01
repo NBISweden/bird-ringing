@@ -178,10 +178,8 @@ class TestSerializers(TestCase):
                 "expect fields to be missing",
                 {},
                 {
-                    "location": ["required"],
                     "report_status": ["required"],
                     "starts_at": ["required"],
-                    "ends_at": ["required"],
                 }
             ),
             (

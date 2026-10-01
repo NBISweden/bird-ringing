@@ -79,8 +79,8 @@ const actorForm = {
 };
 
 const licenseFields = {
-  licenseStartsAt: "Valid from",
-  licenseEndsAt: "Valid to",
+  licenseStartsAt: "Start date",
+  licenseEndsAt: "End date",
   licenseDescription: "Description",
   licensePermissionType: "Type",
   licensePermissionDescription: "Description",
@@ -88,9 +88,9 @@ const licenseFields = {
   licensePermissionEndsAt: "Ends at",
   licensePermissionProperties: "Properties",
   licensePermissionSpecies: "Species",
-  licenseFormActor: "Actor",
-  licenseFormRole: "Role",
-  licenseFormRelationId: "MedNr",
+  licenseActor: "Actor",
+  licenseRole: "Role",
+  licenseRelationId: "MedNr",
 };
 
 const licenseForm = {
@@ -100,6 +100,7 @@ const licenseForm = {
   licenseFormBasicInfoSubtitle: "Basic information",
   licenseFormValiditySubtitle: "Validity period",
   licenseFormLocationSubtitle: "Location",
+  licenseFormLocationPresetSubtitle: "Location presets",
   licenseFormDetailsSubtitle: "Details",
   licenseFormMnrPlaceholder: "Enter a four digit MNR",
   licenseFormMnrInvalid: "MNR must be exactly four digits.",
@@ -176,6 +177,7 @@ const messagesBase = {
   actorLicensePending: "Pending",
   actorLicenseValidityPeriod:
     "<from>{startsAt}</from><to><muted>to</muted> {endsAt}</to>",
+  actorLicensePeriodStart: "<from>Starts at</from> {startsAt}",
   actorLicenses: "Licenses",
   actorLoadingEmailAddresses: "Loading e-mail addresses",
   actorNoEmailAddressesFound: "No e-mail addresses were found",
@@ -265,6 +267,7 @@ const messagesBase = {
   licenseUpdatedAt: "Updated at {date}",
   licenseValidityPeriod:
     "<from>Valid from </from>{startsAt}<to> to </to>{endsAt}",
+  licensePeriodStart: "<from>Starts at</from> {startsAt}",
   buttonCreateDocuments: "Create documents",
 
   permitCreateDocuments: "Create permits",

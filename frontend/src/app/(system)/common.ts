@@ -58,11 +58,21 @@ export type Options = {
   license_role: Option;
   license_status: Option;
   species: Option;
+  location_preset_group: LocationPresetGroups;
 };
 
 export type Option = {
   id: string;
   label: string;
+};
+
+export type LocationPresetGroups = {
+  id: string;
+  name: string;
+  items: {
+    id: string;
+    name: string;
+  }[];
 };
 
 export type PagedResponse<T> = {
@@ -209,7 +219,7 @@ export type LicenseInstance = {
   documents: LicenseDocument[];
   communication: LicenceCommunication[];
   version: number;
-  location: string;
+  location?: string;
   description: string;
   report_status: string;
   starts_at: string;

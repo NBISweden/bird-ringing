@@ -1,7 +1,7 @@
 from __future__ import annotations
 from django.db import models, transaction
 from django.db.models import Max, F, Window
-from django.db.models.functions import RowNumber
+from django.db.models.functions import RowNumber, Lower
 from django.contrib.auth.models import User
 from django.core.validators import MinLengthValidator
 from django.template.defaultfilters import slugify
@@ -410,13 +410,13 @@ class License(ChangeTracking):
     sequence = models.ForeignKey(
         LicenseSequence, on_delete=models.PROTECT, related_name="instances"
     )
-    location = models.TextField()
+    location = models.TextField(blank=True, default="", null=False)
     description = models.TextField(blank=True, default="", null=False)
     report_status = models.PositiveIntegerField(choices=ReportStatusChoices)
     documents = models.ManyToManyField(LicenseDocument, blank=True)
 
     starts_at = models.DateField()
-    ends_at = models.DateField()
+    ends_at = models.DateField(null=True)
 
     class Meta:
         constraints = [
@@ -725,6 +725,37 @@ class PermitDnr(ChangeTracking):
 
     def __str__(self):
         return f"{self.dnr_number} ({self.starts_at}-{self.ends_at})"
+
+
+class LocationPresetGroup(ChangeTracking):
+    name = models.CharField()
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                Lower("name"),
+                name="unique-name"
+            )
+        ]
+
+    def __str__(self):
+        return self.name
+
+class LocationPreset(ChangeTracking):
+    name = models.CharField()
+    group = models.ForeignKey(LocationPresetGroup, on_delete=models.PROTECT, related_name="items")
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                Lower("name"),
+                "group",
+                name="unique-name-within-group"
+            )
+        ]
+
+    def __str__(self):
+        return self.name
 
 
 class ImportModelManager(models.Manager):

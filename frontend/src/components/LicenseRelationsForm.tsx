@@ -68,7 +68,7 @@ export function LicenseRelationsForm({
         onSubmit(relations.map(requireLicenseActorRelation));
       }}
     >
-      <VerticalField label={t("licenseFormActor")} icon="person">
+      <VerticalField label={t("licenseActor")} icon="person">
         <div className="input-group mb-3">
           <TextInput
             value={filter}
@@ -188,7 +188,7 @@ function ActorEntrySubform({
     <div className="row align-items-center g-2">
       <div className="col-12 col-md-4">
         <VerticalField
-          label={t("licenseFormRole")}
+          label={t("licenseRole")}
           icon="journal"
           id={id ? `${id}.role` : "role"}
         >
@@ -213,7 +213,7 @@ function ActorEntrySubform({
       </div>
       <div className="col-12 col-md-4">
         <VerticalField
-          label={t("licenseFormActor")}
+          label={t("licenseActor")}
           icon="person"
           id={id ? `${id}.actor` : "actor"}
         >
@@ -228,7 +228,7 @@ function ActorEntrySubform({
       </div>
       <div className="col-12 col-md-4">
         <VerticalField
-          label={t("licenseFormRelationId")}
+          label={t("licenseRelationId")}
           icon="hash"
           id={id ? `${id}.mednr` : "mednr"}
         >

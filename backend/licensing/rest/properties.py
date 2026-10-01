@@ -12,8 +12,37 @@ from licensing.models import (
     LicenseRoleChoices,
     LicenseStatusChoices,
     Species,
+    LocationPreset,
+    LocationPresetGroup,
 )
 from .utils import LabeledChoiceViewset, DjangoProtectedModelPermissions
+
+
+class LocationPresetSerializer(serializers.ModelSerializer):
+    id = serializers.CharField(read_only=True)
+    name = serializers.CharField(read_only=True)
+
+    class Meta:
+        model = LocationPreset
+        fields = ["id", "name"]
+
+
+class LocationPresetGroupSerializer(serializers.ModelSerializer):
+    id = serializers.CharField(read_only=True)
+    name = serializers.CharField(read_only=True)
+    items = LocationPresetSerializer(many=True, required=False)
+
+    class Meta:
+        model = LocationPresetGroup
+        fields = ["id", "name", "items"]
+
+
+class LocationPresetGroupViewset(viewsets.ModelViewSet):
+    authentication_classes = [SessionAuthentication, BasicAuthentication]
+    permission_classes = [DjangoProtectedModelPermissions]
+
+    queryset = LocationPresetGroup.objects.all()
+    serializer_class = LocationPresetGroupSerializer
 
 
 class ActorSerializer(serializers.ModelSerializer):
@@ -189,4 +218,5 @@ router.register(r"property/actor", ActorViewSet)
 router.register(r"property/species", SpeciesViewSet)
 router.register(r"property/permission_type", PermissionTypeViewSet)
 router.register(r"property/permission_property", PermissionPropertyViewSet)
+router.register(r"property/location_preset_group", LocationPresetGroupViewset)
 register_choice_view_sets(router)

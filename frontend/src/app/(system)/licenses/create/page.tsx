@@ -20,12 +20,12 @@ function LicenseViewBase() {
 
   const license: Partial<LicenseFormData> = {
     mnr: "",
-    status: "",
+    status: "active",
     starts_at: "",
-    ends_at: "",
+    ends_at: undefined,
     location: "",
     description: "",
-    report_status: "",
+    report_status: "no",
   };
 
   const { submit, isSubmitting, errors } = useFormSubmission(
@@ -90,6 +90,7 @@ function LicenseViewBase() {
               ) : null}
               <FieldErrors errors={errors?.fields || {}}>
                 <LicenseEntryForm
+                  isCreating
                   initialLicense={license}
                   isSubmitting={isSubmitting}
                   onSubmit={submit}
