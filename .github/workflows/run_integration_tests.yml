@@ -1,0 +1,72 @@
+name: Integration tests
+
+on:
+#  pull_request:
+#    branches: [main, develop]
+  #   --- Testing branch ---
+  push:
+    branches:
+      - 210-run-integration-tests-as-gh-actions-v1
+
+jobs:
+  integration-tests:
+    runs-on: ubuntu-latest
+
+    env:
+      DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1
+      TAG: integration-test
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Create Docker secrets
+        run: |
+          mkdir -p secrets
+
+          printf '%s' 'postgres-test-password' > secrets/postgres-pass.txt
+          printf '%s' 'db-admin-test-password' > secrets/db-admin-pass.txt
+          printf '%s' 'db-user-test-password' > secrets/db-user-pass.txt
+          printf '%s' 'integration-test-django-secret-key' > secrets/django-secret-key.txt
+          printf '%s' 'integration-test-email-password' > secrets/django-email-password.txt
+
+      - name: Start dev stack
+        run: |
+          docker compose up --build -d
+
+      - name: Wait for application
+        run: |
+          timeout 180 bash -c '
+            until curl --fail --silent http://127.0.0.1:3210/health > /dev/null; do
+              echo "Waiting for application..."
+              sleep 5
+            done
+          '
+
+      - name: Install integration test dependencies
+        run: |
+          if [ -f integration_tests/requirements.txt ]; then
+            python -m pip install -r integration_tests/requirements.txt
+          else
+            python -m pip install pytest requests
+          fi
+
+      - name: Run integration tests
+        run: |
+          python -m pytest ./integration_tests/test_api.py -v
+
+      - name: Show Docker logs on failure
+        if: failure()
+        run: |
+          docker compose ps
+          docker compose logs
+
+      - name: Stop dev stack
+        if: always()
+        run: |
+          docker compose down -v
