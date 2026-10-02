@@ -72,8 +72,9 @@ const licenseForm = {
   licenseFormLocationSubtitle: "Plats",
   licenseFormLocationPresetSubtitle: "Platsförslag",
   licenseFormDetailsSubtitle: "Detaljer",
-  licenseFormMnrPlaceholder: "Ange ett fyrsiffrigt MNR",
-  licenseFormMnrInvalid: "MNR måste bestå av exakt fyra siffror.",
+  licenseFormLicenseNumberPlaceholder: "Ange ett fyrsiffrigt licensnummer",
+  licenseFormLicenseNumberInvalid:
+    "Licensnumret måste bestå av exakt fyra siffror.",
   licenseFormRequired: "Det här fältet är obligatoriskt.",
   licenseFormEndsAtBeforeStartsAt:
     "Giltig till måste vara samma datum eller senare än giltig från.",
@@ -164,7 +165,7 @@ export const locale: TranslationMap = {
   actorFetchEmailAddresses: "Hämta e-postadresser",
   actorFilterDescription: "Filtrera aktörlistan",
   actorFilterLabel: "Filtrera",
-  actorFilterPlaceholder: "Namn, E-post, Ort, Mnr, Roll, Typ",
+  actorFilterPlaceholder: "Namn, E-post, Ort, Licensnummer, Roll, Typ",
   actorLastUpdated: "Senast uppdaterad",
   actorLicenseInEffect: "Aktuell",
   actorLicenseExpired: "Utgången",
@@ -206,10 +207,10 @@ export const locale: TranslationMap = {
   licenseFilterDescription: "Filtrera licenslistan",
   licenseFilterLabel: "Filtrera",
   licenseFilterPlaceholder:
-    "Mnr, Typ, Licensinnehavare, Fångstmetoder, Senaste e-post skickades",
+    "Licensnummer, Typ, Licensinnehavare, Fångstmetoder, Senaste e-post skickades",
   licenseHistory: "Historik",
   licenseHolder: "Licensinnehavare",
-  licenseId: "Mnr",
+  licenseId: "Licensnummer",
   licenseLastEmailSentAt: "Senaste e-post skickades",
   licenseCardTableHeader: "Kort",
   licensePermitTableHeader: "Tillstånd",
@@ -257,7 +258,7 @@ export const locale: TranslationMap = {
   licenseRingerBundleFailedMessages:
     "Misslyckade samlade utskick till ringmärkare",
   licenseSkippedMessages: "Hoppade över",
-  licenseSkippedMessageRow: "{mnr} {actor} ({reason})",
+  licenseSkippedMessageRow: "{licenseNumber} {actor} ({reason})",
   licenseFailedMessagesDetails: "Misslyckade utskick",
   licenseFailedMessageRow: "{to}: {details}",
   licenseSkippedMessagesCountByReason: "Hoppade över ({reason}): {count}",

@@ -55,7 +55,7 @@ class TestSerializers(TestCase):
             updated_by=self.user
         )
         self.sequence = LicenseSequence.objects.create(
-            mnr="0000",
+            license_number="0000",
             status=LicenseStatusChoices.ACTIVE,
             created_by=self.user,
             updated_by=self.user
@@ -271,7 +271,7 @@ class TestSerializers(TestCase):
 
     def _good_sequence_data(self, override={}):
         return {
-            "mnr": "0001",
+            "license_number": "0001",
             "status": "active",
             "latest": self._good_license_data(),
             **override

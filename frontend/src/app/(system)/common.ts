@@ -32,7 +32,7 @@ export type ActorListItem = ActorBase & {
 
 export type ActorLicenseRelation = {
   license_id: number;
-  mnr: string;
+  license_number: string;
   role: string;
   associate_number: string;
   version: number;
@@ -163,7 +163,7 @@ export type LicenseHistoryItem = {
 };
 
 export type LicenseListItem = {
-  mnr: string;
+  license_number: string;
   latest: LicenseInstance;
   history?: LicenseHistoryItem[];
   status: string;
@@ -280,7 +280,7 @@ export type MenuAction<T extends Function> =
 
 export type SkippedMessage = {
   actor_id: number;
-  mnr: string;
+  license_number: string;
   reason: string;
 };
 

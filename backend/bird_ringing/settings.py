@@ -205,8 +205,8 @@ if "test" in sys.argv or "test_coverage" in sys.argv:
                     (
                         "django.template.loaders.locmem.Loader",
                         {
-                            "email_template.html": '<em>{{mnr}}</em> <em>{{name|safe}}</em> <em>{{date}}</em><ul>{%for document_type, filename in attachments%}<li>{{document_type}}: {{filename}}{%endfor%}</li></ul>',
-                            "email_template.txt": '{{mnr}} {{name|safe}} {{date}} {%for document_type, filename in attachments%} {{document_type}}: {{filename}}{%endfor%}',
+                            "email_template.html": '<em>{{license_number}}</em> <em>{{name|safe}}</em> <em>{{date}}</em><ul>{%for document_type, filename in attachments%}<li>{{document_type}}: {{filename}}{%endfor%}</li></ul>',
+                            "email_template.txt": '{{license_number}} {{name|safe}} {{date}} {%for document_type, filename in attachments%} {{document_type}}: {{filename}}{%endfor%}',
                         },
                     ),
                 ],

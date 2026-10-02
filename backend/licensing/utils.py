@@ -36,7 +36,7 @@ def get_flattened_license_and_relations(
     for lic in licenses:
         relations = lic.actors.filter(role__in=list(allowed_roles)).select_related("actor")
         if not relations.exists():
-            raise ValueError(f"No ringers/associate ringers on license for mnr {lic.sequence.mnr}.")
+            raise ValueError(f"No ringers/associate ringers on license for license number {lic.sequence.license_number}.")
         
         for relation in relations:
             if should_skip is not None and should_skip(lic, relation.actor, relation):

@@ -60,7 +60,7 @@ class LicenseSequenceUpdateTests(TestCase):
 
         created = response.json()
 
-        self.assertEqual(created["mnr"], payload["mnr"])
+        self.assertEqual(created["license_number"], payload["license_number"])
         self.assertEqual(created["status"], payload["status"])
         self.assertEqual(created["latest"]["location"], payload["latest"]["location"])
         self.assertEqual(created["latest"]["description"], payload["latest"]["description"])
@@ -69,7 +69,7 @@ class LicenseSequenceUpdateTests(TestCase):
         self.assertEqual(created["latest"]["ends_at"], payload["latest"]["ends_at"])
         self.assertEqual(created["latest"]["version"], 1)
 
-        sequence = LicenseSequence.objects.get(mnr="1234")
+        sequence = LicenseSequence.objects.get(license_number="1234")
         self.assertIsNotNone(sequence.latest)
         self.assertEqual(sequence.latest.version, 1)
         self.assertEqual(sequence.latest.location, "Test location")
@@ -91,18 +91,18 @@ class LicenseSequenceUpdateTests(TestCase):
             "Adding a new license sequence should succeed.",
         )
 
-        sequence = LicenseSequence.objects.get(mnr="1234")
+        sequence = LicenseSequence.objects.get(license_number="1234")
         self.assertIsNotNone(sequence.latest)
         self.assertEqual(sequence.latest.version, 1)
         self.assertEqual(sequence.latest.description, "")
 
     def test_license_sequence_update(self):
-        sequence = self._create_license_sequence(mnr="1234")
+        sequence = self._create_license_sequence(license_number="1234")
 
         self._with_access()
 
         update = {
-            "mnr": "1234",
+            "license_number": "1234",
             "status": "paused",
             "latest": {
                 "location": "New location",
@@ -127,7 +127,7 @@ class LicenseSequenceUpdateTests(TestCase):
 
         updated = update_response.json()
 
-        self.assertEqual(updated["mnr"], "1234")
+        self.assertEqual(updated["license_number"], "1234")
         self.assertEqual(updated["status"], "paused")
         self.assertEqual(updated["latest"]["location"], "New location")
         self.assertEqual(updated["latest"]["description"], "New description")
@@ -148,7 +148,7 @@ class LicenseSequenceUpdateTests(TestCase):
         test_cases = [
             (
                 {
-                    "mnr": "1234",
+                    "license_number": "1234",
                     "status": "non_valid_status",
                     "latest": {
                         "location": "Test location",
@@ -164,7 +164,7 @@ class LicenseSequenceUpdateTests(TestCase):
             ),
             (
                 {
-                    "mnr": "1234",
+                    "license_number": "1234",
                     "status": "active",
                     "latest": {
                         "location": "Test location",
@@ -194,12 +194,12 @@ class LicenseSequenceUpdateTests(TestCase):
                     },
                 },
                 {
-                    "mnr": ["This field is required."]
+                    "license_number": ["This field is required."]
                 },
             ),
             (
                 {
-                    "mnr": "123",
+                    "license_number": "123",
                     "status": "active",
                     "latest": {
                         "location": "Test location",
@@ -210,7 +210,7 @@ class LicenseSequenceUpdateTests(TestCase):
                     },
                 },
                 {
-                    "mnr": [
+                    "license_number": [
                         "Ensure this field has at least 4 characters."
                     ]
                 },
@@ -238,19 +238,19 @@ class LicenseSequenceUpdateTests(TestCase):
             (
                 "post",
                 "/api/license_sequence/",
-                self._license_sequence_payload(mnr="1234"),
+                self._license_sequence_payload(license_number="1234"),
             ),
             (
                 "put",
                 "/api/license_sequence/5678/",
                 self._license_sequence_payload(
-                    mnr="5678",
+                    license_number="5678",
                     location="Updated location",
                 ),
             ),
         ]
 
-        self._create_license_sequence(mnr="5678")
+        self._create_license_sequence(license_number="5678")
 
         for method, path, payload in test_cases:
             with self.subTest(method=method, path=path):
@@ -265,8 +265,8 @@ class LicenseSequenceUpdateTests(TestCase):
                 self.assertEqual(response.status_code, 403)
     
     def test_license_actor_relations_update(self):
-        mnr="0001"
-        payload = self._license_sequence_payload(mnr=mnr)
+        license_number="0001"
+        payload = self._license_sequence_payload(license_number=license_number)
 
         self._with_access()
         response = self.client.post(
@@ -293,13 +293,13 @@ class LicenseSequenceUpdateTests(TestCase):
             }
         }
         response = self.client.patch(
-            f"/api/license_sequence/{mnr}/",
+            f"/api/license_sequence/{license_number}/",
             data=update,
             format="json"
         )
         self.assertEqual(response.status_code, 200, "Updating license sequence data should succeed.")
 
-        sequence = LicenseSequence.objects.filter(mnr=mnr).get()
+        sequence = LicenseSequence.objects.filter(license_number=license_number).get()
         self.assertEqual(sequence.latest.version, 2)
         self.assertEqual(sequence.latest.actors.count(), 4)
         self.assertEqual(sequence.latest.description, "updated description")
@@ -310,9 +310,9 @@ class LicenseSequenceUpdateTests(TestCase):
     def _without_access(self):
         self.client.login(username="userwithoutaccess", password="pwd")
 
-    def _create_license_sequence(self, mnr="1234"):
+    def _create_license_sequence(self, license_number="1234"):
         sequence = LicenseSequence.objects.create(
-            mnr=mnr,
+            license_number=license_number,
             status=LicenseStatusChoices.ACTIVE,
             latest=None,
             created_by=self.user_with_access,
@@ -338,12 +338,12 @@ class LicenseSequenceUpdateTests(TestCase):
 
     def _license_sequence_payload(
         self,
-        mnr="1234",
+        license_number="1234",
         location="Test location",
         description="Test description",
     ):
         payload = {
-            "mnr": mnr,
+            "license_number": license_number,
             "status": "active",
             "latest": {
                 "location": location,

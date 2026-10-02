@@ -64,34 +64,34 @@ def parse_csv_string(csv_str: str):
     return [v.strip() for v in csv_str.split(",")]
 
 
-def get_latest_licenses(mnrs: list[str]) -> list[License]:
-    sequences = get_sequences(mnrs)
+def get_latest_licenses(license_numbers: list[str]) -> list[License]:
+    sequences = get_sequences(license_numbers)
     licenses = []
     for seq in sequences:
         lic = seq.latest
         if not lic:
-            raise serializers.ValidationError({"mnrs": f"No latest license for mnr {seq.mnr}."})
+            raise serializers.ValidationError({"license_numbers": f"No latest license for license number {seq.license_number}."})
         licenses.append(lic)
 
     return licenses
 
 
-def get_sequences(mnrs: list[str]) -> list[LicenseSequence]:
-    if not mnrs:
-        raise serializers.ValidationError({"mnrs": "mnrs is required (comma-separated)."})
+def get_sequences(license_numbers: list[str]) -> list[LicenseSequence]:
+    if not license_numbers:
+        raise serializers.ValidationError({"license_numbers": "license_numbers is required (comma-separated)."})
 
-    invalid_mnrs = [m for m in mnrs if not MnrSerializer(data={"mnr": m}).is_valid()]
-    if invalid_mnrs:
+    invalid_license_numbers = [m for m in license_numbers if not LicenseNumberSerializer(data={"license_number": m}).is_valid()]
+    if invalid_license_numbers:
         raise serializers.ValidationError(
-            {"mnrs": f"Invalid mnr(s): {', '.join(invalid_mnrs)}. Expected 4 digits each."}
+            {"license_numbers": f"Invalid license number(s): {', '.join(invalid_license_numbers)}. Expected 4 digits each."}
         )
 
-    seqs_by_mnr = {s.mnr: s for s in LicenseSequence.objects.filter(mnr__in=mnrs)}
-    missing_mnrs = [m for m in mnrs if m not in seqs_by_mnr]
-    if missing_mnrs:
-        raise serializers.ValidationError({"mnrs": f"Unknown mnr(s): {', '.join(missing_mnrs)}"})
+    seqs_by_license_number = {s.license_number: s for s in LicenseSequence.objects.filter(license_number__in=license_numbers)}
+    missing_license_numbers = [m for m in license_numbers if m not in seqs_by_license_number]
+    if missing_license_numbers:
+        raise serializers.ValidationError({"license_numbers": f"Unknown license number(s): {', '.join(missing_license_numbers)}"})
 
-    return [seqs_by_mnr[m] for m in mnrs]
+    return [seqs_by_license_number[m] for m in license_numbers]
 
 def _send_license_emails_for_relations(
     *,
@@ -116,7 +116,7 @@ def _send_license_emails_for_relations(
                 skipped_messages.append(
                     {
                         "actor_id": relation.actor.id,
-                        "mnr": lic.sequence.mnr,
+                        "license_number": lic.sequence.license_number,
                         "reason": "missing_email",
                     }
                 )
@@ -194,12 +194,12 @@ def _build_ringer_bundle_messages(*, lic_rel_pairs: list[tuple[License, LicenseR
         # Always determine ringer from the license itself (not from selected relations)
         ringer_rel = (lic.actors.filter(role=LicenseRoleChoices.RINGER).select_related("actor").first())
         if not ringer_rel:
-            raise ValueError(f"No ringer registered on license for mnr {lic.sequence.mnr}.")
+            raise ValueError(f"No ringer registered on license for license number {lic.sequence.license_number}.")
 
         ringer_actor = ringer_rel.actor
         ringer_email = (ringer_actor.email or "").strip()
         if not ringer_email:
-            raise ValueError(f"No email address available for ringer on license {lic.sequence.mnr}.")
+            raise ValueError(f"No email address available for ringer on license {lic.sequence.license_number}.")
 
         msg = bundle_builder.build_message(
             lic=lic,
@@ -380,7 +380,7 @@ class ActorLicenseRelationSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = LicenseRelation
-        fields = ["license_id", "role", "mnr", "associate_number", "version", "starts_at", "ends_at", "communication_status", "communication_type"]
+        fields = ["license_id", "role", "license_number", "associate_number", "version", "starts_at", "ends_at", "communication_status", "communication_type"]
 
     def get_communication_status(self, obj):  
         license_communication = LicenseCommunication.objects.filter(license=obj.license, actor=obj.actor).last()
@@ -780,7 +780,7 @@ class LicenseSequenceSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = LicenseSequence
         fields = [
-            "mnr",
+            "license_number",
             "latest",
             "history",
             "status",
@@ -862,14 +862,14 @@ class LicenseSequenceSerializer(serializers.HyperlinkedModelSerializer):
 class LicenseCardRenderSerializer(serializers.Serializer):
     actor_id = serializers.IntegerField(required=True, min_value=1)
 
-class MnrSerializer(serializers.Serializer):
-    mnr = serializers.CharField(min_length=4, max_length=4)
+class LicenseNumberSerializer(serializers.Serializer):
+    license_number = serializers.CharField(min_length=4, max_length=4)
 
 class LicenseSequenceViewSet(viewsets.ModelViewSet, ValueListMixin):
     authentication_classes = [SessionAuthentication, BasicAuthentication]
     permission_classes = [DjangoProtectedModelPermissions]
 
-    lookup_field = "mnr"
+    lookup_field = "license_number"
     queryset = LicenseSequence.objects.filter(latest__isnull=False).all().distinct()
     serializer_class = LicenseSequenceSerializer
     pagination_class = StandardResultsSetPagination
@@ -878,7 +878,7 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet, ValueListMixin):
 
     allowed_ordering = DynamicOrderingFilter.include_reverse(
         [
-            "mnr",
+            "license_number",
             "status",
             "license_holder",
             "license_holder_type",
@@ -892,8 +892,8 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet, ValueListMixin):
             "location",
         ]
     )
-    default_ordering = ["mnr"]
-    id_filter_target = "mnr"
+    default_ordering = ["license_number"]
+    id_filter_target = "license_number"
 
     def get_available_value_ids(self):
         return {
@@ -906,19 +906,19 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet, ValueListMixin):
         values = LicenseRelation.objects.filter(
             license__in=license_ids,
             role=LicenseRoleChoices.RINGER
-        ).values_list("license__sequence__mnr", "actor__email", "actor__full_name")
+        ).values_list("license__sequence__license_number", "actor__email", "actor__full_name")
 
         holders = (
-            (mnr, {
+            (license_number, {
                 "email": email,
                 "full_name": full_name
             })
-            for (mnr, email, full_name) in values
+            for (license_number, email, full_name) in values
         )
 
         grouped_holders = defaultdict(list)
-        for (mnr, entry) in holders:
-            grouped_holders[mnr].append(entry)
+        for (license_number, entry) in holders:
+            grouped_holders[license_number].append(entry)
 
         return grouped_holders.items()
 
@@ -1033,7 +1033,7 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet, ValueListMixin):
             for term in search_terms:
                 queryset = queryset.filter(
                     models.Q(license_holder__icontains=term)
-                    | models.Q(mnr__icontains=term)
+                    | models.Q(license_number__icontains=term)
                     | models.Q(methods__icontains=term)
                     | models.Q(last_email_sent_at__icontains=term)
                     | models.Q(status_label__icontains=term)
@@ -1045,7 +1045,7 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet, ValueListMixin):
         return queryset
 
     @action(detail=True, methods=["put"], url_path="card-create")
-    def card_create(self, request, mnr=None):
+    def card_create(self, request, license_number=None):
         seq = self.get_object()
         actor = self._get_actor_from_request(request)
 
@@ -1069,13 +1069,13 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet, ValueListMixin):
         except CardActorNotOnLicense as e:
             return Response({"detail": str(e)}, status=400)
 
-        pdf_url = reverse("licensesequence-card-pdf", kwargs={"mnr": seq.mnr}, request=request)
+        pdf_url = reverse("licensesequence-card-pdf", kwargs={"license_number": seq.license_number}, request=request)
         pdf_url = f"{pdf_url}?actor_id={actor.id}"
 
         return Response({"filename": doc.reference, "pdf_url": pdf_url}, status=200)
 
     @action(detail=True, methods=["get"], url_path="card-pdf")
-    def card_pdf(self, request, mnr=None):
+    def card_pdf(self, request, license_number=None):
         seq = self.get_object()
         actor = self._get_actor_from_request(request)
 
@@ -1117,11 +1117,11 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet, ValueListMixin):
 
     @action(detail=False, methods=["get"], url_path="card-pdf")
     def card_pdf_batch(self, request):
-        raw = request.query_params.get("mnrs", "")
-        mnrs = [m for m in parse_csv_string(raw) if m]
+        raw = request.query_params.get("license_numbers", "")
+        license_numbers = [m for m in parse_csv_string(raw) if m]
 
         try:
-            licenses = get_latest_licenses(mnrs)
+            licenses = get_latest_licenses(license_numbers)
         except serializers.ValidationError as e:
             return Response(e.detail, status=400)
 
@@ -1144,11 +1144,11 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet, ValueListMixin):
 
     @action(detail=False, methods=["put"], url_path="card-create")
     def card_create_batch(self, request):
-        raw = request.query_params.get("mnrs", "")
-        mnrs = [m for m in parse_csv_string(raw) if m]
+        raw = request.query_params.get("license_numbers", "")
+        license_numbers = [m for m in parse_csv_string(raw) if m]
 
         try:
-            licenses = get_latest_licenses(mnrs)
+            licenses = get_latest_licenses(license_numbers)
         except serializers.ValidationError as e:
             return Response(e.detail, status=400)
 
@@ -1176,7 +1176,7 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet, ValueListMixin):
         return Response(
             {
                 "filenames": [d.reference for d in docs],
-                "inactive_licenses": [lic.sequence.mnr for lic in inactive_licenses]
+                "inactive_licenses": [lic.sequence.license_number for lic in inactive_licenses]
             },
             status=200,
         )
@@ -1186,11 +1186,11 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet, ValueListMixin):
         with communication_language_context():
             include_card = request.query_params.get("include_card") is not None
             include_permit = request.query_params.get("include_permit") is not None
-            raw = request.query_params.get("mnrs", "")
-            mnrs = [m for m in parse_csv_string(raw) if m]
+            raw = request.query_params.get("license_numbers", "")
+            license_numbers = [m for m in parse_csv_string(raw) if m]
 
             try:
-                licenses = get_latest_licenses(mnrs)
+                licenses = get_latest_licenses(license_numbers)
             except serializers.ValidationError as e:
                 return Response(e.detail, status=400)
 
@@ -1237,7 +1237,7 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet, ValueListMixin):
             return _merge_response(resp, {"ringer_bundle_messages_sent": len(bundle_messages)})
 
     @action(detail=True, methods=["put"], url_path="send-license-emails")
-    def send_license_emails_for_actors(self, request, mnr=None):
+    def send_license_emails_for_actors(self, request, license_number=None):
         with communication_language_context():
             include_card = request.query_params.get("include_card") is not None
             include_permit = request.query_params.get("include_permit") is not None
@@ -1320,7 +1320,7 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet, ValueListMixin):
                 return Response({"detail": str(e)}, status=400)
 
     @action(detail=True, methods=["get"], url_path="permit-pdf")
-    def permit_pdf(self, request, mnr=None):
+    def permit_pdf(self, request, license_number=None):
         seq = self.get_object()
         actor = self._get_actor_from_request(request)
 
@@ -1349,11 +1349,11 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet, ValueListMixin):
 
     @action(detail=False, methods=["put"], url_path="permit-create")
     def permit_create_batch(self, request):
-        raw = request.query_params.get("mnrs", "")
-        mnrs = [m for m in parse_csv_string(raw) if m]
+        raw = request.query_params.get("license_numbers", "")
+        license_numbers = [m for m in parse_csv_string(raw) if m]
 
         try:
-            licenses = get_latest_licenses(mnrs)
+            licenses = get_latest_licenses(license_numbers)
         except serializers.ValidationError as e:
             return Response(e.detail, status=400)
 
@@ -1379,18 +1379,18 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet, ValueListMixin):
 
         return Response({
                 "filenames": [d.reference for d in docs],
-                "inactive_licenses": [lic.sequence.mnr for lic in inactive_licenses]
+                "inactive_licenses": [lic.sequence.license_number for lic in inactive_licenses]
             },
             status=200
         )
 
     @action(detail=False, methods=["get"], url_path="permit-pdf")
     def permit_pdf_batch(self, request):
-        raw = request.query_params.get("mnrs", "")
-        mnrs = [m for m in parse_csv_string(raw) if m]
+        raw = request.query_params.get("license_numbers", "")
+        license_numbers = [m for m in parse_csv_string(raw) if m]
 
         try:
-            licenses = get_latest_licenses(mnrs)
+            licenses = get_latest_licenses(license_numbers)
         except serializers.ValidationError as e:
             return Response(e.detail, status=400)
 
@@ -1427,7 +1427,7 @@ class ActorViewSet(viewsets.ModelViewSet, ValueListMixin):
         "city",
         "type_label",
         "license_role_label",
-        "license_mnr",
+        "license_numbers",
     ]
     pagination_class = StandardResultsSetPagination
 
@@ -1489,10 +1489,10 @@ class ActorViewSet(viewsets.ModelViewSet, ValueListMixin):
                     roles_string=StringAgg("role_label", delimiter=", ")
                 ).values("roles_string")[:1]
             ),
-            license_mnr=models.Subquery(
+            license_numbers=models.Subquery(
                 latest_license_relation.values("actor").annotate(
-                    license_mnrs=StringAgg("license__sequence__mnr", delimiter=', ')
-                ).values("license_mnrs")[:1]
+                    numbers=StringAgg("license__sequence__license_number", delimiter=', ')
+                ).values("numbers")[:1]
             ),
         ).all()
 

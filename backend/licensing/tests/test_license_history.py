@@ -14,7 +14,7 @@ class TestLicenseHistory(TestCase):
         )
 
         self.license_sequence = models.LicenseSequence.objects.create(
-            mnr="0001",
+            license_number="0001",
             status=models.LicenseStatusChoices.ACTIVE,
             created_by=self.user,
             updated_by=self.user,
@@ -301,7 +301,7 @@ class TestDocumentManagement(TestCase):
         )
 
         self.license_sequence = models.LicenseSequence.objects.create(
-            mnr="0001",
+            license_number="0001",
             status=models.LicenseStatusChoices.ACTIVE,
             created_by=self.user,
             updated_by=self.user,
@@ -341,7 +341,7 @@ class TestDocumentManagement(TestCase):
     def test_no_conflict_between_documents(self):
         license_sequence_a = self.license_sequence
         license_sequence_b = models.LicenseSequence.objects.create(
-            mnr="0002",
+            license_number="0002",
             status=models.LicenseStatusChoices.ACTIVE,
             created_by=self.user,
             updated_by=self.user,
