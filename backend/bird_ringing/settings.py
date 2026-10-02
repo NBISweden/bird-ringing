@@ -163,7 +163,7 @@ COMMUNICATION_LANGUAGE_CODE = getenv("LICENSING_COMMUNICATION_LANGUAGE_CODE", LA
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = "static/"
-STATIC_ROOT = "/vol"
+STATIC_ROOT = "/static"
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field

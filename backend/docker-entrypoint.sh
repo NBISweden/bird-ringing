@@ -24,6 +24,10 @@ esac
 
 # The main "backend" service runs here.
 
+# Ensure that the static content in /vol is updated.
+( cd /vol && find . -delete )
+tar -C /static -c -f - . | tar -v -C /vol -x -f -
+
 # In development mode, run the Django development server.
 case $SERVICE_MODE in
 	development*)

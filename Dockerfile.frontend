@@ -67,8 +67,7 @@ ARG GID=${BUILD_ID#*:}
 
 ENV HOME=/app
 
-RUN install -d -o "$UID" -g "$GID" "$HOME" /vol
-VOLUME /vol
+RUN install -d -o "$UID" -g "$GID" "$HOME" /static
 
 USER "$UID:$GID"
 
@@ -76,7 +75,7 @@ ENV SERVICE_MODE=production
 
 WORKDIR "$HOME"
 
-COPY --from=prod-build --chown="$UID:$GID" "$HOME/out" /vol
+COPY --from=prod-build --chown="$UID:$GID" "$HOME/out" /static
 COPY --chown="$UID:$GID" docker-entrypoint.sh .
 
 USER "$RUNTIME_ID"
@@ -84,8 +83,8 @@ USER "$RUNTIME_ID"
 CMD ["./docker-entrypoint.sh"]
 
 # The frontend container will not hang around to serve static files.
-# This is done by the proxy container.  The static files are in the
-# persistent volume "frontend-vol".
+# This is done by the proxy container.  The entry point script will copy
+# the static files from /static to the persistent volume "frontend-vol".
 
 # ----
 
