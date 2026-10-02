@@ -7,7 +7,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('licensing', '0006_alter_licensepermission_options_and_more'),
+        ('licensing', '0007_alter_license_ends_at_alter_license_location_and_more'),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
