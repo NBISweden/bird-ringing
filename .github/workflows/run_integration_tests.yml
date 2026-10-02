@@ -1,10 +1,13 @@
 name: Integration tests
 
+#on:
+#  pull_request:
+#    branches: [main, develop]
 on:
-  pull_request:
+  #   --- Testing branch ---
   push:
     branches:
-      - main
+      - 210-run-integration-tests-as-gh-actions-v1
 
 jobs:
   integration-tests:
