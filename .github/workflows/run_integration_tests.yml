@@ -53,8 +53,8 @@ jobs:
             > secrets/django-email-password.txt
 
       - name: Start dev stack
-        run: |
-          docker compose up --build -d
+          run: |
+            ./compose-dev.sh up --build -d
 
       - name: Wait for API
         run: |
