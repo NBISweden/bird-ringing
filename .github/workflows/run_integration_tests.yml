@@ -1,23 +1,14 @@
 name: Integration tests
 
 on:
-#  pull_request:
-#    branches: [main, develop]
-  #   --- Testing branch ---
+  pull_request:
   push:
     branches:
-      - 210-run-integration-tests-as-gh-actions-v1
+      - main
 
 jobs:
   integration-tests:
     runs-on: ubuntu-latest
-
-    env:
-      DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1
-
-      # Anpassa dessa till de faktiska filerna i resources/templates
-      LICENSE_CARD_FILE: /resources/templates/license-card.docx
-      PERMIT_TEMPLATE_FILE: /resources/templates/permit.docx
 
     steps:
       - name: Checkout repository
@@ -28,56 +19,50 @@ jobs:
         with:
           python-version: "3.13"
 
-      - name: Install test dependencies
+      - name: Install integration test dependencies
         run: |
-          python -m pip install --upgrade pip
           python -m pip install requests
 
       - name: Create Docker secrets
         run: |
           mkdir -p secrets
+          printf '%s' 'postgres-test-password' > secrets/postgres-pass.txt
+          printf '%s' 'db-admin-test-password' > secrets/db-admin-pass.txt
+          printf '%s' 'db-user-test-password' > secrets/db-user-pass.txt
+          printf '%s' 'integration-test-secret-key' > secrets/django-secret-key.txt
+          printf '%s' 'integration-test-email-password' > secrets/django-email-password.txt
 
-          printf '%s' 'postgres-test-password' \
-            > secrets/postgres-pass.txt
-
-          printf '%s' 'db-admin-test-password' \
-            > secrets/db-admin-pass.txt
-
-          printf '%s' 'db-user-test-password' \
-            > secrets/db-user-pass.txt
-
-          printf '%s' 'integration-test-django-secret-key' \
-            > secrets/django-secret-key.txt
-
-          printf '%s' 'integration-test-email-password' \
-            > secrets/django-email-password.txt
+      - name: Create integration test config
+        run: |
+          cat > docker-compose.override.yml <<'EOF'
+          services:
+            backend:
+              environment:
+                DJANGO_ALLOWED_HOSTS: "backend, localhost"
+                LICENSE_CARD_FILE: /resources/Licenskort_för_ringmärkning-2026.svg
+                LICENSING_COMMUNICATION_LANGUAGE_CODE: "sv"
+                PERMIT_TEMPLATE_FILE: /resources/templates/permit.docx
+                GUNICORN_WORKERS: 3
+                GUNICORN_TIMEOUT: 120
+          EOF
 
       - name: Start dev stack
         run: |
           ./compose-dev.sh up --build -d
 
-      - name: Wait for API
-        run: |
-          timeout 180 bash -c '
-            until curl --fail --silent \
-              http://localhost:3210/health > /dev/null; do
-              echo "Waiting for application..."
-              docker compose ps
-              sleep 5
-            done
-          '
-
       - name: Run integration tests
         run: |
-          python ./integration_tests/test_api.py
+          python integration_tests/test_api.py
 
-      - name: Show Docker logs on failure
+      - name: Show logs on failure
         if: failure()
         run: |
-          docker compose ps
-          docker compose logs --no-color
+          ./compose-dev.sh ps -a
+          ./compose-dev.sh logs --no-color backend
+          ./compose-dev.sh logs --no-color backend-init
+          ./compose-dev.sh logs --no-color docx2pdf
 
       - name: Stop dev stack
         if: always()
         run: |
-          docker compose down -v
+          ./compose-dev.sh down -v
