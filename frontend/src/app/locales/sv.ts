@@ -130,6 +130,18 @@ const modals = {
   licenseUpdateErrorTitle: "Misslyckades att uppdatera licens",
 };
 
+const pageTitles = {
+  rootPageTitle: "Ringmärkning",
+  welcomPageTitle: "Välkommen till ringmärkning",
+  permissionsPageTitle: "Tillstånd",
+  licensesPageTitle: "Licenser",
+  licensePageTitle: "Licens: {license_number} {actor}",
+  licenseCreationPageTitle: "Lägg till licens",
+  actorsPageTitle: "Aktörer",
+  actorPageTitle: "Aktör: {name}",
+  actorCreationPageTitle: "Lägg till aktör",
+};
+
 export const locale: TranslationMap = {
   ...licenseReportStatusOptions,
   ...licenseStatusOptions,
@@ -140,6 +152,7 @@ export const locale: TranslationMap = {
   ...licenseFields,
   ...licenseForm,
   ...modals,
+  ...pageTitles,
 
   birdRinging: "Ringmärkning",
   userPermissions: "Användarrättigheter",

@@ -12,6 +12,7 @@ import { Alert } from "@/components/Alert";
 import { useTranslation } from "../../internationalization";
 import { convertOnlyDateToLocale } from "../../common";
 import { Badge } from "@/components/Badge";
+import { LocalizedTitle } from "@/components/LocalizedTitle";
 
 async function fetchLicense([client, _ctx, entryId]: [
   Client,
@@ -76,96 +77,105 @@ function LicenseViewInner() {
   const historyItems = history.slice(start, start + historyPageSize);
 
   return (
-    <div className="container">
-      <div className="row ">
-        <div className="col-12 col-xl-10 col-xxl-9">
-          <h1 className="h2">
-            {t("licenseView", {
-              licenseId: data.license_number,
-              licenseHolder: data.license_holder,
-            })}
-            <Badge
-              rounded
-              outline
-              color="primary"
-              className="inline-block ms-4"
-            >
-              {formatOption(String(data.latest.report_status), {
-                yes: "licenseReportStatusYes",
-                no: "licenseReportStatusNo",
-                incomplete: "licenseReportStatusIncomplete",
+    <>
+      <LocalizedTitle
+        messageId="licensePageTitle"
+        values={{
+          license_number: data.license_number,
+          actor: data.license_holder,
+        }}
+      />
+      <div className="container">
+        <div className="row ">
+          <div className="col-12 col-xl-10 col-xxl-9">
+            <h1 className="h2">
+              {t("licenseView", {
+                licenseId: data.license_number,
+                licenseHolder: data.license_holder,
               })}
-            </Badge>
-          </h1>
-          <LicenceView
-            license={data.latest}
-            licenseNumber={data.license_number}
-            status={data.status}
-            onUpdated={() => mutate()}
-          />
-          {/* History */}
-          <div className="py-3">
-            <h3 className="h2">{t("licenseHistory")}</h3>
-            {data.history?.length ? (
-              <>
-                <ul className="list-group list-group-flush">
-                  {historyItems.map((h) => (
-                    <li className="list-group-item py-3" key={h.version}>
-                      <div className="row align-items-center g-2">
-                        <div className="col-12 col-lg-8">
-                          {format(
-                            h.ends_at
-                              ? "licenseValidityPeriod"
-                              : "licensePeriodStart",
-                            {
-                              startsAt: convertOnlyDateToLocale(h.starts_at),
-                              endsAt: convertOnlyDateToLocale(h.ends_at),
-                              from: (chunks) => (
-                                <span className="fst-italic">{chunks}</span>
-                              ),
-                              to: (chunks) => (
-                                <span className="fst-italic">{chunks}</span>
-                              ),
-                            },
-                          )}
+              <Badge
+                rounded
+                outline
+                color="primary"
+                className="inline-block ms-4"
+              >
+                {formatOption(String(data.latest.report_status), {
+                  yes: "licenseReportStatusYes",
+                  no: "licenseReportStatusNo",
+                  incomplete: "licenseReportStatusIncomplete",
+                })}
+              </Badge>
+            </h1>
+            <LicenceView
+              license={data.latest}
+              licenseNumber={data.license_number}
+              status={data.status}
+              onUpdated={() => mutate()}
+            />
+            {/* History */}
+            <div className="py-3">
+              <h3 className="h2">{t("licenseHistory")}</h3>
+              {data.history?.length ? (
+                <>
+                  <ul className="list-group list-group-flush">
+                    {historyItems.map((h) => (
+                      <li className="list-group-item py-3" key={h.version}>
+                        <div className="row align-items-center g-2">
+                          <div className="col-12 col-lg-8">
+                            {format(
+                              h.ends_at
+                                ? "licenseValidityPeriod"
+                                : "licensePeriodStart",
+                              {
+                                startsAt: convertOnlyDateToLocale(h.starts_at),
+                                endsAt: convertOnlyDateToLocale(h.ends_at),
+                                from: (chunks) => (
+                                  <span className="fst-italic">{chunks}</span>
+                                ),
+                                to: (chunks) => (
+                                  <span className="fst-italic">{chunks}</span>
+                                ),
+                              },
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-                {historyPageCount > 1 && (
-                  <nav className="mt-3">
-                    <ul className="pagination">
-                      {Array.from(
-                        { length: historyPageCount },
-                        (_, i) => i + 1,
-                      ).map((p) => (
-                        <li
-                          key={p}
-                          className={`page-item ${p === clampedHistoryPage ? "active" : ""}`}
-                        >
-                          <button
-                            type="button"
-                            className="page-link"
-                            onClick={() => setHistoryPage(p)}
+                      </li>
+                    ))}
+                  </ul>
+                  {historyPageCount > 1 && (
+                    <nav className="mt-3">
+                      <ul className="pagination">
+                        {Array.from(
+                          { length: historyPageCount },
+                          (_, i) => i + 1,
+                        ).map((p) => (
+                          <li
+                            key={p}
+                            className={`page-item ${p === clampedHistoryPage ? "active" : ""}`}
                           >
-                            {p}
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
-                  </nav>
-                )}
-              </>
-            ) : (
-              <p className="text-muted fst-italic">
-                {t("licenseNoPreviousVerions")}
-              </p>
-            )}
+                            <button
+                              type="button"
+                              className="page-link"
+                              onClick={() => setHistoryPage(p)}
+                            >
+                              {p}
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    </nav>
+                  )}
+                </>
+              ) : (
+                <p className="text-muted fst-italic">
+                  {t("licenseNoPreviousVerions")}
+                </p>
+              )}
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }
 

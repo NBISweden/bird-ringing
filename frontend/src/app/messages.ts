@@ -132,6 +132,19 @@ const modals = {
   licenseUpdateSuccessMessage: "The license has been updated successfully",
   licenseUpdateErrorTitle: "Failed to update license",
 };
+
+const pageTitles = {
+  rootPageTitle: "Bird Ringing",
+  welcomPageTitle: "Welcome to Bird Ringing",
+  permissionsPageTitle: "Permissions",
+  licensesPageTitle: "Licenses",
+  licensePageTitle: "License: {license_number} {actor}",
+  licenseCreationPageTitle: "Add license",
+  actorsPageTitle: "Actors",
+  actorPageTitle: "Actor: {name}",
+  actorCreationPageTitle: "Add actor",
+};
+
 const messagesBase = {
   ...licenseReportStatusOptions,
   ...licenseStatusOptions,
@@ -142,6 +155,7 @@ const messagesBase = {
   ...licenseForm,
   ...licenseFields,
   ...modals,
+  ...pageTitles,
 
   birdRinging: "Bird Ringing",
   userPermissions: "User permissions",
