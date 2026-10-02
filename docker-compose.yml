@@ -32,6 +32,13 @@ services:
       database-init:
         condition: service_completed_successfully
 
+  volumes-init:
+    image: busybox:stable-musl
+    command: sh -c "chown -R ${RUNTIME_ID:-6001:6001} /backend-vol /frontend-vol"
+    volumes:
+      - backend-vol:/backend-vol
+      - frontend-vol:/frontend-vol
+
   frontend:
     image: ghcr.io/nbisweden/bird-ringing-frontend:${TAG:-latest}
     build:
@@ -44,8 +51,10 @@ services:
         BUILD_GIT_COMMIT: "${BUILD_GIT_COMMIT:-}"
         BUILD_GIT_BRANCH: "${BUILD_GIT_BRANCH:-}"
     volumes:
-      - frontend-vol:/vol:ro
+      - frontend-vol:/vol
     depends_on:
+      volumes-init:
+        condition: service_completed_successfully
       database:
         condition: service_healthy
 
@@ -85,7 +94,7 @@ services:
       DJANGO_EMAIL_HOST_PASSWORD_FILE: /run/secrets/django-email-password
       DJANGO_TEMPLATES_DIR: /resources/templates
     volumes:
-      - backend-vol:/vol:ro
+      - backend-vol:/vol
       - ./resources:/resources:ro
     healthcheck:
       test: ["CMD", "wget", "--spider", "--timeout=5", "http://backend:8000/api/system/health/"]
@@ -94,6 +103,8 @@ services:
       retries: 5
       start_period: 10s
     depends_on:
+      volumes-init:
+        condition: service_completed_successfully
       backend-init:
         condition: service_completed_successfully
       docx2pdf:
