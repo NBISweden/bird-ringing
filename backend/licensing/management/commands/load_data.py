@@ -116,13 +116,13 @@ class Command(BaseCommand):
     def load_ringers(self, ringer_license_entries: list[dict]):
         ringer_map = dict()
         for ringer_license_data in ringer_license_entries:
-            mnr = ringer_license_data["Mnr"]
+            license_number = ringer_license_data["Mnr"]
             try:
                 ringer_actor = self.load_ringer(ringer_license_data)
-                ringer_map[mnr] = ringer_actor
+                ringer_map[license_number] = ringer_actor
             except (KeyError, ValueError) as e:
                 logger.warning(
-                    f"Failed to load ringer {mnr}: {type(e).__name__}, {str(e)}"
+                    f"Failed to load ringer {license_number}: {type(e).__name__}, {str(e)}"
                 )
         return ringer_map
 
@@ -130,13 +130,13 @@ class Command(BaseCommand):
     def load_licenses(self, ringer_license_entries: list[dict]):
         license_map = dict()
         for ringer_license_data in ringer_license_entries:
-            mnr = ringer_license_data["Mnr"]
+            license_number = ringer_license_data["Mnr"]
             try:
                 license = self.load_license(ringer_license_data)
-                license_map[mnr] = license
+                license_map[license_number] = license
             except (KeyError, ValueError) as e:
                 logger.warning(
-                    f"Failed to load license {mnr}: {type(e).__name__}, {str(e)}"
+                    f"Failed to load license {license_number}: {type(e).__name__}, {str(e)}"
                 )
         return license_map
 
@@ -200,12 +200,12 @@ class Command(BaseCommand):
             "Ej aktiv": models.LicenseStatusChoices.PAUSED,
             "Avslutad": models.LicenseStatusChoices.TERMINATED,
         }[license_data.get("Status", "Ej aktiv")]
-        mnr = license_data["Mnr"]
+        license_number = license_data["Mnr"]
         (seq, _s_created) = (
             models.LicenseSequenceImport.objects.get_updated_or_create_item(
                 created_by=current_user,
                 updated_by=current_user,
-                mnr=mnr,
+                license_number=license_number,
                 status=status,
             )
         )
@@ -290,14 +290,14 @@ class Command(BaseCommand):
     def load_relations(self, actor_map: dict, relations: list):
         grouped_relations = dict()
         for relation in relations:
-            mnr, actor_key, role, mednr, year = relation
+            license_number, actor_key, role, associate_number, year = relation
             actor = actor_map[actor_key]
-            relation_list = grouped_relations.get((mnr, year), [])
-            relation_list.append((actor, role, mednr))
-            grouped_relations[(mnr, year)] = relation_list
+            relation_list = grouped_relations.get((license_number, year), [])
+            relation_list.append((actor, role, associate_number))
+            grouped_relations[(license_number, year)] = relation_list
 
-        for (mnr, year), relations in sorted(grouped_relations.items(), key=lambda i: i[0][1]):
-            base_license = models.LicenseSequence.objects.get(mnr=mnr).current
+        for (license_number, year), relations in sorted(grouped_relations.items(), key=lambda i: i[0][1]):
+            base_license = models.LicenseSequence.objects.get(license_number=license_number).current
             year_delta = base_license.ends_at.year - base_license.starts_at.year
             base_license.starts_at = self._replace_year(base_license.starts_at, year)
             base_license.ends_at = self._replace_year(base_license.ends_at, year + year_delta)
@@ -342,20 +342,20 @@ class Command(BaseCommand):
             (models.LicenseRoleChoices.COMMUNICATION, "AdrMnr", "ADRM"),
         ]
 
-        license_mnr = ringer_license_data["Mnr"]
-        for role, key, mednr in roles_and_keys:
+        license_number = ringer_license_data["Mnr"]
+        for role, key, associate_number in roles_and_keys:
             type = ringer_license_data["PriSta"]
             if key in ringer_license_data and type in {"S", "P"}:
-                ringer_mnr = ringer_license_data[key]
+                ringer_license_number = ringer_license_data[key]
                 for year in years:
-                    yield (license_mnr, ringer_mnr, role, mednr, year)
+                    yield (license_number, ringer_license_number, role, associate_number, year)
 
     def get_associate_ringer_relation(self, associate_ringer_year_data: dict):
         year_str = associate_ringer_year_data["Ar"]
         year_str = "1996" if year_str == "<97" else year_str
         associate_ringer_key = self._get_associate_ringer_key(associate_ringer_year_data)
-        mnr, mednr = associate_ringer_key
-        return (mnr, associate_ringer_key, models.LicenseRoleChoices.ASSOCIATE_RINGER, mednr, int(year_str))
+        license_number, associate_number = associate_ringer_key
+        return (license_number, associate_ringer_key, models.LicenseRoleChoices.ASSOCIATE_RINGER, associate_number, int(year_str))
 
     def load_associate_ringer(self, associate_ringer_data: dict):
         current_user = self.get_current_user()
@@ -450,13 +450,13 @@ class Command(BaseCommand):
 
         license_permission_map = dict()
         for row in entries:
-            license_mnr = row["license_mnr"]
-            permission_list = license_permission_map.get(license_mnr, [])
+            license_number = row["license_mnr"]
+            permission_list = license_permission_map.get(license_number, [])
             permission_list.append(row)
-            license_permission_map[license_mnr] = permission_list
+            license_permission_map[license_number] = permission_list
 
-        for license_mnr, license_entries in license_permission_map.items():
-            license = models.License.objects.get(sequence__mnr=license_mnr, version=0)
+        for license_number, license_entries in license_permission_map.items():
+            license = models.License.objects.get(sequence__license_number=license_number, version=0)
             license.permissions.all().delete()
             for row in license_entries:
                 type_code = row["type_code"]
@@ -486,7 +486,7 @@ class Command(BaseCommand):
                     except KeyError as e:
                         raise ValueError(
                             "Tillstand import error: unknown species_codes not present in database. "
-                            f"license_mnr={license_mnr}, type_code={type_code}, missing={str(e)}, "
+                            f"license_mnr={license_number}, type_code={type_code}, missing={str(e)}, "
                             f"provided={species_codes}"
                         )
 
@@ -494,13 +494,13 @@ class Command(BaseCommand):
         if relations:
             current_user = self.get_current_user()
             lic.actors.all().delete()
-            for actor, role, mednr in relations:
+            for actor, role, associate_number in relations:
                 models.LicenseRelation.objects.get_or_create(
                     created_by=current_user,
                     updated_by=current_user,
                     license=lic,
                     actor=actor,
-                    mednr=mednr,
+                    associate_number=associate_number,
                     role=role,
                 )
 

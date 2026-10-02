@@ -33,7 +33,7 @@ class TestConcurrentCreateRequests(unittest.TestCase):
         queue.put((response.status_code, response.json()))
 
     def test_create_licenses_in_parallel(self):
-        mnrs=[
+        license_numbers=[
             "0000",
             "0001",
             "0002",
@@ -47,7 +47,7 @@ class TestConcurrentCreateRequests(unittest.TestCase):
             "0010",
         ]
         entries = [
-            (self._get_license_action_url("card-create", mnrs), None)
+            (self._get_license_action_url("card-create", license_numbers), None)
             for i in range(5)
         ]
 
@@ -61,7 +61,7 @@ class TestConcurrentCreateRequests(unittest.TestCase):
             self.assertEqual(data_a, data)
     
     def test_create_permits_in_parallel(self):
-        mnrs=[
+        license_numbers=[
             "0000",
             "0001",
             "0002",
@@ -75,7 +75,7 @@ class TestConcurrentCreateRequests(unittest.TestCase):
             "0010",
         ]
         entries = [
-            (self._get_license_action_url("permit-create", mnrs), None)
+            (self._get_license_action_url("permit-create", license_numbers), None)
             for i in range(5)
         ]
 
@@ -101,9 +101,9 @@ class TestConcurrentCreateRequests(unittest.TestCase):
         return list(result_queue.queue)
 
 
-    def _get_license_action_url(self, action: str, mnrs: list[str]):
-        mnrs_arg = ",".join(mnrs)
-        return f"{self.root}/license_sequence/{action}/?mnrs={mnrs_arg}"
+    def _get_license_action_url(self, action: str, license_numbers: list[str]):
+        license_numbers_arg = ",".join(license_numbers)
+        return f"{self.root}/license_sequence/{action}/?license_numbers={license_numbers_arg}"
 
 
 if __name__ == "__main__":

@@ -27,13 +27,13 @@ import { EditSection } from "./EditSection";
 
 type LicenceViewProps = {
   license: LicenseInstance;
-  mnr: string;
+  licenseNumber: string;
   status: string;
   onUpdated: () => unknown | Promise<unknown>;
 };
 
 type LicenseDisplayProps = {
-  mnr: string;
+  licenseNumber: string;
   license: LicenseInstance;
 };
 
@@ -42,7 +42,7 @@ type LicenseEditProps = LicenseDisplayProps & {
 };
 
 function LicenseInfoEdit({
-  mnr,
+  licenseNumber,
   license,
   status,
   onUpdated,
@@ -53,7 +53,7 @@ function LicenseInfoEdit({
 
   const { submit, isSubmitting, errors } = useFormSubmission(
     async (license: LicenseFormData) =>
-      await client.updateLicense(mnr, license),
+      await client.updateLicense(licenseNumber, license),
     async (response) => {
       await response;
       modals.add(
@@ -108,7 +108,7 @@ function LicenseInfoEdit({
       <FieldErrors errors={errors?.fields || {}}>
         <LicenseEntryForm
           initialLicense={{
-            mnr: mnr,
+            license_number: licenseNumber,
             status: status,
             starts_at: license.starts_at,
             ends_at: license.ends_at,
@@ -160,13 +160,17 @@ function LicenseInfoDisplay({ license }: LicenseDisplayProps) {
   );
 }
 
-function LicenseRelationEdit({ mnr, license, onUpdated }: LicenseEditProps) {
+function LicenseRelationEdit({
+  licenseNumber,
+  license,
+  onUpdated,
+}: LicenseEditProps) {
   const { t } = useTranslation();
   const client = useClient();
   const modals = useModalsContext();
   const { submit, isSubmitting, errors } = useFormSubmission(
     (relations: LicenseActorRelation[]) =>
-      client.updateLicenseRelations(mnr, relations),
+      client.updateLicenseRelations(licenseNumber, relations),
     async (response) => {
       await response;
       modals.add(
@@ -228,7 +232,10 @@ function LicenseRelationEdit({ mnr, license, onUpdated }: LicenseEditProps) {
   );
 }
 
-function LicenseRelationDisplay({ license, mnr }: LicenseDisplayProps) {
+function LicenseRelationDisplay({
+  license,
+  licenseNumber,
+}: LicenseDisplayProps) {
   const { t, formatOption } = useTranslation();
   const client = useClient();
 
@@ -273,7 +280,7 @@ function LicenseRelationDisplay({ license, mnr }: LicenseDisplayProps) {
                     <Link href={`/actors/entry?entryId=${rel.actor.id}`}>
                       {rel.actor.full_name}
                     </Link>
-                    ({rel.mednr})
+                    ({rel.associate_number})
                   </div>
                   <div className="col-2 col-md-2 d-flex justify-content-center">
                     {isSelectableRelation(rel) ? (
@@ -326,7 +333,7 @@ function LicenseRelationDisplay({ license, mnr }: LicenseDisplayProps) {
           className="btn btn-secondary flex-grow-0"
           onClick={() =>
             sendEmailForActorsAction(
-              mnr,
+              licenseNumber,
               license.actors
                 .filter((rel) => isSelectableRelation(rel))
                 .filter((rel) => selectedActorIds.has(rel.actor.id))
@@ -345,13 +352,17 @@ function LicenseRelationDisplay({ license, mnr }: LicenseDisplayProps) {
   );
 }
 
-function LicensePermissionsEdit({ mnr, onUpdated, license }: LicenseEditProps) {
+function LicensePermissionsEdit({
+  licenseNumber,
+  onUpdated,
+  license,
+}: LicenseEditProps) {
   const { t } = useTranslation();
   const client = useClient();
   const modals = useModalsContext();
   const { submit, isSubmitting, errors } = useFormSubmission(
     async (permissions: LicensePermissionByRef[]) =>
-      client.updateLicensePermissions(mnr, permissions),
+      client.updateLicensePermissions(licenseNumber, permissions),
     async (response) => {
       await response;
       modals.add(
@@ -436,7 +447,7 @@ function LicensePermissionsDisplay({ license }: LicenseDisplayProps) {
 
 export function LicenceView({
   license,
-  mnr,
+  licenseNumber,
   status,
   onUpdated,
 }: LicenceViewProps) {
@@ -487,11 +498,16 @@ export function LicenceView({
             <LicenseInfoEdit
               license={license}
               status={status}
-              mnr={mnr}
+              licenseNumber={licenseNumber}
               onUpdated={handleUpdated}
             />
           )}
-          displayView={() => <LicenseInfoDisplay license={license} mnr={mnr} />}
+          displayView={() => (
+            <LicenseInfoDisplay
+              license={license}
+              licenseNumber={licenseNumber}
+            />
+          )}
         />
       </div>
       <div className="mb-4">
@@ -502,12 +518,15 @@ export function LicenceView({
           editView={() => (
             <LicenseRelationEdit
               license={license}
-              mnr={mnr}
+              licenseNumber={licenseNumber}
               onUpdated={handleUpdated}
             />
           )}
           displayView={() => (
-            <LicenseRelationDisplay license={license} mnr={mnr} />
+            <LicenseRelationDisplay
+              license={license}
+              licenseNumber={licenseNumber}
+            />
           )}
           isFlat
           isAccented
@@ -522,12 +541,15 @@ export function LicenceView({
           editView={() => (
             <LicensePermissionsEdit
               license={license}
-              mnr={mnr}
+              licenseNumber={licenseNumber}
               onUpdated={handleUpdated}
             />
           )}
           displayView={() => (
-            <LicensePermissionsDisplay license={license} mnr={mnr} />
+            <LicensePermissionsDisplay
+              license={license}
+              licenseNumber={licenseNumber}
+            />
           )}
           isFlat
           isAccented
@@ -556,7 +578,7 @@ export function LicenceView({
                     </span>
                     {doc.type === "license" || doc.type === "permit" ? (
                       <a
-                        href={`/api/license_sequence/${mnr}/${doc.type === "license" ? "card-pdf" : "permit-pdf"}/?actor_id=${doc.actor_id}`}
+                        href={`/api/license_sequence/${licenseNumber}/${doc.type === "license" ? "card-pdf" : "permit-pdf"}/?actor_id=${doc.actor_id}`}
                         target="_blank"
                         rel="noreferrer"
                         className="badge rounded-pill border border-primary text-primary text-decoration-none"

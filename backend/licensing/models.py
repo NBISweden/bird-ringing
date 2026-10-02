@@ -306,12 +306,13 @@ class Actor(ChangeTracking):
 class LicenseSequence(ChangeTracking):
     """
     A LicenseSequence is the main element that groups a number of license
-    instances together. It carries the global license identifier MNR
-    and the current status of the license sequence so that one can
-    see which state it is currently in.
+    instances together. It carries the global license number (formerly
+    known as MNR, the name still used in the source data files) and the
+    current status of the license sequence so that one can see which
+    state it is currently in.
     """
 
-    mnr = models.CharField(
+    license_number = models.CharField(
         max_length=4, validators=[MinLengthValidator(limit_value=4)], unique=True
     )
     status = models.PositiveIntegerField(choices=LicenseStatusChoices)
@@ -325,7 +326,7 @@ class LicenseSequence(ChangeTracking):
             current = License.objects.get(pk=current.pk)
             previous = self.latest
             if previous is None or not previous.is_equal(current):
-                last_version = License.objects.filter(sequence__mnr=self.mnr).aggregate(
+                last_version = License.objects.filter(sequence__license_number=self.license_number).aggregate(
                     last_version=Max("version", default=0)
                 )["last_version"]
                 self.latest = current.copy_to_new_version(last_version + 1)
@@ -341,7 +342,7 @@ class LicenseSequence(ChangeTracking):
         return License.objects.filter(sequence=self, version=0).first()
 
     def __str__(self):
-        return self.mnr
+        return self.license_number
 
 
 class LicenseDocument(ChangeTracking):
@@ -396,9 +397,9 @@ class License(ChangeTracking):
     A License groups all the information related to activities performed by
     any number of actors.
 
-    Only the currently active license for a given `mnr` may be updated.
+    Only the currently active license for a given `license_number` may be updated.
 
-    The history of a license is importat to keep so that activity can be
+    The history of a license is important to keep so that activity can be
     tracked over time. Changes to a current license may overwrite the
     current state but when a new period begins a new license entry should
     be created in order to keep track of what happened during the last period.
@@ -480,7 +481,7 @@ class License(ChangeTracking):
             self.report_status,
             set((
                 relation
-                for relation in self.actors.values_list("actor__id", "mednr", "role")
+                for relation in self.actors.values_list("actor__id", "associate_number", "role")
             )),
         )
     
@@ -505,7 +506,7 @@ class License(ChangeTracking):
         )
 
     def __str__(self):
-        return f"{self.sequence.mnr}:{self.version}"
+        return f"{self.sequence.license_number}:{self.version}"
 
 
 class Species(ChangeTracking):
@@ -541,7 +542,7 @@ class LicenseRelation(ChangeTracking):
     license = models.ForeignKey(
         License, on_delete=models.CASCADE, related_name="actors"
     )
-    mednr = models.CharField(
+    associate_number = models.CharField(
         max_length=4,
         validators=[MinLengthValidator(limit_value=4)],
         blank=True,
@@ -550,8 +551,8 @@ class LicenseRelation(ChangeTracking):
     role = models.PositiveIntegerField(choices=LicenseRoleChoices)
 
     @property
-    def mnr(self):
-        return self.license.sequence.mnr
+    def license_number(self):
+        return self.license.sequence.license_number
 
     def copy_to(self, license: License):
         base = LicenseRelation.objects.get(pk=self.pk)
@@ -568,7 +569,7 @@ class LicenseRelation(ChangeTracking):
                 name="unique-actors-for-role-and-license",
             ),
             models.UniqueConstraint(
-                fields=["mednr", "license"], name="unique-mednr-for-license"
+                fields=["associate_number", "license"], name="unique-associate-number-for-license"
             ),
         ]
 
@@ -846,8 +847,8 @@ class LicenseSequenceImport(ImportTracking):
 
     @staticmethod
     def get_key(**license):
-        mnr = license["mnr"]
-        return slugify(mnr)
+        license_number = license["license_number"]
+        return slugify(license_number)
 
 
 class LicenseImportModelManager(ImportModelManager):
@@ -871,7 +872,7 @@ class LicenseImportModelManager(ImportModelManager):
             key=key,
             item=item,
             fingerprint=self.get_fingerprint({
-                "mnr": item.sequence.mnr,
+                "license_number": item.sequence.license_number,
                 "version": item.version
             })
         )
@@ -884,8 +885,8 @@ class LicenseImport(ImportTracking):
 
     @staticmethod
     def get_key(**license_data):
-        mnr = license_data["sequence"].mnr
-        return slugify(f"{mnr}")
+        license_number = license_data["sequence"].license_number
+        return slugify(f"{license_number}")
     
     @staticmethod
     def get_context_key(lic, context=None):

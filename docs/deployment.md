@@ -54,7 +54,7 @@ Some configuration options are supplied as environment variables using Docker Co
 | backend            | DJANGO_TEMPLATES_DIR                  | A path (within the container) to the directory holding email templates. (By default it is `/resources/templates`)                                                                                                                                                            |
 | backend            | LICENSING_EMAIL_TEMPLATE              | A path relative to the `DJANGO_TEMPLATES_DIR` from which to load the email template. (An example template file can be found [here](./examples/example_email.txt).)                                                                                                           |
 | backend            | LICENSING_EMAIL_FROM_ADDR             | An email address from which the licensing emails should be sent.                                                                                                                                                                                                             |
-| backend            | LICENSING_EMAIL_SUBJECT               | A template string using the [django template language](https://docs.djangoproject.com/en/5.2/ref/templates/language/) where the variables `mnr` and `name` are available. The variable `name` contains the name of the receiving actor.                                      |
+| backend            | LICENSING_EMAIL_SUBJECT               | A template string using the [django template language](https://docs.djangoproject.com/en/5.2/ref/templates/language/) where the variables `license_number` and `name` are available. The variable `name` contains the name of the receiving actor. (`mnr` is a deprecated alias for `license_number`.) |
 | backend            | LICENSING_EMAIL_HTML_TEMPLATE         | (Optional) A path relative to the `DJANGO_TEMPLATES_DIR` from which to load the html email template. (An example template file can be found [here](./examples/example_email.html).)                                                                                          |
 | backend            | LICENSING_COMMUNICATION_LANGUAGE_CODE | (Optional) Specify the language used when sending emails. Currently allowed values are `en` and `sv`. The default is `en`. (`Note:` This only affects system values. Most of the message content is still dictated by templates and template strings).                               |
 | backend            | DJANGO_EMAIL_BACKEND                  | For production instances, use `django.core.mail.backends.smtp.EmailBackend` and for test instances you may use `django.core.mail.backends.console.EmailBackend`. See [django documentation](https://docs.djangoproject.com/en/6.0/topics/email/#email-backends) for details. |
@@ -96,7 +96,7 @@ services:
       DJANGO_EMAIL_HOST: email.example.com
       DJANGO_EMAIL_PORT: 465
       LICENSING_EMAIL_FROM_ADDR: user@email.example.com
-      LICENSING_EMAIL_SUBJECT: "Hello world from bird ringing ({{mnr}}) {{name|safe}}"
+      LICENSING_EMAIL_SUBJECT: "Hello world from bird ringing ({{license_number}}) {{name|safe}}"
       LICENSING_EMAIL_HTML_TEMPLATE: "email_template.html"
       LICENSING_EMAIL_TEMPLATE: "email_template.txt"
 
@@ -221,7 +221,7 @@ services:
       DJANGO_EMAIL_HOST: email.example.com
       DJANGO_EMAIL_PORT: 465
       LICENSING_EMAIL_FROM_ADDR: user@email.example.com
-      LICENSING_EMAIL_SUBJECT: "Hello world from bird ringing ({{mnr}}) {{name|safe}}"
+      LICENSING_EMAIL_SUBJECT: "Hello world from bird ringing ({{license_number}}) {{name|safe}}"
       LICENSING_EMAIL_HTML_TEMPLATE: "email_template.html"
       LICENSING_EMAIL_TEMPLATE: "email_template.txt"
 

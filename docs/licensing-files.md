@@ -2,6 +2,8 @@
 
 The licensing system requires a number of files stored using the [CSV format](https://en.wikipedia.org/wiki/Comma-separated_values). The files and their required content will be described below. The expectations are driven by the needs of the management command `load_data`.
 
+The column names below are those used in the source files. Within the system, `Mnr` is called the license number (`license_number`) and `Mednr` the associate number (`associate_number`).
+
 The following table contains the required files with their id, description and an example filename expected when the command `load_data` is supplied with the flag `--path_format=/bird-ringing-data/{id}.csv`
 
 | File id | File name | Description |
