@@ -42,7 +42,7 @@ services:
       DJANGO_EMAIL_USE_SSL: false
       DJANGO_EMAIL_HOST_PASSWORD_FILE: /run/secrets/django-email-password
       LICENSING_EMAIL_FROM_ADDR: user@email.example.com
-      LICENSING_EMAIL_SUBJECT: "Hello world from bird ringing ({{mnr}}) {{name|safe}}"
+      LICENSING_EMAIL_SUBJECT: "Hello world from bird ringing ({{license_number}}) {{name|safe}}"
     volumes:
       - ./backend:/app
     secrets:

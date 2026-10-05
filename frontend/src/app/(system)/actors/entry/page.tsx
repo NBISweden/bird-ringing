@@ -123,7 +123,7 @@ function ActorViewBase() {
   const previousLicenseGroups = previousLicenses.reduce<
     Record<string, ActorLicenseRelation[]>
   >((acc, l) => {
-    const key = `${l.mnr}:${l.mednr}:${l.role}`;
+    const key = `${l.license_number}:${l.associate_number}:${l.role}`;
     acc[key] = acc[key] || [];
     acc[key].push(l);
     return acc;
@@ -226,7 +226,9 @@ function ActorViewBase() {
 }
 
 function getLicenseGroupKey(licenses: ActorLicenseRelation[]) {
-  return licenses.map((l) => `${l.starts_at}${l.mnr}-${l.mednr}`).join(";");
+  return licenses
+    .map((l) => `${l.starts_at}${l.license_number}-${l.associate_number}`)
+    .join(";");
 }
 
 function PaginatedLicenses({ items }: { items: ActorLicenseRelation[][] }) {
@@ -360,8 +362,8 @@ function LicenseEntry({ license }: { license: ActorLicenseRelation }) {
     role,
     communication_type,
     communication_status,
-    mnr,
-    mednr,
+    license_number,
+    associate_number,
   } = license;
   const licenseStatus = getLicenseStatus(license);
   const licenseIsActive = licenseStatus === "in-effect";
@@ -369,8 +371,8 @@ function LicenseEntry({ license }: { license: ActorLicenseRelation }) {
     <div className="row">
       <div className="py-2 col-3 text-nowrap d-flex flex-column justify-content-center">
         <span>
-          <Link href={`/licenses/entry?mnr=${mnr}`}>
-            {mnr}-{mednr}
+          <Link href={`/licenses/entry?entryId=${license_number}`}>
+            {license_number}-{associate_number}
           </Link>
         </span>
         <span className="text-secondary small">{role}</span>

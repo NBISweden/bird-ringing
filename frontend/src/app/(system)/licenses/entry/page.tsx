@@ -18,22 +18,22 @@ async function fetchLicense([client, _ctx, entryId]: [
   "license",
   string,
 ]) {
-  return client.fetchLicenseSequenceByMnr(entryId);
+  return client.fetchLicenseSequenceByLicenseNumber(entryId);
 }
 
 function LicenseViewInner() {
   const params = useSearchParams();
-  const mnr = params.get("mnr");
+  const licenseNumber = params.get("entryId");
   const client = useClient();
   const { t, format, formatOption } = useTranslation();
   const { data, isLoading, error, mutate } = useSWR(
-    mnr ? [client, "license", mnr] : null,
+    licenseNumber ? [client, "license", licenseNumber] : null,
     fetchLicense,
   );
 
   const [historyPage, setHistoryPage] = useState(1);
 
-  if (!mnr) {
+  if (!licenseNumber) {
     notFound();
   }
 
@@ -42,7 +42,9 @@ function LicenseViewInner() {
       <div className="container">
         <h2>{t("licenseErrorLoadingLicenseTitle")}</h2>
 
-        <p>{t("licenseErrorLoadingLicenseText", { licenseId: mnr })}</p>
+        <p>
+          {t("licenseErrorLoadingLicenseText", { licenseId: licenseNumber })}
+        </p>
         <Alert type="danger">
           <p>{error instanceof Error ? error.message : String(error)}</p>
         </Alert>
@@ -53,7 +55,9 @@ function LicenseViewInner() {
   if (isLoading || !data) {
     return (
       <div className="container">
-        <h2>{t("licenseView", { licenseId: mnr, licenseHolder: "-" })}</h2>
+        <h2>
+          {t("licenseView", { licenseId: licenseNumber, licenseHolder: "-" })}
+        </h2>
         <Spinner />
       </div>
     );
@@ -77,7 +81,7 @@ function LicenseViewInner() {
         <div className="col-12 col-xl-10 col-xxl-9">
           <h1 className="h2">
             {t("licenseView", {
-              licenseId: data.mnr,
+              licenseId: data.license_number,
               licenseHolder: data.license_holder,
             })}
             <Badge
@@ -95,7 +99,7 @@ function LicenseViewInner() {
           </h1>
           <LicenceView
             license={data.latest}
-            mnr={data.mnr}
+            licenseNumber={data.license_number}
             status={data.status}
             onUpdated={() => mutate()}
           />
