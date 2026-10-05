@@ -57,6 +57,9 @@ jobs:
         run: |
           ./create-test-users    
 
+      - name: Initialize test data
+        run: ./data-init
+
       - name: Run integration tests
         run: |
           python integration_tests/test_api.py
