@@ -55,7 +55,7 @@ class TestConcurrentCreateRequests(unittest.TestCase):
         self.assertTrue(len(result_list) > 0)
 
         status_code, data = result_list[0]
-        self.assertEqual(status_code, 200)
+        self.assertEqual(status_code, 200, data)
         for status_code_a, data_a in result_list[1:]:
             self.assertEqual(status_code_a, status_code)
             self.assertEqual(data_a, data)
