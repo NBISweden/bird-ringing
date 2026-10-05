@@ -53,6 +53,10 @@ jobs:
         run: |
           ./compose-dev.sh up --build -d
 
+      - name: Create test users
+        run: |
+          ./create-test-users    
+
       - name: Run integration tests
         run: |
           python integration_tests/test_api.py
