@@ -1,5 +1,5 @@
 from django.test import TestCase
-from licensing.rest.core import (
+from licensing.rest.license_sequence_view import (
     LicensePermissionSerializer,
     LicenseSerializer,
     LicenseActorRelationSerializer,
