@@ -1,5 +1,5 @@
 from datetime import date, timedelta
-from licensing.rest.core import ValueListMixin
+from licensing.rest.utils import ValueListMixin
 from licensing.models import PermitDnr
 from django.contrib.auth.models import User
 from rest_framework import viewsets, serializers
