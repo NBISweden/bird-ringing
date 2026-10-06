@@ -42,8 +42,8 @@ jobs:
             backend:
               environment:
                 DJANGO_ALLOWED_HOSTS: "backend, localhost"
-                LICENSE_CARD_FILE: /resources/integration/license-card-test.svg
-                PERMIT_TEMPLATE_FILE: /resources/integration/permit-test.docx
+                LICENSE_CARD_FILE: /resources/license-card-test.svg
+                PERMIT_TEMPLATE_FILE: /resources/permit-test.docx
                 LICENSING_COMMUNICATION_LANGUAGE_CODE: "sv"
                 GUNICORN_WORKERS: 3
                 GUNICORN_TIMEOUT: 120
