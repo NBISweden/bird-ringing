@@ -42,13 +42,13 @@ jobs:
             backend:
               environment:
                 DJANGO_ALLOWED_HOSTS: "backend, localhost"
-                LICENSE_CARD_FILE: /resources/license-card-test.svg
-                PERMIT_TEMPLATE_FILE: /resources/permit-test.docx
+                LICENSE_CARD_FILE: /test-resources/license-card-test.svg
+                PERMIT_TEMPLATE_FILE: /test-resources/permit-test.docx
                 LICENSING_COMMUNICATION_LANGUAGE_CODE: "sv"
                 GUNICORN_WORKERS: 3
                 GUNICORN_TIMEOUT: 120
               volumes:
-                - ./integration_tests/resources:/resources/integration:ro
+                - ./integration_tests/resources:/test-resources:ro
           EOF
 
       - name: Start dev stack
