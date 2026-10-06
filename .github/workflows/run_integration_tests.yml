@@ -48,7 +48,7 @@ jobs:
                 GUNICORN_WORKERS: 3
                 GUNICORN_TIMEOUT: 120
               volumes:
-                - ./integration_tests/resources:/test-resources:ro
+                - ./integration_tests/test-resources:/test-resources:ro
           EOF
 
       - name: Start dev stack
