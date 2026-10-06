@@ -32,7 +32,7 @@ case $SERVICE_MODE in
 	production*)
 		# Ensure that the static content in /vol is updated.
 		( cd /vol && find . -delete )
-		tar -C /static -c -f - . | tar -v -C /vol -x -f -
+		tar -C /static -c -f - . | tar -C /vol -x -f -
 
 		TIMEOUT=${GUNICORN_TIMEOUT:-30}
 		WORKERS=${GUNICORN_WORKERS:-1}

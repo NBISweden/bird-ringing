@@ -5,7 +5,7 @@ set -u
 if [ "$SERVICE_MODE" = production ]; then
 	# Ensure that the static content in /vol is updated.
 	( cd /vol && find . -delete )
-	tar -C /static -c -f - . | tar -v -C /vol -x -f -
+	tar -C /static -c -f - . | tar -C /vol -x -f -
 
 	exit
 fi
