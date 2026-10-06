@@ -47,8 +47,8 @@ jobs:
                 LICENSING_COMMUNICATION_LANGUAGE_CODE: "sv"
                 GUNICORN_WORKERS: 3
                 GUNICORN_TIMEOUT: 120
-            volumes:
-              - ./integration_tests/resources:/resources/integration:ro
+              volumes:
+                - ./integration_tests/resources:/resources/integration:ro
           EOF
 
       - name: Start dev stack
