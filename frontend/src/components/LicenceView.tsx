@@ -261,6 +261,22 @@ function LicenseRelationDisplay({
       rel.role === "associate_ringer" && selectedActorIds.has(rel.actor.id),
   );
   const effectiveNotifyRinger = notifyRinger && hasSelectedAssociateRinger;
+  const allSelected = license.actors
+    .filter(isSelectableRelation)
+    .every((rel) => selectedActorIds.has(rel.actor.id));
+  const toggleAllSelectable = () => {
+    if (allSelected) {
+      setSelectedActorIds(new Set());
+    } else {
+      setSelectedActorIds(
+        new Set(
+          license.actors
+            .filter(isSelectableRelation)
+            .map((rel) => rel.actor.id),
+        ),
+      );
+    }
+  };
   return (
     <>
       <div className="card-body">
@@ -335,13 +351,28 @@ function LicenseRelationDisplay({
             id="notify-ringer"
           />
           <label
-            className={`form-check-label small text-muted ${
-              !hasSelectedAssociateRinger || !isActive ? "opacity-50" : ""
-            }`}
+            className="form-check-label small text-muted"
             htmlFor="notify-ringer"
             title={t("licenseNotifyRingerHelp")}
           >
             {t("licenseNotifyRinger")}
+          </label>
+        </div>
+        <div className="form-check m-0">
+          <input
+            className="form-check-input border border-dark"
+            type="checkbox"
+            checked={allSelected}
+            disabled={!isActive}
+            onChange={toggleAllSelectable}
+            id="select-all"
+          />
+          <label
+            className="form-check-label small text-muted"
+            htmlFor="select-all"
+            title={t("licenseSelectAllActors")}
+          >
+            {t("licenseSelectAllActors")}
           </label>
         </div>
         <button

@@ -267,6 +267,7 @@ const messagesBase = {
   licenseNotifyRinger: "Notify ringer",
   licenseNotifyRingerHelp:
     "Also send a bundled e-mail to the license ringer with the selected associate ringers' documents.",
+  licenseSelectAllActors: "Select all",
   licenseRingerBundleMessagesSent: "Ringer bundle e-mails sent: {count}",
   licenseRingerBundleMessageSent: "Ringer bundle e-mail sent.",
   licenseRingerBundleError: "Ringer bundle error: {error}",

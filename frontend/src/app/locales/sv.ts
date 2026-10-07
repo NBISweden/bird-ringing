@@ -261,6 +261,7 @@ export const locale: TranslationMap = {
   licenseNotifyRinger: "Meddela ringmärkare",
   licenseNotifyRingerHelp:
     "Skickar även ett samlat e-postmeddelande till ringmärkaren med de valda hjälparnas dokument.",
+  licenseSelectAllActors: "Välj alla",
   licenseSendingLicenses: "Skickar licenser...",
   licenseSpecies: "Arter",
   licenseRingerBundleMessagesSent:
