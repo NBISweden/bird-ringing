@@ -34,6 +34,18 @@ function SendEmailResultDetails({
 
   return (
     <>
+      {data.skipped_inactive_licenses &&
+        data.skipped_inactive_licenses.length > 0 && (
+          <div className="alert alert-warning">
+            <p className="mb-2">{t("licenseInactiveLicensesSkipped")}:</p>
+            <ul className="mb-0">
+              {data.skipped_inactive_licenses.map((license_number, idx) => (
+                <li key={idx}>{license_number}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+
       {showRingerBundleMessagesSent &&
         typeof data.ringer_bundle_messages_sent === "number" && (
           <div className="alert alert-info">

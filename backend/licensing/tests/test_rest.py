@@ -177,6 +177,7 @@ class LicenseDocumentEmailTests(_EmailTestBase):
                 "failed_messages": [],
                 "skipped_messages": [],
                 "ringer_bundle_messages_sent": 2,
+                "skipped_inactive_licenses": [],
             }, 
             response.json(),
             "All licenses are prepared and sent"
@@ -203,6 +204,7 @@ class LicenseDocumentEmailTests(_EmailTestBase):
                     }
                 ],
                 "ringer_bundle_messages_sent": 2,
+                "skipped_inactive_licenses": [],
             }, 
             response.json(),
             "Users without email are ignored when batch sending"
@@ -341,7 +343,7 @@ class LicenseDocumentEmailTests(_EmailTestBase):
                 "messages_sent": 4,
                 "failed_messages": [],
                 "skipped_messages": [],
-                "ringer_bundle_failed_messages": [{"to": ["ringer@example.com"], "details": "SMTP failed"}],
+                "ringer_bundle_failed_messages": [{"to": ["ringer@example.com"], "details": "SMTP failed"}]
             },
             resp.json(),
         )
@@ -368,6 +370,45 @@ class LicenseDocumentEmailTests(_EmailTestBase):
         self.assertEqual([], body["failed_messages"])
         self.assertEqual([], body["skipped_messages"])
         self.assertEqual("Failed to connect to mail server", body["ringer_bundle_error"])
+
+    def test_batch_skips_inactive_licenses(self):
+        self._add_license_documents(self.actors, self.licenses)
+        self._with_access()
+
+        for status in (LicenseStatusChoices.PAUSED, LicenseStatusChoices.TERMINATED):
+            with self.subTest(status=status):
+                LicenseSequence.objects.filter(license_number__in=["0001", "0002"]).update(
+                    status=LicenseStatusChoices.ACTIVE
+                )
+                mail.outbox = []
+                LicenseSequence.objects.filter(license_number="0002").update(status=status)
+
+                url = self._send_mail_url(["0001", "0002"], True)
+                response = self.client.put(url)
+                self.assertEqual(response.status_code, 200)
+
+                body = response.json()
+                self.assertEqual(2, body["messages_sent"])
+                self.assertEqual(["0002"], body["skipped_inactive_licenses"])
+                self.assertEqual(1, body["ringer_bundle_messages_sent"])
+
+    def test_batch_all_inactive_sends_nothing(self):
+        self._add_license_documents(self.actors, self.licenses)
+        self._with_access()
+
+        LicenseSequence.objects.filter(license_number__in=["0001", "0002"]).update(
+            status=LicenseStatusChoices.PAUSED
+        )
+
+        url = self._send_mail_url(["0001", "0002"], True)
+        response = self.client.put(url)
+        self.assertEqual(response.status_code, 200)
+
+        body = response.json()
+        self.assertEqual(0, body["messages_sent"])
+        self.assertEqual(0, body["ringer_bundle_messages_sent"])
+        self.assertEqual(sorted(["0001", "0002"]), sorted(body["skipped_inactive_licenses"]))
+        self.assertEqual(0, len(mail.outbox))
 
     def test_communication_log_was_added(self):
         self._add_license_documents(self.actors, self.licenses)
@@ -508,6 +549,39 @@ class LicenseDocumentEmailSelectedActorsTests(_EmailTestBase):
 
         self.assertEqual(resp.status_code, 400)
         self.assertEqual({"actor_ids": "actor_ids is required (comma-separated)."}, resp.json())
+
+    def test_fail_when_license_is_inactive(self):
+        self._add_license_documents(self.actors, self.licenses)
+        self._with_access()
+
+        license_obj = next(lic for lic in self.licenses if lic.sequence.license_number == "0002")
+
+        for status in (LicenseStatusChoices.PAUSED, LicenseStatusChoices.TERMINATED):
+            with self.subTest(status=status):
+                LicenseSequence.objects.filter(pk=license_obj.sequence.pk).update(status=status)
+                mail.outbox = []
+                LicenseCommunication.objects.filter(license=license_obj).delete()
+
+                url = self._send_mail_url_for_actors(
+                    license_number=license_obj.sequence.license_number,
+                    actor_ids=[self.actors[2].id],
+                    include_card=True,
+                )
+                with patch.object(LicenseSequenceViewSet, "get_queryset", self._plain_licensesequence_queryset):
+                    resp = self.client.put(url)
+
+                self.assertEqual(resp.status_code, 400)
+                self.assertEqual(
+                    {
+                        "detail": (
+                            f"License {license_obj.sequence.license_number} is not active. "
+                            "E-mails can only be sent for active licenses."
+                        )
+                    },
+                    resp.json(),
+                )
+                self.assertEqual(0, len(mail.outbox))
+                self.assertEqual(0, LicenseCommunication.objects.filter(license=license_obj).count())
 
     def test_selected_only_station_ringer_is_rejected_when_include_card(self):
         self._with_access()

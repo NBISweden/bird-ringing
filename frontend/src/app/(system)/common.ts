@@ -297,6 +297,7 @@ export interface SendEmailResult {
   ringer_bundle_message?: string;
   ringer_bundle_failed_messages?: FailedMessage[];
   ringer_bundle_error?: string;
+  skipped_inactive_licenses?: string[];
 }
 
 export type FormErrors = {
