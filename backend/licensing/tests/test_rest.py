@@ -377,11 +377,11 @@ class LicenseDocumentEmailTests(_EmailTestBase):
 
         for status in (LicenseStatusChoices.PAUSED, LicenseStatusChoices.TERMINATED):
             with self.subTest(status=status):
-                LicenseSequence.objects.filter(mnr__in=["0001", "0002"]).update(
+                LicenseSequence.objects.filter(license_number__in=["0001", "0002"]).update(
                     status=LicenseStatusChoices.ACTIVE
                 )
                 mail.outbox = []
-                LicenseSequence.objects.filter(mnr="0002").update(status=status)
+                LicenseSequence.objects.filter(license_number="0002").update(status=status)
 
                 url = self._send_mail_url(["0001", "0002"], True)
                 response = self.client.put(url)
@@ -396,7 +396,7 @@ class LicenseDocumentEmailTests(_EmailTestBase):
         self._add_license_documents(self.actors, self.licenses)
         self._with_access()
 
-        LicenseSequence.objects.filter(mnr__in=["0001", "0002"]).update(
+        LicenseSequence.objects.filter(license_number__in=["0001", "0002"]).update(
             status=LicenseStatusChoices.PAUSED
         )
 
@@ -554,7 +554,7 @@ class LicenseDocumentEmailSelectedActorsTests(_EmailTestBase):
         self._add_license_documents(self.actors, self.licenses)
         self._with_access()
 
-        license_obj = next(lic for lic in self.licenses if lic.sequence.mnr == "0002")
+        license_obj = next(lic for lic in self.licenses if lic.sequence.license_number == "0002")
 
         for status in (LicenseStatusChoices.PAUSED, LicenseStatusChoices.TERMINATED):
             with self.subTest(status=status):
@@ -563,7 +563,7 @@ class LicenseDocumentEmailSelectedActorsTests(_EmailTestBase):
                 LicenseCommunication.objects.filter(license=license_obj).delete()
 
                 url = self._send_mail_url_for_actors(
-                    mnr=license_obj.sequence.mnr,
+                    license_number=license_obj.sequence.license_number,
                     actor_ids=[self.actors[2].id],
                     include_card=True,
                 )
@@ -574,7 +574,7 @@ class LicenseDocumentEmailSelectedActorsTests(_EmailTestBase):
                 self.assertEqual(
                     {
                         "detail": (
-                            f"License {license_obj.sequence.mnr} is not active. "
+                            f"License {license_obj.sequence.license_number} is not active. "
                             "E-mails can only be sent for active licenses."
                         )
                     },

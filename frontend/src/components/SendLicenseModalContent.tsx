@@ -39,8 +39,8 @@ function SendEmailResultDetails({
           <div className="alert alert-warning">
             <p className="mb-2">{t("licenseInactiveLicensesSkipped")}:</p>
             <ul className="mb-0">
-              {data.skipped_inactive_licenses.map((mnr, idx) => (
-                <li key={idx}>{mnr}</li>
+              {data.skipped_inactive_licenses.map((license_number, idx) => (
+                <li key={idx}>{license_number}</li>
               ))}
             </ul>
           </div>

@@ -1196,7 +1196,7 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet, ValueListMixin):
 
             # Only active licenses can receive communication; paused/terminated are skipped.
             (active_licenses, inactive_licenses) = split_items(licenses, lambda lic: lic.sequence.status == LicenseStatusChoices.ACTIVE)
-            inactive_mnrs = [lic.sequence.mnr for lic in inactive_licenses]
+            inactive_license_numbers = [lic.sequence.license_number for lic in inactive_licenses]
 
             # Always build bundle messages first (validation), then send actor mails, then send bundles.
             try:
@@ -1245,7 +1245,7 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet, ValueListMixin):
                 resp,
                 {
                     "ringer_bundle_messages_sent": len(bundle_messages),
-                    "skipped_inactive_licenses": inactive_mnrs,
+                    "skipped_inactive_licenses": inactive_license_numbers,
                 },
             )
 
@@ -1275,7 +1275,7 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet, ValueListMixin):
             # Only active licenses can receive communication; paused/terminated are rejected.
             if sequence.status != LicenseStatusChoices.ACTIVE:
                 return Response(
-                    {"detail": f"License {sequence.mnr} is not active. E-mails can only be sent for active licenses."},
+                    {"detail": f"License {sequence.license_number} is not active. E-mails can only be sent for active licenses."},
                     status=400,
                 )
 
