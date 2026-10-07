@@ -290,6 +290,12 @@ function LicenseRelationDisplay({
                         className="form-check-input border border-dark"
                         type="checkbox"
                         checked={selectedActorIds.has(rel.actor.id)}
+                        disabled={!isActive}
+                        title={
+                          !isActive
+                            ? t("licenseSendDisabledInactive")
+                            : undefined
+                        }
                         onChange={(e) => {
                           const checked = e.target.checked;
                           const id = rel.actor.id;
