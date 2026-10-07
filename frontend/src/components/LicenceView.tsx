@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import {
+  ActorBase,
   convertDateToLocale,
-  convertOnlyDateToLocale,
   LicenseActorRelation,
   LicenseInstance,
   LicensePermissionByRef,
+  Options,
 } from "@/app/(system)/common";
 import {
   AlertModal,
@@ -14,16 +15,21 @@ import {
   useModalsContext,
 } from "../app/(system)/contexts";
 import { useSendLicenseEmailForActorsAction } from "../app/(system)/licenses/actions";
-import { useTranslation } from "@/app/(system)/internationalization";
+import {
+  TranslationId,
+  useTranslation,
+} from "@/app/(system)/internationalization";
 import { LicensePermissionItem } from "./LicensePermissionItem";
 import { useCallback, useState } from "react";
 import { LicenseRelationsForm } from "./LicenseRelationsForm";
 import { LicensePermissionEntryForm } from "./LicensePermissionEntryForm";
 import { LicenseEntryForm, LicenseFormData } from "./LiceneseEntryForm";
-import { useFormSubmission } from "@/app/(system)/hooks";
+import { useFormSubmission, useOptions } from "@/app/(system)/hooks";
 import { FieldErrors } from "./InputFields";
 import { Alert } from "./Alert";
 import { EditSection } from "./EditSection";
+import Icon from "./Icon";
+import Spinner from "./Spinner";
 
 type LicenceViewProps = {
   license: LicenseInstance;
@@ -232,6 +238,34 @@ function LicenseRelationEdit({
   );
 }
 
+function getActorSortingFunction(
+  order: string,
+  options: { licenseRoles?: Options["license_role"][] } = {},
+): (
+  a: LicenseActorRelation & { actor: ActorBase },
+  b: LicenseActorRelation & { actor: ActorBase },
+) => number {
+  switch (order) {
+    case "name": {
+      return (a, b) => {
+        const aName = a.actor.last_name || a.actor.first_name;
+        const bName = b.actor.last_name || b.actor.first_name;
+        return aName.localeCompare(bName);
+      };
+    }
+    case "role":
+    default: {
+      return (a, b) => {
+        const roles = options.licenseRoles ?? [];
+        const roleOrder = new Map(roles.map((r, index) => [r.id, index]));
+        return (roleOrder.get(a.role) ?? 0) - (roleOrder.get(b.role) ?? 0);
+      };
+    }
+  }
+}
+
+type RelationSortingOrder = "role" | "name";
+
 function LicenseRelationDisplay({
   license,
   licenseNumber,
@@ -244,6 +278,11 @@ function LicenseRelationDisplay({
 
   const [selectedActorIds, setSelectedActorIds] = useState(new Set<number>());
   const [notifyRinger, setNotifyRinger] = useState(false);
+  const [sortingOrder, setSortingOrder] =
+    useState<RelationSortingOrder>("role");
+  const { data: licenseRoles, isLoading: isLoadingRoles } =
+    useOptions("license_role");
+
   const isActive = status === "active";
 
   const isSelectableRelation = (rel: LicenseInstance["actors"][number]) => {
@@ -277,12 +316,45 @@ function LicenseRelationDisplay({
       );
     }
   };
+
+  const sortingFunc = getActorSortingFunction(sortingOrder, { licenseRoles });
+  const sortedActors = (license.actors || []).sort(sortingFunc);
+  const sortingOrderSelection: Array<
+    [RelationSortingOrder, string, TranslationId]
+  > = [
+    ["role", "col-12 col-md-3", "licenseRole"],
+    ["name", "col-10 col-md-7", "actorName"],
+  ];
   return (
     <>
       <div className="card-body">
-        {license.actors?.length ? (
+        {isLoadingRoles ? <Spinner /> : <></>}
+        {sortedActors.length && !isLoadingRoles ? (
           <ul className="list-group list-group-flush">
-            {license.actors.map((rel, i) => (
+            <li className="list-group-item mb-3">
+              <div className="row align-items-center g-2">
+                {sortingOrderSelection.map(([so, className, messageId]) => (
+                  <div
+                    className={`${className} fw-semibold text-capitalize`}
+                    key={so}
+                  >
+                    <span
+                      className="text-nowrap link-primary"
+                      role="button"
+                      onClick={() => setSortingOrder(so)}
+                    >
+                      {t(messageId)}
+                      {sortingOrder === so ? (
+                        <Icon icon="caret-down-fill" />
+                      ) : (
+                        <></>
+                      )}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </li>
+            {sortedActors.map((rel, i) => (
               <li className="list-group-item mb-3" key={i}>
                 <div className="row align-items-center g-2">
                   <div className="col-12 col-md-3 fw-semibold text-capitalize">
