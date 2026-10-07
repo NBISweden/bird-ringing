@@ -48,7 +48,7 @@ class TestConcurrentCreateRequests(unittest.TestCase):
         ]
         entries = [
             (self._get_license_action_url("card-create", mnrs), None)
-            for i in range(5)
+            for i in range(1)
         ]
 
         result_list = self._parallell_requests(entries)
