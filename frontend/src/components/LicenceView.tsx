@@ -502,12 +502,17 @@ export function LicenceView({
   const [editSection, setEditSection] = useState<
     null | "relations" | "basic" | "permissions"
   >(null);
-  const { t, format } = useTranslation();
+  const { t, format, formatOption } = useTranslation();
 
   const handleUpdated = useCallback(() => {
     setEditSection(null);
     onUpdated();
   }, [onUpdated, setEditSection]);
+  const statusLabel = formatOption(status, {
+    active: "licenseStatusActive",
+    paused: "licenseStatusPaused",
+    terminated: "licenseStatusTerminated",
+  });
 
   return (
     <>
@@ -519,21 +524,13 @@ export function LicenceView({
           displayHeader={() => (
             <>
               <div className="flex-grow-0">
-                {format(
-                  license.ends_at
-                    ? "licenseValidityPeriod"
-                    : "licensePeriodStart",
-                  {
-                    startsAt: convertOnlyDateToLocale(license.starts_at),
-                    endsAt: convertOnlyDateToLocale(license.ends_at),
-                    from: (chunks) => (
-                      <span className="fst-italic">{chunks}</span>
-                    ),
-                    to: (chunks) => (
-                      <span className="fst-italic">{chunks}</span>
-                    ),
-                  },
-                )}
+                {format("licenseStatusSummary", {
+                  status: statusLabel,
+                  year: new Date(license.starts_at).getFullYear(),
+                  param: (chunks) => (
+                    <span className="fst-italic">{chunks}</span>
+                  ),
+                })}
               </div>
               <div className="flex-grow-0 fw-light">
                 {license.location || " "}
