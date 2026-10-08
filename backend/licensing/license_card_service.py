@@ -169,7 +169,7 @@ class LicenseCardService:
             "actor_birth_year": int(actor.birth_year) if actor.birth_year else "",
 
             "starts_at": lic.starts_at.isoformat(),
-            "ends_at": lic.ends_at.isoformat(),
+            "ends_at": None if lic.ends_at is None else lic.ends_at.isoformat(),
 
             "role": int(rel.role),
             "mednr": rel.associate_number or "",
