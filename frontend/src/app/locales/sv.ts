@@ -261,6 +261,7 @@ export const locale: TranslationMap = {
   licenseNotifyRinger: "Meddela ringmärkare",
   licenseNotifyRingerHelp:
     "Skickar även ett samlat e-postmeddelande till ringmärkaren med de valda hjälparnas dokument.",
+  licenseSelectAllActors: "Välj alla",
   licenseSendingLicenses: "Skickar licenser...",
   licenseSpecies: "Arter",
   licenseRingerBundleMessagesSent:
@@ -282,6 +283,8 @@ export const locale: TranslationMap = {
   licenseValidityPeriod:
     "<from>Giltig från </from>{startsAt}<to> till </to>{endsAt}",
   licensePeriodStart: "<from>Starts at</from> {startsAt}",
+  licenseStatusSummary:
+    "<param>År: </param>{year}, <param>status: </param>{status}",
   licenseSendDisabledInactive:
     "Licensen måste vara aktiv för att kunna skicka kommunikation.",
   licenseInactiveLicensesSkipped: "Inaktiva licenser hoppades över",

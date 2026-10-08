@@ -267,6 +267,7 @@ const messagesBase = {
   licenseNotifyRinger: "Notify ringer",
   licenseNotifyRingerHelp:
     "Also send a bundled e-mail to the license ringer with the selected associate ringers' documents.",
+  licenseSelectAllActors: "Select all",
   licenseRingerBundleMessagesSent: "Ringer bundle e-mails sent: {count}",
   licenseRingerBundleMessageSent: "Ringer bundle e-mail sent.",
   licenseRingerBundleError: "Ringer bundle error: {error}",
@@ -283,6 +284,8 @@ const messagesBase = {
   licenseValidityPeriod:
     "<from>Valid from </from>{startsAt}<to> to </to>{endsAt}",
   licensePeriodStart: "<from>Starts at</from> {startsAt}",
+  licenseStatusSummary:
+    "<param>Year: </param>{year}, <param>status: </param>{status}",
   licenseSendDisabledInactive: "License must be active to send communication.",
   licenseInactiveLicensesSkipped: "Inactive licenses skipped",
   buttonCreateDocuments: "Create documents",
