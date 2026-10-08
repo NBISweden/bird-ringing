@@ -568,7 +568,7 @@ function LicensePermissionsEdit({
       <FieldErrors errors={errors?.fields || {}}>
         <LicensePermissionEntryForm
           startsAt={new Date(license.starts_at)}
-          endsAt={new Date(license.ends_at)}
+          endsAt={license.ends_at ? new Date(license.ends_at) : undefined}
           initialPermissions={license.permissions}
           onSubmit={submit}
           isSubmitting={isSubmitting}
