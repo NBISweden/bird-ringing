@@ -1,0 +1,149 @@
+#!/bin/sh
+set -eu
+
+# Minimal data initialization for GitHub Actions integration tests.
+# Loads only MNR 0000-0010 and the lookup rows referenced by their permits.
+
+BASE_URL="${BIRD_RINGING_TEST_DATA_URL:-https://pdmnyberg.github.io/ui-examples/data/bird-ringing/next}"
+DATA_DIR="backend/mock_data/example"
+
+mkdir -p "$DATA_DIR"
+
+for dataset in Artlista Maerkare Medhj MarkAssYr Tillstand TillstProp TillstTyp; do
+    wget -q -O "$DATA_DIR/br-ex-${dataset}.csv" \
+        "$BASE_URL/br-ex-${dataset}.csv"
+done
+
+python3 - "$DATA_DIR" <<'PY'
+import csv
+import sys
+from pathlib import Path
+
+data_dir = Path(sys.argv[1])
+target_mnrs = {f"{i:04d}" for i in range(11)}
+
+
+def read_csv(name):
+    path = data_dir / f"br-ex-{name}.csv"
+    with path.open("r", encoding="utf-8-sig", newline="") as handle:
+        reader = csv.DictReader(handle)
+        return reader.fieldnames, list(reader)
+
+
+def write_csv(name, fieldnames, rows):
+    path = data_dir / f"br-ex-{name}.csv"
+    with path.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=fieldnames, lineterminator="\n")
+        writer.writeheader()
+        writer.writerows(rows)
+
+
+# Keep exactly the license holders exercised by integration_tests/test_api.py.
+maerkare_fields, maerkare = read_csv("Maerkare")
+maerkare = [row for row in maerkare if row.get("Mnr") in target_mnrs]
+
+# These references point at additional actors outside 0000-0010. They are not
+# needed by the card/permit concurrency tests. "NULL" makes CSVLoader omit them.
+for row in maerkare:
+    for column in ("AdrMnr", "AssMnr1", "AssMnr2", "AssMnr3"):
+        if column in row:
+            row[column] = "NULL"
+
+write_csv("Maerkare", maerkare_fields, maerkare)
+
+
+# Keep only permits for the test licenses.
+tillstand_fields, tillstand = read_csv("Tillstand")
+tillstand = [
+    row for row in tillstand
+    if row.get("license_mnr") in target_mnrs
+]
+write_csv("Tillstand", tillstand_fields, tillstand)
+
+
+# Derive the exact lookup rows required by those permits.
+type_codes = {
+    row["type_code"]
+    for row in tillstand
+    if row.get("type_code")
+}
+property_codes = {
+    code
+    for row in tillstand
+    for code in row.get("property_codes", "").split(";")
+    if code
+}
+species_codes = {
+    code
+    for row in tillstand
+    for code in row.get("species_codes", "").split(";")
+    if code
+}
+
+prop_fields, properties = read_csv("TillstProp")
+properties = [
+    row for row in properties
+    if row.get("property_code") in property_codes
+]
+write_csv("TillstProp", prop_fields, properties)
+
+# A property may itself reference a permit type.
+type_codes.update(
+    row["related_type_code"]
+    for row in properties
+    if row.get("related_type_code")
+)
+
+type_fields, permit_types = read_csv("TillstTyp")
+permit_types = [
+    row for row in permit_types
+    if row.get("type_code") in type_codes
+]
+write_csv("TillstTyp", type_fields, permit_types)
+
+species_fields, species = read_csv("Artlista")
+species = [
+    row for row in species
+    if row.get("VetKod") in species_codes
+]
+write_csv("Artlista", species_fields, species)
+
+
+# Associate-ringer history is not used by these integration tests.
+# Header-only files keep load_data's normal import path intact.
+medhj_fields, _ = read_csv("Medhj")
+write_csv("Medhj", medhj_fields, [])
+
+markassyr_fields, _ = read_csv("MarkAssYr")
+write_csv("MarkAssYr", markassyr_fields, [])
+
+
+# Fail early if source data changes and leaves dangling references.
+available_types = {row.get("type_code") for row in permit_types}
+available_properties = {row.get("property_code") for row in properties}
+available_species = {row.get("VetKod") for row in species}
+
+missing_types = type_codes - available_types
+missing_properties = property_codes - available_properties
+missing_species = species_codes - available_species
+
+if missing_types or missing_properties or missing_species:
+    raise SystemExit(
+        "Incomplete CI dataset: "
+        f"missing types={sorted(missing_types)}, "
+        f"properties={sorted(missing_properties)}, "
+        f"species={sorted(missing_species)}"
+    )
+
+print(
+    "CI data prepared: "
+    f"{len(maerkare)} licenses, "
+    f"{len(tillstand)} permits, "
+    f"{len(permit_types)} permit types, "
+    f"{len(properties)} properties, "
+    f"{len(species)} species"
+)
+PY
+
+# Use the existing Django import command, but with the trimmed CSV files.
+./compose-dev.sh exec -T backend python manage.py load_data

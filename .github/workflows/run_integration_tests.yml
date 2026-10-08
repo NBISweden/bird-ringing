@@ -23,8 +23,7 @@ jobs:
           python-version: "3.13"
 
       - name: Install integration test dependencies
-        run: |
-          python -m pip install requests
+        run: python -m pip install requests
 
       - name: Create Docker secrets
         run: |
@@ -40,6 +39,8 @@ jobs:
           cat > docker-compose.override.yml <<'EOF'
           services:
             backend:
+              ports:
+                - "127.0.0.1:3210:8000"
               environment:
                 SERVICE_MODE: production
                 DJANGO_ALLOWED_HOSTS: "backend, localhost"
@@ -52,20 +53,28 @@ jobs:
                 - ./integration_tests/test-resources:/test-resources:ro
           EOF
 
-      - name: Start dev stack
-        run: |
-          ./compose-dev.sh up --build -d
+      # Pull the expensive prebuilt converter instead of rebuilding LibreOffice.
+      - name: Pull docx2pdf image
+        run: ./compose-dev.sh pull docx2pdf
+
+      # Only backend contains code exercised by these integration tests.
+      - name: Build backend
+        run: ./compose-dev.sh build backend
+
+      # Starting backend automatically starts its dependency chain:
+      # database-init -> database -> backend-init, plus docx2pdf.
+      # Frontend, proxy and mailpit are intentionally not started.
+      - name: Start integration test stack
+        run: ./compose-dev.sh up --no-build -d backend
 
       - name: Create test users
-        run: |
-          ./create-test-users    
+        run: ./create-test-users
 
-      - name: Initialize test data
-        run: ./data-init
+      - name: Initialize minimal test data
+        run: ./data-init-ci
 
       - name: Run integration tests
-        run: |
-          python integration_tests/test_api.py
+        run: python integration_tests/test_api.py
 
       - name: Show logs on failure
         if: failure()
@@ -74,8 +83,8 @@ jobs:
           ./compose-dev.sh logs --no-color backend
           ./compose-dev.sh logs --no-color backend-init
           ./compose-dev.sh logs --no-color docx2pdf
+          ./compose-dev.sh logs --no-color database
 
-      - name: Stop dev stack
+      - name: Stop test stack
         if: always()
-        run: |
-          ./compose-dev.sh down -v
+        run: ./compose-dev.sh down -v
