@@ -339,7 +339,7 @@ function LicenseRelationDisplay({
                     key={so}
                   >
                     <span
-                      className="text-nowrap link-primary"
+                      className="text-nowrap link-primary text-decoration-underline"
                       role="button"
                       onClick={() => setSortingOrder(so)}
                     >
