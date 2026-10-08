@@ -240,17 +240,21 @@ function LicenseRelationEdit({
 
 function getActorSortingFunction(
   order: string,
-  options: { licenseRoles?: Options["license_role"][] } = {},
+  options: {
+    licenseRoles?: Options["license_role"][];
+    direction?: -1 | 1;
+  } = {},
 ): (
   a: LicenseActorRelation & { actor: ActorBase },
   b: LicenseActorRelation & { actor: ActorBase },
 ) => number {
+  const direction = options.direction === undefined ? 1 : options.direction;
   switch (order) {
     case "name": {
       return (a, b) => {
         const aName = a.actor.last_name || a.actor.first_name;
         const bName = b.actor.last_name || b.actor.first_name;
-        return aName.localeCompare(bName);
+        return direction * aName.localeCompare(bName);
       };
     }
     case "role":
@@ -258,13 +262,19 @@ function getActorSortingFunction(
       return (a, b) => {
         const roles = options.licenseRoles ?? [];
         const roleOrder = new Map(roles.map((r, index) => [r.id, index]));
-        return (roleOrder.get(a.role) ?? 0) - (roleOrder.get(b.role) ?? 0);
+        return (
+          direction *
+          ((roleOrder.get(a.role) ?? 0) - (roleOrder.get(b.role) ?? 0))
+        );
       };
     }
   }
 }
 
-type RelationSortingOrder = "role" | "name";
+type RelationSortingOrder = {
+  name: "role" | "name";
+  direction: 1 | -1;
+};
 
 function LicenseRelationDisplay({
   license,
@@ -278,8 +288,10 @@ function LicenseRelationDisplay({
 
   const [selectedActorIds, setSelectedActorIds] = useState(new Set<number>());
   const [notifyRinger, setNotifyRinger] = useState(false);
-  const [sortingOrder, setSortingOrder] =
-    useState<RelationSortingOrder>("role");
+  const [sortingOrder, setSortingOrder] = useState<RelationSortingOrder>({
+    name: "role",
+    direction: 1,
+  });
   const { data: licenseRoles, isLoading: isLoadingRoles } =
     useOptions("license_role");
 
@@ -317,14 +329,18 @@ function LicenseRelationDisplay({
     }
   };
 
-  const sortingFunc = getActorSortingFunction(sortingOrder, { licenseRoles });
+  const sortingFunc = getActorSortingFunction(sortingOrder.name, {
+    licenseRoles,
+    direction: sortingOrder.direction,
+  });
   const sortedActors = (license.actors || []).sort(sortingFunc);
   const sortingOrderSelection: Array<
-    [RelationSortingOrder, string, TranslationId]
+    [RelationSortingOrder["name"], string, TranslationId]
   > = [
     ["role", "col-12 col-md-3", "licenseRole"],
     ["name", "col-10 col-md-7", "actorName"],
   ];
+
   return (
     <>
       <div className="card-body">
@@ -341,11 +357,27 @@ function LicenseRelationDisplay({
                     <span
                       className="text-nowrap link-primary text-decoration-underline"
                       role="button"
-                      onClick={() => setSortingOrder(so)}
+                      onClick={() =>
+                        setSortingOrder({
+                          name: so,
+                          direction:
+                            sortingOrder.name === so
+                              ? sortingOrder.direction === 1
+                                ? -1
+                                : 1
+                              : 1,
+                        })
+                      }
                     >
                       {t(messageId)}
-                      {sortingOrder === so ? (
-                        <Icon icon="caret-down-fill" />
+                      {sortingOrder.name === so ? (
+                        <Icon
+                          icon={
+                            sortingOrder.direction === 1
+                              ? "caret-down-fill"
+                              : "caret-up-fill"
+                          }
+                        />
                       ) : (
                         <></>
                       )}
