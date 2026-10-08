@@ -2,7 +2,8 @@
 set -eu
 
 # Minimal data initialization for GitHub Actions integration tests.
-# Loads only MNR 0000-0010 and the lookup rows referenced by their permits.
+# Loads MNR 0000-0010 plus only the actors/relations and lookup rows
+# needed by those licenses and their permit documents.
 
 BASE_URL="${BIRD_RINGING_TEST_DATA_URL:-https://pdmnyberg.github.io/ui-examples/data/bird-ringing/next}"
 DATA_DIR="backend/mock_data/example"
@@ -38,30 +39,54 @@ def write_csv(name, fieldnames, rows):
         writer.writerows(rows)
 
 
-# Keep exactly the license holders exercised by integration_tests/test_api.py.
-maerkare_fields, maerkare = read_csv("Maerkare")
-maerkare = [row for row in maerkare if row.get("Mnr") in target_mnrs]
+# ---- Maerkare ---------------------------------------------------------------
+# Keep the 11 licenses exercised by integration_tests/test_api.py.
+# Permit generation also needs actors referenced by AdrMnr/AssMnr*, so retain
+# those Maerkare rows as support actors/licenses.
+maerkare_fields, all_maerkare = read_csv("Maerkare")
+maerkare_by_mnr = {row["Mnr"]: row for row in all_maerkare}
 
-# These references point at additional actors outside 0000-0010. They are not
-# needed by the card/permit concurrency tests. "NULL" makes CSVLoader omit them.
-for row in maerkare:
+target_rows = [maerkare_by_mnr[mnr] for mnr in sorted(target_mnrs)]
+
+referenced_mnrs = set()
+for row in target_rows:
+    for column in ("AdrMnr", "AssMnr1", "AssMnr2", "AssMnr3"):
+        value = row.get(column)
+        if value and value != "NULL":
+            referenced_mnrs.add(value)
+
+missing_actor_mnrs = referenced_mnrs - maerkare_by_mnr.keys()
+if missing_actor_mnrs:
+    raise SystemExit(
+        f"CI dataset references missing Maerkare actors: {sorted(missing_actor_mnrs)}"
+    )
+
+support_rows = []
+for mnr in sorted(referenced_mnrs - target_mnrs):
+    row = dict(maerkare_by_mnr[mnr])
+
+    # The support row only exists so target-license relations can resolve.
+    # Do not recursively pull in unrelated actors from that support license.
     for column in ("AdrMnr", "AssMnr1", "AssMnr2", "AssMnr3"):
         if column in row:
             row[column] = "NULL"
 
+    support_rows.append(row)
+
+maerkare = target_rows + support_rows
 write_csv("Maerkare", maerkare_fields, maerkare)
 
 
-# Keep only permits for the test licenses.
-tillstand_fields, tillstand = read_csv("Tillstand")
+# ---- Tillstand and lookup tables --------------------------------------------
+# Only permits belonging to the 11 licenses under test are needed.
+tillstand_fields, all_tillstand = read_csv("Tillstand")
 tillstand = [
-    row for row in tillstand
+    row
+    for row in all_tillstand
     if row.get("license_mnr") in target_mnrs
 ]
 write_csv("Tillstand", tillstand_fields, tillstand)
 
-
-# Derive the exact lookup rows required by those permits.
 type_codes = {
     row["type_code"]
     for row in tillstand
@@ -80,70 +105,103 @@ species_codes = {
     if code
 }
 
-prop_fields, properties = read_csv("TillstProp")
+prop_fields, all_properties = read_csv("TillstProp")
 properties = [
-    row for row in properties
+    row
+    for row in all_properties
     if row.get("property_code") in property_codes
 ]
 write_csv("TillstProp", prop_fields, properties)
 
-# A property may itself reference a permit type.
+# A property can reference another permit type.
 type_codes.update(
     row["related_type_code"]
     for row in properties
     if row.get("related_type_code")
 )
 
-type_fields, permit_types = read_csv("TillstTyp")
+type_fields, all_permit_types = read_csv("TillstTyp")
 permit_types = [
-    row for row in permit_types
+    row
+    for row in all_permit_types
     if row.get("type_code") in type_codes
 ]
 write_csv("TillstTyp", type_fields, permit_types)
 
-species_fields, species = read_csv("Artlista")
+species_fields, all_species = read_csv("Artlista")
 species = [
-    row for row in species
+    row
+    for row in all_species
     if row.get("VetKod") in species_codes
 ]
 write_csv("Artlista", species_fields, species)
 
 
-# Associate-ringer history is not used by these integration tests.
-# Header-only files keep load_data's normal import path intact.
-medhj_fields, _ = read_csv("Medhj")
-write_csv("Medhj", medhj_fields, [])
+# ---- Associate ringers -------------------------------------------------------
+# Keep associate-ringer history only for the licenses under test. MarkAssYr
+# points to Medhj via (Mnr, Mednr), so retain exactly those Medhj rows.
+mark_fields, all_markassyr = read_csv("MarkAssYr")
+markassyr = [
+    row
+    for row in all_markassyr
+    if row.get("Mnr") in target_mnrs
+]
+write_csv("MarkAssYr", mark_fields, markassyr)
 
-markassyr_fields, _ = read_csv("MarkAssYr")
-write_csv("MarkAssYr", markassyr_fields, [])
+needed_associates = {
+    (row.get("Mnr"), row.get("Mednr"))
+    for row in markassyr
+}
+
+medhj_fields, all_medhj = read_csv("Medhj")
+medhj = [
+    row
+    for row in all_medhj
+    if (row.get("Mnr"), row.get("Mednr")) in needed_associates
+]
+write_csv("Medhj", medhj_fields, medhj)
 
 
-# Fail early if source data changes and leaves dangling references.
+# ---- Integrity checks --------------------------------------------------------
 available_types = {row.get("type_code") for row in permit_types}
 available_properties = {row.get("property_code") for row in properties}
 available_species = {row.get("VetKod") for row in species}
+available_associates = {
+    (row.get("Mnr"), row.get("Mednr"))
+    for row in medhj
+}
 
 missing_types = type_codes - available_types
 missing_properties = property_codes - available_properties
 missing_species = species_codes - available_species
+missing_associates = needed_associates - available_associates
 
-if missing_types or missing_properties or missing_species:
+if (
+    missing_types
+    or missing_properties
+    or missing_species
+    or missing_associates
+):
     raise SystemExit(
         "Incomplete CI dataset: "
         f"missing types={sorted(missing_types)}, "
         f"properties={sorted(missing_properties)}, "
-        f"species={sorted(missing_species)}"
+        f"species={sorted(missing_species)}, "
+        f"associates={sorted(missing_associates)}"
     )
 
 print(
     "CI data prepared: "
-    f"{len(maerkare)} licenses, "
+    f"{len(target_rows)} target licenses, "
+    f"{len(support_rows)} support actors, "
     f"{len(tillstand)} permits, "
+    f"{len(markassyr)} associate-year relations, "
+    f"{len(medhj)} associates, "
     f"{len(permit_types)} permit types, "
     f"{len(properties)} properties, "
     f"{len(species)} species"
 )
 PY
 
-# Use the existing Django import command, but with the trimmed CSV files.
+# Use the existing Django import command with the trimmed CSV files.
 ./compose-dev.sh exec -T backend python manage.py load_data
