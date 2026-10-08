@@ -214,7 +214,7 @@ def register_choice_view_sets(router):
 
 
 router = routers.DefaultRouter()
-router.register(r"property/actor", ActorViewSet)
+router.register(r"property/actor", ActorViewSet, basename="property-actor")
 router.register(r"property/species", SpeciesViewSet)
 router.register(r"property/permission_type", PermissionTypeViewSet)
 router.register(r"property/permission_property", PermissionPropertyViewSet)
