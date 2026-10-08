@@ -341,6 +341,13 @@ function LicenseRelationDisplay({
     ["name", "col-10 col-md-7", "actorName"],
   ];
 
+  const licenseDocsForActor = (licenseActorId: number) =>
+    (license.documents ?? []).filter(
+      (doc) => doc.type === "license" && doc.actor_id === licenseActorId,
+    );
+  const showsLicenseDoc = (role: string) =>
+    role === "ringer" || role === "associate_ringer";
+
   return (
     <>
       <div className="card-body">
@@ -389,7 +396,7 @@ function LicenseRelationDisplay({
             {sortedActors.map((rel, i) => (
               <li className="list-group-item mb-3" key={i}>
                 <div className="row align-items-center g-2">
-                  <div className="col-12 col-md-3 fw-semibold text-capitalize">
+                  <div className="col-12 col-md-2 fw-semibold text-capitalize">
                     {formatOption(rel.role, {
                       affiliate: "licenseRoleAffiliate",
                       associate_ringer: "licenseRoleAssociateRinger",
@@ -397,12 +404,34 @@ function LicenseRelationDisplay({
                       ringer: "licenseRoleRinger",
                     })}
                   </div>
-                  <div className="col-10 col-md-7">
+                  <div className="col-12 col-md-3">
                     <i className="bi bi-person text-primary me-1" />
                     <Link href={`/actors/entry?entryId=${rel.actor.id}`}>
                       {rel.actor.full_name}
-                    </Link>
+                    </Link>{" "}
                     ({rel.associate_number})
+                  </div>
+                  <div className="col-10 col-md-4 d-flex flex-wrap align-items-center gap-2">
+                    {showsLicenseDoc(rel.role) &&
+                      (licenseDocsForActor(rel.actor.id).length ? (
+                        licenseDocsForActor(rel.actor.id).map((doc, j) => (
+                          <a
+                            key={j}
+                            href={`/api/license_sequence/${licenseNumber}/card-pdf/?actor_id=${doc.actor_id}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            title={t("licenseDocumentReference")}
+                            className="badge rounded-pill border border-primary text-primary text-decoration-none text-wrap text-break text-start"
+                          >
+                            <i className="bi bi-file-earmark-pdf me-1" />
+                            {doc.reference}
+                          </a>
+                        ))
+                      ) : (
+                        <span className="text-muted fst-italic">
+                          {t("licenseNoDocuments")}
+                        </span>
+                      ))}
                   </div>
                   <div className="col-2 col-md-2 d-flex justify-content-center">
                     {isSelectableRelation(rel) ? (
