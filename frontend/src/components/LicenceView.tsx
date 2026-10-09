@@ -429,27 +429,21 @@ function LicenseRelationDisplay({
                     </Link>{" "}
                     ({rel.associate_number})
                   </div>
-                  <div className="col-10 col-md-4 d-flex flex-wrap align-items-center gap-2">
+                  <div className="col-10 col-md-4 d-flex align-items-center">
                     {showsLicenseDoc(rel.role) &&
-                      (licenseDocsForActor(rel.actor.id).length ? (
-                        licenseDocsForActor(rel.actor.id).map((doc, j) => (
-                          <a
-                            key={j}
-                            href={`/api/license_sequence/${licenseNumber}/card-pdf/?actor_id=${doc.actor_id}`}
-                            target="_blank"
-                            rel="noreferrer"
-                            title={t("licenseDocumentReference")}
-                            className="badge rounded-pill border border-primary text-primary text-decoration-none text-wrap text-break text-start"
-                          >
-                            <i className="bi bi-file-earmark-pdf me-1" />
-                            {doc.reference}
-                          </a>
-                        ))
-                      ) : (
-                        <span className="text-muted fst-italic">
-                          {t("licenseNoDocuments")}
-                        </span>
-                      ))}
+                      (licenseDocsForActor(rel.actor.id).length
+                        ? licenseDocsForActor(rel.actor.id).map((doc, j) => (
+                            <a
+                              key={j}
+                              href={`/api/license_sequence/${licenseNumber}/card-pdf/?actor_id=${doc.actor_id}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              title={t("licenseDocumentReference")}
+                            >
+                              <i className="bi bi-file-earmark-pdf" />
+                            </a>
+                          ))
+                        : null)}
                   </div>
                   <div className="col-2 col-md-2 d-flex justify-content-center">
                     {isSelectableRelation(rel) ? (
