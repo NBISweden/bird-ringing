@@ -243,6 +243,7 @@ function getActorSortingFunction(
   options: {
     licenseRoles?: Options["license_role"][];
     direction?: -1 | 1;
+    actorDocs?: Set<number>;
   } = {},
 ): (
   a: LicenseActorRelation & { actor: ActorBase },
@@ -255,6 +256,13 @@ function getActorSortingFunction(
         const aName = a.actor.last_name || a.actor.first_name;
         const bName = b.actor.last_name || b.actor.first_name;
         return direction * aName.localeCompare(bName);
+      };
+    }
+    case "documents": {
+      return (a, b) => {
+        const aHasDocuments = options.actorDocs?.has(a.actor.id) ?? false;
+        const bHasDocuments = options.actorDocs?.has(b.actor.id) ?? false;
+        return direction * (Number(bHasDocuments) - Number(aHasDocuments));
       };
     }
     case "role":
@@ -272,7 +280,7 @@ function getActorSortingFunction(
 }
 
 type RelationSortingOrder = {
-  name: "role" | "name";
+  name: "role" | "name" | "documents";
   direction: 1 | -1;
 };
 
@@ -329,16 +337,25 @@ function LicenseRelationDisplay({
     }
   };
 
+  const actorDocs = new Set(
+    (license.documents ?? [])
+      .filter((doc) => doc.type === "license")
+      .map((doc) => doc.actor_id),
+  );
+
   const sortingFunc = getActorSortingFunction(sortingOrder.name, {
     licenseRoles,
     direction: sortingOrder.direction,
+    actorDocs: actorDocs,
   });
+
   const sortedActors = (license.actors || []).sort(sortingFunc);
   const sortingOrderSelection: Array<
     [RelationSortingOrder["name"], string, TranslationId]
   > = [
-    ["role", "col-12 col-md-3", "licenseRole"],
-    ["name", "col-10 col-md-7", "actorName"],
+    ["role", "col-12 col-md-2", "licenseRole"],
+    ["name", "col-12 col-md-3", "actorName"],
+    ["documents", "col-12 col-md-4", "licenseDocuments"],
   ];
 
   const licenseDocsForActor = (licenseActorId: number) =>
@@ -391,6 +408,7 @@ function LicenseRelationDisplay({
                     </span>
                   </div>
                 ))}
+                <div className="col-2 col-md-2" />
               </div>
             </li>
             {sortedActors.map((rel, i) => (
