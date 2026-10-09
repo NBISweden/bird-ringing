@@ -30,6 +30,10 @@ case $SERVICE_MODE in
 		exec python manage.py runserver 0.0.0.0:8000
 		;;
 	production*)
+		# Ensure that the static content in /vol is updated.
+		( cd /vol && find . -delete )
+		tar -C /static -c -f - . | tar -C /vol -x -f -
+
 		TIMEOUT=${GUNICORN_TIMEOUT:-30}
 		WORKERS=${GUNICORN_WORKERS:-1}
 		exec gunicorn --bind 0.0.0.0:8000 bird_ringing.wsgi --timeout "$TIMEOUT" --workers "$WORKERS"

@@ -92,8 +92,7 @@ RUN --mount=type=cache,id=apk-cache,target=/var/cache/apk \
 
 ENV HOME=/app
 
-RUN install -d -o "$UID" -g "$GID" "$HOME" /vol
-VOLUME /vol
+RUN install -d -o "$UID" -g "$GID" "$HOME" /static
 
 RUN fc-cache -f
 
@@ -105,7 +104,7 @@ COPY --from=prod-build --chown="$UID:$GID" "$HOME" .
 
 ENV PATH="$HOME/.venv/bin:$PATH"
 
-# This creates the static files in "/vol"
+# This creates the static files in "/static"
 RUN python manage.py collectstatic
 RUN python manage.py compilemessages
 
