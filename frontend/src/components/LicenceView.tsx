@@ -42,19 +42,15 @@ type LicenseEditProps = LicenseDisplayProps & {
   onUpdated: () => unknown | Promise<unknown>;
 };
 
-function LicenseInfoEdit({
-  licenseNumber,
-  license,
-  status,
-  onUpdated,
-}: { status: string } & LicenseEditProps) {
+// Submits a license update and reports the outcome in a modal
+function useLicenseUpdateSubmission<
+  T extends Parameters<typeof useFormSubmission>[0],
+>(submitAction: T, onUpdated: () => unknown | Promise<unknown>) {
   const { t } = useTranslation();
-  const client = useClient();
   const modals = useModalsContext();
 
-  const { submit, isSubmitting, errors } = useFormSubmission(
-    async (license: LicenseFormData) =>
-      await client.updateLicense(licenseNumber, license),
+  return useFormSubmission(
+    submitAction,
     async (response) => {
       await response;
       modals.add(
@@ -87,6 +83,21 @@ function LicenseInfoEdit({
         );
       }
     },
+  );
+}
+
+function LicenseInfoEdit({
+  licenseNumber,
+  license,
+  status,
+  onUpdated,
+}: { status: string } & LicenseEditProps) {
+  const client = useClient();
+
+  const { submit, isSubmitting, errors } = useLicenseUpdateSubmission(
+    async (license: LicenseFormData) =>
+      await client.updateLicense(licenseNumber, license),
+    onUpdated,
   );
 
   return (
@@ -166,44 +177,11 @@ function LicenseRelationEdit({
   license,
   onUpdated,
 }: LicenseEditProps) {
-  const { t } = useTranslation();
   const client = useClient();
-  const modals = useModalsContext();
-  const { submit, isSubmitting, errors } = useFormSubmission(
+  const { submit, isSubmitting, errors } = useLicenseUpdateSubmission(
     (relations: LicenseActorRelation[]) =>
       client.updateLicenseRelations(licenseNumber, relations),
-    async (response) => {
-      await response;
-      modals.add(
-        AlertModal(
-          t("licenseUpdateSuccessTitle"),
-          <p className="mb-0">{t("licenseUpdateSuccessMessage")}</p>,
-          t("closeModal"),
-        ),
-      );
-      await onUpdated();
-    },
-    async (errors) => {
-      const lines = errors.nonField;
-
-      if (lines.length > 0) {
-        modals.add(
-          AlertModal(
-            t("licenseUpdateErrorTitle"),
-            lines.length > 1 ? (
-              <ul className="mb-0">
-                {lines.map((line, i) => (
-                  <li key={i}>{line}</li>
-                ))}
-              </ul>
-            ) : (
-              <p className="mb-0">{lines[0]}</p>
-            ),
-            t("closeModal"),
-          ),
-        );
-      }
-    },
+    onUpdated,
   );
   return (
     <div className="card-body">
@@ -331,44 +309,11 @@ function LicensePermissionsEdit({
   onUpdated,
   license,
 }: LicenseEditProps) {
-  const { t } = useTranslation();
   const client = useClient();
-  const modals = useModalsContext();
-  const { submit, isSubmitting, errors } = useFormSubmission(
+  const { submit, isSubmitting, errors } = useLicenseUpdateSubmission(
     async (permissions: LicensePermissionByRef[]) =>
       client.updateLicensePermissions(licenseNumber, permissions),
-    async (response) => {
-      await response;
-      modals.add(
-        AlertModal(
-          t("licenseUpdateSuccessTitle"),
-          <p className="mb-0">{t("licenseUpdateSuccessMessage")}</p>,
-          t("closeModal"),
-        ),
-      );
-      await onUpdated();
-    },
-    async (errors) => {
-      const lines = errors.nonField;
-
-      if (lines.length > 0) {
-        modals.add(
-          AlertModal(
-            t("licenseUpdateErrorTitle"),
-            lines.length > 1 ? (
-              <ul className="mb-0">
-                {lines.map((line, i) => (
-                  <li key={i}>{line}</li>
-                ))}
-              </ul>
-            ) : (
-              <p className="mb-0">{lines[0]}</p>
-            ),
-            t("closeModal"),
-          ),
-        );
-      }
-    },
+    onUpdated,
   );
   return (
     <>
