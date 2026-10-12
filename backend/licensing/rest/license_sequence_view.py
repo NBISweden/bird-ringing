@@ -2,6 +2,7 @@ from rest_framework.decorators import action
 from rest_framework.reverse import reverse
 from rest_framework import serializers
 from django.db import models, transaction
+from django.db.models import functions
 from django.http import HttpResponse
 from collections import defaultdict
 from django.core import mail
@@ -707,6 +708,7 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet, ValueListMixin):
     def get_available_value_ids(self):
         return {
             "holder": LicenseSequenceViewSet.get_holder,
+            "max_associate_number": LicenseSequenceViewSet.get_max_associate_number,
         }
     
     @staticmethod
@@ -731,6 +733,25 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet, ValueListMixin):
 
         return grouped_holders.items()
 
+    @staticmethod
+    def get_max_associate_number(queryset):
+        license_numbers = set(queryset.values_list("license_number", flat=True))
+        values = (
+            LicenseRelation.objects.filter(
+                associate_number__regex=r"^\d+$",
+                license__sequence__license_number__in=license_numbers
+            )
+            .annotate(associate_number_int=functions.Cast("associate_number", models.IntegerField()))
+            .values("license__sequence__license_number")
+            .annotate(max_associate_number=functions.Coalesce(models.Max("associate_number_int"), models.Value(0)))
+        )
+        return [
+            (
+                v["license__sequence__license_number"],
+                v["max_associate_number"]
+            )
+            for v in values
+        ]
 
     def get_queryset(self):
         queryset = super().get_queryset()
