@@ -186,28 +186,6 @@ RUN --mount=type=cache,id=npm-cache,uid="$UID",target="$npm_config_cache" \
     --mount=type=cache,id=next-cache,uid="$UID",target=.next/cache \
     npm run build
 
-# Frontend production runtime
-FROM busybox:stable-musl AS frontend-prod
-
-ARG BUILD_ID
-ARG RUNTIME_ID
-ARG UID=${BUILD_ID%:*}
-ARG GID=${BUILD_ID#*:}
-
-ENV HOME=/app
-ENV SERVICE_MODE=production
-
-RUN install -d -o "$UID" -g "$GID" "$HOME"
-
-USER "$BUILD_ID"
-WORKDIR "$HOME"
-
-COPY --chown="$BUILD_ID" frontend/docker-entrypoint.sh ./docker-entrypoint.sh
-
-USER "$RUNTIME_ID"
-
-CMD ["./docker-entrypoint.sh"]
-
 # Frontend development
 FROM frontend-base AS frontend-dev
 
