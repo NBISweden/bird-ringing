@@ -1,7 +1,7 @@
 services:
   frontend:
     build:
-      target: dev
+      target: frontend-dev
     volumes:
       - ./frontend:/app
     healthcheck:
@@ -19,7 +19,7 @@ services:
 
   backend-init:
     build:
-      target: dev
+      target: backend-dev
     environment:
       SERVICE_MODE: development-init
     volumes:
@@ -27,7 +27,7 @@ services:
 
   backend:
     build:
-      target: dev
+      target: backend-dev
     environment:
       POSTGRES_USER: db_admin
       SERVICE_MODE: development
