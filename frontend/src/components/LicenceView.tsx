@@ -18,7 +18,7 @@ import { useCallback, useState } from "react";
 import { LicenseRelationsForm } from "./LicenseRelationsForm";
 import { LicensePermissionEntryForm } from "./LicensePermissionEntryForm";
 import { LicenseEntryForm, LicenseFormData } from "./LiceneseEntryForm";
-import { useFormSubmission } from "@/app/(system)/hooks";
+import { useFormSubmission, useLicenseValue } from "@/app/(system)/hooks";
 import { FieldErrors } from "./InputFields";
 import { Alert } from "./Alert";
 import { EditSection } from "./EditSection";
@@ -26,6 +26,7 @@ import { LicenseActorList } from "./LicenseActorList";
 import { LicenseSendActions } from "./LicenseSendActions";
 import { LicenseDocumentList } from "./LicenseDocumentList";
 import { LicenseCommunicationList } from "./LicenseCommunicationList";
+import Spinner from "./Spinner";
 
 type LicenceViewProps = {
   license: LicenseInstance;
@@ -184,6 +185,13 @@ function LicenseRelationEdit({
       client.updateLicenseRelations(licenseNumber, relations),
     onUpdated,
   );
+  const { data: associateNumberData, isLoading } = useLicenseValue<number>(
+    "max_associate_number",
+    [licenseNumber],
+  );
+  const maxAssociateNumber = associateNumberData
+    ? associateNumberData.values[licenseNumber]
+    : 0;
   return (
     <div className="card-body">
       {errors && errors.nonField.length > 0 ? (
@@ -202,11 +210,16 @@ function LicenseRelationEdit({
         </div>
       ) : null}
       <FieldErrors errors={errors?.fields || {}}>
-        <LicenseRelationsForm
-          initialRelations={license.actors || []}
-          onSubmit={submit}
-          isSubmitting={isSubmitting}
-        />
+        {isLoading ? (
+          <Spinner />
+        ) : (
+          <LicenseRelationsForm
+            initialRelations={license.actors || []}
+            onSubmit={submit}
+            isSubmitting={isSubmitting}
+            minAssociateNumber={maxAssociateNumber}
+          />
+        )}
       </FieldErrors>
     </div>
   );

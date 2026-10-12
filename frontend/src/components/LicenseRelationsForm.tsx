@@ -1,6 +1,7 @@
 import {
   idToReference,
   LicenseActorRelation,
+  ObjectReference,
   Options,
   referenceToId,
   toSelectOptions,
@@ -42,10 +43,12 @@ export function LicenseRelationsForm({
   initialRelations,
   onSubmit,
   isSubmitting,
+  minAssociateNumber,
 }: {
   initialRelations: LicenseActorRelation[];
   onSubmit: (license: LicenseActorRelation[]) => void | Promise<void>;
   isSubmitting?: boolean;
+  minAssociateNumber?: number;
 }) {
   const { t } = useTranslation();
   const { data: actors } = useOptions("actor");
@@ -57,6 +60,25 @@ export function LicenseRelationsForm({
   const [relations, setRelations] =
     useState<Partial<LicenseActorRelation>[]>(initialRelations);
   const actorIds = relations.map((r) => String(r.actor?.id));
+
+  const addRelation = (actor: ObjectReference) => {
+    setRelations((previousRelations) => {
+      const nextAssociateNumber =
+        Math.max(
+          minAssociateNumber === undefined ? 0 : minAssociateNumber,
+          ...previousRelations
+            .map((r) => r.associate_number)
+            .map((an) => (an && an.match(/^\d+$/) ? parseInt(an) : 0)),
+        ) + 1;
+      return [
+        ...previousRelations,
+        {
+          actor: actor,
+          associate_number: String(nextAssociateNumber).padStart(4, "0"),
+        },
+      ];
+    });
+  };
   const availableActorOptions = options.actors
     .filter((actor) => !actorIds.includes(actor.id))
     .map((o) => ({ ...o, term: o.label }));
@@ -100,10 +122,10 @@ export function LicenseRelationsForm({
                     className="btn btn-outline-secondary"
                     onClick={(e) => {
                       e.preventDefault();
-                      setRelations([
-                        ...relations,
-                        { actor: idToReference(option.id) },
-                      ]);
+                      const actor = idToReference(option.id);
+                      if (actor) {
+                        addRelation(actor);
+                      }
                     }}
                   >
                     {t("licenseFormAddActor")}
