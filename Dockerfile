@@ -55,6 +55,7 @@ ENV PATH="$HOME/.local/bin:$PATH"
 COPY --chown="$BUILD_ID" backend/docker-entrypoint.sh ./docker-entrypoint.sh
 
 ENTRYPOINT ["/usr/bin/dumb-init", "--"]
+CMD ["./docker-entrypoint.sh"]
 
 # Backend dependency layer
 FROM backend-base AS backend-deps
@@ -156,6 +157,7 @@ USER "$BUILD_ID"
 WORKDIR "$HOME"
 
 ENTRYPOINT ["/usr/bin/dumb-init", "--"]
+CMD ["./docker-entrypoint.sh"]
 
 # Frontend static build
 FROM frontend-base AS frontend-static-build
