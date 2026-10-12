@@ -280,7 +280,7 @@ function getActorSortingFunction(
 }
 
 type RelationSortingOrder = {
-  name: "role" | "name" | "documents";
+  name: "role" | "name" | "documents" | "status";
   direction: 1 | -1;
 };
 
@@ -343,6 +343,14 @@ function LicenseRelationDisplay({
       .map((doc) => doc.actor_id),
   );
 
+  const licenseCommunicationStatusForActor = (licenseActorId: number) =>
+    (license.communication ?? [])
+      .filter(
+        (com) =>
+          com.type === "license delivery" && com.actor_id === licenseActorId,
+      )
+      .slice(-1);
+
   const sortingFunc = getActorSortingFunction(sortingOrder.name, {
     licenseRoles,
     direction: sortingOrder.direction,
@@ -362,6 +370,7 @@ function LicenseRelationDisplay({
     (license.documents ?? []).filter(
       (doc) => doc.type === "license" && doc.actor_id === licenseActorId,
     );
+
   const showsLicenseDoc = (role: string) =>
     role === "ringer" || role === "associate_ringer";
 
@@ -429,7 +438,7 @@ function LicenseRelationDisplay({
                     </Link>{" "}
                     ({rel.associate_number})
                   </div>
-                  <div className="col-10 col-md-4 d-flex align-items-center">
+                  <div className="col-10 col-md-4 d-flex align-items-center gap-2">
                     {showsLicenseDoc(rel.role) &&
                       (licenseDocsForActor(rel.actor.id).length
                         ? licenseDocsForActor(rel.actor.id).map((doc, j) => (
@@ -444,6 +453,18 @@ function LicenseRelationDisplay({
                             </a>
                           ))
                         : null)}
+                    {licenseCommunicationStatusForActor(rel.actor.id).length
+                      ? licenseCommunicationStatusForActor(rel.actor.id).map(
+                          (com, k) => (
+                            <span
+                              key={k}
+                              className="badge rounded-pill border border-primary text-primary text-capitalize"
+                            >
+                              {com.status}
+                            </span>
+                          ),
+                        )
+                      : null}
                   </div>
                   <div className="col-2 col-md-2 d-flex justify-content-center">
                     {isSelectableRelation(rel) ? (
