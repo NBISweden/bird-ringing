@@ -41,6 +41,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     UV_LINK_MODE=copy
 
+# /static needed by collectstatic in backend-static-build, which runs as non-root.
 RUN install -d -o "$UID" -g "$GID" "$HOME" /static
 
 USER "$BUILD_ID"
