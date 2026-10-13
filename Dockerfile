@@ -1,3 +1,7 @@
+ARG PYTHON_IMAGE=python:3.15-alpine
+ARG NODE_IMAGE=node:26-alpine
+ARG CADDY_IMAGE=caddy:2-alpine
+
 ARG BUILD_ID=1000:1000
 ARG RUNTIME_ID=1000:1000
 
@@ -6,7 +10,7 @@ ARG RUNTIME_ID=1000:1000
 #-----------------------------------------------------------------------
 
 # Backend base
-FROM python:3.12-alpine AS backend-base
+FROM "$PYTHON_IMAGE" AS backend-base
 
 ARG BUILD_ID
 ARG RUNTIME_ID
@@ -87,7 +91,7 @@ RUN python manage.py collectstatic --noinput && \
     python manage.py compilemessages
 
 # Backend production runtime
-FROM python:3.12-alpine AS backend-prod
+FROM "$PYTHON_IMAGE" AS backend-prod
 
 ARG BUILD_ID
 ARG RUNTIME_ID
@@ -134,7 +138,7 @@ USER "$RUNTIME_ID"
 #-----------------------------------------------------------------------
 
 # Frontend base
-FROM node:24-alpine AS frontend-base
+FROM "$NODE_IMAGE" AS frontend-base
 
 ARG BUILD_ID
 ARG RUNTIME_ID
@@ -208,7 +212,7 @@ USER "$RUNTIME_ID"
 #-----------------------------------------------------------------------
 
 # Proxy production image
-FROM caddy:2-alpine AS proxy-prod
+FROM "$CADDY_IMAGE" AS proxy-prod
 
 COPY caddy/Caddyfile /etc/caddy/Caddyfile
 
