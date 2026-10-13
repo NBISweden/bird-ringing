@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import {
   ActorBase,
+  LicenseDocument,
   LicenseActorRelation,
   LicenseInstance,
   Options,
@@ -22,6 +23,7 @@ function getActorSortingFunction(
   order: string,
   options: {
     licenseRoles?: Options["license_role"][];
+    documents?: LicenseDocument[];
     direction?: -1 | 1;
   } = {},
 ): (
@@ -48,16 +50,31 @@ function getActorSortingFunction(
         );
       };
     }
+    case "documents": {
+      return (a, b) => {
+        const aReference =
+          options.documents?.find(
+            (doc) => doc.type === "license" && doc.actor_id === a.actor.id,
+          )?.reference ?? "";
+        const bReference =
+          options.documents?.find(
+            (doc) => doc.type === "license" && doc.actor_id === b.actor.id,
+          )?.reference ?? "";
+        return direction * aReference.localeCompare(bReference);
+      };
+    }
   }
 }
 
 type RelationSortingOrder = {
-  name: "role" | "name";
+  name: "role" | "name" | "documents";
   direction: 1 | -1;
 };
 
 type LicenseActorListProps = {
   actors: LicenseActorRelationInstance[];
+  documents: LicenseDocument[];
+  licenseNumber: string;
   selectedActorIds: Set<number>;
   onSelectionChange: (actorId: number, selected: boolean) => void;
   isSelectable: (rel: LicenseActorRelationInstance) => boolean;
@@ -66,6 +83,8 @@ type LicenseActorListProps = {
 
 export function LicenseActorList({
   actors,
+  documents,
+  licenseNumber,
   selectedActorIds,
   onSelectionChange,
   isSelectable,
@@ -81,14 +100,16 @@ export function LicenseActorList({
 
   const sortingFunc = getActorSortingFunction(sortingOrder.name, {
     licenseRoles,
+    documents,
     direction: sortingOrder.direction,
   });
   const sortedActors = (actors || []).sort(sortingFunc);
   const sortingOrderSelection: Array<
     [RelationSortingOrder["name"], string, TranslationId]
   > = [
-    ["role", "col-12 col-md-3", "licenseRole"],
-    ["name", "col-10 col-md-7", "actorName"],
+    ["role", "col-12 col-md-2", "licenseRole"],
+    ["name", "col-12 col-md-3", "actorName"],
+    ["documents", "col-12 col-md-5", "licenseDocuments"],
   ];
 
   return (
@@ -138,7 +159,7 @@ export function LicenseActorList({
           {sortedActors.map((rel, i) => (
             <li className="list-group-item mb-3" key={i}>
               <div className="row align-items-center g-2">
-                <div className="col-12 col-md-3 fw-semibold text-capitalize">
+                <div className="col-12 col-md-2 fw-semibold text-capitalize">
                   {formatOption(rel.role, {
                     affiliate: "licenseRoleAffiliate",
                     associate_ringer: "licenseRoleAssociateRinger",
@@ -146,13 +167,44 @@ export function LicenseActorList({
                     ringer: "licenseRoleRinger",
                   })}
                 </div>
-                <div className="col-10 col-md-7">
+                <div className="col-12 col-md-3">
                   <i className="bi bi-person text-primary me-1" />
                   <Link href={`/actors/entry?entryId=${rel.actor.id}`}>
                     {rel.actor.full_name}
                   </Link>
                   ({rel.associate_number})
                 </div>
+                <div className="col-10 col-md-5">
+                  {rel.role === "ringer" || rel.role === "associate_ringer" ? (
+                    documents.filter(
+                      (doc) =>
+                        doc.type === "license" && doc.actor_id === rel.actor.id,
+                    ).length ? (
+                      documents
+                        .filter(
+                          (doc) =>
+                            doc.type === "license" &&
+                            doc.actor_id === rel.actor.id,
+                        )
+                        .map((doc, index) => (
+                          <a
+                            key={index}
+                            href={`/api/license_sequence/${licenseNumber}/card-pdf/?actor_id=${doc.actor_id}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            title={t("licenseDocumentReference")}
+                          >
+                            <i className="bi bi-file-earmark-pdf me-1" />
+                          </a>
+                        ))
+                    ) : (
+                      <span className="text-muted fst-italic">
+                        {t("licenseNoDocuments")}
+                      </span>
+                    )
+                  ) : null}
+                </div>
+
                 <div className="col-2 col-md-2 d-flex justify-content-center">
                   {isSelectable(rel) ? (
                     <input
