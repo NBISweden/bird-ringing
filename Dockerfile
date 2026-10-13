@@ -1,4 +1,4 @@
-ARG PYTHON_IMAGE=python:3.15-alpine
+ARG PYTHON_IMAGE=python:3.14-alpine
 ARG NODE_IMAGE=node:26-alpine
 ARG CADDY_IMAGE=caddy:2-alpine
 
