@@ -37,11 +37,11 @@ jobs:
         id: date
         run: echo "DATE_TAG=$(date +%Y%m%d-%H%M)" >>$GITHUB_OUTPUT
 
-      - name: Extract metadata for frontend
-        id: meta-frontend
+      - name: Extract metadata for proxy
+        id: meta-proxy
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ github.repository }}-frontend
+          images: ${{ env.REGISTRY }}/${{ github.repository }}-proxy
           tags: &tags |
             type=ref,event=branch
             type=semver,pattern={{version}}
