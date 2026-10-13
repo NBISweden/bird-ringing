@@ -3,12 +3,12 @@
 cp package-lock.json package-lock.json.old
 
 docker build \
-	--file ../Dockerfile.frontend \
-	--target dev \
+	--file ../Dockerfile \
+	--target frontend-dev \
 	--tag frontend-update-lock \
 	--build-arg RUNTIME_ID="$(id -u):$(id -g)" \
 	--build-arg BUILD_ID="$(id -u):$(id -g)" \
-	. &&
+	.. &&
 docker run \
 	--rm \
 	--volume './:/app' \

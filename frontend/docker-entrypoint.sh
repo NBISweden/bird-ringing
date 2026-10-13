@@ -1,14 +1,8 @@
 #!/bin/sh -
 
+# NOTE: Never run in production mode.
+
 set -u
-
-if [ "$SERVICE_MODE" = production ]; then
-	# Ensure that the static content in /vol is updated.
-	( cd /vol && find . -delete )
-	tar -C /static -c -f - . | tar -C /vol -x -f -
-
-	exit
-fi
 
 run_md5sum () {
 	find node_modules -type f -exec md5sum {} + | sort | md5sum
