@@ -29,10 +29,6 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Get short SHA for frontend
-        id: sha
-        run: echo "SHORT_SHA=${GITHUB_SHA::7}" >>$GITHUB_OUTPUT
-
       - name: Get date tag
         id: date
         run: echo "DATE_TAG=$(date +%Y%m%d-%H%M)" >>$GITHUB_OUTPUT
