@@ -450,6 +450,7 @@ function LicenseRelationDisplay({
                               title={t("licenseDocumentReference")}
                             >
                               <i className="bi bi-file-earmark-pdf" />
+                              <p>hEJ!</p>
                             </a>
                           ))
                         : null)}
