@@ -113,8 +113,7 @@ The main differences between the two environments are:
 
 - The `frontend` directory is bind-mounted into the "frontend" service
   container in the development environment, while in the production
-  environment, the source code is copied into the container at build
-  time.
+  environment, there is no "frontend" service.
 
 - The `backend` directory is bind-mounted into the "backend" service
   container in the development environment, while in the production
@@ -123,12 +122,11 @@ The main differences between the two environments are:
 
 - The "frontend" service in the development environment runs the
   development server with hot reloading, while in the production
-  environment, it does nothing apart from checking to make sure the
-  static site's file are present.
+  environment, it does not exist.
   - The development server is served by `npm run dev`.
   - The production server is built as an exported static site and served
     by a Caddy web server. The exported site is stored in the
-    `frontend-vol` Docker volume.
+    `proxy` container.
 
 ### Application Secrets
 
