@@ -313,6 +313,14 @@ class LicenseActorRelationSerializer(serializers.ModelSerializer):
         write_only=True
     )
 
+    def validate(self, attrs):
+        license = self.context.get("license")
+        if license is not None:
+            # Only validate for existing associate numbers when a license instance is provided in the context
+            if not LicenseRelation.validate_associate_number(attrs.get("associate_number"), license, attrs.get("actor")):
+                raise serializers.ValidationError({"associate_number": ["Associate number is already taken"]})
+        return attrs
+
     class Meta:
         model = LicenseRelation
         fields = ["actor", "role", "associate_number", "created_by", "updated_by", "license_id"]
@@ -462,7 +470,6 @@ class LicenseSerializer(serializers.ModelSerializer):
                 error["associate_number"] = ["Duplicate associate number"]
             if len(error) > 0:
                 actors_errors[index] = error
-
         if len(actors_errors) > 0:
             raise serializers.ValidationError([
                 actors_errors.get(index, {})
@@ -536,11 +543,17 @@ class LicenseSerializer(serializers.ModelSerializer):
 
             relation_serializer = LicenseActorRelationSerializer(
                 data=actors,
-                context=self.context,
+                context={**self.context, "license": instance},
                 many=True
             )
-            relation_serializer.is_valid(raise_exception=True)
+            try:
+                relation_serializer.is_valid(raise_exception=True)
+            except serializers.ValidationError as error:
+                raise serializers.ValidationError({
+                    "actors": error.detail
+                })
             relation_serializer.save(license=instance)
+
     
     @transaction.atomic
     def write_permissions(self, instance, permissions):
@@ -556,7 +569,12 @@ class LicenseSerializer(serializers.ModelSerializer):
                 context=self.context,
                 many=True
             )
-            permission_serializer.is_valid(raise_exception=True)
+            try:
+                permission_serializer.is_valid(raise_exception=True)
+            except serializers.ValidationError as error:
+                raise serializers.ValidationError({
+                    "permissions": error.detail
+                })
             permission_serializer.save(license=instance)
 
 
