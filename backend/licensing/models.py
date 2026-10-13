@@ -5,6 +5,7 @@ from django.db.models.functions import RowNumber, Lower
 from django.contrib.auth.models import User
 from django.core.validators import MinLengthValidator
 from django.template.defaultfilters import slugify
+from django.core.exceptions import ValidationError
 import hashlib
 from .serializers import json_serialize
 from dataclasses import dataclass
@@ -560,6 +561,33 @@ class LicenseRelation(ChangeTracking):
         base.license = license
         base.save()
         return base
+    
+    def clean(self):
+        associate_number_is_valid = LicenseRelation.validate_associate_number(
+            self.associate_number,
+            self.license,
+            self.actor
+        )
+
+        if not associate_number_is_valid:
+            raise ValidationError({
+                "associate_number": f"The associate number {self.associate_number}, is already taken."
+            })
+
+        return self.associate_number
+    
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+    @staticmethod
+    def validate_associate_number(associate_number, license, actor):
+        associate_number_exists = LicenseRelation.objects.filter(
+            license__sequence=license.sequence,
+            associate_number=associate_number
+        ).exclude(actor=actor).exists()
+
+        return not associate_number_exists
 
     class Meta:
         ordering = ["pk"]
