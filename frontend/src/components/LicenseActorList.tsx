@@ -7,6 +7,7 @@ import {
   LicenseDocument,
   LicenseActorRelation,
   LicenseInstance,
+  LicenseCommunication,
   Options,
 } from "@/app/(system)/common";
 import {
@@ -74,6 +75,7 @@ type RelationSortingOrder = {
 type LicenseActorListProps = {
   actors: LicenseActorRelationInstance[];
   documents: LicenseDocument[];
+  communication?: LicenseCommunication[];
   licenseNumber: string;
   selectedActorIds: Set<number>;
   onSelectionChange: (actorId: number, selected: boolean) => void;
@@ -89,6 +91,7 @@ export function LicenseActorList({
   onSelectionChange,
   isSelectable,
   disabled,
+  communication,
 }: LicenseActorListProps) {
   const { t, formatOption } = useTranslation();
   const [sortingOrder, setSortingOrder] = useState<RelationSortingOrder>({
@@ -175,34 +178,44 @@ export function LicenseActorList({
                   ({rel.associate_number})
                 </div>
                 <div className="col-10 col-md-5">
-                  {rel.role === "ringer" || rel.role === "associate_ringer" ? (
-                    documents.filter(
-                      (doc) =>
-                        doc.type === "license" && doc.actor_id === rel.actor.id,
-                    ).length ? (
-                      documents
-                        .filter(
-                          (doc) =>
-                            doc.type === "license" &&
-                            doc.actor_id === rel.actor.id,
-                        )
-                        .map((doc, index) => (
-                          <a
-                            key={index}
-                            href={`/api/license_sequence/${licenseNumber}/card-pdf/?actor_id=${doc.actor_id}`}
-                            target="_blank"
-                            rel="noreferrer"
-                            title={t("licenseDocumentReference")}
-                          >
-                            <i className="bi bi-file-earmark-pdf me-1" />
-                          </a>
-                        ))
-                    ) : (
-                      <span className="text-muted fst-italic">
-                        {t("licenseNoDocuments")}
+                  {rel.role === "ringer" || rel.role === "associate_ringer"
+                    ? documents.filter(
+                        (doc) =>
+                          doc.type === "license" &&
+                          doc.actor_id === rel.actor.id,
+                      ).length
+                      ? documents
+                          .filter(
+                            (doc) =>
+                              doc.type === "license" &&
+                              doc.actor_id === rel.actor.id,
+                          )
+                          .map((doc, index) => (
+                            <a
+                              key={index}
+                              href={`/api/license_sequence/${licenseNumber}/card-pdf/?actor_id=${doc.actor_id}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              title={t("licenseDocumentReference")}
+                            >
+                              <i className="bi bi-file-earmark-pdf me-1" />
+                            </a>
+                          ))
+                      : null
+                    : null}
+                  {(() => {
+                    const status = (communication ?? []).findLast(
+                      (com) =>
+                        com.type === "license delivery" &&
+                        com.actor_id === rel.actor.id,
+                    )?.status;
+
+                    return status ? (
+                      <span className="badge rounded-pill border border-primary text-primary text-capitalize">
+                        {status}
                       </span>
-                    )
-                  ) : null}
+                    ) : null;
+                  })()}
                 </div>
 
                 <div className="col-2 col-md-2 d-flex justify-content-center">
