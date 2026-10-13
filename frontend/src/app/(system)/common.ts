@@ -205,7 +205,7 @@ export type LicenseDocument = {
   reference: string;
 };
 
-export type LicenceCommunication = {
+export type LicenseCommunication = {
   actor: string;
   actor_id: number;
   type: string;
@@ -217,7 +217,7 @@ export type LicenseInstance = {
   actors: (LicenseActorRelation & { actor: ActorBase })[];
   permissions: LicensePermission[];
   documents: LicenseDocument[];
-  communication: LicenceCommunication[];
+  communication: LicenseCommunication[];
   version: number;
   location?: string;
   description: string;

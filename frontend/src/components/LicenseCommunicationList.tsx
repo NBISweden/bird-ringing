@@ -1,11 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { LicenceCommunication } from "@/app/(system)/common";
+import { LicenseCommunication } from "@/app/(system)/common";
 import { useTranslation } from "@/app/(system)/internationalization";
 
 type LicenseCommunicationListProps = {
-  communication: LicenceCommunication[];
+  communication: LicenseCommunication[];
 };
 
 export function LicenseCommunicationList({
