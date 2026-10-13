@@ -111,7 +111,7 @@ RUN fc-cache -f
 USER "$BUILD_ID"
 WORKDIR "$HOME"
 
-COPY --from=backend-app-build --chown="$BUILD_ID" "$HOME" .
+COPY --from=backend-static-build --chown="$BUILD_ID" "$HOME" .
 
 ENV PATH="$HOME/.venv/bin:$PATH"
 
