@@ -73,15 +73,15 @@ jobs:
             RUNTIME_ID=6001:6001
 
       - name: Build and push proxy
-	uses: docker/build-push-action@v5
-	with:
-	  target: proxy-prod
-	  push: true
-	  tags: ${{ steps.meta-proxy.outputs.tags }}
-	  labels: ${{ steps.meta-proxy.outputs.labels }}
-	  build-args: |
-	    BUILD_ID=6000:6000
-	    RUNTIME_ID=6001:6001
+        uses: docker/build-push-action@v5
+        with:
+          target: proxy-prod
+          push: true
+          tags: ${{ steps.meta-proxy.outputs.tags }}
+          labels: ${{ steps.meta-proxy.outputs.labels }}
+          build-args: |
+            BUILD_ID=6000:6000
+            RUNTIME_ID=6001:6001
 
       - name: Build and push docx2pdf
         uses: docker/build-push-action@v5
