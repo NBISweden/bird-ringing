@@ -1,0 +1,215 @@
+#!/bin/sh
+set -eu
+
+# Minimal data initialization for GitHub Actions integration tests.
+# Loads MNR 0000-0010 plus only the actors/relations and lookup rows
+# needed by those licenses and their permit documents.
+
+BASE_URL="${BIRD_RINGING_TEST_DATA_URL:-https://pdmnyberg.github.io/ui-examples/data/bird-ringing/next}"
+DATA_DIR="integration_tests/ci-data"
+
+mkdir -p "$DATA_DIR"
+
+for dataset in Artlista Maerkare Medhj MarkAssYr Tillstand TillstProp TillstTyp; do
+    wget -q -O "$DATA_DIR/br-ex-${dataset}.csv" \
+        "$BASE_URL/br-ex-${dataset}.csv"
+done
+
+python3 - "$DATA_DIR" <<'PY'
+import csv
+import sys
+from pathlib import Path
+
+data_dir = Path(sys.argv[1])
+target_mnrs = {f"{i:04d}" for i in range(11)}
+
+
+def read_csv(name):
+    path = data_dir / f"br-ex-{name}.csv"
+    with path.open("r", encoding="utf-8-sig", newline="") as handle:
+        reader = csv.DictReader(handle)
+        return reader.fieldnames, list(reader)
+
+
+def write_csv(name, fieldnames, rows):
+    path = data_dir / f"br-ex-{name}.csv"
+    with path.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=fieldnames, lineterminator="\n")
+        writer.writeheader()
+        writer.writerows(rows)
+
+
+# ---- Maerkare ---------------------------------------------------------------
+# Keep the 11 licenses exercised by integration_tests/test_api.py.
+# Permit generation also needs actors referenced by AdrMnr/AssMnr*, so retain
+# those Maerkare rows as support actors/licenses.
+maerkare_fields, all_maerkare = read_csv("Maerkare")
+maerkare_by_mnr = {row["Mnr"]: row for row in all_maerkare}
+
+target_rows = [maerkare_by_mnr[mnr] for mnr in sorted(target_mnrs)]
+
+referenced_mnrs = set()
+for row in target_rows:
+    for column in ("AdrMnr", "AssMnr1", "AssMnr2", "AssMnr3"):
+        value = row.get(column)
+        if value and value != "NULL":
+            referenced_mnrs.add(value)
+
+missing_actor_mnrs = referenced_mnrs - maerkare_by_mnr.keys()
+if missing_actor_mnrs:
+    raise SystemExit(
+        f"CI dataset references missing Maerkare actors: {sorted(missing_actor_mnrs)}"
+    )
+
+support_rows = []
+for mnr in sorted(referenced_mnrs - target_mnrs):
+    row = dict(maerkare_by_mnr[mnr])
+
+    # The support row only exists so target-license relations can resolve.
+    # Do not recursively pull in unrelated actors from that support license.
+    for column in ("AdrMnr", "AssMnr1", "AssMnr2", "AssMnr3"):
+        if column in row:
+            row[column] = "NULL"
+
+    support_rows.append(row)
+
+maerkare = target_rows + support_rows
+write_csv("Maerkare", maerkare_fields, maerkare)
+
+
+# ---- Tillstand and lookup tables --------------------------------------------
+# Only permits belonging to the 11 licenses under test are needed.
+tillstand_fields, all_tillstand = read_csv("Tillstand")
+tillstand = [
+    row
+    for row in all_tillstand
+    if row.get("license_mnr") in target_mnrs
+]
+write_csv("Tillstand", tillstand_fields, tillstand)
+
+type_codes = {
+    row["type_code"]
+    for row in tillstand
+    if row.get("type_code")
+}
+property_codes = {
+    code
+    for row in tillstand
+    for code in row.get("property_codes", "").split(";")
+    if code
+}
+species_codes = {
+    code
+    for row in tillstand
+    for code in row.get("species_codes", "").split(";")
+    if code
+}
+
+prop_fields, all_properties = read_csv("TillstProp")
+properties = [
+    row
+    for row in all_properties
+    if row.get("property_code") in property_codes
+]
+write_csv("TillstProp", prop_fields, properties)
+
+# A property can reference another permit type.
+type_codes.update(
+    row["related_type_code"]
+    for row in properties
+    if row.get("related_type_code")
+)
+
+type_fields, all_permit_types = read_csv("TillstTyp")
+permit_types = [
+    row
+    for row in all_permit_types
+    if row.get("type_code") in type_codes
+]
+write_csv("TillstTyp", type_fields, permit_types)
+
+species_fields, all_species = read_csv("Artlista")
+species = [
+    row
+    for row in all_species
+    if row.get("VetKod") in species_codes
+]
+write_csv("Artlista", species_fields, species)
+
+
+# ---- Associate ringers -------------------------------------------------------
+# Keep associate-ringer history only for the licenses under test. MarkAssYr
+# points to Medhj via (Mnr, Mednr), so retain exactly those Medhj rows.
+mark_fields, all_markassyr = read_csv("MarkAssYr")
+markassyr = [
+    row
+    for row in all_markassyr
+    if row.get("Mnr") in target_mnrs
+]
+write_csv("MarkAssYr", mark_fields, markassyr)
+
+needed_associates = {
+    (row.get("Mnr"), row.get("Mednr"))
+    for row in markassyr
+}
+
+medhj_fields, all_medhj = read_csv("Medhj")
+medhj = [
+    row
+    for row in all_medhj
+    if (row.get("Mnr"), row.get("Mednr")) in needed_associates
+]
+write_csv("Medhj", medhj_fields, medhj)
+
+
+# ---- Integrity checks --------------------------------------------------------
+available_types = {row.get("type_code") for row in permit_types}
+available_properties = {row.get("property_code") for row in properties}
+available_species = {row.get("VetKod") for row in species}
+available_associates = {
+    (row.get("Mnr"), row.get("Mednr"))
+    for row in medhj
+}
+
+missing_types = type_codes - available_types
+missing_properties = property_codes - available_properties
+missing_species = species_codes - available_species
+missing_associates = needed_associates - available_associates
+
+if (
+    missing_types
+    or missing_properties
+    or missing_species
+    or missing_associates
+):
+    raise SystemExit(
+        "Incomplete CI dataset: "
+        f"missing types={sorted(missing_types)}, "
+        f"properties={sorted(missing_properties)}, "
+        f"species={sorted(missing_species)}, "
+        f"associates={sorted(missing_associates)}"
+    )
+
+print(
+    "CI data prepared: "
+    f"{len(target_rows)} target licenses, "
+    f"{len(support_rows)} support actors, "
+    f"{len(tillstand)} permits, "
+    f"{len(markassyr)} associate-year relations, "
+    f"{len(medhj)} associates, "
+    f"{len(permit_types)} permit types, "
+    f"{len(properties)} properties, "
+    f"{len(species)} species"
+)
+PY
+
+# Use the existing Django import command with the trimmed CSV files.
+./compose-prod.sh -f docker-compose.override.yml exec -T \
+    backend python manage.py load_data \
+    --path_format="/ci-data/br-ex-{id}.csv"
+
+# Create a DNR covering the integration test data
+./compose-prod.sh -f docker-compose.override.yml exec -T backend python manage.py set_permit_dnr \
+    --dnr "DNR-CI-TEST" \
+    --starts-at "2000-01-01" \
+    --ends-at "2100-12-31"
