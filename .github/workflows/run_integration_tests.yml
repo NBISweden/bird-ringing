@@ -1,10 +1,9 @@
 name: Integration tests
 
 on:
-  on:
-    push:
-      branches:
-        - 210-CP
+  push:
+    branches:
+      - 210-CP
 
 jobs:
   integration-tests:
