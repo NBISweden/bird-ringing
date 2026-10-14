@@ -90,7 +90,7 @@ const licenseFields = {
   licensePermissionSpecies: "Species",
   licenseActor: "Actor",
   licenseRole: "Role",
-  licenseRelationId: "MedNr",
+  licenseRelationId: "Associate Number",
 };
 
 const licenseForm = {
@@ -102,8 +102,9 @@ const licenseForm = {
   licenseFormLocationSubtitle: "Location",
   licenseFormLocationPresetSubtitle: "Location presets",
   licenseFormDetailsSubtitle: "Details",
-  licenseFormMnrPlaceholder: "Enter a four digit MNR",
-  licenseFormMnrInvalid: "MNR must be exactly four digits.",
+  licenseFormLicenseNumberPlaceholder: "Enter a four digit license number",
+  licenseFormLicenseNumberInvalid:
+    "License number must be exactly four digits.",
   licenseFormRequired: "This field is required.",
   licenseFormEndsAtBeforeStartsAt:
     "Valid to must be after or equal to valid from.",
@@ -131,6 +132,19 @@ const modals = {
   licenseUpdateSuccessMessage: "The license has been updated successfully",
   licenseUpdateErrorTitle: "Failed to update license",
 };
+
+const pageTitles = {
+  rootPageTitle: "Bird Ringing",
+  welcomPageTitle: "Welcome to Bird Ringing",
+  permissionsPageTitle: "Permissions",
+  licensesPageTitle: "Licenses",
+  licensePageTitle: "License: {license_number} {actor}",
+  licenseCreationPageTitle: "Add license",
+  actorsPageTitle: "Actors",
+  actorPageTitle: "Actor: {name}",
+  actorCreationPageTitle: "Add actor",
+};
+
 const messagesBase = {
   ...licenseReportStatusOptions,
   ...licenseStatusOptions,
@@ -141,6 +155,7 @@ const messagesBase = {
   ...licenseForm,
   ...licenseFields,
   ...modals,
+  ...pageTitles,
 
   birdRinging: "Bird Ringing",
   userPermissions: "User permissions",
@@ -170,7 +185,7 @@ const messagesBase = {
   actorFetchEmailAddresses: "Fetch e-mail addresses",
   actorFilterDescription: "Filter actor list",
   actorFilterLabel: "Filter",
-  actorFilterPlaceholder: "Name, E-mail, City, Mnr, Role, Type",
+  actorFilterPlaceholder: "Name, E-mail, City, License number, Role, Type",
   actorLastUpdated: "Last updated",
   actorLicenseInEffect: "In effect",
   actorLicenseExpired: "Expired",
@@ -212,10 +227,10 @@ const messagesBase = {
   licenseFilterDescription: "Filter license list",
   licenseFilterLabel: "Filter",
   licenseFilterPlaceholder:
-    "Mnr, Type, License holder, Trapping methods, Last email sent at",
+    "License number, Type, License holder, Trapping methods, Last email sent at",
   licenseHistory: "History",
   licenseHolder: "License holder",
-  licenseId: "Mnr",
+  licenseId: "License number",
   licenseLastEmailSentAt: "Last e-mail sent at",
   licenseCardTableHeader: "Card",
   licensePermitTableHeader: "Permit",
@@ -252,12 +267,13 @@ const messagesBase = {
   licenseNotifyRinger: "Notify ringer",
   licenseNotifyRingerHelp:
     "Also send a bundled e-mail to the license ringer with the selected associate ringers' documents.",
+  licenseSelectAllActors: "Select all",
   licenseRingerBundleMessagesSent: "Ringer bundle e-mails sent: {count}",
   licenseRingerBundleMessageSent: "Ringer bundle e-mail sent.",
   licenseRingerBundleError: "Ringer bundle error: {error}",
   licenseRingerBundleFailedMessages: "Ringer bundle failed messages",
   licenseSkippedMessages: "Skipped messages",
-  licenseSkippedMessageRow: "{mnr} {actor} ({reason})",
+  licenseSkippedMessageRow: "{licenseNumber} {actor} ({reason})",
   licenseFailedMessagesDetails: "Failed messages",
   licenseFailedMessageRow: "{to}: {details}",
   licenseSkippedMessagesCountByReason: "Skipped messages ({reason}): {count}",
@@ -268,6 +284,10 @@ const messagesBase = {
   licenseValidityPeriod:
     "<from>Valid from </from>{startsAt}<to> to </to>{endsAt}",
   licensePeriodStart: "<from>Starts at</from> {startsAt}",
+  licenseStatusSummary:
+    "<param>Year: </param>{year}, <param>status: </param>{status}",
+  licenseSendDisabledInactive: "License must be active to send communication.",
+  licenseInactiveLicensesSkipped: "Inactive licenses skipped",
   buttonCreateDocuments: "Create documents",
 
   permitCreateDocuments: "Create permits",

@@ -22,7 +22,7 @@ function isLicenseActorRelation(
 ): relation is LicenseActorRelation {
   return (
     relation.actor !== undefined &&
-    relation.mednr !== undefined &&
+    relation.associate_number !== undefined &&
     relation.role !== undefined
   );
 }
@@ -230,15 +230,15 @@ function ActorEntrySubform({
         <VerticalField
           label={t("licenseRelationId")}
           icon="hash"
-          id={id ? `${id}.mednr` : "mednr"}
+          id={id ? `${id}.associate_number` : "associate_number"}
         >
           <TextInput
             type="string"
-            value={relation.mednr || ""}
+            value={relation.associate_number || ""}
             required
             maxLength={4}
             onChange={(e) =>
-              updateValue({ mednr: e.target.value.toUpperCase() })
+              updateValue({ associate_number: e.target.value.toUpperCase() })
             }
           />
         </VerticalField>

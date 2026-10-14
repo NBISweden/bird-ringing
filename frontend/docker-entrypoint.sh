@@ -1,10 +1,8 @@
 #!/bin/sh -
 
-set -u
+# NOTE: Never run in production mode.
 
-if [ "$SERVICE_MODE" = production ]; then
-	exit
-fi
+set -u
 
 run_md5sum () {
 	find node_modules -type f -exec md5sum {} + | sort | md5sum

@@ -19,7 +19,7 @@ function LicenseViewBase() {
   const modals = useModalsContext();
 
   const license: Partial<LicenseFormData> = {
-    mnr: "",
+    license_number: "",
     status: "active",
     starts_at: "",
     ends_at: undefined,
@@ -37,7 +37,7 @@ function LicenseViewBase() {
           t("licenseCreateSuccessTitle"),
           <p className="mb-0">{t("licenseCreateSuccessMessage")}</p>,
           t("closeModal"),
-          () => router.push(`/licenses/entry?mnr=${result.mnr}`),
+          () => router.push(`/licenses/entry?entryId=${result.license_number}`),
         ),
       );
     },

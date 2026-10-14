@@ -107,11 +107,13 @@ function toActorTable(
             {licenses.map((l, index) => (
               <Link
                 key={index}
-                href={`/licenses/entry?mnr=${l.mnr}`}
+                href={`/licenses/entry?entryId=${l.license_number}`}
                 className="text-decoration-none"
               >
                 <Badge color="info" rounded outline>
-                  {l.mednr ? `${l.mnr}:${l.mednr}` : l.mnr}
+                  {l.associate_number
+                    ? `${l.license_number}:${l.associate_number}`
+                    : l.license_number}
                 </Badge>
               </Link>
             ))}

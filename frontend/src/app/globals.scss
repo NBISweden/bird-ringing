@@ -129,3 +129,7 @@ body {
   animation-duration: 0.6s;
   animation-fill-mode: forwards;
 }
+
+input[disabled]:checked + label.form-check-label {
+  opacity: 0.5;
+}

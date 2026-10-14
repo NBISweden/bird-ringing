@@ -21,6 +21,7 @@ import { Alert } from "@/components/Alert";
 import { PaginationContainer, usePagination } from "@/components/Pagination";
 import Icon from "@/components/Icon";
 import { ActorEntryForm } from "@/components/ActorEntryForm";
+import { LocalizedTitle } from "@/components/LocalizedTitle";
 
 async function fetchActor([client, _ctx, entryId]: [Client, "actor", string]) {
   return client.fetchActorById(entryId);
@@ -123,7 +124,7 @@ function ActorViewBase() {
   const previousLicenseGroups = previousLicenses.reduce<
     Record<string, ActorLicenseRelation[]>
   >((acc, l) => {
-    const key = `${l.mnr}:${l.mednr}:${l.role}`;
+    const key = `${l.license_number}:${l.associate_number}:${l.role}`;
     acc[key] = acc[key] || [];
     acc[key].push(l);
     return acc;
@@ -177,56 +178,66 @@ function ActorViewBase() {
   };
 
   return (
-    <div className="container">
-      <div className="row">
-        <div className="col-12 col-xxl-9">
-          <div className="d-flex justify-content-between align-items-center mb-3">
-            <h2 className="fw-bold mb-0">
-              <i className={`bi bi-${getActorIcon(data.type)} me-3`} />
-              {data.full_name}
-            </h2>
-            <button
-              className="btn btn-outline-secondary ms-2 flex-shrink-0"
-              onClick={() => {
-                setEditErrors(undefined);
-                setIsEditing(!isEditing);
-              }}
-            >
-              <Icon icon={isEditing ? "arrow-left" : "pencil-square"} />
-              <span className="ms-2">{!isEditing ? t("edit") : t("done")}</span>
-            </button>
+    <>
+      <LocalizedTitle
+        messageId="actorPageTitle"
+        values={{ name: data.full_name }}
+      />
+      <div className="container">
+        <div className="row">
+          <div className="col-12 col-xxl-9">
+            <div className="d-flex justify-content-between align-items-center mb-3">
+              <h2 className="fw-bold mb-0">
+                <i className={`bi bi-${getActorIcon(data.type)} me-3`} />
+                {data.full_name}
+              </h2>
+              <button
+                className="btn btn-outline-secondary ms-2 flex-shrink-0"
+                onClick={() => {
+                  setEditErrors(undefined);
+                  setIsEditing(!isEditing);
+                }}
+              >
+                <Icon icon={isEditing ? "arrow-left" : "pencil-square"} />
+                <span className="ms-2">
+                  {!isEditing ? t("edit") : t("done")}
+                </span>
+              </button>
+            </div>
+          </div>
+          {isEditing ? (
+            <ActorEntryForm
+              initialActor={data}
+              onSubmit={handleEditSubmit}
+              title={t("actorFormEditTitle")}
+              errors={editErrors}
+            />
+          ) : (
+            <ActorEntry actor={data} roles={Array.from(roles)} />
+          )}
+
+          <div className="col-12 col-xxl-9">
+            <h3 className="pt-4 fw-bold">{t("actorLicenses")}</h3>
+            <ul className="list-group list-group-flush">
+              <PaginatedLicenses items={licenses.map((l) => [l])} />
+            </ul>
+          </div>
+          <div className="col-12 col-xxl-9">
+            <h3 className="pt-4 fw-bold">{t("actorPreviousLicenses")}</h3>
+            <ul className="list-group list-group-flush">
+              <PaginatedLicenses items={Object.values(previousLicenseGroups)} />
+            </ul>
           </div>
         </div>
-        {isEditing ? (
-          <ActorEntryForm
-            initialActor={data}
-            onSubmit={handleEditSubmit}
-            title={t("actorFormEditTitle")}
-            errors={editErrors}
-          />
-        ) : (
-          <ActorEntry actor={data} roles={Array.from(roles)} />
-        )}
-
-        <div className="col-12 col-xxl-9">
-          <h3 className="pt-4 fw-bold">{t("actorLicenses")}</h3>
-          <ul className="list-group list-group-flush">
-            <PaginatedLicenses items={licenses.map((l) => [l])} />
-          </ul>
-        </div>
-        <div className="col-12 col-xxl-9">
-          <h3 className="pt-4 fw-bold">{t("actorPreviousLicenses")}</h3>
-          <ul className="list-group list-group-flush">
-            <PaginatedLicenses items={Object.values(previousLicenseGroups)} />
-          </ul>
-        </div>
       </div>
-    </div>
+    </>
   );
 }
 
 function getLicenseGroupKey(licenses: ActorLicenseRelation[]) {
-  return licenses.map((l) => `${l.starts_at}${l.mnr}-${l.mednr}`).join(";");
+  return licenses
+    .map((l) => `${l.starts_at}${l.license_number}-${l.associate_number}`)
+    .join(";");
 }
 
 function PaginatedLicenses({ items }: { items: ActorLicenseRelation[][] }) {
@@ -360,8 +371,8 @@ function LicenseEntry({ license }: { license: ActorLicenseRelation }) {
     role,
     communication_type,
     communication_status,
-    mnr,
-    mednr,
+    license_number,
+    associate_number,
   } = license;
   const licenseStatus = getLicenseStatus(license);
   const licenseIsActive = licenseStatus === "in-effect";
@@ -369,8 +380,8 @@ function LicenseEntry({ license }: { license: ActorLicenseRelation }) {
     <div className="row">
       <div className="py-2 col-3 text-nowrap d-flex flex-column justify-content-center">
         <span>
-          <Link href={`/licenses/entry?mnr=${mnr}`}>
-            {mnr}-{mednr}
+          <Link href={`/licenses/entry?entryId=${license_number}`}>
+            {license_number}-{associate_number}
           </Link>
         </span>
         <span className="text-secondary small">{role}</span>

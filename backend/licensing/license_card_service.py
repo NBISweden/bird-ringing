@@ -71,8 +71,8 @@ class LicenseCardService:
     ) -> str:
         rel = self._get_license_relation(lic=lic, actor=actor, allowed_roles=allowed_roles)
 
-        mnr = lic.sequence.mnr
-        identifier = f"{mnr}-{rel.mednr}" if rel.role == LicenseRoleChoices.ASSOCIATE_RINGER else f"{mnr}"
+        license_number = lic.sequence.license_number
+        identifier = f"{license_number}-{rel.associate_number}" if rel.role == LicenseRoleChoices.ASSOCIATE_RINGER else f"{license_number}"
         name = slugify(actor.full_name)[:40]
         year = lic.starts_at.year
 
@@ -100,10 +100,10 @@ class LicenseCardService:
         valid_to = "Giltig t.o.m " + format_date(lic.ends_at)
 
         # actor line
-        mnr = lic.sequence.mnr
-        mnr_line = f"Märkare nr. {mnr}"
+        license_number = lic.sequence.license_number
+        license_number_line = f"Märkare nr. {license_number}"
         if rel.role == LicenseRoleChoices.ASSOCIATE_RINGER:
-            mnr_line = f"Märkare nr. {mnr}: {rel.mednr}"
+            license_number_line = f"Märkare nr. {license_number}: {rel.associate_number}"
 
         # station name line (empty if ringer is a person, will be filtered out in renderer if empty)
         station_lines = ("", "")
@@ -128,7 +128,7 @@ class LicenseCardService:
 
         lines = [
             valid_to,
-            mnr_line,
+            license_number_line,
             station_lines[0], # in case of stations, will be filtered out if empty
             station_lines[1], # in case of stations, will be filtered out if empty
             name_lines[0],
@@ -157,10 +157,12 @@ class LicenseCardService:
         Define exactly what counts as “license changed” for card generation.
         Anything included here triggers a new document when it changes.
         """
+        # The keys "sequence_mnr" and "mednr" are kept on purpose: renaming them would
+        # change every fingerprint and regenerate all existing license cards.
         return {
             "template": str(get_template_path("LICENSING_CARD_TEMPLATE")),
 
-            "sequence_mnr": lic.sequence.mnr,
+            "sequence_mnr": lic.sequence.license_number,
             "actor_id": actor.id,
             "actor_full_name": actor.full_name,
             "actor_birth_date": actor.birth_date.isoformat() if actor.birth_date else "",
@@ -170,7 +172,7 @@ class LicenseCardService:
             "ends_at": lic.ends_at.isoformat(),
 
             "role": int(rel.role),
-            "mednr": rel.mednr or "",
+            "mednr": rel.associate_number or "",
         }
 
     def _fingerprint(self, payload: dict) -> str:
@@ -257,7 +259,7 @@ class LicenseCardService:
 
             relations = lic.actors.filter(role__in=list(allowed_roles)).select_related("actor")
             if not relations.exists():
-                raise ValueError(f"No ringers/associate ringers on license for mnr {lic.sequence.mnr}.")
+                raise ValueError(f"No ringers/associate ringers on license for license number {lic.sequence.license_number}.")
 
             for rel in relations:
                 if should_skip is not None and should_skip(lic, rel.actor, rel):
@@ -295,7 +297,7 @@ class LicenseCardService:
 
                 relations = lic.actors.filter(role__in=list(allowed_roles)).select_related("actor")
                 if not relations.exists():
-                    raise ValueError(f"No ringers/associate ringers on license for mnr {lic.sequence.mnr}.")
+                    raise ValueError(f"No ringers/associate ringers on license for license number {lic.sequence.license_number}.")
 
                 for rel in relations:
                     actor = rel.actor
@@ -308,15 +310,15 @@ class LicenseCardService:
 
                     if not doc:
                         raise ValueError(
-                            f"License card PDF(s) missing for mnr {lic.sequence.mnr}. "
-                            "Generate all license cards for your selected MNRs before creating ZIP."
+                            f"License card PDF(s) missing for license number {lic.sequence.license_number}. "
+                            "Generate all license cards for your selected license numbers before creating ZIP."
                         )
 
                     if not doc.data:
-                        raise ValueError(f"{lic.sequence.mnr}: existing PDF has no data for actor {actor.id}.")
+                        raise ValueError(f"{lic.sequence.license_number}: existing PDF has no data for actor {actor.id}.")
 
                     filename = self.make_license_card_filename(lic, actor, allowed_roles=allowed_roles)
-                    zf.writestr(f"{lic.sequence.mnr}/{filename}", bytes(doc.data))
+                    zf.writestr(f"{lic.sequence.license_number}/{filename}", bytes(doc.data))
 
         zip_buffer.seek(0)
         return zip_buffer.getvalue()

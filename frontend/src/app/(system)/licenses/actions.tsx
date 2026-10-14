@@ -20,19 +20,22 @@ type BatchCreateResponse = {
 
 type BatchCreateFn = (
   client: Client,
-  mnrs: string[],
+  licenseNumbers: string[],
 ) => Promise<BatchCreateResponse>;
-type DownloadZipFn = (client: Client, mnrs: string[]) => Promise<Blob>;
+type DownloadZipFn = (
+  client: Client,
+  licenseNumbers: string[],
+) => Promise<Blob>;
 
 type SelectedActor = { id: number; name: string };
 
 function GenericBatchCreateBody({
-  mnrs,
+  licenseNumbers,
   createFn,
   loadingMessage,
   resultMessage,
 }: {
-  mnrs: string[];
+  licenseNumbers: string[];
   createFn: BatchCreateFn;
   loadingMessage: TranslationId;
   resultMessage: TranslationId;
@@ -41,9 +44,9 @@ function GenericBatchCreateBody({
   const { t, format } = useTranslation();
 
   const { data, isLoading, error } = useActionWithoutCache(
-    "Batch actions: " + mnrs.join(","),
+    "Batch actions: " + licenseNumbers.join(","),
     async () => {
-      return createFn(client, mnrs);
+      return createFn(client, licenseNumbers);
     },
   );
 
@@ -134,7 +137,7 @@ function useBatchCreateAction({
         content: (
           <ClientContext.Provider value={client}>
             <GenericBatchCreateBody
-              mnrs={Array.from(itemIds)}
+              licenseNumbers={Array.from(itemIds)}
               createFn={createFn}
               loadingMessage={loadingMessage}
               resultMessage="standardBatchResponse"
@@ -257,14 +260,15 @@ function useDownloadZipAction({
 
   // adapter to match DownloadModal signature
   const downloadFunc = useCallback(
-    async ([c, mnrs]: [Client, string[]]) => downloadFn(c, mnrs),
+    async ([c, licenseNumbers]: [Client, string[]]) =>
+      downloadFn(c, licenseNumbers),
     [downloadFn],
   );
 
   return useCallback(
     (itemIds: Set<string>) => {
-      const mnrs = Array.from(itemIds);
-      if (mnrs.length === 0) {
+      const licenseNumbers = Array.from(itemIds);
+      if (licenseNumbers.length === 0) {
         showNoSelectionModal({
           title,
           message: t("licenseNoLicensesSelected"),
@@ -278,14 +282,14 @@ function useDownloadZipAction({
           <ClientContext.Provider value={client}>
             <p>{introText}:</p>
             <ul>
-              {mnrs.map((mnr) => (
-                <li key={mnr}>{mnr}</li>
+              {licenseNumbers.map((licenseNumber) => (
+                <li key={licenseNumber}>{licenseNumber}</li>
               ))}
             </ul>
             <DownloadModal
               filename={filename}
               downloadFunc={downloadFunc}
-              params={mnrs}
+              params={licenseNumbers}
               loadingMessage={loadingMessage}
               successMessage={successMessage}
             />
@@ -313,30 +317,30 @@ function useDownloadZipAction({
 
 async function batchCreateLicenseDocs(
   client: Client,
-  mnrs: string[],
+  licenseNumbers: string[],
 ): Promise<BatchCreateResponse> {
-  return await client.batchCreateLicenseCards(mnrs);
+  return await client.batchCreateLicenseCards(licenseNumbers);
 }
 
 async function downloadLicenseCardsZip(
   client: Client,
-  mnrs: string[],
+  licenseNumbers: string[],
 ): Promise<Blob> {
-  return await client.fetchLicenseCardsZipBlob(mnrs);
+  return await client.fetchLicenseCardsZipBlob(licenseNumbers);
 }
 
 async function batchCreatePermitDocs(
   client: Client,
-  mnrs: string[],
+  licenseNumbers: string[],
 ): Promise<BatchCreateResponse> {
-  return await client.batchCreatePermits(mnrs);
+  return await client.batchCreatePermits(licenseNumbers);
 }
 
 async function downloadPermitsZip(
   client: Client,
-  mnrs: string[],
+  licenseNumbers: string[],
 ): Promise<Blob> {
-  return await client.fetchPermitsZipBlob(mnrs);
+  return await client.fetchPermitsZipBlob(licenseNumbers);
 }
 
 export function useBatchCreateLicenseCardsAction(client: Client) {
@@ -404,7 +408,7 @@ export function useSendLicenseEmailAction(client: Client) {
         title: t("licenseSendLicenses"),
         content: (
           <ClientContext.Provider value={client}>
-            <SendLicenseModalContent mnrs={Array.from(itemIds)} />
+            <SendLicenseModalContent licenseNumbers={Array.from(itemIds)} />
           </ClientContext.Provider>
         ),
         actions: [{ label: t("okModal"), action: () => {}, type: "primary" }],
@@ -453,13 +457,17 @@ export function useSendLicenseEmailForActorsAction(client: Client) {
   const { t } = useTranslation();
 
   const sendEmails = useCallback(
-    (mnr: string, actors: SelectedActor[], notifyRinger?: boolean) => {
+    (
+      licenseNumber: string,
+      actors: SelectedActor[],
+      notifyRinger?: boolean,
+    ) => {
       modalStack.add({
         title: t("licenseSendLicenses"),
         content: (
           <ClientContext.Provider value={client}>
             <SendLicenseForActorsModalContent
-              mnr={mnr}
+              licenseNumber={licenseNumber}
               actorIds={actors.map((a) => a.id)}
               notifyRinger={notifyRinger}
               actorNames={Object.fromEntries(actors.map((a) => [a.id, a.name]))}
@@ -473,7 +481,11 @@ export function useSendLicenseEmailForActorsAction(client: Client) {
   );
 
   return useCallback(
-    (mnr: string, actors: SelectedActor[], notifyRinger?: boolean) => {
+    (
+      licenseNumber: string,
+      actors: SelectedActor[],
+      notifyRinger?: boolean,
+    ) => {
       if (actors.length === 0) {
         modalStack.add({
           title: t("licenseSendLicenses"),
@@ -498,7 +510,7 @@ export function useSendLicenseEmailForActorsAction(client: Client) {
           { label: t("abortModal"), action: () => {}, type: "outline-primary" },
           {
             label: t("licenseSendLicenses"),
-            action: () => sendEmails(mnr, actors, notifyRinger),
+            action: () => sendEmails(licenseNumber, actors, notifyRinger),
             type: "primary",
           },
         ],

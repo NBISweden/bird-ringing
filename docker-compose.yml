@@ -32,29 +32,10 @@ services:
       database-init:
         condition: service_completed_successfully
 
-  frontend:
-    image: ghcr.io/nbisweden/bird-ringing-frontend:${TAG:-latest}
-    build:
-      context: ./frontend
-      dockerfile: ../Dockerfile.frontend
-      target: prod
-      args:
-        BUILD_ID: "${BUILD_ID:-6000:6000}"
-        RUNTIME_ID: "${RUNTIME_ID:-6001:6001}"
-        BUILD_GIT_COMMIT: "${BUILD_GIT_COMMIT:-}"
-        BUILD_GIT_BRANCH: "${BUILD_GIT_BRANCH:-}"
-    volumes:
-      - frontend-vol:/vol:ro
-    depends_on:
-      database:
-        condition: service_healthy
-
   backend-init:
     image: &backund-image ghcr.io/nbisweden/bird-ringing-backend:${TAG:-latest}
     build: &backend-build
-      context: ./backend
-      dockerfile: ../Dockerfile.backend
-      target: prod
+      target: backend-prod
       args:
         BUILD_ID: "${BUILD_ID:-6000:6000}"
         RUNTIME_ID: "${RUNTIME_ID:-6001:6001}"
@@ -85,7 +66,6 @@ services:
       DJANGO_EMAIL_HOST_PASSWORD_FILE: /run/secrets/django-email-password
       DJANGO_TEMPLATES_DIR: /resources/templates
     volumes:
-      - backend-vol:/vol:ro
       - ./resources:/resources:ro
     healthcheck:
       test: ["CMD", "wget", "--spider", "--timeout=5", "http://backend:8000/api/system/health/"]
@@ -118,13 +98,18 @@ services:
       start_period: 10s
 
   proxy:
-    image: caddy:2-alpine
+    image: ghcr.io/nbisweden/bird-ringing-proxy:${TAG:-latest}
+    build:
+      target: proxy-prod
+      args:
+        BUILD_ID: "${BUILD_ID:-6000:6000}"
+        RUNTIME_ID: "${RUNTIME_ID:-6001:6001}"
+        BUILD_GIT_COMMIT: "${BUILD_GIT_COMMIT:-}"
+        BUILD_GIT_BRANCH: "${BUILD_GIT_BRANCH:-}"
     ports:
       - 127.0.0.1:3210:80
     volumes:
       - ./caddy:/etc/caddy:ro
-      - frontend-vol:/srv/frontend:ro
-      - backend-vol:/srv/backend:ro
       - proxy-vol:/data
     healthcheck:
       test: ["CMD", "wget", "--spider", "--timeout=5", "http://proxy/health"]
@@ -133,15 +118,11 @@ services:
       retries: 5
       start_period: 10s
     depends_on:
-      frontend:
-        condition: service_completed_successfully
       backend:
         condition: service_healthy
 
 volumes:
   database-vol:
-  frontend-vol:
-  backend-vol:
   proxy-vol:
 
 secrets:

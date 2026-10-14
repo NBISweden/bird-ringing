@@ -34,7 +34,7 @@ import { Badge } from "@/components/Badge";
 import { DropDownMenu } from "@/components/DropDownMenu";
 
 type LicensePropertyIds =
-  | "mnr"
+  | "license_number"
   | "type"
   | "license_holder"
   | "methods"
@@ -79,11 +79,13 @@ function toLicenseTable(
   formatOption: Translation["formatOption"],
 ): TableItem<LicensePropertyIds> {
   return {
-    id: item.mnr,
+    id: item.license_number,
     properties: {
-      mnr: {
+      license_number: {
         component: (
-          <Link href={`licenses/entry/?mnr=${item.mnr}`}>{item.mnr}</Link>
+          <Link href={`licenses/entry/?entryId=${item.license_number}`}>
+            {item.license_number}
+          </Link>
         ),
       },
       type: {
@@ -267,68 +269,74 @@ function BaseListView({
   );
   const { selectedItems, toggleItems, handleItemSelection, allSelected } =
     useItemSelections(new Set(items.map((r) => r.id)), "data-license-id");
-  const ordering = params.get("ordering") || "mnr";
+  const ordering = params.get("ordering") || "license_number";
 
   const columns: Record<LicensePropertyIds, ColumnProperties> = {
-    mnr: {
+    license_number: {
       label: t("licenseId"),
-      ordering: { forward: "mnr", reverse: "-mnr" },
+      ordering: { forward: "license_number", reverse: "-license_number" },
     },
     type: {
       label: t("licenseType"),
       ordering: {
-        forward: "license_holder_type,mnr",
-        reverse: "-license_holder_type,mnr",
+        forward: "license_holder_type,license_number",
+        reverse: "-license_holder_type,license_number",
       },
     },
     license_holder: {
       label: t("licenseHolder"),
       ordering: {
-        forward: "license_holder,mnr",
-        reverse: "-license_holder,mnr",
+        forward: "license_holder,license_number",
+        reverse: "-license_holder,license_number",
       },
     },
     location: {
       label: t("licenseLocation"),
       ordering: {
-        forward: "location,mnr",
-        reverse: "-location,mnr",
+        forward: "location,license_number",
+        reverse: "-location,license_number",
       },
     },
     methods: {
       label: t("licenseTrappingMethods"),
-      ordering: { forward: "methods,mnr", reverse: "-methods,mnr" },
+      ordering: {
+        forward: "methods,license_number",
+        reverse: "-methods,license_number",
+      },
     },
     final_report_status: {
       label: t("licenseReportStatus"),
       ordering: {
-        forward: "report_status_label,mnr",
-        reverse: "-report_status_label,mnr",
+        forward: "report_status_label,license_number",
+        reverse: "-report_status_label,license_number",
       },
     },
     license_status: {
       label: t("licenseStatus"),
-      ordering: { forward: "status_label,mnr", reverse: "-status_label,mnr" },
+      ordering: {
+        forward: "status_label,license_number",
+        reverse: "-status_label,license_number",
+      },
     },
     has_license_card: {
       label: t("licenseCardTableHeader"),
       ordering: {
-        forward: "has_license_card,mnr",
-        reverse: "-has_license_card,mnr",
+        forward: "has_license_card,license_number",
+        reverse: "-has_license_card,license_number",
       },
     },
     has_permit: {
       label: t("licensePermitTableHeader"),
       ordering: {
-        forward: "has_permit,mnr",
-        reverse: "-has_permit,mnr",
+        forward: "has_permit,license_number",
+        reverse: "-has_permit,license_number",
       },
     },
     last_email_sent_at: {
       label: t("licenseLastEmailSentAt"),
       ordering: {
-        forward: "last_email_sent_at,mnr",
-        reverse: "-last_email_sent_at,mnr",
+        forward: "last_email_sent_at,license_number",
+        reverse: "-last_email_sent_at,license_number",
       },
     },
   };

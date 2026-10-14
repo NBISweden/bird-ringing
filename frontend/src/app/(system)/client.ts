@@ -56,9 +56,11 @@ export class Client {
     return (await resp.json()) as T;
   }
 
-  async fetchLicenseSequenceByMnr(mnr: string): Promise<LicenseListItem> {
+  async fetchLicenseSequenceByLicenseNumber(
+    licenseNumber: string,
+  ): Promise<LicenseListItem> {
     return this._getJson<LicenseListItem>(
-      `license_sequence/${encodeURIComponent(mnr)}/`,
+      `license_sequence/${encodeURIComponent(licenseNumber)}/`,
     );
   }
 
@@ -179,16 +181,21 @@ export class Client {
   }
 
   async batchCreateLicenseCards(
-    mnrs: string[],
+    licenseNumbers: string[],
   ): Promise<{ filenames: string[]; inactive_licenses: string[] }> {
-    return this._batchCreateDocuments("license_sequence/card-create", mnrs);
+    return this._batchCreateDocuments(
+      "license_sequence/card-create",
+      licenseNumbers,
+    );
   }
 
   private async _batchCreateDocuments(
     endpoint: string,
-    mnrs: string[],
+    licenseNumbers: string[],
   ): Promise<{ filenames: string[]; inactive_licenses: string[] }> {
-    const qs = new URLSearchParams({ mnrs: mnrs.join(",") });
+    const qs = new URLSearchParams({
+      license_numbers: licenseNumbers.join(","),
+    });
     const csrf = getCookie("csrftoken");
     return this.fetchJson<{ filenames: string[]; inactive_licenses: string[] }>(
       `${endpoint}/?${qs.toString()}`,
@@ -287,13 +294,16 @@ export class Client {
     return (await response.json()) as T;
   }
 
-  async fetchLicenseCardsZipBlob(mnrs: string[]): Promise<Blob> {
-    return this._fetchZipBlob("license_sequence/card-pdf", mnrs);
+  async fetchLicenseCardsZipBlob(licenseNumbers: string[]): Promise<Blob> {
+    return this._fetchZipBlob("license_sequence/card-pdf", licenseNumbers);
   }
 
-  private async _fetchZipBlob(endpoint: string, mnrs: string[]): Promise<Blob> {
+  private async _fetchZipBlob(
+    endpoint: string,
+    licenseNumbers: string[],
+  ): Promise<Blob> {
     const url = new URL(this._apiRoot + endpoint + "/");
-    url.searchParams.set("mnrs", mnrs.join(","));
+    url.searchParams.set("license_numbers", licenseNumbers.join(","));
 
     const resp = await fetch(url.href, { credentials: "same-origin" });
 
@@ -310,21 +320,26 @@ export class Client {
   }
 
   async batchCreatePermits(
-    mnrs: string[],
+    licenseNumbers: string[],
   ): Promise<{ filenames: string[]; inactive_licenses: string[] }> {
-    return this._batchCreateDocuments("license_sequence/permit-create", mnrs);
+    return this._batchCreateDocuments(
+      "license_sequence/permit-create",
+      licenseNumbers,
+    );
   }
 
-  async fetchPermitsZipBlob(mnrs: string[]): Promise<Blob> {
-    return this._fetchZipBlob("license_sequence/permit-pdf", mnrs);
+  async fetchPermitsZipBlob(licenseNumbers: string[]): Promise<Blob> {
+    return this._fetchZipBlob("license_sequence/permit-pdf", licenseNumbers);
   }
 
   async batchSendLicenseEmails(
-    mnrs: string[],
+    licenseNumbers: string[],
     includeCard: boolean,
     includePermit: boolean,
   ): Promise<SendEmailResult> {
-    const qs = new URLSearchParams({ mnrs: mnrs.join(",") });
+    const qs = new URLSearchParams({
+      license_numbers: licenseNumbers.join(","),
+    });
     if (includeCard) {
       qs.set("include_card", "1");
     }
@@ -340,7 +355,7 @@ export class Client {
   }
 
   async sendLicenseEmailsForActors(
-    mnr: string,
+    licenseNumber: string,
     actorIds: number[],
     includeCard: boolean,
     includePermit: boolean,
@@ -359,7 +374,7 @@ export class Client {
 
     const csrf = getCookie("csrftoken");
     return this.fetchJson<SendEmailResult>(
-      `license_sequence/${encodeURIComponent(mnr)}/send-license-emails/?${qs.toString()}`,
+      `license_sequence/${encodeURIComponent(licenseNumber)}/send-license-emails/?${qs.toString()}`,
       { method: "PUT", headers: csrf ? { "X-CSRFToken": csrf } : {} },
     );
   }
@@ -400,7 +415,7 @@ export class Client {
         ...(csrf ? { "X-CSRFToken": csrf } : {}),
       },
       body: JSON.stringify({
-        mnr: license.mnr,
+        license_number: license.license_number,
         status: license.status,
         latest: {
           location: license.location,
@@ -414,58 +429,67 @@ export class Client {
   }
 
   async updateLicense(
-    mnr: string,
+    licenseNumber: string,
     license: LicenseFormData,
   ): Promise<LicenseListItem> {
     const csrf = getCookie("csrftoken");
-    return this.fetchJson<LicenseListItem>(`license_sequence/${mnr}/`, {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        ...(csrf ? { "X-CSRFToken": csrf } : {}),
-      },
-      body: JSON.stringify({
-        mnr: license.mnr,
-        status: license.status,
-        latest: {
-          location: license.location,
-          description: license.description,
-          report_status: license.report_status,
-          starts_at: license.starts_at,
-          ends_at: license.ends_at,
+    return this.fetchJson<LicenseListItem>(
+      `license_sequence/${licenseNumber}/`,
+      {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          ...(csrf ? { "X-CSRFToken": csrf } : {}),
         },
-      }),
-    });
+        body: JSON.stringify({
+          license_number: license.license_number,
+          status: license.status,
+          latest: {
+            location: license.location,
+            description: license.description,
+            report_status: license.report_status,
+            starts_at: license.starts_at,
+            ends_at: license.ends_at,
+          },
+        }),
+      },
+    );
   }
 
   async updateLicenseRelations(
-    mnr: string,
+    licenseNumber: string,
     relations: LicenseActorRelation[],
   ): Promise<LicenseListItem> {
     const csrf = getCookie("csrftoken");
-    return this.fetchJson<LicenseListItem>(`license_sequence/${mnr}/`, {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        ...(csrf ? { "X-CSRFToken": csrf } : {}),
+    return this.fetchJson<LicenseListItem>(
+      `license_sequence/${licenseNumber}/`,
+      {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          ...(csrf ? { "X-CSRFToken": csrf } : {}),
+        },
+        body: JSON.stringify({ latest: { actors: relations } }),
       },
-      body: JSON.stringify({ latest: { actors: relations } }),
-    });
+    );
   }
 
   async updateLicensePermissions(
-    mnr: string,
+    licenseNumber: string,
     permissions: LicensePermissionByRef[],
   ): Promise<LicenseListItem> {
     const csrf = getCookie("csrftoken");
-    return this.fetchJson<LicenseListItem>(`license_sequence/${mnr}/`, {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        ...(csrf ? { "X-CSRFToken": csrf } : {}),
+    return this.fetchJson<LicenseListItem>(
+      `license_sequence/${licenseNumber}/`,
+      {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          ...(csrf ? { "X-CSRFToken": csrf } : {}),
+        },
+        body: JSON.stringify({ latest: { permissions: permissions } }),
       },
-      body: JSON.stringify({ latest: { permissions: permissions } }),
-    });
+    );
   }
 
   async fetchPermissionTypesWithProperties(): Promise<

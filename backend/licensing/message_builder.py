@@ -78,12 +78,12 @@ class MessageBuilder:
     @staticmethod
     def create_file_name(
         document_type: str,
-        mnr,
+        license_number,
         year: int,
-        mednr: str | None = None,
+        associate_number: str | None = None,
         name: str | None = None,
     ) -> str:
-        identifier = mnr if mednr is None else f"{mnr}-{mednr}"
+        identifier = license_number if associate_number is None else f"{license_number}-{associate_number}"
         name_slug = None if name is None else slugify(name)[:40]
         document_type_slug = slugify(document_type)
 
@@ -105,12 +105,12 @@ class LicenseAndPermitMessageBuilder:
     def build_message(self, lic: License, relation: LicenseRelation, include_card: bool = False, include_permit: bool = False) -> EmailMessage:
         email = relation.actor.email
         if not email:
-            raise ValueError(f"No email address available for {lic.sequence.mnr}:{relation.mednr}")
+            raise ValueError(f"No email address available for {lic.sequence.license_number}:{relation.associate_number}")
 
         card_document = self.card_service.get_license_card_document(lic=lic, actor=relation.actor)
         card_attachment = None
         if card_document is None and include_card:
-            raise ValueError(f"No license card document available for {lic.sequence.mnr}:{relation.mednr}")
+            raise ValueError(f"No license card document available for {lic.sequence.license_number}:{relation.associate_number}")
 
         elif include_card:
             (mimetype, _encoding) = mimetypes.guess_type(card_document.reference)
@@ -121,8 +121,8 @@ class LicenseAndPermitMessageBuilder:
                     mimetype=mimetype,
                     filename=MessageBuilder.create_file_name(
                         document_type=document_type,
-                        mnr=lic.sequence.mnr,
-                        mednr=(None if relation.role == LicenseRoleChoices.RINGER else relation.mednr),
+                        license_number=lic.sequence.license_number,
+                        associate_number=(None if relation.role == LicenseRoleChoices.RINGER else relation.associate_number),
                         name=relation.actor.full_name,
                         year=lic.starts_at.year,
                     )
@@ -138,7 +138,9 @@ class LicenseAndPermitMessageBuilder:
         return self.message_builder.build_message(
             to_addr=email,
             params={
-                "mnr": lic.sequence.mnr,
+                "license_number": lic.sequence.license_number,
+                # Deprecated alias, kept so existing deployed templates keep working.
+                "mnr": lic.sequence.license_number,
                 "name": relation.actor.full_name,
                 "date": datetime.date.today().isoformat(),
                 "attachments": [
@@ -184,7 +186,7 @@ class RingerBundleMessageBuilder:
                 card_doc = self.card_service.get_license_card_document(lic=lic, actor=rel.actor)
                 if not card_doc or not card_doc.data:
                     raise ValueError(
-                        f"No license card document available for: {lic.sequence.mnr}:{rel.mednr}"
+                        f"No license card document available for: {lic.sequence.license_number}:{rel.associate_number}"
                     )
                 filename = self.card_service.make_license_card_filename(lic, rel.actor)
                 files.append((filename, bytes(card_doc.data)))
@@ -198,7 +200,7 @@ class RingerBundleMessageBuilder:
             return None
 
         zip_bytes = zip_bytes_from_files(files)
-        zip_filename = f"{lic.sequence.mnr}-{self.zip_file_suffix}.zip"
+        zip_filename = f"{lic.sequence.license_number}-{self.zip_file_suffix}.zip"
 
         zip_attachment = EmailAttachment(
             filename=zip_filename,
@@ -209,7 +211,9 @@ class RingerBundleMessageBuilder:
         return self.message_builder.build_message(
             to_addr=ringer_email,
             params={
-                "mnr": lic.sequence.mnr,
+                "license_number": lic.sequence.license_number,
+                # Deprecated alias, kept so existing deployed templates keep working.
+                "mnr": lic.sequence.license_number,
                 "name": ringer_actor.full_name,
                 "date": datetime.date.today().isoformat(),
                 "attachments": [(_("bundle"), zip_filename)],

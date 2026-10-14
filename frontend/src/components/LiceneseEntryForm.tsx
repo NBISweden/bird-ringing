@@ -22,7 +22,7 @@ export type LicenseFormData = Omit<
   | "permissions"
   | "actors"
 > & {
-  mnr: string;
+  license_number: string;
   status: string;
   permissions: Partial<LicenseInstance["permissions"][number]>[];
   actors: Partial<LicenseInstance["actors"][number]>[];
@@ -32,7 +32,7 @@ function getUnsetFields(
   license: Partial<LicenseFormData>,
 ): (keyof LicenseFormData)[] {
   const keys: (keyof LicenseFormData)[] = [
-    "mnr",
+    "license_number",
     "status",
     "report_status",
     "location",
@@ -57,8 +57,8 @@ function validateLicense(
 } {
   const errors: FieldErrorGroup = {};
 
-  if (value.mnr && !/^\d{4}$/.test(value.mnr.trim())) {
-    errors.mnr = t("licenseFormMnrInvalid");
+  if (value.license_number && !/^\d{4}$/.test(value.license_number.trim())) {
+    errors.license_number = t("licenseFormLicenseNumberInvalid");
   }
 
   let license: LicenseFormData | undefined = undefined;
@@ -87,7 +87,7 @@ export function LicenseEntryForm({
 }) {
   const { t } = useTranslation();
   const [license, updateValue] = useObjectState<Partial<LicenseFormData>>({
-    mnr: "",
+    license_number: "",
     status: "",
     starts_at: "",
     location: "",
@@ -124,16 +124,18 @@ export function LicenseEntryForm({
           icon="journal-check"
           title={t("licenseFormBasicInfoSubtitle")}
         >
-          <VerticalField label={t("licenseId")} id="mnr" required>
+          <VerticalField label={t("licenseId")} id="license_number" required>
             <TextInput
               type="text"
               inputMode="numeric"
               maxLength={4}
-              placeholder={t("licenseFormMnrPlaceholder")}
-              value={license.mnr || ""}
+              placeholder={t("licenseFormLicenseNumberPlaceholder")}
+              value={license.license_number || ""}
               onChange={(event) =>
                 updateValue({
-                  mnr: event.target.value.replace(/\D/g, "").slice(0, 4),
+                  license_number: event.target.value
+                    .replace(/\D/g, "")
+                    .slice(0, 4),
                 })
               }
             />
