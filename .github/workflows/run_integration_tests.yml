@@ -1,8 +1,10 @@
 name: Integration tests
 
 on:
-  pull_request:
-    branches: [main, develop]
+  on:
+    push:
+      branches:
+        - 210-CP
 
 jobs:
   integration-tests:
