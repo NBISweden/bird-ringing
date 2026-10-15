@@ -19,9 +19,18 @@ export function LicenseCommunicationList({
     );
   }
 
+  const latestCommunications = Array.from(
+    communication
+      .reduce(
+        (map, item) => map.set(item.actor_id, item),
+        new Map<number, LicenseCommunication>(),
+      )
+      .values(),
+  );
+
   return (
     <ul className="list-group list-group-flush">
-      {communication.map((item, i) => (
+      {latestCommunications.map((item, i) => (
         <li className="list-group-item mb-3" key={i}>
           <div className="row align-items-center g-2">
             <div className="col-12 col-md-2 fw-semibold text-capitalize">
