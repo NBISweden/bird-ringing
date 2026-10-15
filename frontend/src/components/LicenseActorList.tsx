@@ -171,7 +171,6 @@ export function LicenseActorList({
                   })}
                 </div>
                 <div className="col-12 col-md-3">
-                  <i className="bi bi-person text-primary me-1" />
                   <Link href={`/actors/entry?entryId=${rel.actor.id}`}>
                     {rel.actor.full_name}
                   </Link>
