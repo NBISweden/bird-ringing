@@ -90,7 +90,7 @@ export function LicenseRelationsForm({
         onSubmit(relations.map(requireLicenseActorRelation));
       }}
     >
-      <VerticalField label={t("licenseActor")} icon="person">
+      <VerticalField label={t("licenseFormAddActor")} icon="plus">
         <div className="input-group mb-3">
           <TextInput
             value={filter}
@@ -207,7 +207,7 @@ function ActorEntrySubform({
   )[0];
 
   return (
-    <div className="row align-items-center g-2">
+    <div className="row align-items-start g-2">
       <div className="col-12 col-md-4">
         <VerticalField
           label={t("licenseRole")}
