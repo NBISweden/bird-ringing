@@ -1,6 +1,7 @@
 import {
   idToReference,
   LicenseActorRelation,
+  ObjectReference,
   Options,
   referenceToId,
   toSelectOptions,
@@ -42,10 +43,12 @@ export function LicenseRelationsForm({
   initialRelations,
   onSubmit,
   isSubmitting,
+  minAssociateNumber,
 }: {
   initialRelations: LicenseActorRelation[];
   onSubmit: (license: LicenseActorRelation[]) => void | Promise<void>;
   isSubmitting?: boolean;
+  minAssociateNumber?: number;
 }) {
   const { t } = useTranslation();
   const { data: actors } = useOptions("actor");
@@ -56,19 +59,45 @@ export function LicenseRelationsForm({
   };
   const [relations, setRelations] =
     useState<Partial<LicenseActorRelation>[]>(initialRelations);
+  const [submittedEntries, setSubmittedEntries] = useState<
+    Map<Partial<LicenseActorRelation>, number>
+  >(new Map());
   const actorIds = relations.map((r) => String(r.actor?.id));
+
+  const addRelation = (actor: ObjectReference) => {
+    setRelations((previousRelations) => {
+      const nextAssociateNumber =
+        Math.max(
+          minAssociateNumber === undefined ? 0 : minAssociateNumber,
+          ...previousRelations
+            .map((r) => r.associate_number)
+            .map((an) => (an && an.match(/^\d+$/) ? parseInt(an) : 0)),
+        ) + 1;
+      return [
+        ...previousRelations,
+        {
+          actor: actor,
+          associate_number: String(nextAssociateNumber).padStart(4, "0"),
+        },
+      ];
+    });
+  };
   const availableActorOptions = options.actors
     .filter((actor) => !actorIds.includes(actor.id))
     .map((o) => ({ ...o, term: o.label }));
   const { filteredItems, setFilter, filter } = useFilter(availableActorOptions);
+  const submitRelations = () => {
+    setSubmittedEntries(new Map(relations.map((r, index) => [r, index])));
+    onSubmit(relations.map(requireLicenseActorRelation));
+  };
   return (
     <form
       onSubmit={async (e) => {
         e.preventDefault();
-        onSubmit(relations.map(requireLicenseActorRelation));
+        submitRelations();
       }}
     >
-      <VerticalField label={t("licenseActor")} icon="person">
+      <VerticalField label={t("licenseFormAddActor")} icon="plus">
         <div className="input-group mb-3">
           <TextInput
             value={filter}
@@ -100,10 +129,10 @@ export function LicenseRelationsForm({
                     className="btn btn-outline-secondary"
                     onClick={(e) => {
                       e.preventDefault();
-                      setRelations([
-                        ...relations,
-                        { actor: idToReference(option.id) },
-                      ]);
+                      const actor = idToReference(option.id);
+                      if (actor) {
+                        addRelation(actor);
+                      }
                     }}
                   >
                     {t("licenseFormAddActor")}
@@ -119,41 +148,54 @@ export function LicenseRelationsForm({
         <></>
       )}
       <ul className="list-group list-group-flush mt-3">
-        {relations.map((relation, key) => (
-          <li className="list-group-item mb-3" key={key}>
-            <span className="d-flex gap-3 align-items-start">
-              <button
-                className="btn btn-danger ms-2"
-                onClick={(e) => {
-                  e.preventDefault();
-                  const rs = relations.filter((_, i) => i !== key);
-                  setRelations(rs);
-                }}
-              >
-                <Icon icon="trash" />
-              </button>
-              <ActorEntrySubform
-                id={`latest.actors.${key}`}
-                relation={{
-                  ...relation,
-                  actor: idToReference(
-                    options.actors.filter(
-                      (a) => referenceToId(relation.actor) === a.id,
-                    )[0]?.id,
-                  ),
-                }}
-                options={options}
-                updateValue={(v) => {
-                  const rs = relations.map<Partial<LicenseActorRelation>>(
-                    (relation, i) =>
-                      i !== key ? relation : { ...relation, ...v },
-                  );
-                  setRelations(rs);
-                }}
-              />
-            </span>
-          </li>
-        ))}
+        {relations.map((relation, key) => {
+          const submittedIndex = submittedEntries.get(relation);
+          const errorKey =
+            submittedIndex === undefined
+              ? submittedEntries.size + key
+              : submittedIndex;
+          return (
+            <li className="list-group-item mb-3" key={key}>
+              <span className="d-flex gap-3 align-items-start">
+                <button
+                  className="btn btn-danger ms-2"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const rs = relations.filter((_, i) => i !== key);
+                    setSubmittedEntries((prev) => {
+                      const next = new Map(prev);
+                      next.delete(relation);
+                      return next;
+                    });
+                    setRelations(rs);
+                  }}
+                >
+                  <Icon icon="trash" />
+                </button>
+                <ActorEntrySubform
+                  id={`latest.actors.${errorKey}`}
+                  relation={{
+                    ...relation,
+                    actor: idToReference(
+                      options.actors.filter(
+                        (a) => referenceToId(relation.actor) === a.id,
+                      )[0]?.id,
+                    ),
+                  }}
+                  options={options}
+                  updateValue={(v) => {
+                    const rs = relations.map<Partial<LicenseActorRelation>>(
+                      (relation, i) =>
+                        i !== key ? relation : { ...relation, ...v },
+                    );
+                    setRelations(rs);
+                  }}
+                />
+              </span>
+            </li>
+          );
+        })}
       </ul>
       <div className="d-flex justify-content-end">
         <button
@@ -185,7 +227,7 @@ function ActorEntrySubform({
   )[0];
 
   return (
-    <div className="row align-items-center g-2">
+    <div className="row align-items-start g-2">
       <div className="col-12 col-md-4">
         <VerticalField
           label={t("licenseRole")}

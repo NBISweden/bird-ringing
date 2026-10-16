@@ -2,6 +2,7 @@ from rest_framework.decorators import action
 from rest_framework.reverse import reverse
 from rest_framework import serializers
 from django.db import models, transaction
+from django.db.models import functions
 from django.http import HttpResponse
 from collections import defaultdict
 from django.core import mail
@@ -312,6 +313,14 @@ class LicenseActorRelationSerializer(serializers.ModelSerializer):
         write_only=True
     )
 
+    def validate(self, attrs):
+        license = self.context.get("license")
+        if license is not None:
+            # Only validate for existing associate numbers when a license instance is provided in the context
+            if not LicenseRelation.validate_associate_number(attrs.get("associate_number"), license, attrs.get("actor")):
+                raise serializers.ValidationError({"associate_number": ["Associate number is already taken"]})
+        return attrs
+
     class Meta:
         model = LicenseRelation
         fields = ["actor", "role", "associate_number", "created_by", "updated_by", "license_id"]
@@ -461,7 +470,6 @@ class LicenseSerializer(serializers.ModelSerializer):
                 error["associate_number"] = ["Duplicate associate number"]
             if len(error) > 0:
                 actors_errors[index] = error
-
         if len(actors_errors) > 0:
             raise serializers.ValidationError([
                 actors_errors.get(index, {})
@@ -535,11 +543,17 @@ class LicenseSerializer(serializers.ModelSerializer):
 
             relation_serializer = LicenseActorRelationSerializer(
                 data=actors,
-                context=self.context,
+                context={**self.context, "license": instance},
                 many=True
             )
-            relation_serializer.is_valid(raise_exception=True)
+            try:
+                relation_serializer.is_valid(raise_exception=True)
+            except serializers.ValidationError as error:
+                raise serializers.ValidationError({
+                    "actors": error.detail
+                })
             relation_serializer.save(license=instance)
+
     
     @transaction.atomic
     def write_permissions(self, instance, permissions):
@@ -555,7 +569,12 @@ class LicenseSerializer(serializers.ModelSerializer):
                 context=self.context,
                 many=True
             )
-            permission_serializer.is_valid(raise_exception=True)
+            try:
+                permission_serializer.is_valid(raise_exception=True)
+            except serializers.ValidationError as error:
+                raise serializers.ValidationError({
+                    "permissions": error.detail
+                })
             permission_serializer.save(license=instance)
 
 
@@ -707,6 +726,7 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet, ValueListMixin):
     def get_available_value_ids(self):
         return {
             "holder": LicenseSequenceViewSet.get_holder,
+            "max_associate_number": LicenseSequenceViewSet.get_max_associate_number,
         }
     
     @staticmethod
@@ -731,6 +751,25 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet, ValueListMixin):
 
         return grouped_holders.items()
 
+    @staticmethod
+    def get_max_associate_number(queryset):
+        license_numbers = set(queryset.values_list("license_number", flat=True))
+        values = (
+            LicenseRelation.objects.filter(
+                associate_number__regex=r"^\d+$",
+                license__sequence__license_number__in=license_numbers
+            )
+            .annotate(associate_number_int=functions.Cast("associate_number", models.IntegerField()))
+            .values("license__sequence__license_number")
+            .annotate(max_associate_number=functions.Coalesce(models.Max("associate_number_int"), models.Value(0)))
+        )
+        return [
+            (
+                v["license__sequence__license_number"],
+                v["max_associate_number"]
+            )
+            for v in values
+        ]
 
     def get_queryset(self):
         queryset = super().get_queryset()
