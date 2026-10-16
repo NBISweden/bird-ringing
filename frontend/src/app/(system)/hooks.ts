@@ -174,36 +174,40 @@ type AnyFunc = (...args: any[]) => any | Promise<any>;
 
 export function useFormSubmission<T extends AnyFunc>(
   submitAction: T,
-  onSuccess: (r: ReturnType<T>) => void,
+  onSuccess: (r: ReturnType<T>) => void | Promise<void>,
   onFail: (e: FormErrors) => void,
 ) {
   const [isSubmitting, startSubmitting] = useTransition();
   const [errors, setErrors] = useState<FormErrors | undefined>(undefined);
 
-  const submit = (...args: Parameters<T>) => {
+  const submit = (...args: Parameters<T>): Promise<void> => {
     setErrors(undefined);
-    startSubmitting(async () => {
-      try {
-        const result = await submitAction(...args);
-        onSuccess(result);
-      } catch (error) {
-        let fieldErrors: FormErrors["fields"] = {};
-        let nonFieldErrors: FormErrors["nonField"] = [];
-        if (error instanceof FieldValidationError) {
-          fieldErrors = error.fieldErrors;
-          nonFieldErrors = error.nonFieldErrors;
-        } else {
-          const message =
-            error instanceof Error ? error.message : String(error);
-          nonFieldErrors = message.split("\n").filter(Boolean);
+    return new Promise<void>((resolve) => {
+      startSubmitting(async () => {
+        try {
+          const result = await submitAction(...args);
+          await onSuccess(result);
+        } catch (error) {
+          let fieldErrors: FormErrors["fields"] = {};
+          let nonFieldErrors: FormErrors["nonField"] = [];
+          if (error instanceof FieldValidationError) {
+            fieldErrors = error.fieldErrors;
+            nonFieldErrors = error.nonFieldErrors;
+          } else {
+            const message =
+              error instanceof Error ? error.message : String(error);
+            nonFieldErrors = message.split("\n").filter(Boolean);
+          }
+          const nextErrors = {
+            fields: fieldErrors,
+            nonField: nonFieldErrors,
+          };
+          setErrors(nextErrors);
+          onFail(nextErrors);
+        } finally {
+          resolve();
         }
-        const nextErrors = {
-          fields: fieldErrors,
-          nonField: nonFieldErrors,
-        };
-        setErrors(nextErrors);
-        onFail(nextErrors);
-      }
+      });
     });
   };
   const reset = useCallback(() => setErrors(undefined), [setErrors]);
