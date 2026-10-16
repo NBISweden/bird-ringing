@@ -59,6 +59,9 @@ export function LicenseRelationsForm({
   };
   const [relations, setRelations] =
     useState<Partial<LicenseActorRelation>[]>(initialRelations);
+  const [submittedEntries, setSubmittedEntries] = useState<
+    Map<Partial<LicenseActorRelation>, number>
+  >(new Map());
   const actorIds = relations.map((r) => String(r.actor?.id));
 
   const addRelation = (actor: ObjectReference) => {
@@ -83,11 +86,15 @@ export function LicenseRelationsForm({
     .filter((actor) => !actorIds.includes(actor.id))
     .map((o) => ({ ...o, term: o.label }));
   const { filteredItems, setFilter, filter } = useFilter(availableActorOptions);
+  const submitRelations = () => {
+    setSubmittedEntries(new Map(relations.map((r, index) => [r, index])));
+    onSubmit(relations.map(requireLicenseActorRelation));
+  };
   return (
     <form
       onSubmit={async (e) => {
         e.preventDefault();
-        onSubmit(relations.map(requireLicenseActorRelation));
+        submitRelations();
       }}
     >
       <VerticalField label={t("licenseFormAddActor")} icon="plus">
@@ -141,41 +148,54 @@ export function LicenseRelationsForm({
         <></>
       )}
       <ul className="list-group list-group-flush mt-3">
-        {relations.map((relation, key) => (
-          <li className="list-group-item mb-3" key={key}>
-            <span className="d-flex gap-3 align-items-start">
-              <button
-                className="btn btn-danger ms-2"
-                onClick={(e) => {
-                  e.preventDefault();
-                  const rs = relations.filter((_, i) => i !== key);
-                  setRelations(rs);
-                }}
-              >
-                <Icon icon="trash" />
-              </button>
-              <ActorEntrySubform
-                id={`latest.actors.${key}`}
-                relation={{
-                  ...relation,
-                  actor: idToReference(
-                    options.actors.filter(
-                      (a) => referenceToId(relation.actor) === a.id,
-                    )[0]?.id,
-                  ),
-                }}
-                options={options}
-                updateValue={(v) => {
-                  const rs = relations.map<Partial<LicenseActorRelation>>(
-                    (relation, i) =>
-                      i !== key ? relation : { ...relation, ...v },
-                  );
-                  setRelations(rs);
-                }}
-              />
-            </span>
-          </li>
-        ))}
+        {relations.map((relation, key) => {
+          const submittedIndex = submittedEntries.get(relation);
+          const errorKey =
+            submittedIndex === undefined
+              ? submittedEntries.size + key
+              : submittedIndex;
+          return (
+            <li className="list-group-item mb-3" key={key}>
+              <span className="d-flex gap-3 align-items-start">
+                <button
+                  className="btn btn-danger ms-2"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const rs = relations.filter((_, i) => i !== key);
+                    setSubmittedEntries((prev) => {
+                      const next = new Map(prev);
+                      next.delete(relation);
+                      return next;
+                    });
+                    setRelations(rs);
+                  }}
+                >
+                  <Icon icon="trash" />
+                </button>
+                <ActorEntrySubform
+                  id={`latest.actors.${errorKey}`}
+                  relation={{
+                    ...relation,
+                    actor: idToReference(
+                      options.actors.filter(
+                        (a) => referenceToId(relation.actor) === a.id,
+                      )[0]?.id,
+                    ),
+                  }}
+                  options={options}
+                  updateValue={(v) => {
+                    const rs = relations.map<Partial<LicenseActorRelation>>(
+                      (relation, i) =>
+                        i !== key ? relation : { ...relation, ...v },
+                    );
+                    setRelations(rs);
+                  }}
+                />
+              </span>
+            </li>
+          );
+        })}
       </ul>
       <div className="d-flex justify-content-end">
         <button
