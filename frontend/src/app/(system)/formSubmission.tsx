@@ -15,7 +15,7 @@ export function useModalFormSubmission<T extends AnyFunc>(
     successTitle: string;
     successMessage: ReactNode;
     errorTitle: string;
-    onSuccess?: (result: Awaited<ReturnType<T>>) => void | Promise<void>;
+    onSuccess?: (result: Awaited<ReturnType<T>>) => void | Promise<unknown>;
     onSuccessConfirm?: (result: Awaited<ReturnType<T>>) => void;
     onSuccessDismiss?: (result: Awaited<ReturnType<T>>) => void;
   },

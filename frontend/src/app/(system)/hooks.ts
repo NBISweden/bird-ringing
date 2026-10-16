@@ -174,7 +174,7 @@ type AnyFunc = (...args: any[]) => any | Promise<any>;
 
 export function useFormSubmission<T extends AnyFunc>(
   submitAction: T,
-  onSuccess: (r: ReturnType<T>) => void | Promise<void>,
+  onSuccess: (r: ReturnType<T>) => void | Promise<unknown>,
   onFail: (e: FormErrors) => void,
 ) {
   const [isSubmitting, startSubmitting] = useTransition();
