@@ -4,17 +4,16 @@ import { Suspense, useState } from "react";
 import Link from "next/link";
 import useSWR from "swr";
 import { notFound, useSearchParams } from "next/navigation";
-import { useClient, useModalsContext } from "../../contexts";
+import { useClient } from "../../contexts";
 import {
   ActorBase,
   ActorLicenseRelation,
   ActorListItem,
-  FormErrors,
   Role,
   convertDateToLocale,
   convertOnlyDateToLocale,
 } from "../../common";
-import { Client, FieldValidationError } from "../../client";
+import { Client } from "../../client";
 import Spinner from "@/components/Spinner";
 import { useTranslation } from "../../internationalization";
 import { Alert } from "@/components/Alert";
@@ -22,6 +21,7 @@ import { PaginationContainer, usePagination } from "@/components/Pagination";
 import Icon from "@/components/Icon";
 import { ActorEntryForm } from "@/components/ActorEntryForm";
 import { LocalizedTitle } from "@/components/LocalizedTitle";
+import { useModalFormSubmission } from "../../formSubmission";
 
 async function fetchActor([client, _ctx, entryId]: [Client, "actor", string]) {
   return client.fetchActorById(entryId);
@@ -80,14 +80,31 @@ function ActorViewBase() {
   const client = useClient();
   const { t } = useTranslation();
   const [isEditing, setIsEditing] = useState<boolean>(false);
-  const [editErrors, setEditErrors] = useState<FormErrors | undefined>(
-    undefined,
-  );
-  const modals = useModalsContext();
 
   const { data, isLoading, error, mutate } = useSWR(
     actorId ? [client, "actor", actorId] : null,
     fetchActor,
+  );
+
+  const {
+    submit: handleEditSubmit,
+    errors: editErrors,
+    reset: resetEditErrors,
+  } = useModalFormSubmission(
+    (actor: Partial<ActorBase>) => {
+      if (!data) {
+        throw new Error("Actor data not loaded");
+      }
+      return client.updateActor(data.id, actor);
+    },
+    {
+      successTitle: t("actorUpdateSuccessTitle"),
+      successMessage: <p className="mb-0">{t("actorUpdateSuccessMessage")}</p>,
+      errorTitle: t("actorUpdateErrorTitle"),
+      onSuccess: () => mutate(),
+      onSuccessConfirm: () => setIsEditing(false),
+      onSuccessDismiss: () => setIsEditing(false),
+    },
   );
 
   if (!actorId) {
@@ -132,51 +149,6 @@ function ActorViewBase() {
 
   const roles = new Set<Role>(licenses.map((l) => l.role));
 
-  const handleEditSubmit = async (actor: Partial<ActorBase>) => {
-    setEditErrors(undefined);
-    try {
-      await client.updateActor(data!.id, actor);
-      await mutate(); // refetch so the view reflects the saved changes
-
-      modals.add({
-        title: t("actorUpdateSuccessTitle"),
-        content: <p className="mb-0">{t("actorUpdateSuccessMessage")}</p>,
-        closeAction: () => setIsEditing(false),
-        actions: [
-          {
-            label: t("closeModal"),
-            action: () => setIsEditing(false),
-          },
-        ],
-      });
-    } catch (error) {
-      if (error instanceof FieldValidationError) {
-        setEditErrors({
-          fields: error.fieldErrors,
-          nonField: error.nonFieldErrors,
-        });
-        return;
-      }
-      const message = error instanceof Error ? error.message : String(error);
-      const lines = message.split("\n").filter(Boolean);
-
-      modals.add({
-        title: t("actorUpdateErrorTitle"),
-        content:
-          lines.length > 1 ? (
-            <ul className="mb-0">
-              {lines.map((line, i) => (
-                <li key={i}>{line}</li>
-              ))}
-            </ul>
-          ) : (
-            <p className="mb-0">{message}</p>
-          ),
-        actions: [{ label: t("closeModal"), action: () => {} }],
-      });
-    }
-  };
-
   return (
     <>
       <LocalizedTitle
@@ -194,7 +166,7 @@ function ActorViewBase() {
               <button
                 className="btn btn-outline-secondary ms-2 flex-shrink-0"
                 onClick={() => {
-                  setEditErrors(undefined);
+                  resetEditErrors();
                   setIsEditing(!isEditing);
                 }}
               >
