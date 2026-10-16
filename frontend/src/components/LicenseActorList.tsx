@@ -108,11 +108,11 @@ export function LicenseActorList({
   });
   const sortedActors = (actors || []).sort(sortingFunc);
   const sortingOrderSelection: Array<
-    [RelationSortingOrder["name"], string, TranslationId]
+    [RelationSortingOrder["name"], string, string]
   > = [
-    ["role", "col-12 col-md-2", "licenseRole"],
-    ["name", "col-12 col-md-3", "actorName"],
-    ["documents", "col-12 col-md-5", "licenseDocuments"],
+    ["role", "col-12 col-md-2", t("licenseRole")],
+    ["name", "col-12 col-md-4", t("actorName")],
+    ["documents", "col-12 col-md-4", "License"],
   ];
 
   return (
@@ -122,7 +122,7 @@ export function LicenseActorList({
         <ul className="list-group list-group-flush">
           <li className="list-group-item mb-3">
             <div className="row align-items-center g-2">
-              {sortingOrderSelection.map(([so, className, messageId]) => (
+              {sortingOrderSelection.map(([so, className, label]) => (
                 <div
                   className={`${className} fw-semibold text-capitalize`}
                   key={so}
@@ -142,7 +142,7 @@ export function LicenseActorList({
                       })
                     }
                   >
-                    {t(messageId)}
+                    {label}
                     {sortingOrder.name === so ? (
                       <Icon
                         icon={
@@ -151,9 +151,7 @@ export function LicenseActorList({
                             : "caret-up-fill"
                         }
                       />
-                    ) : (
-                      <></>
-                    )}
+                    ) : null}
                   </span>
                 </div>
               ))}
@@ -170,13 +168,13 @@ export function LicenseActorList({
                     ringer: "licenseRoleRinger",
                   })}
                 </div>
-                <div className="col-12 col-md-3">
+                <div className="col-12 col-md-4">
                   <Link href={`/actors/entry?entryId=${rel.actor.id}`}>
                     {rel.actor.full_name}
                   </Link>
                   ({rel.associate_number})
                 </div>
-                <div className="col-10 col-md-5">
+                <div className="col-10 col-md-4">
                   {rel.role === "ringer" || rel.role === "associate_ringer"
                     ? documents.filter(
                         (doc) =>
