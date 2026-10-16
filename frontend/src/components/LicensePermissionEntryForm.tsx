@@ -39,7 +39,7 @@ function PermissionEntrySubform({
 }: {
   id: string;
   startsAt: Date;
-  endsAt: Date;
+  endsAt?: Date;
   permission: Partial<LicensePermissionByRef>;
   updateValue: (p: Partial<LicensePermissionByRef>) => void;
   options: PermissionOptions;
@@ -61,7 +61,12 @@ function PermissionEntrySubform({
     ? new Date(Math.max(startsAt.getTime(), periodStart.getTime()))
     : undefined;
   const permissionEndsAt = periodEnd
-    ? new Date(Math.min(endsAt.getTime(), periodEnd.getTime()))
+    ? new Date(
+        Math.min(
+          endsAt ? endsAt.getTime() : periodEnd.getTime(),
+          periodEnd.getTime(),
+        ),
+      )
     : undefined;
   return (
     <div className="row">
@@ -207,7 +212,7 @@ export function LicensePermissionEntryForm({
   endsAt,
 }: {
   startsAt: Date;
-  endsAt: Date;
+  endsAt?: Date;
   initialPermissions: Partial<LicensePermissionByRef>[];
   onSubmit: (license: LicensePermissionByRef[]) => Promise<void> | void;
   isSubmitting?: boolean;

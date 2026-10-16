@@ -63,9 +63,9 @@ class MonthDay:
 
     @staticmethod
     def get_period(
-        full_period: Tuple[datetime.date, datetime.date],
+        full_period: Tuple[datetime.date, datetime.date | None],
         local_period: Tuple[MonthDay, MonthDay]
-    ) -> Tuple[datetime.date, datetime.date]:
+    ) -> Tuple[datetime.date, datetime.date | None]:
         (local_starts_at, local_ends_at) = local_period
         starts_at = MonthDay.get_starts_at(full_period, local_starts_at)
         ends_at = MonthDay.get_ends_at(full_period, starts_at, local_ends_at)
@@ -73,7 +73,7 @@ class MonthDay:
 
     @staticmethod
     def get_starts_at(
-        full_period: Tuple[datetime.date, datetime.date],
+        full_period: Tuple[datetime.date, datetime.date | None],
         local_starts_at: MonthDay
     ) -> datetime.date:
         """
@@ -83,6 +83,11 @@ class MonthDay:
         """
 
         (full_starts_at, full_ends_at) = full_period
+        full_ends_at = (
+            full_starts_at + datetime.timedelta(days=366) # Cover leap year with no need for details
+            if full_ends_at is None
+            else full_ends_at
+        )
 
         if local_starts_at is None:
             return full_starts_at
@@ -97,10 +102,10 @@ class MonthDay:
 
     @staticmethod
     def get_ends_at(
-        full_period: Tuple[datetime.date, datetime.date],
+        full_period: Tuple[datetime.date, datetime.date | None],
         starts_at: datetime.date,
         local_ends_at: MonthDay
-    ) -> datetime.date:
+    ) -> datetime.date | None:
         """
         Calculates the end of the local period using the assumption that the
         length of the local period is less than or equal to one year. The period is

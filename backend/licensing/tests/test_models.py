@@ -96,7 +96,7 @@ class TestMonthDay(TestCase):
             "Expect end to use the second year"
         )
     
-    def get_period__ends_after_starts_inside(self):
+    def test_get_period__ends_after_starts_inside(self):
         local_starts_at = MonthDay(day=1, month=8)
         local_ends_at = MonthDay(day=1, month=7)
         (starts_at, ends_at) = MonthDay.get_period(
@@ -123,4 +123,29 @@ class TestMonthDay(TestCase):
         self.assertTrue(
             ends_at > self.period[1],
             "Expect end to be after the end of the full period"
+        )
+
+    def test_get_period__has_no_full_ends_at(self):
+        local_starts_at = MonthDay(day=1, month=8)
+        local_ends_at = MonthDay(day=1, month=7)
+        (starts_at, ends_at) = MonthDay.get_period(
+            (self.period[0], None),
+            (local_starts_at, local_ends_at)
+        )
+
+        self.assertEqual(
+            ends_at.year - starts_at.year,
+            1,
+            "The difference between the year number is 1"
+        )
+        self.assertEqual(
+            (starts_at.day, starts_at.month, ends_at.day, ends_at.month),
+            (local_starts_at.day, local_starts_at.month, local_ends_at.day, local_ends_at.month),
+            "Expect days and months to be the same as original MonthDay input"
+        )
+
+        self.assertGreater(
+            starts_at,
+            self.period[0],
+            "Expect start to after the start of the full period"
         )
