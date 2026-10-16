@@ -10,10 +10,7 @@ import {
   LicenseCommunication,
   Options,
 } from "@/app/(system)/common";
-import {
-  TranslationId,
-  useTranslation,
-} from "@/app/(system)/internationalization";
+import { useTranslation } from "@/app/(system)/internationalization";
 import { useOptions } from "@/app/(system)/hooks";
 import Icon from "./Icon";
 import Spinner from "./Spinner";

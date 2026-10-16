@@ -4,13 +4,11 @@ import { Suspense, useState } from "react";
 import useSWR from "swr";
 import { notFound, useSearchParams } from "next/navigation";
 import Spinner from "@/components/Spinner";
-
 import { useClient } from "../../contexts";
 import { Client } from "../../client";
 import { LicenceView } from "@/components/LicenceView";
 import { Alert } from "@/components/Alert";
 import { useTranslation } from "../../internationalization";
-import { convertOnlyDateToLocale } from "../../common";
 import { Badge } from "@/components/Badge";
 import { LocalizedTitle } from "@/components/LocalizedTitle";
 
@@ -26,7 +24,7 @@ function LicenseViewInner() {
   const params = useSearchParams();
   const licenseNumber = params.get("entryId");
   const client = useClient();
-  const { t, format, formatOption } = useTranslation();
+  const { t, formatOption } = useTranslation();
   const { data, isLoading, error, mutate } = useSWR(
     licenseNumber ? [client, "license", licenseNumber] : null,
     fetchLicense,
