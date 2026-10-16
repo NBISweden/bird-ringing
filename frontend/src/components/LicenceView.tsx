@@ -284,6 +284,9 @@ function LicenseRelationDisplay({
       <div className="card-body">
         <LicenseActorList
           actors={license.actors}
+          documents={license.documents}
+          communication={license.communication}
+          licenseNumber={licenseNumber}
           selectedActorIds={selectedActorIds}
           onSelectionChange={toggleActor}
           isSelectable={isSelectableRelation}

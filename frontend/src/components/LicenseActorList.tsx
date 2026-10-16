@@ -4,14 +4,13 @@ import Link from "next/link";
 import { useState } from "react";
 import {
   ActorBase,
+  LicenseDocument,
   LicenseActorRelation,
   LicenseInstance,
+  LicenseCommunication,
   Options,
 } from "@/app/(system)/common";
-import {
-  TranslationId,
-  useTranslation,
-} from "@/app/(system)/internationalization";
+import { useTranslation } from "@/app/(system)/internationalization";
 import { useOptions } from "@/app/(system)/hooks";
 import Icon from "./Icon";
 import Spinner from "./Spinner";
@@ -22,6 +21,7 @@ function getActorSortingFunction(
   order: string,
   options: {
     licenseRoles?: Options["license_role"][];
+    documents?: LicenseDocument[];
     direction?: -1 | 1;
   } = {},
 ): (
@@ -48,16 +48,32 @@ function getActorSortingFunction(
         );
       };
     }
+    case "documents": {
+      return (a, b) => {
+        const aReference =
+          options.documents?.find(
+            (doc) => doc.type === "license" && doc.actor_id === a.actor.id,
+          )?.reference ?? "";
+        const bReference =
+          options.documents?.find(
+            (doc) => doc.type === "license" && doc.actor_id === b.actor.id,
+          )?.reference ?? "";
+        return direction * aReference.localeCompare(bReference);
+      };
+    }
   }
 }
 
 type RelationSortingOrder = {
-  name: "role" | "name";
+  name: "role" | "name" | "documents";
   direction: 1 | -1;
 };
 
 type LicenseActorListProps = {
   actors: LicenseActorRelationInstance[];
+  documents: LicenseDocument[];
+  communication?: LicenseCommunication[];
+  licenseNumber: string;
   selectedActorIds: Set<number>;
   onSelectionChange: (actorId: number, selected: boolean) => void;
   isSelectable: (rel: LicenseActorRelationInstance) => boolean;
@@ -66,10 +82,13 @@ type LicenseActorListProps = {
 
 export function LicenseActorList({
   actors,
+  documents,
+  licenseNumber,
   selectedActorIds,
   onSelectionChange,
   isSelectable,
   disabled,
+  communication,
 }: LicenseActorListProps) {
   const { t, formatOption } = useTranslation();
   const [sortingOrder, setSortingOrder] = useState<RelationSortingOrder>({
@@ -81,14 +100,16 @@ export function LicenseActorList({
 
   const sortingFunc = getActorSortingFunction(sortingOrder.name, {
     licenseRoles,
+    documents,
     direction: sortingOrder.direction,
   });
   const sortedActors = (actors || []).sort(sortingFunc);
   const sortingOrderSelection: Array<
-    [RelationSortingOrder["name"], string, TranslationId]
+    [RelationSortingOrder["name"], string, string]
   > = [
-    ["role", "col-12 col-md-3", "licenseRole"],
-    ["name", "col-10 col-md-7", "actorName"],
+    ["role", "col-12 col-md-2", t("licenseRole")],
+    ["name", "col-12 col-md-4", t("actorName")],
+    ["documents", "col-12 col-md-4", "License"],
   ];
 
   return (
@@ -98,7 +119,7 @@ export function LicenseActorList({
         <ul className="list-group list-group-flush">
           <li className="list-group-item mb-3">
             <div className="row align-items-center g-2">
-              {sortingOrderSelection.map(([so, className, messageId]) => (
+              {sortingOrderSelection.map(([so, className, label]) => (
                 <div
                   className={`${className} fw-semibold text-capitalize`}
                   key={so}
@@ -118,7 +139,7 @@ export function LicenseActorList({
                       })
                     }
                   >
-                    {t(messageId)}
+                    {label}
                     {sortingOrder.name === so ? (
                       <Icon
                         icon={
@@ -127,9 +148,7 @@ export function LicenseActorList({
                             : "caret-up-fill"
                         }
                       />
-                    ) : (
-                      <></>
-                    )}
+                    ) : null}
                   </span>
                 </div>
               ))}
@@ -138,7 +157,7 @@ export function LicenseActorList({
           {sortedActors.map((rel, i) => (
             <li className="list-group-item mb-3" key={i}>
               <div className="row align-items-center g-2">
-                <div className="col-12 col-md-3 fw-semibold text-capitalize">
+                <div className="col-12 col-md-2 fw-semibold text-capitalize">
                   {formatOption(rel.role, {
                     affiliate: "licenseRoleAffiliate",
                     associate_ringer: "licenseRoleAssociateRinger",
@@ -146,13 +165,53 @@ export function LicenseActorList({
                     ringer: "licenseRoleRinger",
                   })}
                 </div>
-                <div className="col-10 col-md-7">
-                  <i className="bi bi-person text-primary me-1" />
+                <div className="col-12 col-md-4">
                   <Link href={`/actors/entry?entryId=${rel.actor.id}`}>
                     {rel.actor.full_name}
                   </Link>
                   ({rel.associate_number})
                 </div>
+                <div className="col-10 col-md-4">
+                  {rel.role === "ringer" || rel.role === "associate_ringer"
+                    ? documents.filter(
+                        (doc) =>
+                          doc.type === "license" &&
+                          doc.actor_id === rel.actor.id,
+                      ).length
+                      ? documents
+                          .filter(
+                            (doc) =>
+                              doc.type === "license" &&
+                              doc.actor_id === rel.actor.id,
+                          )
+                          .map((doc, index) => (
+                            <a
+                              key={index}
+                              href={`/api/license_sequence/${licenseNumber}/card-pdf/?actor_id=${doc.actor_id}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              title={t("licenseDocumentReference")}
+                            >
+                              <i className="bi bi-file-earmark-pdf me-1" />
+                            </a>
+                          ))
+                      : null
+                    : null}
+                  {(() => {
+                    const status = (communication ?? []).findLast(
+                      (com) =>
+                        com.type === "license delivery" &&
+                        com.actor_id === rel.actor.id,
+                    )?.status;
+
+                    return status ? (
+                      <span className="badge rounded-pill border border-primary text-primary text-capitalize">
+                        {status}
+                      </span>
+                    ) : null;
+                  })()}
+                </div>
+
                 <div className="col-2 col-md-2 d-flex justify-content-center">
                   {isSelectable(rel) ? (
                     <input
