@@ -211,7 +211,12 @@ export function LicenseActorList({
                       ))}
                     {status && isRinger && docs.length > 0 ? (
                       <span className="badge rounded-pill border border-primary text-primary text-capitalize">
-                        {status}
+                        {formatOption(status, {
+                          sent: "licenseDeliveryStatusSent",
+                          received: "licenseDeliveryStatusReceived",
+                          bounced: "licenseDeliveryStatusBounced",
+                          failed: "licenseDeliveryStatusFailed",
+                        })}
                       </span>
                     ) : null}
                   </div>
