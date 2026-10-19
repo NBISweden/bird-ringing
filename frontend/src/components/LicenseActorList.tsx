@@ -106,7 +106,7 @@ export function LicenseActorList({
     documents,
     direction: sortingOrder.direction,
   });
-  const sortedActors = (actors || []).sort(sortingFunc);
+  const sortedActors = [...(actors || [])].sort(sortingFunc);
   const sortingOrderSelection: Array<
     [RelationSortingOrder["name"], string, TranslationId]
   > = [
