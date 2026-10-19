@@ -139,10 +139,7 @@ export function LicenseActorList({
           <li className="list-group-item mb-3">
             <div className="row align-items-center g-2">
               {sortingOrderSelection.map(([so, className, messageId]) => (
-                <div
-                  className={`${className} fw-semibold text-capitalize`}
-                  key={so}
-                >
+                <div className={`${className} fw-semibold`} key={so}>
                   <span
                     className="text-nowrap link-primary text-decoration-underline"
                     role="button"
@@ -182,7 +179,7 @@ export function LicenseActorList({
             return (
               <li className="list-group-item mb-3" key={i}>
                 <div className="row align-items-center g-2">
-                  <div className="col-12 col-md-2 fw-semibold text-capitalize">
+                  <div className="col-12 col-md-2 fw-semibold">
                     {formatOption(rel.role, {
                       affiliate: "licenseRoleAffiliate",
                       associate_ringer: "licenseRoleAssociateRinger",
@@ -210,7 +207,7 @@ export function LicenseActorList({
                         </a>
                       ))}
                     {status && isRinger && docs.length > 0 ? (
-                      <span className="badge rounded-pill border border-primary text-primary text-capitalize">
+                      <span className="badge rounded-pill border border-primary text-primary">
                         {formatOption(status, {
                           sent: "licenseDeliveryStatusSent",
                           received: "licenseDeliveryStatusReceived",
