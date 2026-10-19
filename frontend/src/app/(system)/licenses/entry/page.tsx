@@ -3,6 +3,7 @@
 import { Suspense, useState } from "react";
 import useSWR from "swr";
 import { notFound, useSearchParams } from "next/navigation";
+import { dateStringToYear } from "../../utils";
 import Spinner from "@/components/Spinner";
 import { useClient } from "../../contexts";
 import { Client } from "../../client";
@@ -74,11 +75,6 @@ function LicenseViewInner() {
   const start = (clampedHistoryPage - 1) * historyPageSize;
   const historyItems = history.slice(start, start + historyPageSize);
 
-  const previousActiveYear = (date: string) => {
-    const d = new Date(date);
-    return d.getUTCFullYear();
-  };
-
   return (
     <>
       <LocalizedTitle
@@ -125,7 +121,7 @@ function LicenseViewInner() {
                       <li className="list-group-item py-3" key={h.version}>
                         <div className="row align-items-center g-2">
                           <div className="col-12 col-lg-8">
-                            <span>{previousActiveYear(h.starts_at)}</span>
+                            <span>{dateStringToYear(h.starts_at)}</span>
                           </div>
                         </div>
                       </li>
