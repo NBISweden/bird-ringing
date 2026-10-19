@@ -76,7 +76,7 @@ function LicenseViewInner() {
 
   const previousActiveYear = (date: string) => {
     const d = new Date(date);
-    return d.getFullYear();
+    return d.getUTCFullYear();
   };
 
   return (

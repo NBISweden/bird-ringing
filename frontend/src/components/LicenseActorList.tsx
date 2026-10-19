@@ -204,7 +204,14 @@ export function LicenseActorList({
                         com.actor_id === rel.actor.id,
                     )?.status;
 
-                    return status ? (
+                    return status &&
+                      (rel.role === "ringer" ||
+                        rel.role === "associate_ringer") &&
+                      documents.some(
+                        (doc) =>
+                          doc.type === "license" &&
+                          doc.actor_id === rel.actor.id,
+                      ) ? (
                       <span className="badge rounded-pill border border-primary text-primary text-capitalize">
                         {status}
                       </span>
