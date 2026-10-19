@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   ActorBase,
   LicenseDocument,
@@ -24,7 +24,7 @@ function getActorSortingFunction(
   order: string,
   options: {
     licenseRoles?: Options["license_role"][];
-    documents?: LicenseDocument[];
+    actorDocuments?: Record<number, LicenseDocument[]>;
     direction?: -1 | 1;
   } = {},
 ): (
@@ -54,13 +54,9 @@ function getActorSortingFunction(
     case "documents": {
       return (a, b) => {
         const aReference =
-          options.documents?.find(
-            (doc) => doc.type === "license" && doc.actor_id === a.actor.id,
-          )?.reference ?? "";
+          options.actorDocuments?.[a.actor.id]?.[0]?.reference ?? "";
         const bReference =
-          options.documents?.find(
-            (doc) => doc.type === "license" && doc.actor_id === b.actor.id,
-          )?.reference ?? "";
+          options.actorDocuments?.[b.actor.id]?.[0]?.reference ?? "";
         return direction * aReference.localeCompare(bReference);
       };
     }
@@ -101,9 +97,29 @@ export function LicenseActorList({
   const { data: licenseRoles, isLoading: isLoadingRoles } =
     useOptions("license_role");
 
+  const actorDocumentsMap = useMemo(() => {
+    const map: Record<number, LicenseDocument[]> = {};
+    for (const doc of documents) {
+      if (doc.type === "license") {
+        (map[doc.actor_id] ??= []).push(doc);
+      }
+    }
+    return map;
+  }, [documents]);
+
+  const actorDeliveryStatusMap = useMemo(() => {
+    const map: Record<number, string | undefined> = {};
+    for (const com of communication ?? []) {
+      if (com.type === "license delivery") {
+        map[com.actor_id] = com.status;
+      }
+    }
+    return map;
+  }, [communication]);
+
   const sortingFunc = getActorSortingFunction(sortingOrder.name, {
     licenseRoles,
-    documents,
+    actorDocuments: actorDocumentsMap,
     direction: sortingOrder.direction,
   });
   const sortedActors = [...(actors || [])].sort(sortingFunc);
@@ -157,90 +173,71 @@ export function LicenseActorList({
               ))}
             </div>
           </li>
-          {sortedActors.map((rel, i) => (
-            <li className="list-group-item mb-3" key={i}>
-              <div className="row align-items-center g-2">
-                <div className="col-12 col-md-2 fw-semibold text-capitalize">
-                  {formatOption(rel.role, {
-                    affiliate: "licenseRoleAffiliate",
-                    associate_ringer: "licenseRoleAssociateRinger",
-                    communication: "licenseRoleCommunication",
-                    ringer: "licenseRoleRinger",
-                  })}
-                </div>
-                <div className="col-12 col-md-4">
-                  <Link href={`/actors/entry?entryId=${rel.actor.id}`}>
-                    {rel.actor.full_name}
-                  </Link>
-                  ({rel.associate_number})
-                </div>
-                <div className="col-10 col-md-4">
-                  {rel.role === "ringer" || rel.role === "associate_ringer"
-                    ? documents.filter(
-                        (doc) =>
-                          doc.type === "license" &&
-                          doc.actor_id === rel.actor.id,
-                      ).length
-                      ? documents
-                          .filter(
-                            (doc) =>
-                              doc.type === "license" &&
-                              doc.actor_id === rel.actor.id,
-                          )
-                          .map((doc, index) => (
-                            <a
-                              key={index}
-                              href={`/api/license_sequence/${licenseNumber}/card-pdf/?actor_id=${doc.actor_id}`}
-                              target="_blank"
-                              rel="noreferrer"
-                              title={t("licenseDocumentReference")}
-                            >
-                              <i className="bi bi-file-earmark-pdf me-1" />
-                            </a>
-                          ))
-                      : null
-                    : null}
-                  {(() => {
-                    const status = (communication ?? []).findLast(
-                      (com) =>
-                        com.type === "license delivery" &&
-                        com.actor_id === rel.actor.id,
-                    )?.status;
+          {sortedActors.map((rel, i) => {
+            const docs = actorDocumentsMap[rel.actor.id] ?? [];
+            const isRinger =
+              rel.role === "ringer" || rel.role === "associate_ringer";
+            const status = actorDeliveryStatusMap[rel.actor.id];
 
-                    return status &&
-                      (rel.role === "ringer" ||
-                        rel.role === "associate_ringer") &&
-                      documents.some(
-                        (doc) =>
-                          doc.type === "license" &&
-                          doc.actor_id === rel.actor.id,
-                      ) ? (
+            return (
+              <li className="list-group-item mb-3" key={i}>
+                <div className="row align-items-center g-2">
+                  <div className="col-12 col-md-2 fw-semibold text-capitalize">
+                    {formatOption(rel.role, {
+                      affiliate: "licenseRoleAffiliate",
+                      associate_ringer: "licenseRoleAssociateRinger",
+                      communication: "licenseRoleCommunication",
+                      ringer: "licenseRoleRinger",
+                    })}
+                  </div>
+                  <div className="col-12 col-md-4">
+                    <Link href={`/actors/entry?entryId=${rel.actor.id}`}>
+                      {rel.actor.full_name}
+                    </Link>
+                    ({rel.associate_number})
+                  </div>
+                  <div className="col-10 col-md-4">
+                    {isRinger &&
+                      docs.map((doc, index) => (
+                        <a
+                          key={index}
+                          href={`/api/license_sequence/${licenseNumber}/card-pdf/?actor_id=${doc.actor_id}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          title={t("licenseDocumentReference")}
+                        >
+                          <i className="bi bi-file-earmark-pdf me-1" />
+                        </a>
+                      ))}
+                    {status && isRinger && docs.length > 0 ? (
                       <span className="badge rounded-pill border border-primary text-primary text-capitalize">
                         {status}
                       </span>
-                    ) : null;
-                  })()}
-                </div>
+                    ) : null}
+                  </div>
 
-                <div className="col-2 col-md-2 d-flex justify-content-center">
-                  {isSelectable(rel) ? (
-                    <input
-                      className="form-check-input border border-dark"
-                      type="checkbox"
-                      checked={selectedActorIds.has(rel.actor.id)}
-                      disabled={disabled}
-                      title={
-                        disabled ? t("licenseSendDisabledInactive") : undefined
-                      }
-                      onChange={(e) =>
-                        onSelectionChange(rel.actor.id, e.target.checked)
-                      }
-                    />
-                  ) : null}
+                  <div className="col-2 col-md-2 d-flex justify-content-center">
+                    {isSelectable(rel) ? (
+                      <input
+                        className="form-check-input border border-dark"
+                        type="checkbox"
+                        checked={selectedActorIds.has(rel.actor.id)}
+                        disabled={disabled}
+                        title={
+                          disabled
+                            ? t("licenseSendDisabledInactive")
+                            : undefined
+                        }
+                        onChange={(e) =>
+                          onSelectionChange(rel.actor.id, e.target.checked)
+                        }
+                      />
+                    ) : null}
+                  </div>
                 </div>
-              </div>
-            </li>
-          ))}
+              </li>
+            );
+          })}
         </ul>
       ) : (
         <p className="text-muted fst-italic">{t("licenseNoConnectedActors")}</p>
