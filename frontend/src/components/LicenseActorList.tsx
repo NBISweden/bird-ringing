@@ -97,7 +97,7 @@ export function LicenseActorList({
   const { data: licenseRoles, isLoading: isLoadingRoles } =
     useOptions("license_role");
 
-  const actorDocumentsMap = useMemo(() => {
+  const actorLicenseDocumentsMap = useMemo(() => {
     const map: Record<number, LicenseDocument[]> = {};
     for (const doc of documents) {
       if (doc.type === "license") {
@@ -119,7 +119,7 @@ export function LicenseActorList({
 
   const sortingFunc = getActorSortingFunction(sortingOrder.name, {
     licenseRoles,
-    actorDocuments: actorDocumentsMap,
+    actorDocuments: actorLicenseDocumentsMap,
     direction: sortingOrder.direction,
   });
   const sortedActors = [...(actors || [])].sort(sortingFunc);
@@ -171,9 +171,7 @@ export function LicenseActorList({
             </div>
           </li>
           {sortedActors.map((rel, i) => {
-            const docs = actorDocumentsMap[rel.actor.id] ?? [];
-            const isRinger =
-              rel.role === "ringer" || rel.role === "associate_ringer";
+            const docs = actorLicenseDocumentsMap[rel.actor.id] ?? [];
             const status = actorDeliveryStatusMap[rel.actor.id];
 
             return (
@@ -194,19 +192,18 @@ export function LicenseActorList({
                     ({rel.associate_number})
                   </div>
                   <div className="col-10 col-md-4">
-                    {isRinger &&
-                      docs.map((doc, index) => (
-                        <a
-                          key={index}
-                          href={`/api/license_sequence/${licenseNumber}/card-pdf/?actor_id=${doc.actor_id}`}
-                          target="_blank"
-                          rel="noreferrer"
-                          title={t("licenseDocumentReference")}
-                        >
-                          <i className="bi bi-file-earmark-pdf me-1" />
-                        </a>
-                      ))}
-                    {status && isRinger && docs.length > 0 ? (
+                    {docs.map((doc, index) => (
+                      <a
+                        key={index}
+                        href={`/api/license_sequence/${licenseNumber}/card-pdf/?actor_id=${doc.actor_id}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        title={t("licenseDocumentReference")}
+                      >
+                        <i className="bi bi-file-earmark-pdf me-1" />
+                      </a>
+                    ))}
+                    {status && docs.length > 0 ? (
                       <span className="badge rounded-pill border border-primary text-primary">
                         {formatOption(status, {
                           sent: "licenseDeliveryStatusSent",
