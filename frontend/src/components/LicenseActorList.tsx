@@ -10,7 +10,10 @@ import {
   LicenseCommunication,
   Options,
 } from "@/app/(system)/common";
-import { useTranslation } from "@/app/(system)/internationalization";
+import {
+  TranslationId,
+  useTranslation,
+} from "@/app/(system)/internationalization";
 import { useOptions } from "@/app/(system)/hooks";
 import Icon from "./Icon";
 import Spinner from "./Spinner";
@@ -105,11 +108,11 @@ export function LicenseActorList({
   });
   const sortedActors = (actors || []).sort(sortingFunc);
   const sortingOrderSelection: Array<
-    [RelationSortingOrder["name"], string, string]
+    [RelationSortingOrder["name"], string, TranslationId]
   > = [
-    ["role", "col-12 col-md-2", t("licenseRole")],
-    ["name", "col-12 col-md-4", t("actorName")],
-    ["documents", "col-12 col-md-4", "License"],
+    ["role", "col-12 col-md-2", "licenseRole"],
+    ["name", "col-12 col-md-4", "actorName"],
+    ["documents", "col-12 col-md-4", "actorLicenses"],
   ];
 
   return (
@@ -119,7 +122,7 @@ export function LicenseActorList({
         <ul className="list-group list-group-flush">
           <li className="list-group-item mb-3">
             <div className="row align-items-center g-2">
-              {sortingOrderSelection.map(([so, className, label]) => (
+              {sortingOrderSelection.map(([so, className, messageId]) => (
                 <div
                   className={`${className} fw-semibold text-capitalize`}
                   key={so}
@@ -139,7 +142,7 @@ export function LicenseActorList({
                       })
                     }
                   >
-                    {label}
+                    {t(messageId)}
                     {sortingOrder.name === so ? (
                       <Icon
                         icon={
