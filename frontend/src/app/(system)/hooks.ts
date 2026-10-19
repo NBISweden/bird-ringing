@@ -9,7 +9,7 @@ import {
 import useSWRMutation from "swr/mutation";
 import { useClient, useModalsContext } from "./contexts";
 import { useTranslation } from "./internationalization";
-import { FormErrors, Options } from "./common";
+import { FormErrors, Options, ValueList } from "./common";
 import { Client, FieldValidationError } from "./client";
 import useSWRImmutable from "swr/immutable";
 
@@ -164,6 +164,31 @@ export function useOptions<T extends keyof Options>(
   );
   return {
     data: data || [],
+    isLoading,
+    error,
+  };
+}
+
+export async function fetchLicenseValue<T>([client, valueId, ids]: [
+  Client,
+  string,
+  string[],
+]): Promise<ValueList<T>> {
+  return client.fetchLicenseValue<T>(valueId, undefined, ids);
+}
+
+export function useLicenseValue<T>(
+  valueId: string,
+  ids: string[],
+): { data: ValueList<T> | undefined; isLoading: boolean; error: unknown } {
+  const client = useClient();
+  const { data, isLoading, error } = useSWRImmutable(
+    [client, valueId, ids],
+    fetchLicenseValue<T>,
+    { fallback: [] },
+  );
+  return {
+    data: data,
     isLoading,
     error,
   };

@@ -15,7 +15,9 @@ from licensing.models import (
     LicenseSequence,
     LicenseStatusChoices,
     License,
+    LicenseRelation,
     ReportStatusChoices,
+    LicenseRoleChoices,
 )
 from django.test.client import RequestFactory
 from .utils import create_user
@@ -168,6 +170,98 @@ class TestSerializers(TestCase):
             result,
             {"actors": [{"role": ["required"]}]},
             "expect relation to be invalid due to missing role"
+        )
+    
+    def test_license_serializer_duplicate_associate_number_error(self):
+        license = License.objects.create(
+            sequence=self.sequence,
+            version=0,
+            report_status=ReportStatusChoices.YES,
+            starts_at=datetime.date.today(),
+            ends_at=datetime.date.today(),
+            created_by=self.user,
+            updated_by=self.user,
+        )
+
+        license_serializer = LicenseSerializer(
+            instance=license,
+            data={
+                **self._good_license_data(),
+                "actors": [
+                    {
+                        "actor": {"id": self.actors[0].id},
+                        "associate_number": "0001",
+                        "role": "ringer"
+                    },
+                    {
+                        "actor": {"id": self.actors[1].id},
+                        "associate_number": "0001",
+                        "role": "ringer"
+                    }
+                ]
+            },
+            context=self._get_context(),
+            partial=True,
+        )
+        result = None
+        try:
+            license_serializer.is_valid(raise_exception=True)
+        except ValidationError as e:
+            result = e.get_codes()
+
+        self.assertEqual(
+            result,
+            {"actors": [{"associate_number": ["invalid"]}, {"associate_number": ["invalid"]}]},
+            "expect relation to be invalid due duplicate associate number"
+        )
+    
+    def test_license_serializer_reused_associate_number_error(self):
+        license = License.objects.create(
+            sequence=self.sequence,
+            version=0,
+            report_status=ReportStatusChoices.YES,
+            starts_at=datetime.date.today(),
+            ends_at=datetime.date.today(),
+            created_by=self.user,
+            updated_by=self.user,
+        )
+        for actor, associate_number in zip(self.actors[0:2], ["0001", "0002"]):
+            LicenseRelation.objects.create(
+                associate_number=associate_number,
+                actor=actor,
+                license=license,
+                role=LicenseRoleChoices.RINGER,
+                created_by=self.user,
+                updated_by=self.user,
+            )
+        self.sequence.commit(license)
+
+        license_serializer = LicenseSerializer(
+            instance=license,
+            data={
+                **self._good_license_data(),
+                "actors": [
+                    {
+                        "actor": {"id": self.actors[2].id},
+                        "associate_number": "0001",
+                        "role": "ringer"
+                    },
+                ]
+            },
+            context=self._get_context(),
+            partial=True,
+        )
+        result = None
+        try:
+            license_serializer.is_valid(raise_exception=True)
+            license_serializer.save()
+        except ValidationError as e:
+            result = e.get_codes()
+
+        self.assertEqual(
+            result,
+            {"actors": [{"associate_number": ["invalid"]}]},
+            "expect relation to be invalid due to reused associate number"
         )
     
     def test_license_serializer_errors(self):
