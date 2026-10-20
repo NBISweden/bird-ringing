@@ -284,9 +284,6 @@ export const locale: TranslationMap = {
   licenseTrappingMethods: "Fångstmetoder",
   licenseType: "Typ",
   licenseUpdatedAt: "Uppdaterad {date}",
-  licenseValidityPeriod:
-    "<from>Giltig från </from>{startsAt}<to> till </to>{endsAt}",
-  licensePeriodStart: "<from>Starts at</from> {startsAt}",
   licenseStatusSummary:
     "<param>År: </param>{year}, <param>status: </param>{status}",
   licenseSendDisabledInactive:
