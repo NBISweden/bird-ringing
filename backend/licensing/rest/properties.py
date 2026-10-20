@@ -1,5 +1,8 @@
 from rest_framework import routers, serializers, viewsets, filters
+from rest_framework.response import Response
 from rest_framework.authentication import SessionAuthentication, BasicAuthentication
+from django.conf import settings
+
 from licensing.models import (
     Actor,
     LicensePermissionType,
@@ -14,9 +17,25 @@ from licensing.models import (
     Species,
     LocationPreset,
     LocationPresetGroup,
+    LicenseSequence,
 )
 from .utils import LabeledChoiceViewset, DjangoProtectedModelPermissions
 
+class LicenseDefaultsViewSet(viewsets.ViewSet):
+    """
+    Read-only access to the configured license defaults, so clients can
+    pre-fill forms with the same values the backend uses.
+    """
+    authentication_classes = [SessionAuthentication, BasicAuthentication]
+    permission_classes = [DjangoProtectedModelPermissions]
+    # the empty queryset is only used here to resolve permissions
+    queryset = LicenseSequence.objects.none()
+
+    def list(self, request):
+        return Response({
+            "end_year_offset": settings.LICENSING_DEFAULT_END_YEAR_OFFSET,
+            "end_month_day": settings.LICENSING_DEFAULT_END_MONTH_DAY,
+        })
 
 class LocationPresetSerializer(serializers.ModelSerializer):
     id = serializers.CharField(read_only=True)
@@ -219,4 +238,5 @@ router.register(r"property/species", SpeciesViewSet)
 router.register(r"property/permission_type", PermissionTypeViewSet)
 router.register(r"property/permission_property", PermissionPropertyViewSet)
 router.register(r"property/location_preset_group", LocationPresetGroupViewset)
+router.register(r"property/license_defaults", LicenseDefaultsViewSet, basename="property-license-defaults")
 register_choice_view_sets(router)
