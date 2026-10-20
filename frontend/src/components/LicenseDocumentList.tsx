@@ -44,14 +44,20 @@ export function LicenseDocumentList({
               <span className="text-muted small me-2">
                 {t("licenseDocumentReference")}
               </span>
-              <a
-                href={`/api/license_sequence/${licenseNumber}/${fileTypeToURL(doc.type)}/?actor_id=${doc.actor_id}`}
-                target="_blank"
-                rel="noreferrer"
-                className="badge rounded-pill border border-primary text-primary text-decoration-none"
-              >
-                {doc.reference}
-              </a>
+              {doc.type === "permit" ? (
+                <a
+                  href={`/api/license_sequence/${licenseNumber}/${fileTypeToURL(doc.type)}/?actor_id=${doc.actor_id}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="badge rounded-pill border border-primary text-primary text-decoration-none"
+                >
+                  {doc.reference}
+                </a>
+              ) : (
+                <span className="badge rounded-pill border border-primary text-primary">
+                  {doc.reference}
+                </span>
+              )}
             </div>
           </div>
         </li>
