@@ -1,4 +1,4 @@
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from rest_framework.test import APIClient
 
 from licensing.models import (
@@ -355,3 +355,57 @@ class LicenseSequenceUpdateTests(TestCase):
         }
 
         return payload
+
+    def test_license_sequence_create_without_ends_at_uses_default(self):
+        payload = self._license_sequence_payload()
+        del payload["latest"]["ends_at"]
+
+        self._with_access()
+        response = self.client.post("/api/license_sequence/", data=payload, format="json")
+
+        self.assertEqual(response.status_code, 201, response.content)
+        # starts_at is 2026-01-01 in the default payload.
+        self.assertEqual(response.json()["latest"]["ends_at"], "2027-02-28")
+
+        sequence = LicenseSequence.objects.get(license_number="1234")
+        self.assertEqual(sequence.latest.ends_at.isoformat(), "2027-02-28")
+
+    @override_settings(
+        LICENSING_DEFAULT_END_YEAR_OFFSET=2,
+        LICENSING_DEFAULT_END_MONTH_DAY="03-15",
+    )
+    def test_license_sequence_create_without_ends_at_respects_settings(self):
+        payload = self._license_sequence_payload()
+        del payload["latest"]["ends_at"]
+
+        self._with_access()
+        response = self.client.post("/api/license_sequence/", data=payload, format="json")
+
+        self.assertEqual(response.status_code, 201, response.content)
+        self.assertEqual(response.json()["latest"]["ends_at"], "2028-03-15")
+
+    def test_license_sequence_create_with_explicit_ends_at_is_kept(self):
+        payload = self._license_sequence_payload()
+        payload["latest"]["ends_at"] = "2026-06-30"
+
+        self._with_access()
+        response = self.client.post("/api/license_sequence/", data=payload, format="json")
+
+        self.assertEqual(response.status_code, 201, response.content)
+        self.assertEqual(response.json()["latest"]["ends_at"], "2026-06-30")
+
+    def test_license_sequence_patch_without_ends_at_keeps_existing(self):
+        sequence = self._create_license_sequence(license_number="1234")
+
+        self._with_access()
+        response = self.client.patch(
+            "/api/license_sequence/1234/",
+            data={"latest": {"description": "Changed"}},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 200, response.content)
+        sequence.refresh_from_db()
+        self.assertEqual(sequence.latest.description, "Changed")
+        # _create_license_sequence sets ends_at to 2026-12-31.
+        self.assertEqual(sequence.latest.ends_at.isoformat(), "2026-12-31")
