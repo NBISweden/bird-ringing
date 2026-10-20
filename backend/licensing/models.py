@@ -418,7 +418,7 @@ class License(ChangeTracking):
     documents = models.ManyToManyField(LicenseDocument, blank=True)
 
     starts_at = models.DateField()
-    ends_at = models.DateField(null=True)
+    ends_at = models.DateField()
 
     class Meta:
         constraints = [
