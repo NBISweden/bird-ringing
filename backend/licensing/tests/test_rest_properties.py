@@ -1,4 +1,4 @@
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from rest_framework.test import APIClient
 from licensing.models import (
     Actor,
@@ -22,6 +22,7 @@ class RestPropertiesTests(TestCase):
                 "view_licensepermissionproperty",
                 "view_species",
                 "view_actor",
+                "view_licensesequence",
             ]
         )
         self.user_without_access = create_user("userwithoutaccess", "pwd")
@@ -105,6 +106,19 @@ class RestPropertiesTests(TestCase):
         
         items = self._test_endpoint("/api/property/permission_property/?search=has-5-b")
         self.assertEqual(len(items), 1, "only one matching permission property should be included")
+
+    @override_settings(
+        LICENSING_DEFAULT_END_YEAR_OFFSET=2,
+        LICENSING_DEFAULT_END_MONTH_DAY="03-15",
+    )
+    def test_license_defaults_endpoint(self):
+        self._with_access()
+        response = self.client.get("/api/property/license_defaults/", format="json")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.json(),
+            {"end_year_offset": 2, "end_month_day": "03-15"},
+        )
     
     def test_choice_field_endpoints(self):
         endpoints = [

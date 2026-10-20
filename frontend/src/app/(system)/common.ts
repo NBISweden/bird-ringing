@@ -247,6 +247,11 @@ export type LicensePermissionByRef = {
   properties: ObjectReference[];
 };
 
+export type LicenseDefaults = {
+  end_year_offset: number;
+  end_month_day: string; // "MM-DD"
+};
+
 export type BSColor =
   | "primary"
   | "secondary"

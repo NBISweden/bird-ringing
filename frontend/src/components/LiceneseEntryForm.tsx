@@ -1,5 +1,9 @@
-import { LicenseInstance } from "@/app/(system)/common";
-import { useObjectState, useOptions } from "@/app/(system)/hooks";
+import { LicenseDefaults, LicenseInstance } from "@/app/(system)/common";
+import {
+  useLicenseDefaults,
+  useObjectState,
+  useOptions,
+} from "@/app/(system)/hooks";
 import { useTranslation } from "@/app/(system)/internationalization";
 import {
   SelectInput,
@@ -37,6 +41,7 @@ function getUnsetFields(
     "report_status",
     "location",
     "starts_at",
+    "ends_at",
     "description",
   ];
   return keys.filter((key) => license[key] === undefined);
@@ -46,6 +51,17 @@ function isLicenseFormData(
   license: Partial<LicenseFormData>,
 ): license is LicenseFormData {
   return getUnsetFields(license).length === 0;
+}
+
+// Pre-fill only; the formula mirrors licensing.utils.get_default_license_end_date.
+function computeDefaultEndsAt(
+  startsAt: string | undefined,
+  defaults: LicenseDefaults | undefined,
+): string {
+  const match = /^(\d{4})-\d{2}-\d{2}$/.exec(startsAt || "");
+  if (!match || !defaults) return "";
+  const year = Number(match[1]) + defaults.end_year_offset;
+  return `${year}-${defaults.end_month_day}`;
 }
 
 function validateLicense(
@@ -59,6 +75,10 @@ function validateLicense(
 
   if (value.license_number && !/^\d{4}$/.test(value.license_number.trim())) {
     errors.license_number = t("licenseFormLicenseNumberInvalid");
+  }
+
+  if (value.starts_at && value.ends_at && value.ends_at < value.starts_at) {
+    errors["latest.ends_at"] = t("licenseFormEndsAtBeforeStartsAt");
   }
 
   let license: LicenseFormData | undefined = undefined;
@@ -90,6 +110,7 @@ export function LicenseEntryForm({
     license_number: "",
     status: "",
     starts_at: "",
+    ends_at: "",
     location: "",
     description: "",
     report_status: "",
@@ -98,10 +119,22 @@ export function LicenseEntryForm({
     ...initialLicense,
   });
 
+  // On create, the end date follows the start date until edited by hand.
+  const [endsAtTouched, setEndsAtTouched] = useState(
+    Boolean(initialLicense.ends_at),
+  );
+
   const [errors, setErrors] = useState<FieldErrorGroup>({});
   const { data: locationPresets, isLoading: lpIsLoading } = useOptions(
     "location_preset_group",
   );
+  const { data: licenseDefaults, isLoading: ldIsLoading } =
+    useLicenseDefaults();
+
+  // Wait for the defaults so the end date can be pre-filled from the first
+  if (ldIsLoading) {
+    return <></>;
+  }
 
   return (
     <form
@@ -110,7 +143,7 @@ export function LicenseEntryForm({
 
         const { errors: validationErrors, license: validatedLicense } =
           validateLicense(license, t);
-        setErrors(errors);
+        setErrors(validationErrors);
 
         if (Object.keys(validationErrors).length > 0 || !validatedLicense) {
           return;
@@ -204,9 +237,36 @@ export function LicenseEntryForm({
             <TextInput
               type="date"
               value={license.starts_at || ""}
-              onChange={(event) =>
-                updateValue({ starts_at: event.target.value })
-              }
+              onChange={(event) => {
+                const startsAt = event.target.value;
+                updateValue(
+                  endsAtTouched
+                    ? { starts_at: startsAt }
+                    : {
+                        starts_at: startsAt,
+                        ends_at: computeDefaultEndsAt(
+                          startsAt,
+                          licenseDefaults,
+                        ),
+                      },
+                );
+              }}
+            />
+          </VerticalField>
+
+          <VerticalField
+            label={t("licenseEndsAt")}
+            id="latest.ends_at"
+            required
+          >
+            <TextInput
+              type="date"
+              value={license.ends_at || ""}
+              min={license.starts_at || undefined}
+              onChange={(event) => {
+                setEndsAtTouched(true);
+                updateValue({ ends_at: event.target.value });
+              }}
             />
           </VerticalField>
         </FormSection>

@@ -283,7 +283,7 @@ const messagesBase = {
   licenseUpdatedAt: "Updated at {date}",
   licenseValidityPeriod:
     "<from>Valid from </from>{startsAt}<to> to </to>{endsAt}",
-  licensePeriodStart: "<from>Starts at</from> {startsAt}",
+  licensePeriodStart: "<from>Valid from </from>{startsAt}",
   licenseStatusSummary:
     "<param>Year: </param>{year}, <param>status: </param>{status}",
   licenseSendDisabledInactive: "License must be active to send communication.",

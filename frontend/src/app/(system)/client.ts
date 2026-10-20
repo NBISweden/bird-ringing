@@ -5,6 +5,7 @@ import {
   LicenseActorRelation,
   LicenseListItem,
   LicensePermissionByRef,
+  LicenseDefaults,
   Options,
   PagedResponse,
   SendEmailResult,
@@ -178,6 +179,10 @@ export class Client {
   ): Promise<Options[T][]> {
     const options = await this._getJson<Options[T][]>(`property/${option}`);
     return options;
+  }
+
+  async fetchLicenseDefaults(): Promise<LicenseDefaults> {
+    return this._getJson<LicenseDefaults>("property/license_defaults/");
   }
 
   async batchCreateLicenseCards(

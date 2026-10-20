@@ -51,10 +51,11 @@ from .utils import (
     StandardResultsSetPagination,
 )
 from licensing.utils import ( 
-    get_flattened_license_and_relations, 
-    communication_language_context, 
-    default_document_copy_policy, 
-    split_items 
+    get_flattened_license_and_relations,
+    communication_language_context,
+    default_document_copy_policy,
+    split_items,
+    get_default_license_end_date,
 )
 from django.utils.translation import gettext as _
 from django.contrib.postgres.aggregates import StringAgg
@@ -417,6 +418,7 @@ class LicenseSerializer(serializers.ModelSerializer):
     documents = LicenseDocumentSerializer(many=True, read_only=True)
     communication = LicenseCommunicationSerializer(many=True, read_only=True)
     report_status = NameBasedChoiceField(choices=ReportStatusChoices)
+    ends_at = serializers.DateField(required=False)
 
     created_by = serializers.HiddenField(
         default=serializers.CreateOnlyDefault(serializers.CurrentUserDefault())
@@ -511,6 +513,8 @@ class LicenseSerializer(serializers.ModelSerializer):
     @transaction.atomic
     def create(self, validated_data):
         validated_data.setdefault("version", 0)
+        if "ends_at" not in validated_data:
+            validated_data["ends_at"] = get_default_license_end_date(validated_data["starts_at"])
         actors = validated_data.pop("actors", None)
         permissions = validated_data.pop("permissions", None)
         instance = super().create(validated_data)

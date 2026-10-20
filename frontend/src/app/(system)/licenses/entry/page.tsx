@@ -122,21 +122,12 @@ function LicenseViewInner() {
                       <li className="list-group-item py-3" key={h.version}>
                         <div className="row align-items-center g-2">
                           <div className="col-12 col-lg-8">
-                            {format(
-                              h.ends_at
-                                ? "licenseValidityPeriod"
-                                : "licensePeriodStart",
-                              {
-                                startsAt: convertOnlyDateToLocale(h.starts_at),
-                                endsAt: convertOnlyDateToLocale(h.ends_at),
-                                from: (chunks) => (
-                                  <span className="fst-italic">{chunks}</span>
-                                ),
-                                to: (chunks) => (
-                                  <span className="fst-italic">{chunks}</span>
-                                ),
-                              },
-                            )}
+                            {format("licensePeriodStart", {
+                              startsAt: convertOnlyDateToLocale(h.starts_at),
+                              from: (chunks) => (
+                                <span className="fst-italic">{chunks}</span>
+                              ),
+                            })}
                           </div>
                         </div>
                       </li>
