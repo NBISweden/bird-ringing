@@ -282,7 +282,7 @@ export const locale: TranslationMap = {
   licenseUpdatedAt: "Uppdaterad {date}",
   licenseValidityPeriod:
     "<from>Giltig från </from>{startsAt}<to> till </to>{endsAt}",
-  licensePeriodStart: "<from>Starts at</from> {startsAt}",
+  licensePeriodStart: "<from>Giltig från </from>{startsAt}",
   licenseStatusSummary:
     "<param>År: </param>{year}, <param>status: </param>{status}",
   licenseSendDisabledInactive:
