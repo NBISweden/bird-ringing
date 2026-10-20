@@ -110,7 +110,7 @@ export function LicenseActorList({
   const actorDeliveryStatusMap = useMemo(() => {
     const map: Record<number, string | undefined> = {};
     for (const com of communication ?? []) {
-      if (com.type === "license delivery") {
+      if (com.type === "license delivery" && !(com.actor_id in map)) {
         map[com.actor_id] = com.status;
       }
     }

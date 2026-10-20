@@ -22,7 +22,8 @@ export function LicenseCommunicationList({
   const latestCommunications = Array.from(
     communication
       .reduce(
-        (map, item) => map.set(item.actor_id, item),
+        (map, item) =>
+          map.has(item.actor_id) ? map : map.set(item.actor_id, item),
         new Map<number, LicenseCommunication>(),
       )
       .values(),

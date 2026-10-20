@@ -618,6 +618,9 @@ class LicenseCommunication(ChangeTracking):
     status = models.PositiveIntegerField(choices=CommunicationStatusChoices)
     note = models.CharField(max_length=512, blank=True, default="")
 
+    class Meta:
+        ordering = ["-created_at", "-pk"]
+    
 
 class LicensePermissionType(ChangeTracking):
     """
