@@ -9,7 +9,7 @@ import {
 import useSWRMutation from "swr/mutation";
 import { useClient, useModalsContext } from "./contexts";
 import { useTranslation } from "./internationalization";
-import { FormErrors, Options, ValueList } from "./common";
+import { FormErrors, Options, ValueList, LicenseDefaults } from "./common";
 import { Client, FieldValidationError } from "./client";
 import useSWRImmutable from "swr/immutable";
 
@@ -192,6 +192,23 @@ export function useLicenseValue<T>(
     isLoading,
     error,
   };
+}
+
+async function fetchLicenseDefaults([client]: [Client, "license_defaults"]) {
+  return client.fetchLicenseDefaults();
+}
+
+export function useLicenseDefaults(): {
+  data: LicenseDefaults | undefined;
+  isLoading: boolean;
+  error: unknown;
+} {
+  const client = useClient();
+  const { data, isLoading, error } = useSWRImmutable(
+    [client, "license_defaults"],
+    fetchLicenseDefaults,
+  );
+  return { data, isLoading, error };
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
