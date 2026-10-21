@@ -33,3 +33,8 @@ export function chunkArray<T>(array: T[], size: number): T[][] {
     array.slice(i * size, i * size + size),
   );
 }
+
+export const dateStringToYear = (date: string) => {
+  const d = new Date(date);
+  return d.getUTCFullYear();
+};

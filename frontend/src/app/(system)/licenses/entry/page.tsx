@@ -3,14 +3,13 @@
 import { Suspense, useState } from "react";
 import useSWR from "swr";
 import { notFound, useSearchParams } from "next/navigation";
+import { dateStringToYear } from "../../utils";
 import Spinner from "@/components/Spinner";
-
 import { useClient } from "../../contexts";
 import { Client } from "../../client";
 import { LicenceView } from "@/components/LicenceView";
 import { Alert } from "@/components/Alert";
 import { useTranslation } from "../../internationalization";
-import { convertOnlyDateToLocale } from "../../common";
 import { Badge } from "@/components/Badge";
 import { LocalizedTitle } from "@/components/LocalizedTitle";
 
@@ -26,7 +25,7 @@ function LicenseViewInner() {
   const params = useSearchParams();
   const licenseNumber = params.get("entryId");
   const client = useClient();
-  const { t, format, formatOption } = useTranslation();
+  const { t, formatOption } = useTranslation();
   const { data, isLoading, error, mutate } = useSWR(
     licenseNumber ? [client, "license", licenseNumber] : null,
     fetchLicense,
@@ -122,21 +121,7 @@ function LicenseViewInner() {
                       <li className="list-group-item py-3" key={h.version}>
                         <div className="row align-items-center g-2">
                           <div className="col-12 col-lg-8">
-                            {format(
-                              h.ends_at
-                                ? "licenseValidityPeriod"
-                                : "licensePeriodStart",
-                              {
-                                startsAt: convertOnlyDateToLocale(h.starts_at),
-                                endsAt: convertOnlyDateToLocale(h.ends_at),
-                                from: (chunks) => (
-                                  <span className="fst-italic">{chunks}</span>
-                                ),
-                                to: (chunks) => (
-                                  <span className="fst-italic">{chunks}</span>
-                                ),
-                              },
-                            )}
+                            <span>{dateStringToYear(h.starts_at)}</span>
                           </div>
                         </div>
                       </li>

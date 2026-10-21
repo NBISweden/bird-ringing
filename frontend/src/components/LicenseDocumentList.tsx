@@ -19,16 +19,23 @@ export function LicenseDocumentList({
     return <p className="text-muted fst-italic">{t("licenseNoDocuments")}</p>;
   }
 
+  const onlyOtherDocumentsThanLicense = documents.filter(
+    (doc) => doc.type !== "license",
+  );
+
+  const fileTypeToURL = (type: string) => {
+    return type + "-pdf";
+  };
+
   return (
     <ul className="list-group list-group-flush">
-      {documents.map((doc, i) => (
+      {onlyOtherDocumentsThanLicense.map((doc, i) => (
         <li className="list-group-item mb-3" key={i}>
           <div className="row align-items-center g-2">
             <div className="col-12 col-md-2 fw-semibold text-capitalize">
               {doc.type}
             </div>
             <div className="col-12 col-md-3">
-              <i className="bi bi-person text-primary me-1" />
               <Link href={`/actors/entry?entryId=${doc.actor_id}`}>
                 {doc.actor}
               </Link>
@@ -37,9 +44,9 @@ export function LicenseDocumentList({
               <span className="text-muted small me-2">
                 {t("licenseDocumentReference")}
               </span>
-              {doc.type === "license" || doc.type === "permit" ? (
+              {doc.type === "permit" ? (
                 <a
-                  href={`/api/license_sequence/${licenseNumber}/${doc.type === "license" ? "card-pdf" : "permit-pdf"}/?actor_id=${doc.actor_id}`}
+                  href={`/api/license_sequence/${licenseNumber}/${fileTypeToURL(doc.type)}/?actor_id=${doc.actor_id}`}
                   target="_blank"
                   rel="noreferrer"
                   className="badge rounded-pill border border-primary text-primary text-decoration-none"
