@@ -14,7 +14,7 @@ import {
   FieldErrors,
   FieldErrorGroup,
 } from "./InputFields";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 export type LicenseFormData = Omit<
   LicenseInstance,
@@ -119,22 +119,20 @@ export function LicenseEntryForm({
     ...initialLicense,
   });
 
-  // On create, the end date follows the start date until edited by hand.
-  const [endsAtTouched, setEndsAtTouched] = useState(
-    Boolean(initialLicense.ends_at),
-  );
-
   const [errors, setErrors] = useState<FieldErrorGroup>({});
   const { data: locationPresets, isLoading: lpIsLoading } = useOptions(
     "location_preset_group",
   );
-  const { data: licenseDefaults, isLoading: ldIsLoading } =
-    useLicenseDefaults();
+  const { data: licenseDefaults } = useLicenseDefaults();
 
-  // Wait for the defaults so the end date can be pre-filled from the first
-  if (ldIsLoading) {
-    return <></>;
-  }
+  // If not explicitly set end date the end date is derived from
+  //  the start date and the backend defaults.
+  const endsAt = useMemo(
+    () =>
+      license.ends_at ||
+      computeDefaultEndsAt(license.starts_at, licenseDefaults),
+    [license.ends_at, license.starts_at, licenseDefaults],
+  );
 
   return (
     <form
@@ -142,7 +140,7 @@ export function LicenseEntryForm({
         e.preventDefault();
 
         const { errors: validationErrors, license: validatedLicense } =
-          validateLicense(license, t);
+          validateLicense({ ...license, ends_at: endsAt }, t);
         setErrors(validationErrors);
 
         if (Object.keys(validationErrors).length > 0 || !validatedLicense) {
@@ -237,20 +235,9 @@ export function LicenseEntryForm({
             <TextInput
               type="date"
               value={license.starts_at || ""}
-              onChange={(event) => {
-                const startsAt = event.target.value;
-                updateValue(
-                  endsAtTouched
-                    ? { starts_at: startsAt }
-                    : {
-                        starts_at: startsAt,
-                        ends_at: computeDefaultEndsAt(
-                          startsAt,
-                          licenseDefaults,
-                        ),
-                      },
-                );
-              }}
+              onChange={(event) =>
+                updateValue({ starts_at: event.target.value })
+              }
             />
           </VerticalField>
 
@@ -261,12 +248,9 @@ export function LicenseEntryForm({
           >
             <TextInput
               type="date"
-              value={license.ends_at || ""}
+              value={endsAt}
               min={license.starts_at || undefined}
-              onChange={(event) => {
-                setEndsAtTouched(true);
-                updateValue({ ends_at: event.target.value });
-              }}
+              onChange={(event) => updateValue({ ends_at: event.target.value })}
             />
           </VerticalField>
         </FormSection>
