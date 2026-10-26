@@ -1,6 +1,7 @@
 from rest_framework import routers, serializers, viewsets, filters
 from rest_framework.response import Response
 from rest_framework.authentication import SessionAuthentication, BasicAuthentication
+from rest_framework.permissions import IsAuthenticated
 from django.conf import settings
 
 from licensing.models import (
@@ -17,7 +18,6 @@ from licensing.models import (
     Species,
     LocationPreset,
     LocationPresetGroup,
-    LicenseSequence,
 )
 from .utils import LabeledChoiceViewset, DjangoProtectedModelPermissions
 
@@ -25,11 +25,13 @@ class LicenseDefaultsViewSet(viewsets.ViewSet):
     """
     Read-only access to the configured license defaults, so clients can
     pre-fill forms with the same values the backend uses.
+
+    This is implemented as a `list` so the router serves it at
+    property/license_defaults/ and lists it in the API root (routers only
+    accept viewsets).
     """
     authentication_classes = [SessionAuthentication, BasicAuthentication]
-    permission_classes = [DjangoProtectedModelPermissions]
-    # the empty queryset is only used here to resolve permissions
-    queryset = LicenseSequence.objects.none()
+    permission_classes = [IsAuthenticated]
 
     def list(self, request):
         return Response({

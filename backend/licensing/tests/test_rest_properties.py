@@ -22,7 +22,6 @@ class RestPropertiesTests(TestCase):
                 "view_licensepermissionproperty",
                 "view_species",
                 "view_actor",
-                "view_licensesequence",
             ]
         )
         self.user_without_access = create_user("userwithoutaccess", "pwd")
