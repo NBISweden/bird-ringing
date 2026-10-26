@@ -13,7 +13,11 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 from django.core.exceptions import ImproperlyConfigured
 from pathlib import Path
 from os import getenv
-from bird_ringing.helpers import get_secret_from_file, parse_csv_from_env
+from bird_ringing.helpers import (
+    get_secret_from_file,
+    parse_csv_from_env,
+    parse_month_day_from_env,
+)
 from bird_ringing.helpers import strtobool
 from django.core.management.utils import get_random_secret_key
 import sys
@@ -139,7 +143,7 @@ DOCX2PDF_URL = getenv("DOCX2PDF_URL", "")
 # Default end date for licenses created without an explicit end date:
 # (starts_at.year + LICENSING_DEFAULT_END_YEAR_OFFSET) on LICENSING_DEFAULT_END_MONTH_DAY ("MM-DD").
 LICENSING_DEFAULT_END_YEAR_OFFSET = int(getenv("LICENSING_DEFAULT_END_YEAR_OFFSET") or "1")
-LICENSING_DEFAULT_END_MONTH_DAY = getenv("LICENSING_DEFAULT_END_MONTH_DAY") or "02-28"
+LICENSING_DEFAULT_END_MONTH_DAY = parse_month_day_from_env("LICENSING_DEFAULT_END_MONTH_DAY", "02-28")
 
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/

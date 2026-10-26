@@ -12,7 +12,6 @@ import time
 import io
 import zipfile
 import datetime
-from django.core.exceptions import ImproperlyConfigured
 from django.conf import settings
 from contextlib import contextmanager
 from django.utils import translation
@@ -137,10 +136,5 @@ def get_default_license_end_date(starts_at: datetime.date) -> datetime.date:
     """
     raw = settings.LICENSING_DEFAULT_END_MONTH_DAY
     year = starts_at.year + settings.LICENSING_DEFAULT_END_YEAR_OFFSET
-    try:
-        month, day = (int(part) for part in raw.split("-"))
-        return datetime.date(year, month, day)
-    except ValueError as e:
-        raise ImproperlyConfigured(
-            f"LICENSING_DEFAULT_END_MONTH_DAY must be a valid 'MM-DD' date, got {raw!r}."
-        ) from e
+    month, day = (int(part) for part in raw.split("-"))
+    return datetime.date(year, month, day)
