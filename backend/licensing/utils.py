@@ -11,6 +11,7 @@ import urllib.request
 import time
 import io
 import zipfile
+import datetime
 from django.conf import settings
 from contextlib import contextmanager
 from django.utils import translation
@@ -126,3 +127,14 @@ def split_items(
         if not condition(item)
     ]
     return (true_items, false_items)
+
+def get_default_license_end_date(starts_at: datetime.date) -> datetime.date:
+    """
+    Return the default end date for a license given its start date.
+    The year is ``starts_at.year + LICENSING_DEFAULT_END_YEAR_OFFSET`` and
+    the month and day come from LICENSING_DEFAULT_END_MONTH_DAY ("MM-DD").
+    """
+    raw = settings.LICENSING_DEFAULT_END_MONTH_DAY
+    year = starts_at.year + settings.LICENSING_DEFAULT_END_YEAR_OFFSET
+    month, day = (int(part) for part in raw.split("-"))
+    return datetime.date(year, month, day)

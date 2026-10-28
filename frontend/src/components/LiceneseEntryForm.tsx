@@ -1,5 +1,9 @@
-import { LicenseInstance } from "@/app/(system)/common";
-import { useObjectState, useOptions } from "@/app/(system)/hooks";
+import { LicenseDefaults, LicenseInstance } from "@/app/(system)/common";
+import {
+  useLicenseDefaults,
+  useObjectState,
+  useOptions,
+} from "@/app/(system)/hooks";
 import { useTranslation } from "@/app/(system)/internationalization";
 import {
   SelectInput,
@@ -10,7 +14,7 @@ import {
   FieldErrors,
   FieldErrorGroup,
 } from "./InputFields";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 export type LicenseFormData = Omit<
   LicenseInstance,
@@ -37,6 +41,7 @@ function getUnsetFields(
     "report_status",
     "location",
     "starts_at",
+    "ends_at",
     "description",
   ];
   return keys.filter((key) => license[key] === undefined);
@@ -46,6 +51,17 @@ function isLicenseFormData(
   license: Partial<LicenseFormData>,
 ): license is LicenseFormData {
   return getUnsetFields(license).length === 0;
+}
+
+// Pre-fill only; the formula mirrors licensing.utils.get_default_license_end_date.
+function computeDefaultEndsAt(
+  startsAt: string | undefined,
+  defaults: LicenseDefaults | undefined,
+): string {
+  const match = /^(\d{4})-\d{2}-\d{2}$/.exec(startsAt || "");
+  if (!match || !defaults) return "";
+  const year = Number(match[1]) + defaults.end_year_offset;
+  return `${year}-${defaults.end_month_day}`;
 }
 
 function validateLicense(
@@ -59,6 +75,10 @@ function validateLicense(
 
   if (value.license_number && !/^\d{4}$/.test(value.license_number.trim())) {
     errors.license_number = t("licenseFormLicenseNumberInvalid");
+  }
+
+  if (value.starts_at && value.ends_at && value.ends_at < value.starts_at) {
+    errors["latest.ends_at"] = t("licenseFormEndsAtBeforeStartsAt");
   }
 
   let license: LicenseFormData | undefined = undefined;
@@ -90,6 +110,7 @@ export function LicenseEntryForm({
     license_number: "",
     status: "",
     starts_at: "",
+    ends_at: "",
     location: "",
     description: "",
     report_status: "",
@@ -102,6 +123,16 @@ export function LicenseEntryForm({
   const { data: locationPresets, isLoading: lpIsLoading } = useOptions(
     "location_preset_group",
   );
+  const { data: licenseDefaults } = useLicenseDefaults();
+
+  // If not explicitly set end date the end date is derived from
+  //  the start date and the backend defaults.
+  const endsAt = useMemo(
+    () =>
+      license.ends_at ||
+      computeDefaultEndsAt(license.starts_at, licenseDefaults),
+    [license.ends_at, license.starts_at, licenseDefaults],
+  );
 
   return (
     <form
@@ -109,8 +140,8 @@ export function LicenseEntryForm({
         e.preventDefault();
 
         const { errors: validationErrors, license: validatedLicense } =
-          validateLicense(license, t);
-        setErrors(errors);
+          validateLicense({ ...license, ends_at: endsAt }, t);
+        setErrors(validationErrors);
 
         if (Object.keys(validationErrors).length > 0 || !validatedLicense) {
           return;
@@ -207,6 +238,19 @@ export function LicenseEntryForm({
               onChange={(event) =>
                 updateValue({ starts_at: event.target.value })
               }
+            />
+          </VerticalField>
+
+          <VerticalField
+            label={t("licenseEndsAt")}
+            id="latest.ends_at"
+            required
+          >
+            <TextInput
+              type="date"
+              value={endsAt}
+              min={license.starts_at || undefined}
+              onChange={(event) => updateValue({ ends_at: event.target.value })}
             />
           </VerticalField>
         </FormSection>
