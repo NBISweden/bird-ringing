@@ -64,7 +64,9 @@ function LicenseViewInner() {
   }
 
   const historyPageSize = 5;
-  const history = data.history ?? [];
+  const history = (data.history ?? []).toSorted((a, b) =>
+    b.starts_at.localeCompare(a.starts_at),
+  );
 
   const historyPageCount = Math.max(
     1,
