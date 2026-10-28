@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('licensing', '0010_alter_licensecommunication_options'),
+        ('licensing', '0011_alter_license_ends_at'),
     ]
 
     operations = [
