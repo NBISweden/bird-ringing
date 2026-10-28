@@ -408,7 +408,7 @@ class LicenseCommunicationSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = LicenseCommunication
-        fields = ["actor", "actor_id", "type", "status", "note"]
+        fields = ["created_at", "actor", "actor_id", "type", "status", "note"]
 
 
 class LicenseSerializer(serializers.ModelSerializer):
