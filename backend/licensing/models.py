@@ -245,8 +245,9 @@ class DocumentTypeChoices(models.IntegerChoices):
 
 
 class CommunicationTypeChoices(models.IntegerChoices):
-    LICENSE_DELIVERY = (1, _("license-delivery"))
+    LICENSE_DELIVERY = (1, _("license-delivery"))    
     LICENSE_UPDATE = (2, _("license-update"))
+    RINGER_NOTIFICATION = (3, _("ringer-notification"))
 
 
 class CommunicationStatusChoices(models.IntegerChoices):

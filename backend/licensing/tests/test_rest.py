@@ -15,6 +15,7 @@ from licensing.models import (
     DocumentTypeChoices,
     LicenseCommunication,
     CommunicationStatusChoices,
+    CommunicationTypeChoices
 )
 from licensing.message_builder import RingerBundleMessageBuilder
 from .utils import create_user, get_fingerprint
@@ -431,10 +432,16 @@ class LicenseDocumentEmailTests(_EmailTestBase):
                     communication.note,
                     {"E-mail with license sent", "Ringer bundle e-mail sent"},
                 )
+                expected_type = (
+                    CommunicationTypeChoices.RINGER_NOTIFICATION
+                    if communication.note == "Ringer bundle e-mail sent"
+                    else CommunicationTypeChoices.LICENSE_DELIVERY
+                )
                 self.assertEqual(
                     communication.status,
                     CommunicationStatusChoices.SENT
                 )
+                self.assertEqual(expected_type, communication.type)
 
     def test_batch_include_card_skips_station_ringer_individual_but_sends_bundle(self):
         self._with_access()
@@ -478,6 +485,16 @@ class LicenseDocumentEmailTests(_EmailTestBase):
         # Only the associate should get an individual message in this request
         self.assertEqual(1, len(individual_msgs))
         self.assertNotEqual([ringer_actor.email], individual_msgs[0].to)
+
+        self.assertEqual(
+            [CommunicationTypeChoices.RINGER_NOTIFICATION],
+            list(LicenseCommunication.objects.filter(license=license, actor=ringer_actor).values_list("type", flat=True)),
+        )
+        self.assertEqual(
+            [CommunicationTypeChoices.LICENSE_DELIVERY],
+            list(LicenseCommunication.objects.filter(license=license).exclude(actor=ringer_actor).values_list("type", flat=True)),
+        )
+
 
     def _send_mail_url(self, license_numbers: list[str], include_card: bool = False, include_permit = False):
         params = [
@@ -693,6 +710,14 @@ class LicenseDocumentEmailNotifyRingerTests(_EmailTestBase):
             names = zf.namelist()
 
         self.assertGreaterEqual(len(names), 1)
+        self.assertEqual(
+            [CommunicationTypeChoices.LICENSE_DELIVERY],
+            list(LicenseCommunication.objects.filter(license=license_obj, actor=helper_actor).values_list("type", flat=True)),
+        )
+        self.assertEqual(
+            [CommunicationTypeChoices.RINGER_NOTIFICATION],
+            list(LicenseCommunication.objects.filter(license=license_obj, actor=ringer_actor).values_list("type", flat=True)),
+        )
 
     def test_notify_ringer_reports_failure(self):
         self._with_access()

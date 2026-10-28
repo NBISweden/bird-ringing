@@ -235,7 +235,7 @@ def _send_ringer_bundle_messages(*, request, bundle_messages: list[tuple[License
     communication_service = CommunicationService(mail)
     return communication_service.send_email_messages(
         bundle_messages,
-        CommunicationTypeChoices.LICENSE_DELIVERY,
+        CommunicationTypeChoices.RINGER_NOTIFICATION,
         request.user,
         try_message="Tried to send ringer bundle e-mail",
         success_message="Ringer bundle e-mail sent",
