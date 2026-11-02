@@ -3,7 +3,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-28 14:18+0000\n"
+"POT-Creation-Date: 2026-11-02 13:17+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -13,15 +13,15 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: bird_ringing/settings.py:145 licensing/models.py:173
+#: bird_ringing/settings.py:154 licensing/models.py:173
 msgid "Swedish"
 msgstr "Svenska"
 
-#: bird_ringing/settings.py:146 licensing/models.py:174
+#: bird_ringing/settings.py:155 licensing/models.py:174
 msgid "English"
 msgstr "Engelska"
 
-#: licensing/message_builder.py:169 licensing/tests/test_rest.py:40
+#: licensing/message_builder.py:169 licensing/tests/test_rest.py:41
 msgid "helpers-documents"
 msgstr "medhjälparlicenser-dokument"
 
@@ -301,14 +301,22 @@ msgstr "studsad"
 msgid "failed"
 msgstr "misslyckad"
 
-#: licensing/rest/license_sequence_view.py:146
+#: licensing/rest/license_sequence_view.py:147
 msgid "E-mail with license and permit sent"
 msgstr "E-post med licens och tillstånd skickad"
 
-#: licensing/rest/license_sequence_view.py:147
+#: licensing/rest/license_sequence_view.py:148
 msgid "E-mail with license sent"
 msgstr "E-post med licens skickad"
 
-#: licensing/rest/license_sequence_view.py:148
+#: licensing/rest/license_sequence_view.py:149
 msgid "E-mail with permit sent"
 msgstr "E-post med tillstånd skickad"
+
+#: licensing/rest/license_sequence_view.py:240
+msgid "Tried to send ringer bundle e-mail"
+msgstr "Försökte skicka e-post med ringmärkarnas dokument"
+
+#: licensing/rest/license_sequence_view.py:241
+msgid "Ringer bundle e-mail sent"
+msgstr "E-postmeddelande med ringmärkarnas dokument skickat"
