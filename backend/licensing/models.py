@@ -2,7 +2,6 @@ from __future__ import annotations
 from django.db import models, transaction
 from django.db.models import Max, F, Window
 from django.db.models.functions import RowNumber, Lower
-from django.contrib.auth.models import User
 from django.core.validators import MinLengthValidator
 from django.template.defaultfilters import slugify
 from django.core.exceptions import ValidationError
@@ -12,17 +11,7 @@ from dataclasses import dataclass
 from typing import ClassVar, Tuple
 import datetime
 from django.utils.translation import gettext_lazy as _
-
-
-class ChangeTracking(models.Model):
-    created_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name="+")
-    updated_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name="+")
-
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        abstract = True
+from bird_ringing.models import ChangeTracking
 
 
 @dataclass(frozen=True, order=True)
