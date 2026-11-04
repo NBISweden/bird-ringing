@@ -78,6 +78,7 @@ COPY --chown="$BUILD_ID" backend/uv.lock ./
 COPY --chown="$BUILD_ID" backend/manage.py ./
 COPY --chown="$BUILD_ID" backend/bird_ringing ./bird_ringing
 COPY --chown="$BUILD_ID" backend/licensing ./licensing
+COPY --chown="$BUILD_ID" backend/ring_management ./ring_management
 
 RUN --mount=type=cache,id=uv-cache,uid="$UID",target="$UV_CACHE_DIR" \
     uv sync --frozen
