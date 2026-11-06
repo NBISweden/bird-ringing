@@ -11,6 +11,8 @@ class TestLoadData(TestCase):
         self.command.stdout = open(os.devnull, "w") # Disable output
         self.command.current_year = current_year
 
+        # The dictionaries below mirror rows from the CSV source files, so they use
+        # the files' column names (e.g. "Mnr" = license number, "Mednr" = associate number).
         self.species_data = [
             {
                 "SVnamn": f"{s}-sv-namn",
@@ -172,7 +174,7 @@ class TestLoadData(TestCase):
             [
                 (
                     lic.version,
-                    lic.sequence.mnr,
+                    lic.sequence.license_number,
                     lic.location,
                     lic.description,
                     tuple(doc.reference for doc in lic.documents.all()),
@@ -240,7 +242,7 @@ class TestLoadData(TestCase):
         self.assertEqual(
             [
                 (
-                    lic.sequence.mnr,
+                    lic.sequence.license_number,
                     tuple((
                         perm.type,
                         tuple(

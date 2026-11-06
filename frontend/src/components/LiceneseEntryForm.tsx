@@ -1,5 +1,9 @@
-import { LicenseInstance } from "@/app/(system)/common";
-import { useObjectState } from "@/app/(system)/hooks";
+import { LicenseDefaults, LicenseInstance } from "@/app/(system)/common";
+import {
+  useLicenseDefaults,
+  useObjectState,
+  useOptions,
+} from "@/app/(system)/hooks";
 import { useTranslation } from "@/app/(system)/internationalization";
 import {
   SelectInput,
@@ -10,7 +14,7 @@ import {
   FieldErrors,
   FieldErrorGroup,
 } from "./InputFields";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 export type LicenseFormData = Omit<
   LicenseInstance,
@@ -22,7 +26,7 @@ export type LicenseFormData = Omit<
   | "permissions"
   | "actors"
 > & {
-  mnr: string;
+  license_number: string;
   status: string;
   permissions: Partial<LicenseInstance["permissions"][number]>[];
   actors: Partial<LicenseInstance["actors"][number]>[];
@@ -32,7 +36,7 @@ function getUnsetFields(
   license: Partial<LicenseFormData>,
 ): (keyof LicenseFormData)[] {
   const keys: (keyof LicenseFormData)[] = [
-    "mnr",
+    "license_number",
     "status",
     "report_status",
     "location",
@@ -49,6 +53,17 @@ function isLicenseFormData(
   return getUnsetFields(license).length === 0;
 }
 
+// Pre-fill only; the formula mirrors licensing.utils.get_default_license_end_date.
+function computeDefaultEndsAt(
+  startsAt: string | undefined,
+  defaults: LicenseDefaults | undefined,
+): string {
+  const match = /^(\d{4})-\d{2}-\d{2}$/.exec(startsAt || "");
+  if (!match || !defaults) return "";
+  const year = Number(match[1]) + defaults.end_year_offset;
+  return `${year}-${defaults.end_month_day}`;
+}
+
 function validateLicense(
   value: Partial<LicenseFormData>,
   t: ReturnType<typeof useTranslation>["t"],
@@ -58,17 +73,12 @@ function validateLicense(
 } {
   const errors: FieldErrorGroup = {};
 
-  if (value.mnr && !/^\d{4}$/.test(value.mnr.trim())) {
-    errors.mnr = t("licenseFormMnrInvalid");
+  if (value.license_number && !/^\d{4}$/.test(value.license_number.trim())) {
+    errors.license_number = t("licenseFormLicenseNumberInvalid");
   }
 
-  if (value.starts_at && value.ends_at) {
-    const startsAt = new Date(value.starts_at);
-    const endsAt = new Date(value.ends_at);
-
-    if (endsAt < startsAt) {
-      errors["latest.ends_at"] = t("licenseFormEndsAtBeforeStartsAt");
-    }
+  if (value.starts_at && value.ends_at && value.ends_at < value.starts_at) {
+    errors["latest.ends_at"] = t("licenseFormEndsAtBeforeStartsAt");
   }
 
   let license: LicenseFormData | undefined = undefined;
@@ -85,17 +95,19 @@ function validateLicense(
 }
 
 export function LicenseEntryForm({
+  isCreating = false,
   initialLicense,
   onSubmit,
   isSubmitting,
 }: {
+  isCreating?: boolean;
   initialLicense: Partial<LicenseFormData>;
   onSubmit: (license: LicenseFormData) => void;
   isSubmitting?: boolean;
 }) {
   const { t } = useTranslation();
   const [license, updateValue] = useObjectState<Partial<LicenseFormData>>({
-    mnr: "",
+    license_number: "",
     status: "",
     starts_at: "",
     ends_at: "",
@@ -108,6 +120,19 @@ export function LicenseEntryForm({
   });
 
   const [errors, setErrors] = useState<FieldErrorGroup>({});
+  const { data: locationPresets, isLoading: lpIsLoading } = useOptions(
+    "location_preset_group",
+  );
+  const { data: licenseDefaults } = useLicenseDefaults();
+
+  // If not explicitly set end date the end date is derived from
+  //  the start date and the backend defaults.
+  const endsAt = useMemo(
+    () =>
+      license.ends_at ||
+      computeDefaultEndsAt(license.starts_at, licenseDefaults),
+    [license.ends_at, license.starts_at, licenseDefaults],
+  );
 
   return (
     <form
@@ -115,8 +140,8 @@ export function LicenseEntryForm({
         e.preventDefault();
 
         const { errors: validationErrors, license: validatedLicense } =
-          validateLicense(license, t);
-        setErrors(errors);
+          validateLicense({ ...license, ends_at: endsAt }, t);
+        setErrors(validationErrors);
 
         if (Object.keys(validationErrors).length > 0 || !validatedLicense) {
           return;
@@ -130,74 +155,78 @@ export function LicenseEntryForm({
           icon="journal-check"
           title={t("licenseFormBasicInfoSubtitle")}
         >
-          <VerticalField label={t("licenseId")} id="mnr" required>
+          <VerticalField label={t("licenseId")} id="license_number" required>
             <TextInput
               type="text"
               inputMode="numeric"
               maxLength={4}
-              placeholder={t("licenseFormMnrPlaceholder")}
-              value={license.mnr || ""}
+              placeholder={t("licenseFormLicenseNumberPlaceholder")}
+              value={license.license_number || ""}
               onChange={(event) =>
                 updateValue({
-                  mnr: event.target.value.replace(/\D/g, "").slice(0, 4),
+                  license_number: event.target.value
+                    .replace(/\D/g, "")
+                    .slice(0, 4),
                 })
               }
             />
           </VerticalField>
 
-          <VerticalField label={t("licenseStatus")} id="status" required>
-            <SelectInput
-              value={license.status || ""}
-              onChange={(value) => updateValue({ status: value })}
-              options={[
-                { value: "", label: t("selectOption") },
-                {
-                  value: "active",
-                  label: t("licenseStatusActive"),
-                },
-                {
-                  value: "paused",
-                  label: t("licenseStatusPaused"),
-                },
-                {
-                  value: "terminated",
-                  label: t("licenseStatusTerminated"),
-                },
-              ]}
-            />
-          </VerticalField>
+          {isCreating ? (
+            <></>
+          ) : (
+            <VerticalField label={t("licenseStatus")} id="status" required>
+              <SelectInput
+                value={license.status || ""}
+                onChange={(value) => updateValue({ status: value })}
+                options={[
+                  { value: "", label: t("selectOption") },
+                  {
+                    value: "active",
+                    label: t("licenseStatusActive"),
+                  },
+                  {
+                    value: "paused",
+                    label: t("licenseStatusPaused"),
+                  },
+                  {
+                    value: "terminated",
+                    label: t("licenseStatusTerminated"),
+                  },
+                ]}
+              />
+            </VerticalField>
+          )}
 
-          <VerticalField
-            label={t("licenseReportStatus")}
-            id="latest.report_status"
-            required
-          >
-            <SelectInput
-              value={license.report_status || ""}
-              onChange={(value) => updateValue({ report_status: value })}
-              options={[
-                { value: "", label: t("selectOption") },
-                {
-                  value: "yes",
-                  label: t("licenseReportStatusYes"),
-                },
-                {
-                  value: "no",
-                  label: t("licenseReportStatusNo"),
-                },
-                {
-                  value: "incomplete",
-                  label: t("licenseReportStatusIncomplete"),
-                },
-              ]}
-            />
-          </VerticalField>
-        </FormSection>
-
-        <FormSection
-          icon="calendar2-week"
-          title={t("licenseFormValiditySubtitle")}
-        >
+          {isCreating ? (
+            <></>
+          ) : (
+            <VerticalField
+              label={t("licenseReportStatus")}
+              id="latest.report_status"
+              required
+            >
+              <SelectInput
+                value={license.report_status || ""}
+                onChange={(value) => updateValue({ report_status: value })}
+                options={[
+                  { value: "", label: t("selectOption") },
+                  {
+                    value: "yes",
+                    label: t("licenseReportStatusYes"),
+                  },
+                  {
+                    value: "no",
+                    label: t("licenseReportStatusNo"),
+                  },
+                  {
+                    value: "incomplete",
+                    label: t("licenseReportStatusIncomplete"),
+                  },
+                ]}
+              />
+            </VerticalField>
+          )}
           <VerticalField
             label={t("licenseStartsAt")}
             id="latest.starts_at"
@@ -219,27 +248,67 @@ export function LicenseEntryForm({
           >
             <TextInput
               type="date"
-              value={license.ends_at || ""}
+              value={endsAt}
+              min={license.starts_at || undefined}
               onChange={(event) => updateValue({ ends_at: event.target.value })}
             />
           </VerticalField>
         </FormSection>
 
-        <FormSection icon="geo-alt" title={t("licenseFormLocationSubtitle")}>
-          <VerticalField
-            label={t("licenseLocation")}
-            id="latest.location"
-            required
+        <div className="row">
+          <div
+            className={
+              lpIsLoading || locationPresets.length === 0
+                ? "col-12"
+                : "col-lg-6"
+            }
           >
-            <TextInput
-              type="text"
-              value={license.location || ""}
-              onChange={(event) =>
-                updateValue({ location: event.target.value })
-              }
-            />
-          </VerticalField>
-        </FormSection>
+            <FormSection
+              icon="geo-alt"
+              title={t("licenseFormLocationSubtitle")}
+            >
+              <VerticalField label={t("licenseLocation")} id="latest.location">
+                <TextInput
+                  type="text"
+                  value={license.location || ""}
+                  onChange={(event) =>
+                    updateValue({ location: event.target.value })
+                  }
+                />
+              </VerticalField>
+            </FormSection>
+          </div>
+          {lpIsLoading || locationPresets.length === 0 ? (
+            <></>
+          ) : (
+            <div className="col-lg-6">
+              <FormSection
+                icon="collection"
+                title={t("licenseFormLocationPresetSubtitle")}
+              >
+                {locationPresets.map((lp) => (
+                  <VerticalField label={lp.name} key={lp.id}>
+                    <SelectInput
+                      options={[
+                        { value: "", label: "-" },
+                        ...lp.items.map((i) => ({
+                          value: i.name,
+                          label: i.name,
+                        })),
+                      ]}
+                      value={
+                        lp.items.some((i) => i.name === license.location)
+                          ? license.location
+                          : ""
+                      }
+                      onChange={(value) => updateValue({ location: value })}
+                    />
+                  </VerticalField>
+                ))}
+              </FormSection>
+            </div>
+          )}
+        </div>
 
         <FormSection icon="card-text" title={t("licenseFormDetailsSubtitle")}>
           <VerticalField

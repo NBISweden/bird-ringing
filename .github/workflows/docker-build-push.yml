@@ -37,11 +37,11 @@ jobs:
         id: date
         run: echo "DATE_TAG=$(date +%Y%m%d-%H%M)" >>$GITHUB_OUTPUT
 
-      - name: Extract metadata for frontend
-        id: meta-frontend
+      - name: Extract metadata for proxy
+        id: meta-proxy
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ github.repository }}-frontend
+          images: ${{ env.REGISTRY }}/${{ github.repository }}-proxy
           tags: &tags |
             type=ref,event=branch
             type=semver,pattern={{version}}
@@ -65,33 +65,29 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ github.repository }}-docx2pdf
           tags: *tags
 
-      - name: Build and push frontend
-        uses: docker/build-push-action@v5
-        with:
-          context: ./frontend
-          file: ./Dockerfile.frontend
-          target: prod
-          push: true
-          tags: ${{ steps.meta-frontend.outputs.tags }}
-          labels: ${{ steps.meta-frontend.outputs.labels }}
-          build-args: |
-            BUILD_ID=6000:6000
-            RUNTIME_ID=6001:6001
-            BUILD_GIT_COMMIT=${{ steps.sha.outputs.SHORT_SHA }}
-            BUILD_GIT_BRANCH=${{ github.ref_name }}
-
       - name: Build and push backend
         uses: docker/build-push-action@v5
         with:
-          context: ./backend
-          file: ./Dockerfile.backend
-          target: prod
+          target: backend-prod
           push: true
           tags: ${{ steps.meta-backend.outputs.tags }}
           labels: ${{ steps.meta-backend.outputs.labels }}
           build-args: |
             BUILD_ID=6000:6000
             RUNTIME_ID=6001:6001
+
+      - name: Build and push proxy
+        uses: docker/build-push-action@v5
+        with:
+          target: proxy-prod
+          push: true
+          tags: ${{ steps.meta-proxy.outputs.tags }}
+          labels: ${{ steps.meta-proxy.outputs.labels }}
+          build-args: |
+            BUILD_ID=6000:6000
+            RUNTIME_ID=6001:6001
+            BUILD_GIT_COMMIT=${{ steps.sha.outputs.SHORT_SHA }}
+            BUILD_GIT_BRANCH=${{ github.ref_name }}
 
       - name: Build and push docx2pdf
         uses: docker/build-push-action@v5

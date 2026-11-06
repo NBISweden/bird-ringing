@@ -37,7 +37,12 @@ class Command(BaseCommand):
                 "change_licensepermissiontype",
                 "view_licensepermissionproperty",
                 "add_licensepermissionproperty",
-                "change_licensepermissionproperty"
+                "change_licensepermissionproperty",
+                *[
+                    f"{action}_{model}"
+                    for action in ["view", "add", "change", "delete"]
+                    for model in ["locationpreset", "locationpresetgroup"]
+                ]
             ]
 
             for _, group_name in group_names.items():

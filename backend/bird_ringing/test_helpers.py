@@ -1,4 +1,5 @@
 from django.test import SimpleTestCase
+from django.core.exceptions import ImproperlyConfigured
 from unittest.mock import patch
 import tempfile
 import os
@@ -8,6 +9,7 @@ from bird_ringing.helpers import (
     strtobool,
     parse_single_row_csv,
     parse_csv_from_env,
+    parse_month_day_from_env,
 )
 
 
@@ -60,3 +62,33 @@ class ParseCSVFromENV(SimpleTestCase):
 
         with patch.dict(os.environ, {"__ALLOWED_HOSTS": ""}):
             self.assertEqual(parse_csv_from_env("__ALLOWED_HOSTS", ["default"]), ["default"])
+
+ENV = "TEST_MONTH_DAY"
+
+class ParseMonthDayFromEnvTests(SimpleTestCase):
+    def test_default_when_unset(self):
+        with patch.dict(os.environ, {}, clear=True):
+            self.assertEqual(parse_month_day_from_env(ENV, "02-28"), "02-28")
+
+    def test_default_when_empty(self):
+        with patch.dict(os.environ, {ENV: ""}):
+            self.assertEqual(parse_month_day_from_env(ENV, "02-28"), "02-28")
+
+    def test_reads_value(self):
+        with patch.dict(os.environ, {ENV: "03-15"}):
+            self.assertEqual(parse_month_day_from_env(ENV, "02-28"), "03-15")
+
+    def test_normalizes_value(self):
+        with patch.dict(os.environ, {ENV: "3-5"}):
+            self.assertEqual(parse_month_day_from_env(ENV, "02-28"), "03-05")
+
+    def test_invalid_values_raise(self):
+        for raw in ["02-29", "02-30", "13-01", "0228", "02-28-01", "feb-28"]:
+            with self.subTest(raw=raw), patch.dict(os.environ, {ENV: raw}):
+                with self.assertRaises(ImproperlyConfigured):
+                    parse_month_day_from_env(ENV, "02-28")
+
+    def test_invalid_default_raises(self):
+        with patch.dict(os.environ, {}, clear=True):
+            with self.assertRaises(ImproperlyConfigured):
+                parse_month_day_from_env(ENV, "02-29")

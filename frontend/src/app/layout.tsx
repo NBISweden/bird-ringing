@@ -1,14 +1,21 @@
-"use client";
 import "./globals.scss";
 import "bootstrap-icons/font/bootstrap-icons.css";
-import Header from "@/components/Header";
 import { ModalsProvider } from "@/components/ModalsProvider";
 import { ModalView } from "@/components/ModalView";
 import { AuthProvider } from "@/components/AuthProvider";
 import { ConfigProvider } from "@/components/ConfigProvider";
 import { Alert } from "@/components/Alert";
-import { Config, useModalsContext } from "./(system)/contexts";
+import { Config } from "./(system)/contexts";
 import { LocaleProvider } from "@/components/LocaleProvider";
+import { Metadata } from "next";
+import { Suspense } from "react";
+import { PageContent } from "@/components/PageContent";
+import { LocalizedTitle } from "@/components/LocalizedTitle";
+
+export const metadata: Metadata = {
+  title: "Bird Ringing",
+  description: "Bird Ringing system from NRM",
+};
 
 function ConfigError() {
   return (
@@ -17,19 +24,6 @@ function ConfigError() {
       <Alert>
         The site seems to be misconfigured. See console for error details.
       </Alert>
-    </div>
-  );
-}
-
-function PageContent({ children }: { children: React.ReactNode }) {
-  const { stack } = useModalsContext();
-  const modalOpen = stack.length > 0;
-  return (
-    <div className="d-flex flex-column vh-100" inert={modalOpen}>
-      <Header />
-      <div className="flex-grow-1 flex-shrink-1 d-flex overflow-hidden">
-        {children}
-      </div>
     </div>
   );
 }
@@ -48,20 +42,23 @@ export default function RootLayout({
   return (
     <html lang={locale}>
       <body>
-        <ConfigProvider
-          configUrl="/config.json"
-          errorMessage={<ConfigError />}
-          defaultConfig={defaultConfig}
-        >
-          <LocaleProvider locale={locale}>
-            <AuthProvider>
-              <ModalsProvider>
-                <ModalView />
-                <PageContent>{children}</PageContent>
-              </ModalsProvider>
-            </AuthProvider>
-          </LocaleProvider>
-        </ConfigProvider>
+        <Suspense>
+          <ConfigProvider
+            configUrl="/config.json"
+            errorMessage={<ConfigError />}
+            defaultConfig={defaultConfig}
+          >
+            <LocaleProvider locale={locale}>
+              <AuthProvider>
+                <ModalsProvider>
+                  <LocalizedTitle messageId="rootPageTitle" />
+                  <ModalView />
+                  <PageContent>{children}</PageContent>
+                </ModalsProvider>
+              </AuthProvider>
+            </LocaleProvider>
+          </ConfigProvider>
+        </Suspense>
       </body>
     </html>
   );

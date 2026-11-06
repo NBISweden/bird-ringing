@@ -1,5 +1,9 @@
 from rest_framework import routers, serializers, viewsets, filters
+from rest_framework.response import Response
 from rest_framework.authentication import SessionAuthentication, BasicAuthentication
+from rest_framework.permissions import IsAuthenticated
+from django.conf import settings
+
 from licensing.models import (
     Actor,
     LicensePermissionType,
@@ -12,8 +16,54 @@ from licensing.models import (
     LicenseRoleChoices,
     LicenseStatusChoices,
     Species,
+    LocationPreset,
+    LocationPresetGroup,
 )
 from .utils import LabeledChoiceViewset, DjangoProtectedModelPermissions
+
+class LicenseDefaultsViewSet(viewsets.ViewSet):
+    """
+    Read-only access to the configured license defaults, so clients can
+    pre-fill forms with the same values the backend uses.
+
+    This is implemented as a `list` so the router serves it at
+    property/license_defaults/ and lists it in the API root (routers only
+    accept viewsets).
+    """
+    authentication_classes = [SessionAuthentication, BasicAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def list(self, request):
+        return Response({
+            "end_year_offset": settings.LICENSING_DEFAULT_END_YEAR_OFFSET,
+            "end_month_day": settings.LICENSING_DEFAULT_END_MONTH_DAY,
+        })
+
+class LocationPresetSerializer(serializers.ModelSerializer):
+    id = serializers.CharField(read_only=True)
+    name = serializers.CharField(read_only=True)
+
+    class Meta:
+        model = LocationPreset
+        fields = ["id", "name"]
+
+
+class LocationPresetGroupSerializer(serializers.ModelSerializer):
+    id = serializers.CharField(read_only=True)
+    name = serializers.CharField(read_only=True)
+    items = LocationPresetSerializer(many=True, required=False)
+
+    class Meta:
+        model = LocationPresetGroup
+        fields = ["id", "name", "items"]
+
+
+class LocationPresetGroupViewset(viewsets.ModelViewSet):
+    authentication_classes = [SessionAuthentication, BasicAuthentication]
+    permission_classes = [DjangoProtectedModelPermissions]
+
+    queryset = LocationPresetGroup.objects.all()
+    serializer_class = LocationPresetGroupSerializer
 
 
 class ActorSerializer(serializers.ModelSerializer):
@@ -185,8 +235,10 @@ def register_choice_view_sets(router):
 
 
 router = routers.DefaultRouter()
-router.register(r"property/actor", ActorViewSet)
+router.register(r"property/actor", ActorViewSet, basename="property-actor")
 router.register(r"property/species", SpeciesViewSet)
 router.register(r"property/permission_type", PermissionTypeViewSet)
 router.register(r"property/permission_property", PermissionPropertyViewSet)
+router.register(r"property/location_preset_group", LocationPresetGroupViewset)
+router.register(r"property/license_defaults", LicenseDefaultsViewSet, basename="property-license-defaults")
 register_choice_view_sets(router)

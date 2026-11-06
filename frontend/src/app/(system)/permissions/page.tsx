@@ -12,6 +12,7 @@ import { Alert } from "@/components/Alert";
 import { useClient, useModalsContext } from "../contexts";
 import { Client, FieldValidationError } from "../client";
 import {
+  FormErrors,
   PermissionBase,
   PermissionInput,
   PermissionTypeWithProperties,
@@ -29,11 +30,6 @@ async function fetchUnrelatedProperties([client]: [Client]) {
   return client.fetchUnrelatedPermissionProperties();
 }
 
-type PermissionFormErrors = {
-  fields: Record<string, string[]>;
-  nonField: string[];
-};
-
 function PermissionEntryForm({
   initialValues,
   submitLabel,
@@ -48,9 +44,7 @@ function PermissionEntryForm({
   const { t } = useTranslation();
   const modals = useModalsContext();
   const [values, updateValue] = useObjectState(initialValues);
-  const [errors, setErrors] = useState<PermissionFormErrors | undefined>(
-    undefined,
-  );
+  const [errors, setErrors] = useState<FormErrors | undefined>(undefined);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const okButtonRef = useRef<HTMLButtonElement | null>(null);

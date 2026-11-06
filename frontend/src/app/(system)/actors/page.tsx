@@ -107,11 +107,13 @@ function toActorTable(
             {licenses.map((l, index) => (
               <Link
                 key={index}
-                href={`/licenses/entry?mnr=${l.mnr}`}
+                href={`/licenses/entry?entryId=${l.license_number}`}
                 className="text-decoration-none"
               >
                 <Badge color="info" rounded outline>
-                  {l.mednr ? `${l.mnr}:${l.mednr}` : l.mnr}
+                  {l.associate_number
+                    ? `${l.license_number}:${l.associate_number}`
+                    : l.license_number}
                 </Badge>
               </Link>
             ))}
@@ -217,15 +219,15 @@ function BaseListView({
     name: {
       label: t("actorName"),
       ordering: {
-        forward: "full_name",
-        reverse: "-full_name",
+        forward: "ordering_name",
+        reverse: "-ordering_name",
       },
     },
     type: {
       label: t("actorType"),
       ordering: {
-        forward: "type,full_name",
-        reverse: "-type,full_name",
+        forward: "type,ordering_name",
+        reverse: "-type,ordering_name",
       },
     },
     roles: {
@@ -244,15 +246,15 @@ function BaseListView({
     city: {
       label: t("actorCity"),
       ordering: {
-        forward: "city,full_name",
-        reverse: "-city,full_name",
+        forward: "city,ordering_name",
+        reverse: "-city,ordering_name",
       },
     },
     updated_at: {
       label: t("actorLastUpdated"),
       ordering: {
-        forward: "updated_at,full_name",
-        reverse: "-updated_at,full_name",
+        forward: "updated_at,ordering_name",
+        reverse: "-updated_at,ordering_name",
       },
     },
   };

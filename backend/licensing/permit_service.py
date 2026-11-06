@@ -59,8 +59,8 @@ class PermitService:
         if rel is None:
             rel = self._get_license_relation(lic=lic, actor=actor, allowed_roles=allowed_roles)
 
-        mnr = lic.sequence.mnr
-        identifier = f"{mnr}-{rel.mednr}" if rel.role == LicenseRoleChoices.ASSOCIATE_RINGER else mnr
+        license_number = lic.sequence.license_number
+        identifier = f"{license_number}-{rel.associate_number}" if rel.role == LicenseRoleChoices.ASSOCIATE_RINGER else license_number
         name = slugify(actor.full_name)[:40]
         return f"permit-{identifier}" + (f"-{name}.pdf" if name else ".pdf")
 
@@ -76,11 +76,13 @@ class PermitService:
         context_fp: dict,
         template_sha256: str,
     ) -> dict:
+        # The key "sequence_mnr" is kept on purpose: renaming it would change
+        # every fingerprint and regenerate all existing permits.
         return {
             "template_sha256": template_sha256,
             "license_id": lic.id,
             "license_version": lic.version,
-            "sequence_mnr": lic.sequence.mnr,
+            "sequence_mnr": lic.sequence.license_number,
             "actor_id": actor.id,
             "context": context_fp,
         }
@@ -213,7 +215,7 @@ class PermitService:
 
             relations = lic.actors.filter(role__in=list(allowed_roles)).select_related("actor")
             if not relations.exists():
-                raise ValueError(f"No ringers/associate ringers on license for mnr {lic.sequence.mnr}.")
+                raise ValueError(f"No ringers/associate ringers on license for license number {lic.sequence.license_number}.")
 
             for rel in relations:
                 doc = self.get_or_create_permit_document(
@@ -248,7 +250,7 @@ class PermitService:
 
                 relations = lic.actors.filter(role__in=list(allowed_roles)).select_related("actor")
                 if not relations.exists():
-                    raise ValueError(f"No ringers/associate ringers on license for mnr {lic.sequence.mnr}.")
+                    raise ValueError(f"No ringers/associate ringers on license for license number {lic.sequence.license_number}.")
 
                 for rel in relations:
                     actor = rel.actor
@@ -261,19 +263,19 @@ class PermitService:
 
                     if not doc:
                         raise ValueError(
-                            f"Permit PDF missing for mnr {lic.sequence.mnr}. "
-                            "Generate all permits for your selected MNRs before creating ZIP."
+                            f"Permit PDF missing for license number {lic.sequence.license_number}. "
+                            "Generate all permits for your selected license numbers before creating ZIP."
                         )
 
                     if not doc.data:
                         raise ValueError(
-                            f"{lic.sequence.mnr}: existing permit PDF has no data for actor {actor.id}."
+                            f"{lic.sequence.license_number}: existing permit PDF has no data for actor {actor.id}."
                         )
 
                     filename = doc.reference or self.make_permit_filename(
                         lic, actor, allowed_roles=allowed_roles, rel=rel
                     )
-                    zf.writestr(f"{lic.sequence.mnr}/{filename}", bytes(doc.data))
+                    zf.writestr(f"{lic.sequence.license_number}/{filename}", bytes(doc.data))
 
         zip_buffer.seek(0)
         return zip_buffer.getvalue()

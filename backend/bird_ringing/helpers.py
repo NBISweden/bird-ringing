@@ -2,6 +2,9 @@ from pathlib import Path
 import csv
 import io
 import os
+import datetime
+from os import getenv
+from django.core.exceptions import ImproperlyConfigured
 
 
 def get_secret_from_file(env_var_name: str, default: str = None) -> str:
@@ -71,3 +74,18 @@ def parse_single_row_csv(data: str):
         return [v for v in items if v != ""]
     except StopIteration:
         return []
+
+def parse_month_day_from_env(name: str, default: str) -> str:
+    """
+    Read a month/day in "MM-DD" format from the environment variable `name`,
+    falling back to `default` when unset or empty. Returns the value
+    normalized to zero-padded "MM-DD".
+    """
+    raw = getenv(name) or default
+    try:
+        parsed = datetime.datetime.strptime(f"2001-{raw}", "%Y-%m-%d")
+    except ValueError:
+        raise ImproperlyConfigured(
+            f"{name} must be a valid 'MM-DD' date (Feb 29 is not allowed), got {raw!r}."
+        )
+    return parsed.strftime("%m-%d")

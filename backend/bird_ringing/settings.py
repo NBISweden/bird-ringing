@@ -13,7 +13,11 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 from django.core.exceptions import ImproperlyConfigured
 from pathlib import Path
 from os import getenv
-from bird_ringing.helpers import get_secret_from_file, parse_csv_from_env
+from bird_ringing.helpers import (
+    get_secret_from_file,
+    parse_csv_from_env,
+    parse_month_day_from_env,
+)
 from bird_ringing.helpers import strtobool
 from django.core.management.utils import get_random_secret_key
 import sys
@@ -136,6 +140,11 @@ LICENSING_CARD_TEMPLATE = getenv("LICENSE_CARD_FILE","")
 LICENSING_PERMIT_TEMPLATE_DOCX = getenv("PERMIT_TEMPLATE_FILE","")
 DOCX2PDF_URL = getenv("DOCX2PDF_URL", "")
 
+# Default end date for licenses created without an explicit end date:
+# (starts_at.year + LICENSING_DEFAULT_END_YEAR_OFFSET) on LICENSING_DEFAULT_END_MONTH_DAY ("MM-DD").
+LICENSING_DEFAULT_END_YEAR_OFFSET = int(getenv("LICENSING_DEFAULT_END_YEAR_OFFSET") or "1")
+LICENSING_DEFAULT_END_MONTH_DAY = parse_month_day_from_env("LICENSING_DEFAULT_END_MONTH_DAY", "02-28")
+
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
 
@@ -163,7 +172,7 @@ COMMUNICATION_LANGUAGE_CODE = getenv("LICENSING_COMMUNICATION_LANGUAGE_CODE", LA
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = "static/"
-STATIC_ROOT = "/vol"
+STATIC_ROOT = "/static"
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
@@ -193,6 +202,8 @@ LICENSING_EMAIL_HTML_TEMPLATE = getenv("LICENSING_EMAIL_HTML_TEMPLATE")
 if "test" in sys.argv or "test_coverage" in sys.argv:
     DATABASES["default"]["ENGINE"] = "django.db.backends.sqlite3"
     EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
+    LICENSING_DEFAULT_END_YEAR_OFFSET = 1
+    LICENSING_DEFAULT_END_MONTH_DAY = "02-28"
     LICENSING_EMAIL_SUBJECT = "Test email {{name|safe}}"
     LICENSING_EMAIL_HTML_TEMPLATE = "email_template.html"
     LICENSING_EMAIL_TEMPLATE = "email_template.txt"
@@ -205,8 +216,8 @@ if "test" in sys.argv or "test_coverage" in sys.argv:
                     (
                         "django.template.loaders.locmem.Loader",
                         {
-                            "email_template.html": '<em>{{mnr}}</em> <em>{{name|safe}}</em> <em>{{date}}</em><ul>{%for document_type, filename in attachments%}<li>{{document_type}}: {{filename}}{%endfor%}</li></ul>',
-                            "email_template.txt": '{{mnr}} {{name|safe}} {{date}} {%for document_type, filename in attachments%} {{document_type}}: {{filename}}{%endfor%}',
+                            "email_template.html": '<em>{{license_number}}</em> <em>{{name|safe}}</em> <em>{{date}}</em><ul>{%for document_type, filename in attachments%}<li>{{document_type}}: {{filename}}{%endfor%}</li></ul>',
+                            "email_template.txt": '{{license_number}} {{name|safe}} {{date}} {%for document_type, filename in attachments%} {{document_type}}: {{filename}}{%endfor%}',
                         },
                     ),
                 ],

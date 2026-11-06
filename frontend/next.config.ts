@@ -4,6 +4,7 @@ const nextConfig: NextConfig = {
   sassOptions: {
     silenceDeprecations: ["color-functions", "global-builtin", "import"],
   },
+  images: { unoptimized: true },
   output: "export",
 };
 

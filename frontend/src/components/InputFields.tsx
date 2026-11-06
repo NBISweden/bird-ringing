@@ -41,6 +41,10 @@ function useFieldError(fieldId: string) {
   return (errors ? (Array.isArray(errors) ? errors : [errors]) : []).join(", ");
 }
 
+function toErrorList(value: string | string[] | undefined): string[] {
+  return value === undefined ? [] : Array.isArray(value) ? value : [value];
+}
+
 export function FieldErrors({
   errors,
   children,
@@ -48,7 +52,7 @@ export function FieldErrors({
   const previousErrors = useContext(FieldErrorContext);
   const allErrors = Object.entries(errors).reduce<FieldErrorGroup>(
     (acc, [key, value]) => {
-      acc[key] = [...(acc[key] ?? []), ...(value ?? [])];
+      acc[key] = [...toErrorList(acc[key]), ...toErrorList(value)];
       return acc;
     },
     { ...previousErrors },

@@ -4,23 +4,24 @@ import { Suspense, useState } from "react";
 import Link from "next/link";
 import useSWR from "swr";
 import { notFound, useSearchParams } from "next/navigation";
-import { useClient, useModalsContext } from "../../contexts";
+import { useClient } from "../../contexts";
 import {
   ActorBase,
   ActorLicenseRelation,
   ActorListItem,
-  FormErrors,
   Role,
   convertDateToLocale,
   convertOnlyDateToLocale,
 } from "../../common";
-import { Client, FieldValidationError } from "../../client";
+import { Client } from "../../client";
 import Spinner from "@/components/Spinner";
 import { useTranslation } from "../../internationalization";
 import { Alert } from "@/components/Alert";
 import { PaginationContainer, usePagination } from "@/components/Pagination";
 import Icon from "@/components/Icon";
 import { ActorEntryForm } from "@/components/ActorEntryForm";
+import { LocalizedTitle } from "@/components/LocalizedTitle";
+import { useModalFormSubmission } from "../../formSubmission";
 
 async function fetchActor([client, _ctx, entryId]: [Client, "actor", string]) {
   return client.fetchActorById(entryId);
@@ -79,14 +80,31 @@ function ActorViewBase() {
   const client = useClient();
   const { t } = useTranslation();
   const [isEditing, setIsEditing] = useState<boolean>(false);
-  const [editErrors, setEditErrors] = useState<FormErrors | undefined>(
-    undefined,
-  );
-  const modals = useModalsContext();
 
   const { data, isLoading, error, mutate } = useSWR(
     actorId ? [client, "actor", actorId] : null,
     fetchActor,
+  );
+
+  const {
+    submit: handleEditSubmit,
+    errors: editErrors,
+    reset: resetEditErrors,
+  } = useModalFormSubmission(
+    (actor: Partial<ActorBase>) => {
+      if (!data) {
+        throw new Error("Actor data not loaded");
+      }
+      return client.updateActor(data.id, actor);
+    },
+    {
+      successTitle: t("actorUpdateSuccessTitle"),
+      successMessage: <p className="mb-0">{t("actorUpdateSuccessMessage")}</p>,
+      errorTitle: t("actorUpdateErrorTitle"),
+      onSuccess: () => mutate(),
+      onSuccessConfirm: () => setIsEditing(false),
+      onSuccessDismiss: () => setIsEditing(false),
+    },
   );
 
   if (!actorId) {
@@ -123,7 +141,7 @@ function ActorViewBase() {
   const previousLicenseGroups = previousLicenses.reduce<
     Record<string, ActorLicenseRelation[]>
   >((acc, l) => {
-    const key = `${l.mnr}:${l.mednr}:${l.role}`;
+    const key = `${l.license_number}:${l.associate_number}:${l.role}`;
     acc[key] = acc[key] || [];
     acc[key].push(l);
     return acc;
@@ -131,102 +149,67 @@ function ActorViewBase() {
 
   const roles = new Set<Role>(licenses.map((l) => l.role));
 
-  const handleEditSubmit = async (actor: Partial<ActorBase>) => {
-    setEditErrors(undefined);
-    try {
-      await client.updateActor(data!.id, actor);
-      await mutate(); // refetch so the view reflects the saved changes
-
-      modals.add({
-        title: t("actorUpdateSuccessTitle"),
-        content: <p className="mb-0">{t("actorUpdateSuccessMessage")}</p>,
-        closeAction: () => setIsEditing(false),
-        actions: [
-          {
-            label: t("closeModal"),
-            action: () => setIsEditing(false),
-          },
-        ],
-      });
-    } catch (error) {
-      if (error instanceof FieldValidationError) {
-        setEditErrors({
-          fields: error.fieldErrors,
-          nonField: error.nonFieldErrors,
-        });
-        return;
-      }
-      const message = error instanceof Error ? error.message : String(error);
-      const lines = message.split("\n").filter(Boolean);
-
-      modals.add({
-        title: t("actorUpdateErrorTitle"),
-        content:
-          lines.length > 1 ? (
-            <ul className="mb-0">
-              {lines.map((line, i) => (
-                <li key={i}>{line}</li>
-              ))}
-            </ul>
-          ) : (
-            <p className="mb-0">{message}</p>
-          ),
-        actions: [{ label: t("closeModal"), action: () => {} }],
-      });
-    }
-  };
-
   return (
-    <div className="container">
-      <div className="row">
-        <div className="col-12 col-xxl-9">
-          <div className="d-flex justify-content-between align-items-center mb-3">
-            <h2 className="fw-bold mb-0">
-              <i className={`bi bi-${getActorIcon(data.type)} me-3`} />
-              {data.full_name}
-            </h2>
-            <button
-              className="btn btn-outline-secondary ms-2 flex-shrink-0"
-              onClick={() => {
-                setEditErrors(undefined);
-                setIsEditing(!isEditing);
-              }}
-            >
-              <Icon icon={isEditing ? "arrow-left" : "pencil-square"} />
-              <span className="ms-2">{!isEditing ? t("edit") : t("done")}</span>
-            </button>
+    <>
+      <LocalizedTitle
+        messageId="actorPageTitle"
+        values={{ name: data.full_name }}
+      />
+      <div className="container">
+        <div className="row">
+          <div className="col-12 col-xxl-9">
+            <div className="d-flex justify-content-between align-items-center mb-3">
+              <h2 className="fw-bold mb-0">
+                <i className={`bi bi-${getActorIcon(data.type)} me-3`} />
+                {data.full_name}
+              </h2>
+              <button
+                className="btn btn-outline-secondary ms-2 flex-shrink-0"
+                onClick={() => {
+                  resetEditErrors();
+                  setIsEditing(!isEditing);
+                }}
+              >
+                <Icon icon={isEditing ? "arrow-left" : "pencil-square"} />
+                <span className="ms-2">
+                  {!isEditing ? t("edit") : t("done")}
+                </span>
+              </button>
+            </div>
+          </div>
+          {isEditing ? (
+            <ActorEntryForm
+              initialActor={data}
+              onSubmit={handleEditSubmit}
+              title={t("actorFormEditTitle")}
+              errors={editErrors}
+            />
+          ) : (
+            <ActorEntry actor={data} roles={Array.from(roles)} />
+          )}
+
+          <div className="col-12 col-xxl-9">
+            <h3 className="pt-4 fw-bold">{t("actorLicenses")}</h3>
+            <ul className="list-group list-group-flush">
+              <PaginatedLicenses items={licenses.map((l) => [l])} />
+            </ul>
+          </div>
+          <div className="col-12 col-xxl-9">
+            <h3 className="pt-4 fw-bold">{t("actorPreviousLicenses")}</h3>
+            <ul className="list-group list-group-flush">
+              <PaginatedLicenses items={Object.values(previousLicenseGroups)} />
+            </ul>
           </div>
         </div>
-        {isEditing ? (
-          <ActorEntryForm
-            initialActor={data}
-            onSubmit={handleEditSubmit}
-            title={t("actorFormEditTitle")}
-            errors={editErrors}
-          />
-        ) : (
-          <ActorEntry actor={data} roles={Array.from(roles)} />
-        )}
-
-        <div className="col-12 col-xxl-9">
-          <h3 className="pt-4 fw-bold">{t("actorLicenses")}</h3>
-          <ul className="list-group list-group-flush">
-            <PaginatedLicenses items={licenses.map((l) => [l])} />
-          </ul>
-        </div>
-        <div className="col-12 col-xxl-9">
-          <h3 className="pt-4 fw-bold">{t("actorPreviousLicenses")}</h3>
-          <ul className="list-group list-group-flush">
-            <PaginatedLicenses items={Object.values(previousLicenseGroups)} />
-          </ul>
-        </div>
       </div>
-    </div>
+    </>
   );
 }
 
 function getLicenseGroupKey(licenses: ActorLicenseRelation[]) {
-  return licenses.map((l) => `${l.starts_at}${l.mnr}-${l.mednr}`).join(";");
+  return licenses
+    .map((l) => `${l.starts_at}${l.license_number}-${l.associate_number}`)
+    .join(";");
 }
 
 function PaginatedLicenses({ items }: { items: ActorLicenseRelation[][] }) {
@@ -360,8 +343,8 @@ function LicenseEntry({ license }: { license: ActorLicenseRelation }) {
     role,
     communication_type,
     communication_status,
-    mnr,
-    mednr,
+    license_number,
+    associate_number,
   } = license;
   const licenseStatus = getLicenseStatus(license);
   const licenseIsActive = licenseStatus === "in-effect";
@@ -369,25 +352,28 @@ function LicenseEntry({ license }: { license: ActorLicenseRelation }) {
     <div className="row">
       <div className="py-2 col-3 text-nowrap d-flex flex-column justify-content-center">
         <span>
-          <Link href={`/licenses/entry?mnr=${mnr}`}>
-            {mnr}-{mednr}
+          <Link href={`/licenses/entry?entryId=${license_number}`}>
+            {license_number}-{associate_number}
           </Link>
         </span>
         <span className="text-secondary small">{role}</span>
       </div>
       <div className="py-2 col-5 d-flex flex-column flex-md-row align-items-center ">
         <div>
-          {format("actorLicenseValidityPeriod", {
-            startsAt: convertOnlyDateToLocale(starts_at),
-            endsAt: convertOnlyDateToLocale(ends_at),
-            from: (chunks: React.ReactNode) => (
-              <p className="m-0 text-end">{chunks}</p>
-            ),
-            to: (chunks) => <p className="m-0">{chunks}</p>,
-            muted: (chunks) => (
-              <span className="text-muted small">{chunks}</span>
-            ),
-          })}
+          {format(
+            ends_at ? "actorLicenseValidityPeriod" : "actorLicensePeriodStart",
+            {
+              startsAt: convertOnlyDateToLocale(starts_at),
+              endsAt: convertOnlyDateToLocale(ends_at),
+              from: (chunks: React.ReactNode) => (
+                <p className="m-0 text-end">{chunks}</p>
+              ),
+              to: (chunks) => <p className="m-0">{chunks}</p>,
+              muted: (chunks) => (
+                <span className="text-muted small">{chunks}</span>
+              ),
+            },
+          )}
         </div>
         <div className="ms-3">
           <span

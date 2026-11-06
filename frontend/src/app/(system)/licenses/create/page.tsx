@@ -19,13 +19,12 @@ function LicenseViewBase() {
   const modals = useModalsContext();
 
   const license: Partial<LicenseFormData> = {
-    mnr: "",
-    status: "",
+    license_number: "",
+    status: "active",
     starts_at: "",
-    ends_at: "",
     location: "",
     description: "",
-    report_status: "",
+    report_status: "no",
   };
 
   const { submit, isSubmitting, errors } = useFormSubmission(
@@ -37,7 +36,7 @@ function LicenseViewBase() {
           t("licenseCreateSuccessTitle"),
           <p className="mb-0">{t("licenseCreateSuccessMessage")}</p>,
           t("closeModal"),
-          () => router.push(`/licenses/entry?mnr=${result.mnr}`),
+          () => router.push(`/licenses/entry?entryId=${result.license_number}`),
         ),
       );
     },
@@ -90,6 +89,7 @@ function LicenseViewBase() {
               ) : null}
               <FieldErrors errors={errors?.fields || {}}>
                 <LicenseEntryForm
+                  isCreating
                   initialLicense={license}
                   isSubmitting={isSubmitting}
                   onSubmit={submit}

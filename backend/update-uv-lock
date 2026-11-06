@@ -3,12 +3,12 @@
 cp uv.lock uv.lock.old
 
 docker build \
-	--file ../Dockerfile.backend \
-	--target dev \
+	--file ../Dockerfile \
+	--target backend-dev \
 	--tag backend-update-lock \
 	--build-arg RUNTIME_ID="$(id -u):$(id -g)" \
 	--build-arg BUILD_ID="$(id -u):$(id -g)" \
-	. &&
+	.. &&
 docker run \
 	--rm \
 	--volume './:/app' \

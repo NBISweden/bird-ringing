@@ -49,18 +49,18 @@ const actorFields = {
 };
 
 const licenseFields = {
-  licenseStartsAt: "Valid from",
-  licenseEndsAt: "Valid to",
-  licenseDescription: "Description",
+  licenseStartsAt: "Startdatum",
+  licenseEndsAt: "Slutdatum",
+  licenseDescription: "Beskrivning",
   licensePermissionType: "Typ",
   licensePermissionDescription: "Beskrivning",
   licensePermissionStartsAt: "Startdatum",
   licensePermissionEndsAt: "Slutdatum",
   licensePermissionProperties: "Egenskaper",
   licensePermissionSpecies: "Art",
-  licenseFormActor: "Ringmärkare",
-  licenseFormRole: "Roll",
-  licenseFormRelationId: "MedNr",
+  licenseActor: "Ringmärkare",
+  licenseRole: "Roll",
+  licenseRelationId: "AssociateNumber",
 };
 
 const licenseForm = {
@@ -70,9 +70,11 @@ const licenseForm = {
   licenseFormBasicInfoSubtitle: "Om licensen",
   licenseFormValiditySubtitle: "Giltighetsperiod",
   licenseFormLocationSubtitle: "Plats",
+  licenseFormLocationPresetSubtitle: "Platsförslag",
   licenseFormDetailsSubtitle: "Detaljer",
-  licenseFormMnrPlaceholder: "Ange ett fyrsiffrigt MNR",
-  licenseFormMnrInvalid: "MNR måste bestå av exakt fyra siffror.",
+  licenseFormLicenseNumberPlaceholder: "Ange ett fyrsiffrigt licensnummer",
+  licenseFormLicenseNumberInvalid:
+    "Licensnumret måste bestå av exakt fyra siffror.",
   licenseFormRequired: "Det här fältet är obligatoriskt.",
   licenseFormEndsAtBeforeStartsAt:
     "Giltig till måste vara samma datum eller senare än giltig från.",
@@ -128,6 +130,18 @@ const modals = {
   licenseUpdateErrorTitle: "Misslyckades att uppdatera licens",
 };
 
+const pageTitles = {
+  rootPageTitle: "Ringmärkning",
+  welcomPageTitle: "Välkommen till ringmärkning",
+  permissionsPageTitle: "Tillstånd",
+  licensesPageTitle: "Licenser",
+  licensePageTitle: "Licens: {license_number} {actor}",
+  licenseCreationPageTitle: "Lägg till licens",
+  actorsPageTitle: "Aktörer",
+  actorPageTitle: "Aktör: {name}",
+  actorCreationPageTitle: "Lägg till aktör",
+};
+
 export const locale: TranslationMap = {
   ...licenseReportStatusOptions,
   ...licenseStatusOptions,
@@ -138,6 +152,7 @@ export const locale: TranslationMap = {
   ...licenseFields,
   ...licenseForm,
   ...modals,
+  ...pageTitles,
 
   birdRinging: "Ringmärkning",
   userPermissions: "Användarrättigheter",
@@ -163,13 +178,14 @@ export const locale: TranslationMap = {
   actorFetchEmailAddresses: "Hämta e-postadresser",
   actorFilterDescription: "Filtrera aktörlistan",
   actorFilterLabel: "Filtrera",
-  actorFilterPlaceholder: "Namn, E-post, Ort, Mnr, Roll, Typ",
+  actorFilterPlaceholder: "Namn, E-post, Ort, Licensnummer, Roll, Typ",
   actorLastUpdated: "Senast uppdaterad",
   actorLicenseInEffect: "Aktuell",
   actorLicenseExpired: "Utgången",
   actorLicensePending: "Kommande",
   actorLicenseValidityPeriod:
     "<from>{startsAt}</from><to><muted>till</muted> {endsAt}</to>",
+  actorLicensePeriodStart: "<from>Börjar </from> {startsAt}",
   actorLicenses: "Licenser",
   actorLoadingEmailAddresses: "Laddar e-postadresser",
   actorNoEmailAddressesFound: "Inga e-postadresser fanns ",
@@ -193,6 +209,10 @@ export const locale: TranslationMap = {
   licenseCreatedAt: "Skapad {date}",
   licenseCreatingLicenseDocuments: "Skapar licensdokument",
   licenseDeactivate: "Avaktivera",
+  licenseDeliveryStatusSent: "Skickad",
+  licenseDeliveryStatusReceived: "Mottagen",
+  licenseDeliveryStatusBounced: "Avvisad",
+  licenseDeliveryStatusFailed: "Misslyckades",
   licenseDocumentReference: "Referens",
   licenseDocuments: "Dokument",
   licenseDownloadLicenses: "Ladda ned licenskort (ZIP)",
@@ -200,13 +220,14 @@ export const locale: TranslationMap = {
   licenseErrorLoadingLicenseText:
     "Något gick fel när vi försökte ladda data för licensen med id {licenseId}",
   licenseErrorLoadingLicenseTitle: "Misslyckades att hämta licens",
+  licenseFetchEmailAddresses: "Hämta e-postadresser för licenseinnehavare",
   licenseFilterDescription: "Filtrera licenslistan",
   licenseFilterLabel: "Filtrera",
   licenseFilterPlaceholder:
-    "Mnr, Typ, Licensinnehavare, Fångstmetoder, Senaste e-post skickades",
+    "Licensnummer, Typ, Licensinnehavare, Fångstmetoder, Senaste e-post skickades",
   licenseHistory: "Historik",
   licenseHolder: "Licensinnehavare",
-  licenseId: "Mnr",
+  licenseId: "Licensnummer",
   licenseLastEmailSentAt: "Senaste e-post skickades",
   licenseCardTableHeader: "Kort",
   licensePermitTableHeader: "Tillstånd",
@@ -244,6 +265,7 @@ export const locale: TranslationMap = {
   licenseNotifyRinger: "Meddela ringmärkare",
   licenseNotifyRingerHelp:
     "Skickar även ett samlat e-postmeddelande till ringmärkaren med de valda hjälparnas dokument.",
+  licenseSelectAllActors: "Välj alla",
   licenseSendingLicenses: "Skickar licenser...",
   licenseSpecies: "Arter",
   licenseRingerBundleMessagesSent:
@@ -254,7 +276,7 @@ export const locale: TranslationMap = {
   licenseRingerBundleFailedMessages:
     "Misslyckade samlade utskick till ringmärkare",
   licenseSkippedMessages: "Hoppade över",
-  licenseSkippedMessageRow: "{mnr} {actor} ({reason})",
+  licenseSkippedMessageRow: "{licenseNumber} {actor} ({reason})",
   licenseFailedMessagesDetails: "Misslyckade utskick",
   licenseFailedMessageRow: "{to}: {details}",
   licenseSkippedMessagesCountByReason: "Hoppade över ({reason}): {count}",
@@ -262,8 +284,11 @@ export const locale: TranslationMap = {
   licenseTrappingMethods: "Fångstmetoder",
   licenseType: "Typ",
   licenseUpdatedAt: "Uppdaterad {date}",
-  licenseValidityPeriod:
-    "<from>Giltig från </from>{startsAt}<to> till </to>{endsAt}",
+  licenseStatusSummary:
+    "<param>År: </param>{year}, <param>status: </param>{status}",
+  licenseSendDisabledInactive:
+    "Licensen måste vara aktiv för att kunna skicka kommunikation.",
+  licenseInactiveLicensesSkipped: "Inaktiva licenser hoppades över",
   buttonCreateDocuments: "Create documents",
   permitCreateDocuments: "Skapa tillstånd",
   permitCreateDocumentsConfirmText:

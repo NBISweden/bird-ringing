@@ -11,13 +11,6 @@ fi
 export BUILD_ID="${BUILD_ID:-6000:6000}"
 export RUNTIME_ID="${RUNTIME_ID:-6001:6001}"
 
-# Drop the named volumes backend-vol and frontend-vol.
-# These will be reinitialised with the data in the built images.
-project_name=$(sed -e '/^name: */!d' -e 's///' docker-compose.yml)
-docker volume rm \
-	"${project_name}_backend-vol" \
-	"${project_name}_frontend-vol" 2>/dev/null || true
-
 # Set environment variables for build info.
 export BUILD_GIT_COMMIT="$(git rev-parse --short HEAD 2>/dev/null || true)"
 export BUILD_GIT_BRANCH="$(git symbolic-ref --short -q HEAD 2>/dev/null || true)"

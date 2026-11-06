@@ -1,5 +1,5 @@
 from django.test import TestCase
-from licensing.rest.core import (
+from licensing.rest.license_sequence_view import (
     LicensePermissionSerializer,
     LicenseSerializer,
     LicenseActorRelationSerializer,
@@ -15,7 +15,9 @@ from licensing.models import (
     LicenseSequence,
     LicenseStatusChoices,
     License,
+    LicenseRelation,
     ReportStatusChoices,
+    LicenseRoleChoices,
 )
 from django.test.client import RequestFactory
 from .utils import create_user
@@ -55,7 +57,7 @@ class TestSerializers(TestCase):
             updated_by=self.user
         )
         self.sequence = LicenseSequence.objects.create(
-            mnr="0000",
+            license_number="0000",
             status=LicenseStatusChoices.ACTIVE,
             created_by=self.user,
             updated_by=self.user
@@ -90,7 +92,7 @@ class TestSerializers(TestCase):
         good_data = {
             "actor": {"id": self.actors[0].id},
             "role": "ringer",
-            "mednr": "0001"
+            "associate_number": "0001"
         }
         relation_serializer = LicenseActorRelationSerializer(
             data=good_data,
@@ -152,7 +154,7 @@ class TestSerializers(TestCase):
                 **self._good_license_data(),
                 "actors": [{
                     "actor": {"id": self.actors[0].id},
-                    "mednr": "0001",
+                    "associate_number": "0001",
                 }]
             },
             context=self._get_context(),
@@ -170,6 +172,98 @@ class TestSerializers(TestCase):
             "expect relation to be invalid due to missing role"
         )
     
+    def test_license_serializer_duplicate_associate_number_error(self):
+        license = License.objects.create(
+            sequence=self.sequence,
+            version=0,
+            report_status=ReportStatusChoices.YES,
+            starts_at=datetime.date.today(),
+            ends_at=datetime.date.today(),
+            created_by=self.user,
+            updated_by=self.user,
+        )
+
+        license_serializer = LicenseSerializer(
+            instance=license,
+            data={
+                **self._good_license_data(),
+                "actors": [
+                    {
+                        "actor": {"id": self.actors[0].id},
+                        "associate_number": "0001",
+                        "role": "ringer"
+                    },
+                    {
+                        "actor": {"id": self.actors[1].id},
+                        "associate_number": "0001",
+                        "role": "ringer"
+                    }
+                ]
+            },
+            context=self._get_context(),
+            partial=True,
+        )
+        result = None
+        try:
+            license_serializer.is_valid(raise_exception=True)
+        except ValidationError as e:
+            result = e.get_codes()
+
+        self.assertEqual(
+            result,
+            {"actors": [{"associate_number": ["invalid"]}, {"associate_number": ["invalid"]}]},
+            "expect relation to be invalid due duplicate associate number"
+        )
+    
+    def test_license_serializer_reused_associate_number_error(self):
+        license = License.objects.create(
+            sequence=self.sequence,
+            version=0,
+            report_status=ReportStatusChoices.YES,
+            starts_at=datetime.date.today(),
+            ends_at=datetime.date.today(),
+            created_by=self.user,
+            updated_by=self.user,
+        )
+        for actor, associate_number in zip(self.actors[0:2], ["0001", "0002"]):
+            LicenseRelation.objects.create(
+                associate_number=associate_number,
+                actor=actor,
+                license=license,
+                role=LicenseRoleChoices.RINGER,
+                created_by=self.user,
+                updated_by=self.user,
+            )
+        self.sequence.commit(license)
+
+        license_serializer = LicenseSerializer(
+            instance=license,
+            data={
+                **self._good_license_data(),
+                "actors": [
+                    {
+                        "actor": {"id": self.actors[2].id},
+                        "associate_number": "0001",
+                        "role": "ringer"
+                    },
+                ]
+            },
+            context=self._get_context(),
+            partial=True,
+        )
+        result = None
+        try:
+            license_serializer.is_valid(raise_exception=True)
+            license_serializer.save()
+        except ValidationError as e:
+            result = e.get_codes()
+
+        self.assertEqual(
+            result,
+            {"actors": [{"associate_number": ["invalid"]}]},
+            "expect relation to be invalid due to reused associate number"
+        )
+    
     def test_license_serializer_errors(self):
         good_data = self._good_license_data()
         entries = [
@@ -178,10 +272,8 @@ class TestSerializers(TestCase):
                 "expect fields to be missing",
                 {},
                 {
-                    "location": ["required"],
                     "report_status": ["required"],
                     "starts_at": ["required"],
-                    "ends_at": ["required"],
                 }
             ),
             (
@@ -273,7 +365,7 @@ class TestSerializers(TestCase):
 
     def _good_sequence_data(self, override={}):
         return {
-            "mnr": "0001",
+            "license_number": "0001",
             "status": "active",
             "latest": self._good_license_data(),
             **override
@@ -302,7 +394,7 @@ class TestSerializers(TestCase):
                 {
                     "actor": {"id": actor.id},
                     "role": role,
-                    "mednr": str(index).rjust(4, "0")
+                    "associate_number": str(index).rjust(4, "0")
                 }
                 for index, (actor, role) in enumerate(zip(self.actors, ["ringer", "associate_ringer", "communication", "affiliate"]))
             ],
@@ -313,7 +405,7 @@ class TestSerializers(TestCase):
         good_data = self._good_license_data()
         return [
             (
-                "expect actor and mednr to trigger invalid fields due to duplicates",
+                "expect actor and associate_number to trigger invalid fields due to duplicates",
                 {
                     **good_data,
                     "actors": [
@@ -321,17 +413,17 @@ class TestSerializers(TestCase):
                         {
                             "actor": {"id": self.actors[0].id},
                             "role": "ringer",
-                            "mednr": "0001"
+                            "associate_number": "0001"
                         }
                     ]
                 },
                 {
                     "actors": [
                         {"actor": ["invalid"]},
-                        {"mednr": ["invalid"]},
+                        {"associate_number": ["invalid"]},
                         {},
                         {},
-                        {"actor": ["invalid"], "mednr": ["invalid"]}
+                        {"actor": ["invalid"], "associate_number": ["invalid"]}
                     ]
                 }
             ),
@@ -363,22 +455,22 @@ class TestSerializers(TestCase):
                         {
                             "actor": {"id": self.actors[0].id},
                             "role": "ringer",
-                            "mednr": "0001"
+                            "associate_number": "0001"
                         },
                         {
                             "actor": {},
                             "role": "ringer",
-                            "mednr": "0002"
+                            "associate_number": "0002"
                         },
                         {
                             "actor": {"id": "abc"},
                             "role": "ringer",
-                            "mednr": "0003"
+                            "associate_number": "0003"
                         },
                         {
                             "actor": {"id": 2000},
                             "role": "ringer",
-                            "mednr": "0003"
+                            "associate_number": "0003"
                         },
                     ]
                 },
@@ -398,7 +490,7 @@ class TestSerializers(TestCase):
                     "actors": [
                         {
                             "actor": {"id": self.actors[0].id},
-                            "mednr": "0001"
+                            "associate_number": "0001"
                         }
                     ]
                 },
@@ -409,20 +501,20 @@ class TestSerializers(TestCase):
                 }
             ),
             (
-                "expect mednr to be too short",
+                "expect associate_number to be too short",
                 {
                     **good_data,
                     "actors": [
                         {
                             "actor": {"id": self.actors[0].id},
                             "role": "ringer",
-                            "mednr": "BAD"
+                            "associate_number": "BAD"
                         },
                     ]
                 },
                 {
                     "actors": [
-                        {"mednr": ["min_length"]},
+                        {"associate_number": ["min_length"]},
                     ]
                 }
             ),

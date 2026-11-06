@@ -15,6 +15,8 @@ from .models import (
     LicenseSequenceImport,
     LicenseImport,
     PermitDnr,
+    LocationPreset,
+    LocationPresetGroup
 )
 import datetime
 
@@ -25,6 +27,11 @@ COMMON_EXCLUDES = [
     "created_by",
     "updated_by",
 ]
+
+
+class LocationPresetAdmin(admin.TabularInline):
+    exclude = COMMON_EXCLUDES
+    model = LocationPreset
 
 
 class LicenseRelationAdmin(admin.TabularInline):
@@ -142,3 +149,11 @@ class SpeciesImportAdmin(admin.ModelAdmin):
 @admin.register(PermitDnr)
 class PermitDnrAdmin(ModelAdminWithChangeTracking):
     exclude = COMMON_EXCLUDES
+
+
+@admin.register(LocationPresetGroup)
+class LocationPresetGroupAdmin(ModelAdminWithChangeTracking):
+    exclude = COMMON_EXCLUDES
+    list_display = ("name",)
+
+    inlines = [LocationPresetAdmin]

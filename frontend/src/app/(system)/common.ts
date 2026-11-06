@@ -32,9 +32,9 @@ export type ActorListItem = ActorBase & {
 
 export type ActorLicenseRelation = {
   license_id: number;
-  mnr: string;
+  license_number: string;
   role: string;
-  mednr: string;
+  associate_number: string;
   version: number;
   starts_at: string;
   ends_at: string;
@@ -58,11 +58,21 @@ export type Options = {
   license_role: Option;
   license_status: Option;
   species: Option;
+  location_preset_group: LocationPresetGroups;
 };
 
 export type Option = {
   id: string;
   label: string;
+};
+
+export type LocationPresetGroups = {
+  id: string;
+  name: string;
+  items: {
+    id: string;
+    name: string;
+  }[];
 };
 
 export type PagedResponse<T> = {
@@ -153,7 +163,7 @@ export type LicenseHistoryItem = {
 };
 
 export type LicenseListItem = {
-  mnr: string;
+  license_number: string;
   latest: LicenseInstance;
   history?: LicenseHistoryItem[];
   status: string;
@@ -195,7 +205,7 @@ export type LicenseDocument = {
   reference: string;
 };
 
-export type LicenceCommunication = {
+export type LicenseCommunication = {
   actor: string;
   actor_id: number;
   type: string;
@@ -207,9 +217,9 @@ export type LicenseInstance = {
   actors: (LicenseActorRelation & { actor: ActorBase })[];
   permissions: LicensePermission[];
   documents: LicenseDocument[];
-  communication: LicenceCommunication[];
+  communication: LicenseCommunication[];
   version: number;
-  location: string;
+  location?: string;
   description: string;
   report_status: string;
   starts_at: string;
@@ -225,7 +235,7 @@ export type ObjectReference = {
 export type LicenseActorRelation = {
   actor: ObjectReference;
   role: string;
-  mednr: string;
+  associate_number: string;
 };
 
 export type LicensePermissionByRef = {
@@ -235,6 +245,11 @@ export type LicensePermissionByRef = {
   period: [string, string];
   species_list: ObjectReference[];
   properties: ObjectReference[];
+};
+
+export type LicenseDefaults = {
+  end_year_offset: number;
+  end_month_day: string; // "MM-DD"
 };
 
 export type BSColor =
@@ -270,8 +285,13 @@ export type MenuAction<T extends Function> =
 
 export type SkippedMessage = {
   actor_id: number;
-  mnr: string;
+  license_number: string;
   reason: string;
+};
+
+export type ValueList<T> = {
+  value_id: string;
+  values: { [x: string]: T };
 };
 
 export interface SendEmailResult {
@@ -282,6 +302,7 @@ export interface SendEmailResult {
   ringer_bundle_message?: string;
   ringer_bundle_failed_messages?: FailedMessage[];
   ringer_bundle_error?: string;
+  skipped_inactive_licenses?: string[];
 }
 
 export type FormErrors = {
@@ -358,3 +379,26 @@ export type PermissionInput = {
 export type PermissionPropertyInput = PermissionInput & {
   related_type_id?: string | null;
 };
+
+export function joinValueLists<TA, TB, TO>(
+  a: ValueList<TA>["values"],
+  b: ValueList<TB>["values"],
+  transform: (id: string, a: TA, b: TB) => TO,
+): TO[] {
+  const commonKeys = new Set(Object.keys(a)).intersection(
+    new Set(Object.keys(b)),
+  );
+
+  return Array.from(commonKeys).map((key) => transform(key, a[key], b[key]));
+}
+
+export function mergeValueListObjects<T>(
+  items: ValueList<T>["values"][],
+): ValueList<T>["values"] {
+  return items.reduce((acc, val) => {
+    return Object.assign<ValueList<T>["values"], ValueList<T>["values"]>(
+      acc,
+      val,
+    );
+  });
+}

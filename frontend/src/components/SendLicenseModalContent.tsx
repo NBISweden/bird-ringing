@@ -8,7 +8,7 @@ import { useEffect, useRef } from "react";
 import useSWRMutation from "swr/mutation";
 
 interface SendLicenseModalContentProps {
-  mnrs: string[];
+  licenseNumbers: string[];
 }
 
 function SendEmailResultDetails({
@@ -34,6 +34,18 @@ function SendEmailResultDetails({
 
   return (
     <>
+      {data.skipped_inactive_licenses &&
+        data.skipped_inactive_licenses.length > 0 && (
+          <div className="alert alert-warning">
+            <p className="mb-2">{t("licenseInactiveLicensesSkipped")}:</p>
+            <ul className="mb-0">
+              {data.skipped_inactive_licenses.map((license_number, idx) => (
+                <li key={idx}>{license_number}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+
       {showRingerBundleMessagesSent &&
         typeof data.ringer_bundle_messages_sent === "number" && (
           <div className="alert alert-info">
@@ -99,7 +111,7 @@ function SendEmailResultDetails({
                 {data.skipped_messages.map((msg, idx) => (
                   <li key={idx}>
                     {t("licenseSkippedMessageRow", {
-                      mnr: msg.mnr,
+                      licenseNumber: msg.license_number,
                       actor:
                         actorNames && msg.actor_id in actorNames
                           ? actorNames[msg.actor_id]
@@ -135,7 +147,7 @@ function SendEmailResultDetails({
 }
 
 export function SendLicenseModalContent({
-  mnrs,
+  licenseNumbers,
 }: SendLicenseModalContentProps) {
   const client = useClient();
   const { t } = useTranslation();
@@ -146,10 +158,10 @@ export function SendLicenseModalContent({
 
   async function batchSendEmails(
     key: string,
-    { arg }: { arg: { client: Client; mnrs: string[] } },
+    { arg }: { arg: { client: Client; licenseNumbers: string[] } },
   ): Promise<SendEmailResult> {
     const response = await arg.client.batchSendLicenseEmails(
-      arg.mnrs,
+      arg.licenseNumbers,
       includeCard,
       includePermit,
     );
@@ -164,7 +176,7 @@ export function SendLicenseModalContent({
   useEffect(() => {
     if (hasSent.current) return;
     hasSent.current = true;
-    trigger({ client, mnrs });
+    trigger({ client, licenseNumbers });
   });
 
   return isMutating ? (
@@ -197,14 +209,14 @@ export function SendLicenseModalContent({
 }
 
 interface SendLicenseForActorsModalContentProps {
-  mnr: string;
+  licenseNumber: string;
   actorIds: number[];
   notifyRinger?: boolean;
   actorNames?: Record<number, string>;
 }
 
 export function SendLicenseForActorsModalContent({
-  mnr,
+  licenseNumber,
   actorIds,
   notifyRinger,
   actorNames,
@@ -223,14 +235,14 @@ export function SendLicenseForActorsModalContent({
     }: {
       arg: {
         client: Client;
-        mnr: string;
+        licenseNumber: string;
         actorIds: number[];
         notifyRinger?: boolean;
       };
     },
   ): Promise<SendEmailResult> {
     const response = await arg.client.sendLicenseEmailsForActors(
-      arg.mnr,
+      arg.licenseNumber,
       arg.actorIds,
       includeCard,
       includePermit,
@@ -247,7 +259,7 @@ export function SendLicenseForActorsModalContent({
   useEffect(() => {
     if (hasSent.current) return;
     hasSent.current = true;
-    trigger({ client, mnr, actorIds, notifyRinger });
+    trigger({ client, licenseNumber, actorIds, notifyRinger });
   });
 
   return isMutating ? (
