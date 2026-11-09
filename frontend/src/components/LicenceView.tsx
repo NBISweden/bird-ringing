@@ -192,6 +192,14 @@ function LicenseRelationEdit({
   const maxAssociateNumber = associateNumberData
     ? associateNumberData.values[licenseNumber]
     : 0;
+  const {
+    data: establishedAssociateNumberData,
+    isLoading: isLoadingEstablished,
+  } = useLicenseValue<Record<string, string>>("associate_numbers", [
+    licenseNumber,
+  ]);
+  const establishedAssociateNumbers =
+    establishedAssociateNumberData?.values[licenseNumber] ?? {};
   return (
     <div className="card-body">
       {errors && errors.nonField.length > 0 ? (
@@ -210,7 +218,7 @@ function LicenseRelationEdit({
         </div>
       ) : null}
       <FieldErrors errors={errors?.fields || {}}>
-        {isLoading ? (
+        {isLoading || isLoadingEstablished ? (
           <Spinner />
         ) : (
           <LicenseRelationsForm
@@ -218,6 +226,7 @@ function LicenseRelationEdit({
             onSubmit={submit}
             isSubmitting={isSubmitting}
             minAssociateNumber={maxAssociateNumber}
+            establishedAssociateNumbers={establishedAssociateNumbers}
           />
         )}
       </FieldErrors>
