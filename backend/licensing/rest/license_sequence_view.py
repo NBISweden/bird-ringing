@@ -739,6 +739,7 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet, ValueListMixin):
         return {
             "holder": LicenseSequenceViewSet.get_holder,
             "max_associate_number": LicenseSequenceViewSet.get_max_associate_number,
+            "associate_numbers": LicenseSequenceViewSet.get_associate_numbers,
         }
     
     @staticmethod
@@ -781,6 +782,13 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet, ValueListMixin):
                 v["max_associate_number"]
             )
             for v in values
+        ]
+
+    @staticmethod
+    def get_associate_numbers(queryset):
+        return [
+            (sequence.license_number, LicenseRelation.get_established_associate_numbers(sequence))
+            for sequence in queryset
         ]
 
     def get_queryset(self):
