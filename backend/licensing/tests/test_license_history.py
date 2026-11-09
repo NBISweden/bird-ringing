@@ -247,7 +247,7 @@ class TestLicenseHistory(TestCase):
         models.LicenseRelation.objects.create(
             actor=self.actors[0],
             license=current,
-            associate_number="R001",
+            associate_number="0000",
             role=models.LicenseRoleChoices.RINGER,
             created_by=self.user,
             updated_by=self.user
