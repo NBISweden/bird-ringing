@@ -61,6 +61,8 @@ const licenseFields = {
   licenseActor: "Ringmärkare",
   licenseRole: "Roll",
   licenseRelationId: "AssociateNumber",
+  licenseRelationIdLocked:
+    "AssociateNumber kan inte ändras när aktören har ingått i den här licensen.",
 };
 
 const licenseForm = {
