@@ -575,6 +575,15 @@ class LicenseRelation(ChangeTracking):
                 "associate_number": f"The associate number {self.associate_number}, is already taken."
             })
 
+        established_number = LicenseRelation.get_established_associate_numbers(
+            self.license.sequence,
+            exclude_license=self.license
+        ).get(self.actor_id)
+        if established_number is not None and established_number != self.associate_number:
+            raise ValidationError({
+                "associate_number": f"The associate number for this actor is {established_number} and can not be changed."
+            })
+
         return self.associate_number
     
     def save(self, *args, **kwargs):
@@ -589,6 +598,22 @@ class LicenseRelation(ChangeTracking):
         ).exclude(actor=actor).exists()
 
         return not associate_number_exists
+
+    @staticmethod
+    def get_established_associate_numbers(sequence, exclude_license=None):
+        """
+        Returns a mapping from actor id to the associate number the actor has
+        within a license sequence. The latest committed version takes precedence
+        and the current license (version 0) is used last.
+        """
+        relations = LicenseRelation.objects.filter(license__sequence=sequence)
+        if exclude_license is not None:
+            relations = relations.exclude(license=exclude_license)
+
+        established = {}
+        for actor_id, associate_number in relations.order_by("-license__version").values_list("actor_id", "associate_number"):
+            established.setdefault(actor_id, associate_number)
+        return established
 
     class Meta:
         ordering = ["pk"]

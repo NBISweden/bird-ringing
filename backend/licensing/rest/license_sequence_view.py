@@ -320,6 +320,9 @@ class LicenseActorRelationSerializer(serializers.ModelSerializer):
             # Only validate for existing associate numbers when a license instance is provided in the context
             if not LicenseRelation.validate_associate_number(attrs.get("associate_number"), license, attrs.get("actor")):
                 raise serializers.ValidationError({"associate_number": ["Associate number is already taken"]})
+            established_number = self.context.get("established_associate_numbers", {}).get(attrs.get("actor").id)
+            if established_number is not None and established_number != attrs.get("associate_number"):
+                raise serializers.ValidationError({"associate_number": ["Associate number can not be changed for this actor"]})
         return attrs
 
     class Meta:
@@ -543,11 +546,16 @@ class LicenseSerializer(serializers.ModelSerializer):
         instance and thus can not be serialized with the standard flow.
         """
         if actors is not None:
+            established_associate_numbers = LicenseRelation.get_established_associate_numbers(instance.sequence)
             instance.actors.all().delete()
 
             relation_serializer = LicenseActorRelationSerializer(
                 data=actors,
-                context={**self.context, "license": instance},
+                context={
+                    **self.context,
+                    "license": instance,
+                    "established_associate_numbers": established_associate_numbers,
+                },
                 many=True
             )
             try:
