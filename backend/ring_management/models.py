@@ -135,3 +135,50 @@ class Ring(ChangeTracking):
         default=None,
     )
 
+
+# Alternative data structure
+class RingSequenceStatusChoices(models.IntegerChoices):
+    PREPARED = (1, _("prepared"))
+    ORDERED = (2, _("ordered"))
+    DELIVERED = (3, _("delivered"))
+
+    IN_STOCK = (4, _("in-stock"))
+    ASSIGNED = (5, _("assigned"))
+    IN_USE = (6, _("in-use"))
+    OBSERVED = (7, _("observed"))
+    DECOMMISSIONED = (8, _("decommissioned"))
+
+
+class RingOrderAlt(ChangeTracking):
+    """
+    Describes a prepared order. Mostly a container for ring series sequences
+    """
+
+
+class RingSeriesSequence(ChangeTracking):
+    """
+    Describes a ring series sequence from a start number to an end number and its current life cycle
+    status.
+    """
+
+    model = models.ForeignKey(RingModel, on_delete=models.PROTECT)
+    series = models.ForeignKey(RingSeries, on_delete=models.PROTECT, related_name="ring_sequences")
+    start_number = models.PositiveIntegerField(null=True, default=None, blank=True)
+    end_number = models.PositiveIntegerField(null=True, default=None, blank=True)
+    status = models.PositiveIntegerField(
+        choices=RingSequenceStatusChoices, default=RingSequenceStatusChoices.PREPARED
+    )
+    order = models.ForeignKey(RingOrderAlt, on_delete=models.PROTECT, related_name="ring_sequences")
+    license = models.ForeignKey(
+        LicenseSequence,
+        on_delete=models.PROTECT,
+        related_name="ring_sequences",
+        null=True,
+        default=None,
+    )
+
+
+# Questions:
+# - Should we try to make things more immutable in order to prevent accidental editing?
+#   - With a less normalized database a change in one row makes less impact and may be possible to reverse by looking at other existing posts
+# - Could we make this entire system work only with sequence splitting?
