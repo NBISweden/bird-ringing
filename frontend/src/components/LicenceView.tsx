@@ -21,6 +21,7 @@ import { LicenseEntryForm, LicenseFormData } from "./LiceneseEntryForm";
 import { useFormSubmission, useLicenseValue } from "@/app/(system)/hooks";
 import { FieldErrors } from "./InputFields";
 import { Alert } from "./Alert";
+import Icon from "./Icon";
 import { EditSection } from "./EditSection";
 import { LicenseActorList } from "./LicenseActorList";
 import { LicenseSendActions } from "./LicenseSendActions";
@@ -491,7 +492,14 @@ export function LicenceView({
       </div>
       {/* Documents */}
       <div className="mb-3 pt-3">
-        <h3 className="h2">{t("licenseDocuments")}</h3>
+        <div className="d-flex gap-4 justify-content-between align-items-center">
+          <h3 className="h2">{t("licenseDocuments")}</h3>
+          <button className="btn btn-outline-secondary ms-2">
+            <Icon icon="file-earmark-plus" />
+            <span className="ms-2">Add document</span>
+          </button>
+        </div>
+
         <LicenseDocumentList
           documents={license.documents}
           licenseNumber={licenseNumber}
