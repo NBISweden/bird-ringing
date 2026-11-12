@@ -44,11 +44,15 @@ export function LicenseRelationsForm({
   onSubmit,
   isSubmitting,
   minAssociateNumber,
+  establishedAssociateNumbers = {},
+  lockedAssociateNumbers = {},
 }: {
   initialRelations: LicenseActorRelation[];
   onSubmit: (license: LicenseActorRelation[]) => void | Promise<void>;
   isSubmitting?: boolean;
   minAssociateNumber?: number;
+  establishedAssociateNumbers?: Record<string, string>;
+  lockedAssociateNumbers?: Record<string, string>;
 }) {
   const { t } = useTranslation();
   const { data: actors } = useOptions("actor");
@@ -66,6 +70,14 @@ export function LicenseRelationsForm({
 
   const addRelation = (actor: ObjectReference) => {
     setRelations((previousRelations) => {
+      const establishedNumber =
+        establishedAssociateNumbers[referenceToId(actor)];
+      if (establishedNumber !== undefined) {
+        return [
+          ...previousRelations,
+          { actor: actor, associate_number: establishedNumber },
+        ];
+      }
       const nextAssociateNumber =
         Math.max(
           minAssociateNumber === undefined ? 0 : minAssociateNumber,
@@ -184,6 +196,10 @@ export function LicenseRelationsForm({
                     ),
                   }}
                   options={options}
+                  associateNumberLocked={
+                    lockedAssociateNumbers[referenceToId(relation.actor)] !==
+                    undefined
+                  }
                   updateValue={(v) => {
                     const rs = relations.map<Partial<LicenseActorRelation>>(
                       (relation, i) =>
@@ -215,11 +231,13 @@ function ActorEntrySubform({
   relation,
   updateValue,
   options,
+  associateNumberLocked,
 }: {
   id?: string;
   relation: Partial<LicenseActorRelation>;
   updateValue: (r: Partial<LicenseActorRelation>) => void;
   options: ActorOptions;
+  associateNumberLocked?: boolean;
 }) {
   const { t } = useTranslation();
   const currentActor = options.actors.filter(
@@ -273,11 +291,15 @@ function ActorEntrySubform({
           label={t("licenseRelationId")}
           icon="hash"
           id={id ? `${id}.associate_number` : "associate_number"}
+          helpText={
+            associateNumberLocked ? t("licenseRelationIdLocked") : undefined
+          }
         >
           <TextInput
             type="string"
             value={relation.associate_number || ""}
             required
+            readOnly={associateNumberLocked}
             maxLength={4}
             onChange={(e) =>
               updateValue({ associate_number: e.target.value.toUpperCase() })
