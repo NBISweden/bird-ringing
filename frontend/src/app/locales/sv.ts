@@ -62,7 +62,7 @@ const licenseFields = {
   licenseRole: "Roll",
   licenseRelationId: "AssociateNumber",
   licenseRelationIdLocked:
-    "AssociateNumber kan inte ändras när aktören har ingått i den här licensen.",
+    "AssociateNumber kan inte ändras efter att ett licenskort har skapats.",
 };
 
 const licenseForm = {

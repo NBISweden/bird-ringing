@@ -45,12 +45,14 @@ export function LicenseRelationsForm({
   isSubmitting,
   minAssociateNumber,
   establishedAssociateNumbers = {},
+  lockedAssociateNumbers = {},
 }: {
   initialRelations: LicenseActorRelation[];
   onSubmit: (license: LicenseActorRelation[]) => void | Promise<void>;
   isSubmitting?: boolean;
   minAssociateNumber?: number;
   establishedAssociateNumbers?: Record<string, string>;
+  lockedAssociateNumbers?: Record<string, string>;
 }) {
   const { t } = useTranslation();
   const { data: actors } = useOptions("actor");
@@ -195,9 +197,8 @@ export function LicenseRelationsForm({
                   }}
                   options={options}
                   associateNumberLocked={
-                    establishedAssociateNumbers[
-                      referenceToId(relation.actor)
-                    ] !== undefined
+                    lockedAssociateNumbers[referenceToId(relation.actor)] !==
+                    undefined
                   }
                   updateValue={(v) => {
                     const rs = relations.map<Partial<LicenseActorRelation>>(
