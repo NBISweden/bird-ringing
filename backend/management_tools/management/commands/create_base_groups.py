@@ -41,8 +41,23 @@ class Command(BaseCommand):
                 *[
                     f"{action}_{model}"
                     for action in ["view", "add", "change", "delete"]
-                    for model in ["locationpreset", "locationpresetgroup"]
-                ]
+                    for model in [
+                        "locationpreset",
+                        "locationpresetgroup",
+                    ]
+                ],
+                *[
+                    f"{action}_{model}"
+                    for action in ["view", "add", "change"]
+                    for model in [
+                        "ringseries",
+                        "ringspecification",
+                        "ringvariant",
+                        "ringmaterial",
+                        "ringtypecode",
+                        "ringcolor"
+                    ]
+                ],
             ]
 
             for _, group_name in group_names.items():
