@@ -575,14 +575,12 @@ class LicenseRelation(ChangeTracking):
                 "associate_number": f"The associate number {self.associate_number}, is already taken."
             })
 
-        established_number = LicenseRelation.get_established_associate_numbers(
-            self.license.sequence,
-            exclude_license=self.license
-        ).get(self.actor_id)
-        if established_number is not None and established_number != self.associate_number:
-            raise ValidationError({
-                "associate_number": f"The associate number for this actor is {established_number} and can not be changed."
-            })
+        if self.pk is not None and self.actor_id in LicenseRelation.get_locked_associate_numbers(self.license.sequence):
+            previous_number = LicenseRelation.objects.filter(pk=self.pk).values_list("associate_number", flat=True).first()
+            if previous_number != self.associate_number:
+                raise ValidationError({
+                    "associate_number": "The associate number can not be changed after a license card has been created."
+                })
 
         return self.associate_number
     
@@ -600,20 +598,36 @@ class LicenseRelation(ChangeTracking):
         return not associate_number_exists
 
     @staticmethod
-    def get_established_associate_numbers(sequence, exclude_license=None):
+    def get_established_associate_numbers(sequence):
         """
         Returns a mapping from actor id to the associate number the actor has
         within a license sequence. The latest committed version takes precedence
         and the current license (version 0) is used last.
         """
         relations = LicenseRelation.objects.filter(license__sequence=sequence)
-        if exclude_license is not None:
-            relations = relations.exclude(license=exclude_license)
 
         established = {}
         for actor_id, associate_number in relations.order_by("-license__version").values_list("actor_id", "associate_number"):
             established.setdefault(actor_id, associate_number)
         return established
+
+    @staticmethod
+    def get_locked_associate_numbers(sequence):
+        """
+        Returns a mapping from actor id to associate number for the actors whose
+        number can no longer be changed in a license sequence. A number is locked
+        once a license card has been created for the actor, since the number is
+        printed on the card.
+        """
+        actors_with_license_card = set(LicenseDocument.objects.filter(
+            license_sequence=sequence,
+            type=DocumentTypeChoices.LICENSE,
+        ).values_list("actor_id", flat=True))
+        return {
+            actor_id: associate_number
+            for actor_id, associate_number in LicenseRelation.get_established_associate_numbers(sequence).items()
+            if actor_id in actors_with_license_card
+        }
 
     class Meta:
         ordering = ["pk"]
