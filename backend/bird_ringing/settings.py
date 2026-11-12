@@ -66,6 +66,7 @@ INSTALLED_APPS = [
     "licensing",
     "ring_management",
     "rest_framework",
+    "management_tools",
 ]
 
 MIDDLEWARE = [
