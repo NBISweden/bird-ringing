@@ -1,6 +1,7 @@
 from rest_framework.decorators import action
 from rest_framework.reverse import reverse
-from rest_framework import serializers
+from rest_framework import serializers, status
+from rest_framework.parsers import MultiPartParser
 from django.db import models, transaction
 from django.db.models import functions
 from django.http import HttpResponse
@@ -778,7 +779,7 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet, ValueListMixin):
     def get_queryset(self):
         queryset = super().get_queryset()
 
-        if self.action in ["create", "update", "partial_update"]:
+        if self.action in ["create", "update", "partial_update",  "document_upload",]:
             return queryset
 
         search = self.request.query_params.get("search", None)
@@ -1283,3 +1284,52 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet, ValueListMixin):
         resp = HttpResponse(zip_bytes, content_type="application/zip")
         resp["Content-Disposition"] = 'attachment; filename="permits.zip"'
         return resp
+
+    @action(
+        detail=True,
+        methods=["post"],
+        url_path="document-upload",
+        parser_classes=[MultiPartParser],
+    )
+    def document_upload(self, request, license_number=None):
+        sequence = self.get_object()
+        license = sequence.latest
+
+        if license is None:
+            return Response(
+                {"detail": "No license found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        uploaded_file = request.FILES.get("file")
+
+        if uploaded_file is None:
+            return Response(
+                {"detail": "No file provided."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # TODO Add a limit to the uploaded file?
+
+        with transaction.atomic():
+            document = LicenseDocument.objects.create(
+                license_sequence=sequence,
+                actor=None,
+                is_permanent=True,
+                type=DocumentTypeChoices.DOCUMENT,
+                reference=uploaded_file.name,
+                data=uploaded_file.read(),
+                created_by=request.user,
+                updated_by=request.user,
+            )
+
+            license.documents.add(document)
+
+        return Response(
+            {
+                "id": document.id,
+                "reference": document.reference,
+                "type": document.get_type_display(),
+            },
+            status=status.HTTP_201_CREATED,
+        )
