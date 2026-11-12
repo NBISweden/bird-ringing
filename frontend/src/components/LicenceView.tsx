@@ -200,6 +200,12 @@ function LicenseRelationEdit({
   ]);
   const establishedAssociateNumbers =
     establishedAssociateNumberData?.values[licenseNumber] ?? {};
+  const { data: lockedAssociateNumberData, isLoading: isLoadingLocked } =
+    useLicenseValue<Record<string, string>>("locked_associate_numbers", [
+      licenseNumber,
+    ]);
+  const lockedAssociateNumbers =
+    lockedAssociateNumberData?.values[licenseNumber] ?? {};
   return (
     <div className="card-body">
       {errors && errors.nonField.length > 0 ? (
@@ -218,7 +224,7 @@ function LicenseRelationEdit({
         </div>
       ) : null}
       <FieldErrors errors={errors?.fields || {}}>
-        {isLoading || isLoadingEstablished ? (
+        {isLoading || isLoadingEstablished || isLoadingLocked ? (
           <Spinner />
         ) : (
           <LicenseRelationsForm
@@ -227,6 +233,7 @@ function LicenseRelationEdit({
             isSubmitting={isSubmitting}
             minAssociateNumber={maxAssociateNumber}
             establishedAssociateNumbers={establishedAssociateNumbers}
+            lockedAssociateNumbers={lockedAssociateNumbers}
           />
         )}
       </FieldErrors>
