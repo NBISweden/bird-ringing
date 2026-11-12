@@ -12,5 +12,9 @@ class RingSpecificationViewSet(viewsets.ModelViewSet):
     filter_backends = [filters.SearchFilter]
     search_fields = ["name"]
 
-    queryset = RingSpecification.objects.all()
+    queryset = RingSpecification.objects.select_related(
+        "type_code",
+        "variant",
+        "material"
+    )
     serializer_class = RingSpecificationSerializer

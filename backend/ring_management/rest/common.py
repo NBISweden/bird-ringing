@@ -2,6 +2,7 @@ from rest_framework import serializers
 from licensing.rest.utils import (
     RelatedFieldSerializer,
 )
+from bird_ringing.serializers import ChangeTrackingSerializer
 from ring_management.models import (
     RingVariant,
     RingMaterial,
@@ -36,7 +37,7 @@ class RingColorSerializer(serializers.ModelSerializer):
         fields = ["name", "id"]
 
 
-class RingSpecificationSerializer(serializers.ModelSerializer):
+class RingSpecificationSerializer(ChangeTrackingSerializer, serializers.ModelSerializer):
     type_code = RelatedFieldSerializer(
         serializer_class=RingTypeCodeSerializer,
         read_only=True,
@@ -65,9 +66,6 @@ class RingSpecificationSerializer(serializers.ModelSerializer):
         write_only=True,
     )
 
-    created_by = serializers.HiddenField(default=serializers.CurrentUserDefault())
-    updated_by = serializers.HiddenField(default=serializers.CurrentUserDefault())
-
     class Meta:
         model = RingSpecification
         fields = [
@@ -87,9 +85,13 @@ class RingSpecificationSerializer(serializers.ModelSerializer):
             "created_by",
             "updated_by",
         ]
+    
+    def update(self, instance, validated_data):
+        validated_data["updated_by"] = self.context["request"].user
+        return super().update(instance, validated_data)
 
 
-class RingSeriesSerializer(serializers.ModelSerializer):
+class RingSeriesSerializer(ChangeTrackingSerializer, serializers.ModelSerializer):
     color = RelatedFieldSerializer(
         serializer_class=RingColorSerializer,
         read_only=True,
@@ -98,9 +100,9 @@ class RingSeriesSerializer(serializers.ModelSerializer):
         source="color",
         queryset=RingColor.objects.all(),
         write_only=True,
+        required=False,
+        allow_null=True,
     )
-    created_by = serializers.HiddenField(default=serializers.CurrentUserDefault())
-    updated_by = serializers.HiddenField(default=serializers.CurrentUserDefault())
 
     class Meta:
         model = RingSeries

@@ -10,7 +10,7 @@ class RingSeriesViewSet(viewsets.ModelViewSet):
     permission_classes = [DjangoProtectedModelPermissions]
 
     filter_backends = [filters.SearchFilter]
-    search_fields = ["name"]
+    search_fields = ["prefix"]
 
-    queryset = RingSeries.objects.all()
+    queryset = RingSeries.objects.select_related("color")
     serializer_class = RingSeriesSerializer
