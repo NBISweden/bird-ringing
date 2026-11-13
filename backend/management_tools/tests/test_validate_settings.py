@@ -1,5 +1,5 @@
 from django.test import TestCase
-from licensing.management.commands.validate_settings import Command
+from management_tools.management.commands.validate_settings import Command
 from unittest.mock import patch
 import os
 

@@ -18,15 +18,7 @@ from .models import (
     LocationPreset,
     LocationPresetGroup
 )
-import datetime
-
-
-COMMON_EXCLUDES = [
-    "created_at",
-    "updated_at",
-    "created_by",
-    "updated_by",
-]
+from bird_ringing.admin import ModelAdminWithChangeTracking, COMMON_EXCLUDES
 
 
 class LocationPresetAdmin(admin.TabularInline):
@@ -57,26 +49,6 @@ class LicenseCommunicationAdmin(admin.TabularInline):
 class TabularLicenseAdmin(admin.TabularInline):
     exclude = COMMON_EXCLUDES
     model = License
-
-
-class ModelAdminWithChangeTracking(admin.ModelAdmin):
-    def save_model(self, request, obj, form, change):
-        if not hasattr(obj, "created_by"):
-            obj.created_by = request.user
-
-        obj.updated_by = request.user
-        obj.save()
-
-    def save_formset(self, request, obj, formset, change):
-        instances = formset.save(commit=False)
-        for instance in instances:
-            if not hasattr(instance, "created_by") or not instance.created_by:
-                instance.created_by = request.user
-
-            instance.updated_by = request.user
-            instance.updated_at = datetime.datetime.now()
-            instance.save()
-        formset.save()
 
 
 @admin.register(Actor)

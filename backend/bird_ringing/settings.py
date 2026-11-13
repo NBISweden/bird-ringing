@@ -64,7 +64,9 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "licensing",
+    "ring_management",
     "rest_framework",
+    "management_tools",
 ]
 
 MIDDLEWARE = [
