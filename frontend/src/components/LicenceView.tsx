@@ -14,7 +14,7 @@ import {
 import { useSendLicenseEmailForActorsAction } from "../app/(system)/licenses/actions";
 import { useTranslation } from "@/app/(system)/internationalization";
 import { LicensePermissionItem } from "./LicensePermissionItem";
-import { useCallback, useState } from "react";
+import { useCallback, useState, useRef } from "react";
 import { LicenseRelationsForm } from "./LicenseRelationsForm";
 import { LicensePermissionEntryForm } from "./LicensePermissionEntryForm";
 import { LicenseEntryForm, LicenseFormData } from "./LiceneseEntryForm";
@@ -382,6 +382,132 @@ function LicensePermissionsDisplay({ license }: LicenseDisplayProps) {
   );
 }
 
+function LicenseDocumentUpload({
+  licenseNumber,
+  onUpdated,
+}: {
+  licenseNumber: string;
+  onUpdated: () => unknown | Promise<unknown>;
+}) {
+  const client = useClient();
+  const { t } = useTranslation();
+
+  const fileInput = useRef<HTMLInputElement>(null);
+  const submitting = useRef(false);
+
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+
+  async function upload() {
+    if (!selectedFile || submitting.current) return;
+
+    submitting.current = true;
+    setIsUploading(true);
+    setError("");
+    setMessage("");
+
+    try {
+      await client.uploadLicenseDocument(licenseNumber, selectedFile);
+    } catch (uploadError) {
+      setError(
+        uploadError instanceof Error
+          ? uploadError.message
+          : String(uploadError),
+      );
+      submitting.current = false;
+      setIsUploading(false);
+      return;
+    }
+
+    // The upload succeeded. Don't leave the file selected for re-upload.
+    setSelectedFile(null);
+    setMessage(t("licenseDocumentUploadSuccess"));
+
+    try {
+      await onUpdated();
+    } catch {
+      setError(t("licenseDocumentRefreshError"));
+    } finally {
+      submitting.current = false;
+      setIsUploading(false);
+    }
+  }
+
+  return (
+    <div>
+      <input
+        ref={fileInput}
+        type="file"
+        hidden
+        onChange={(event) => {
+          const file = event.currentTarget.files?.[0] ?? null;
+          if (file) {
+            setSelectedFile(file);
+            setError("");
+            setMessage("");
+          }
+
+          // Allows the same file to be selected again later.
+          event.currentTarget.value = "";
+        }}
+      />
+
+      <button
+        type="button"
+        className="btn btn-outline-secondary ms-2"
+        disabled={isUploading}
+        onClick={() => fileInput.current?.click()}
+      >
+        <Icon icon="file-earmark-plus" />
+        <span className="ms-2">{t("licenseDocumentAdd")}</span>
+      </button>
+
+      {selectedFile && (
+        <div
+          className="mt-3"
+          role="group"
+          aria-label={t("licenseDocumentConfirm")}
+        >
+          <p>
+            {t("licenseDocumentSelected")}: <strong>{selectedFile.name}</strong>
+          </p>
+          <button
+            type="button"
+            className="btn btn-primary me-2"
+            disabled={isUploading}
+            onClick={upload}
+          >
+            {isUploading
+              ? t("licenseDocumentUploading")
+              : t("licenseDocumentUpload")}
+          </button>
+          <button
+            type="button"
+            className="btn btn-outline-secondary"
+            disabled={isUploading}
+            onClick={() => setSelectedFile(null)}
+          >
+            {t("licenseDocumentCancel")}
+          </button>
+        </div>
+      )}
+
+      {message && (
+        <p role="status" className="mt-2">
+          {message}
+        </p>
+      )}
+      {error && (
+        <p role="alert" className="text-danger mt-2">
+          {error}
+        </p>
+      )}
+    </div>
+  );
+}
+
 export function LicenceView({
   license,
   licenseNumber,
@@ -494,10 +620,10 @@ export function LicenceView({
       <div className="mb-3 pt-3">
         <div className="d-flex gap-4 justify-content-between align-items-center">
           <h3 className="h2">{t("licenseDocuments")}</h3>
-          <button className="btn btn-outline-secondary ms-2">
-            <Icon icon="file-earmark-plus" />
-            <span className="ms-2">Add document</span>
-          </button>
+          <LicenseDocumentUpload
+            licenseNumber={licenseNumber}
+            onUpdated={onUpdated}
+          />
         </div>
 
         <LicenseDocumentList
