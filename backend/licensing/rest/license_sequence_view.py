@@ -4,7 +4,8 @@ from rest_framework import serializers, status
 from rest_framework.parsers import MultiPartParser
 from django.db import models, transaction
 from django.db.models import functions
-from django.http import HttpResponse
+from django.http import HttpResponse, FileResponse
+from django.shortcuts import get_object_or_404
 from collections import defaultdict
 from django.core import mail
 from rest_framework.response import Response
@@ -67,6 +68,7 @@ from licensing.permit_service import (
 )
 
 import logging
+from io import BytesIO
 
 
 logger = logging.getLogger(__name__)
@@ -399,7 +401,7 @@ class LicenseDocumentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = LicenseDocument
-        fields = ["actor", "actor_id", "type", "reference"]
+        fields = ["id", "actor", "actor_id", "type", "reference"]
 
 
 class LicenseCommunicationSerializer(serializers.ModelSerializer):
@@ -1332,4 +1334,38 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet, ValueListMixin):
                 "type": document.get_type_display(),
             },
             status=status.HTTP_201_CREATED,
+        )
+
+    @action(
+        detail=True,
+        methods=["get"],
+        url_path=r"document-download/(?P<document_id>[0-9]+)",
+    )
+    def document_download(self, request, license_number=None, document_id=None):
+        sequence = self.get_object()
+        license_instance = sequence.latest
+
+        if license_instance is None:
+            return Response(
+                {"detail": "No current license found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        document = get_object_or_404(
+            license_instance.documents.all(),
+            pk=document_id,
+            type=DocumentTypeChoices.DOCUMENT,
+        )
+
+        if not document.data:
+            return Response(
+                {"detail": "Document is missing file data."},
+                status=status.HTTP_409_CONFLICT,
+            )
+
+        return FileResponse(
+            BytesIO(bytes(document.data)),
+            as_attachment=True,
+            filename=document.reference or f"document-{document.pk}",
+            content_type="application/octet-stream",
         )

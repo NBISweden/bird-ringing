@@ -54,9 +54,14 @@ export function LicenseDocumentList({
                   {doc.reference}
                 </a>
               ) : (
-                <span className="badge rounded-pill border border-primary text-primary">
-                  {doc.reference}
-                </span>
+                  <a
+                      href={`/api/license_sequence/${licenseNumber}/document-download/${doc.id}/`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="badge rounded-pill border border-primary text-primary text-decoration-none"
+                  >
+                    {doc.reference}
+                  </a>
               )}
             </div>
           </div>
