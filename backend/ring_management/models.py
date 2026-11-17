@@ -1,4 +1,5 @@
 from django.db import models
+from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
 from bird_ringing.models import ChangeTracking
 
@@ -135,6 +136,73 @@ class RingSequence(ChangeTracking):
                 name="ring_sequence_end_number_gte_start_number",
             ),
         ]
+
+    def clean(self):
+        errors = {}
+
+        if self.start_number is not None and self.start_number < 1:
+            errors["start_number"] = "The start number must be at least 1."
+
+        if (
+            self.start_number is not None
+            and self.end_number is not None
+            and self.end_number < self.start_number
+        ):
+            errors["end_number"] = "The end number must not be lower than the start number."
+
+        if errors:
+            raise ValidationError(errors)
+
+        if self.series_id is None or self.start_number is None or self.end_number is None:
+            # Missing fields are reported by clean_fields
+            return
+
+        if not RingSequence.validate_fits_series(self.series, self.end_number):
+            raise ValidationError({
+                "end_number": (
+                    f"The end number {self.end_number} does not fit in "
+                    f"{self.series.number_of_digits} digits."
+                )
+            })
+
+        overlapping = RingSequence.find_overlapping(
+            self.series, self.start_number, self.end_number, exclude_pk=self.pk
+        )
+        if overlapping.exists():
+            overlapping_str = ", ".join(str(sequence) for sequence in overlapping)
+            raise ValidationError({
+                "start_number": (
+                    f"The sequence {self.first_ring_number} - {self.last_ring_number} "
+                    f"overlaps with existing sequences: {overlapping_str}."
+                )
+            })
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+    @staticmethod
+    def validate_fits_series(series, end_number):
+        return end_number < 10 ** series.number_of_digits
+
+    @staticmethod
+    def find_overlapping(series, start_number, end_number, exclude_pk=None):
+        """
+        Returns the sequences sharing printed ring numbers with the given
+        range, i.e. sequences in any series with the same prefix and number
+        of digits whose range intersects it.
+        """
+        overlapping = RingSequence.objects.filter(
+            series__prefix=series.prefix,
+            series__number_of_digits=series.number_of_digits,
+            start_number__lte=end_number,
+            end_number__gte=start_number,
+        ).select_related("series")
+
+        if exclude_pk is not None:
+            overlapping = overlapping.exclude(pk=exclude_pk)
+
+        return overlapping
 
     @property
     def quantity(self) -> int:
