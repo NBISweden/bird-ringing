@@ -6,6 +6,8 @@ from .models import (
     RingTypeCode,
     RingSpecification,
     RingSeries,
+    RingOrder,
+    RingSequence,
 )
 from bird_ringing.admin import ModelAdminWithChangeTracking, COMMON_EXCLUDES
 
@@ -40,3 +42,21 @@ class RingSpecificationAdmin(ModelAdminWithChangeTracking):
 class RingSeriesAdmin(ModelAdminWithChangeTracking):
     readonly_fields = COMMON_EXCLUDES
     model = RingSeries
+
+
+class RingSequenceInlineAdmin(admin.TabularInline):
+    exclude = COMMON_EXCLUDES
+    model = RingSequence
+
+
+@admin.register(RingOrder)
+class RingOrderAdmin(ModelAdminWithChangeTracking):
+    readonly_fields = COMMON_EXCLUDES
+    model = RingOrder
+    inlines = [RingSequenceInlineAdmin]
+
+
+@admin.register(RingSequence)
+class RingSequenceAdmin(ModelAdminWithChangeTracking):
+    readonly_fields = COMMON_EXCLUDES
+    model = RingSequence
