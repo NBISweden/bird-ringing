@@ -252,6 +252,16 @@ def _merge_response(resp: Response, extra: dict[str, object], *, status_code: in
     base.update(extra)
     return Response(base, status=resp.status_code if status_code is None else status_code)
 
+# Detect content type for files by looking for the s.c magic number(or file signature)
+# See https://growingswe.com/blog/file-formats
+def _detect_content_type(data: bytes) -> str | None:
+    if data.startswith(b"%PDF-"):
+        return "application/pdf"
+    if data.startswith(b"\xff\xd8\xff"):
+        return "image/jpeg"
+    if data.startswith(b"\x89PNG\r\n\x1a\n"):
+        return "image/png"
+    return None
 
 class LicenseActorSerializer(serializers.ModelSerializer):
     type = NameBasedChoiceField(choices=ActorTypeChoices, read_only=True)
@@ -1313,6 +1323,14 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet, ValueListMixin):
 
         # TODO Add a limit to the uploaded file?
 
+        file_data = uploaded_file.read()
+
+        if _detect_content_type(file_data) is None:
+            return Response(
+                {"detail": "Only PDF, JPEG and PNG files are supported."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         with transaction.atomic():
             document = LicenseDocument.objects.create(
                 license_sequence=sequence,
@@ -1320,7 +1338,7 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet, ValueListMixin):
                 is_permanent=True,
                 type=DocumentTypeChoices.DOCUMENT,
                 reference=uploaded_file.name,
-                data=uploaded_file.read(),
+                data=file_data,
                 created_by=request.user,
                 updated_by=request.user,
             )
@@ -1363,9 +1381,12 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet, ValueListMixin):
                 status=status.HTTP_409_CONFLICT,
             )
 
+        file_data = bytes(document.data)
+        content_type = _detect_content_type(file_data)
+
         return FileResponse(
-            BytesIO(bytes(document.data)),
-            as_attachment=True,
+            BytesIO(file_data),
+            as_attachment=False,
             filename=document.reference or f"document-{document.pk}",
-            content_type="application/octet-stream",
+            content_type=content_type,
         )
