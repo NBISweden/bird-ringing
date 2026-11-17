@@ -1,4 +1,5 @@
 from django.db import models
+from django.utils.translation import gettext_lazy as _
 from bird_ringing.models import ChangeTracking
 
 
@@ -57,6 +58,8 @@ class RingSpecification(ChangeTracking):
 class RingSeries(ChangeTracking):
     """
     Describes properties related to a ring series and identifiers carried on a ring.
+    A ring series is an abstract numbering scheme without a range, see
+    RingSequence for a concrete range of rings within a series.
     """
 
     prefix = models.CharField(max_length=8)
@@ -79,3 +82,71 @@ class RingSeries(ChangeTracking):
         props_str = f" ({', '.join(props)})" if len(props) > 0 else ""
         return f"{ring_num}{props_str}"
 
+    def format_ring_number(self, number: int) -> str:
+        return f"{self.prefix}{str(number).zfill(self.number_of_digits)}"
+
+
+class RingSequenceStatusChoices(models.IntegerChoices):
+    PRE_ORDER = (1, _("pre-order"))
+    ORDERED = (2, _("ordered"))
+    IN_STOCK = (3, _("in stock"))
+
+
+class RingOrder(ChangeTracking):
+    """
+    Groups ring sequences that were pre-ordered together.
+    """
+
+    note = models.TextField(blank=True, default="")
+
+    def __str__(self):
+        return f"Ring order {self.pk}"
+
+
+class RingSequence(ChangeTracking):
+    """
+    Describes a concrete range of rings within a ring series, bounded by its
+    start and end number. This is the unit that is ordered, stocked, split
+    and assigned.
+    """
+
+    order = models.ForeignKey(
+        RingOrder,
+        on_delete=models.PROTECT,
+        related_name="sequences",
+    )
+    series = models.ForeignKey(RingSeries, on_delete=models.PROTECT)
+    specification = models.ForeignKey(RingSpecification, on_delete=models.PROTECT)
+    start_number = models.PositiveIntegerField()
+    end_number = models.PositiveIntegerField()
+    status = models.PositiveIntegerField(
+        choices=RingSequenceStatusChoices,
+        default=RingSequenceStatusChoices.PRE_ORDER,
+    )
+
+    class Meta:
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(start_number__gte=1),
+                name="ring_sequence_start_number_gte_1",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(end_number__gte=models.F("start_number")),
+                name="ring_sequence_end_number_gte_start_number",
+            ),
+        ]
+
+    @property
+    def quantity(self) -> int:
+        return self.end_number - self.start_number + 1
+
+    @property
+    def first_ring_number(self) -> str:
+        return self.series.format_ring_number(self.start_number)
+
+    @property
+    def last_ring_number(self) -> str:
+        return self.series.format_ring_number(self.end_number)
+
+    def __str__(self):
+        return f"{self.first_ring_number} - {self.last_ring_number}"
