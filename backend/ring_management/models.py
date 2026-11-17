@@ -204,6 +204,19 @@ class RingSequence(ChangeTracking):
 
         return overlapping
 
+    def overlaps_with(self, other: "RingSequence") -> bool:
+        """
+        Returns True if this sequence shares printed ring numbers with the
+        other sequence. Unlike find_overlapping this also works for
+        sequences that have not been saved yet.
+        """
+        return (
+            self.series.prefix == other.series.prefix
+            and self.series.number_of_digits == other.series.number_of_digits
+            and self.start_number <= other.end_number
+            and self.end_number >= other.start_number
+        )
+
     @property
     def quantity(self) -> int:
         return self.end_number - self.start_number + 1
