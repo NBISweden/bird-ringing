@@ -1,4 +1,6 @@
 from django.contrib import admin
+from django.core.exceptions import ValidationError
+from django.forms.models import BaseInlineFormSet
 from .models import (
     RingColor,
     RingVariant,
@@ -44,9 +46,38 @@ class RingSeriesAdmin(ModelAdminWithChangeTracking):
     model = RingSeries
 
 
+class RingSequenceInlineFormSet(BaseInlineFormSet):
+    def clean(self):
+        """
+        Checks the sequences in the submitted forms against each other.
+        Overlaps with sequences already in the database are checked by
+        RingSequence.clean().
+        """
+        super().clean()
+
+        sequences = [
+            form.instance
+            for form in self.forms
+            if form.is_valid()
+            and form.cleaned_data
+            and not form.cleaned_data.get("DELETE", False)
+        ]
+
+        overlaps = [
+            f"{sequence} overlaps with {other}"
+            for i, sequence in enumerate(sequences)
+            for other in sequences[i + 1:]
+            if sequence.overlaps_with(other)
+        ]
+
+        if overlaps:
+            raise ValidationError(overlaps)
+
+
 class RingSequenceInlineAdmin(admin.TabularInline):
     exclude = COMMON_EXCLUDES
     model = RingSequence
+    formset = RingSequenceInlineFormSet
 
 
 @admin.register(RingOrder)
