@@ -1,6 +1,8 @@
 from rest_framework import routers
 from .ring_series_view import RingSeriesViewSet
 from .ring_specification_view import RingSpecificationViewSet
+from .ring_order_view import RingOrderViewSet
+from .ring_sequence_view import RingSequenceViewSet
 from .properties_view import (
     RingVariantViewSet,
     RingMaterialViewSet,
@@ -12,6 +14,8 @@ router = routers.DefaultRouter()
 
 router.register(r"ring_series", RingSeriesViewSet)
 router.register(r"ring_specification", RingSpecificationViewSet)
+router.register(r"ring_order", RingOrderViewSet)
+router.register(r"ring_sequence", RingSequenceViewSet)
 
 router.register(r"property/ring_variant", RingVariantViewSet)
 router.register(r"property/ring_material", RingMaterialViewSet)
