@@ -60,9 +60,9 @@ const licenseFields = {
   licensePermissionSpecies: "Art",
   licenseActor: "Ringmärkare",
   licenseRole: "Roll",
-  licenseRelationId: "AssociateNumber",
+  licenseRelationId: "Medarbetarnummer",
   licenseRelationIdLocked:
-    "AssociateNumber kan inte ändras efter att ett licenskort har skapats.",
+    "Medarbetarnummer kan inte ändras efter att ett licenskort har skapats.",
 };
 
 const licenseForm = {
