@@ -624,10 +624,8 @@ export class Client {
     });
 
     if (!response.ok) {
-      const details = await response.text();
-      throw new Error(
-        `Upload failed (${response.status}): ${details || response.statusText}`,
-      );
+      const data = await response.json();
+      throw new Error(data.detail);
     }
   }
 }

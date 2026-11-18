@@ -487,7 +487,11 @@ function LicenseDocumentUpload({
             type="button"
             className="btn btn-outline-secondary"
             disabled={isUploading}
-            onClick={() => setSelectedFile(null)}
+            onClick={() => {
+              setSelectedFile(null);
+              setError("");
+              setMessage("");
+            }}
           >
             {t("licenseDocumentCancel")}
           </button>
