@@ -8,7 +8,9 @@ from licensing.models import (
     License,
     ReportStatusChoices,
     LicenseRelation,
-    LicenseRoleChoices
+    LicenseRoleChoices,
+    LicenseDocument,
+    DocumentTypeChoices,
 )
 from licensing.rest.license_sequence_view import LicenseSequenceViewSet
 from .utils import create_user
@@ -88,3 +90,33 @@ class TestValueListFetchers(TestCase):
                 ("0001", 4),
             ]
         )
+
+
+    def test_license_sequence__get_associate_numbers(self):
+        values = dict(LicenseSequenceViewSet.get_associate_numbers(LicenseSequence.objects.all()))
+        expected = {
+            actor.id: str(actor_idx + 1).rjust(4, "0")
+            for actor_idx, actor in enumerate(self.actors)
+        }
+        self.assertEqual(values, {"0000": expected, "0001": expected})
+
+    def test_license_sequence__get_associate_numbers_includes_former_actors(self):
+        # Remove an actor from the current license; they remain in the history
+        self.licenses[0].actors.filter(actor=self.actors[3]).delete()
+        values = dict(LicenseSequenceViewSet.get_associate_numbers(
+            LicenseSequence.objects.filter(license_number="0000")
+        ))
+        self.assertEqual(values["0000"][self.actors[3].id], "0004")
+
+
+    def test_license_sequence__get_locked_associate_numbers(self):
+        LicenseDocument.objects.create(
+            license_sequence=self.licenses[0].sequence,
+            actor=self.actors[1],
+            type=DocumentTypeChoices.LICENSE,
+            is_permanent=False,
+            created_by=self.user,
+            updated_by=self.user,
+        )
+        values = dict(LicenseSequenceViewSet.get_locked_associate_numbers(LicenseSequence.objects.all()))
+        self.assertEqual(values, {"0000": {self.actors[1].id: "0002"}, "0001": {}})

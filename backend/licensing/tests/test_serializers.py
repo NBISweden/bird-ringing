@@ -18,10 +18,13 @@ from licensing.models import (
     LicenseRelation,
     ReportStatusChoices,
     LicenseRoleChoices,
+    LicenseDocument,
+    DocumentTypeChoices,
 )
 from django.test.client import RequestFactory
 from .utils import create_user
 from rest_framework.exceptions import ValidationError
+from django.core.exceptions import ValidationError as DjangoValidationError
 import datetime
 
 
@@ -263,6 +266,128 @@ class TestSerializers(TestCase):
             {"actors": [{"associate_number": ["invalid"]}]},
             "expect relation to be invalid due to reused associate number"
         )
+
+    def _create_license_with_relations(self, relations):
+        """
+        Creates the current license of the test sequence with the given
+        (actor, associate_number, role) relations and commits it.
+        """
+        license = License.objects.create(
+            sequence=self.sequence,
+            version=0,
+            report_status=ReportStatusChoices.YES,
+            starts_at=datetime.date.today(),
+            ends_at=datetime.date.today(),
+            created_by=self.user,
+            updated_by=self.user,
+        )
+        for actor, associate_number, role in relations:
+            LicenseRelation.objects.create(
+                associate_number=associate_number,
+                actor=actor,
+                license=license,
+                role=role,
+                created_by=self.user,
+                updated_by=self.user,
+            )
+        self.sequence.commit(license)
+        return license
+
+    def _save_license_actors(self, license, actors):
+        license_serializer = LicenseSerializer(
+            instance=license,
+            data={**self._good_license_data(), "actors": actors},
+            context=self._get_context(),
+            partial=True,
+        )
+        try:
+            license_serializer.is_valid(raise_exception=True)
+            license_serializer.save()
+        except ValidationError as e:
+            return e.get_codes()
+        return None
+
+    def _create_license_card(self, actor):
+        LicenseDocument.objects.create(
+            license_sequence=self.sequence,
+            actor=actor,
+            type=DocumentTypeChoices.LICENSE,
+            is_permanent=False,
+            fingerprint=f"test-{actor.id}",
+            created_by=self.user,
+            updated_by=self.user,
+        )
+
+    def test_license_serializer_associate_number_editable_without_license_card(self):
+        license = self._create_license_with_relations([
+            (self.actors[0], "0000", LicenseRoleChoices.RINGER),
+            (self.actors[1], "0001", LicenseRoleChoices.ASSOCIATE_RINGER),
+        ])
+
+        result = self._save_license_actors(license, [
+            {"actor": {"id": self.actors[0].id}, "associate_number": "0000", "role": "ringer"},
+            {"actor": {"id": self.actors[1].id}, "associate_number": "0005", "role": "associate_ringer"},
+        ])
+
+        self.assertIsNone(result, "expect the number to be editable before a license card exists")
+
+    def test_license_serializer_changed_associate_number_after_license_card_error(self):
+        license = self._create_license_with_relations([
+            (self.actors[0], "0000", LicenseRoleChoices.RINGER),
+            (self.actors[1], "0001", LicenseRoleChoices.ASSOCIATE_RINGER),
+        ])
+        self._create_license_card(self.actors[1])
+
+        result = self._save_license_actors(license, [
+            {"actor": {"id": self.actors[0].id}, "associate_number": "0000", "role": "ringer"},
+            {"actor": {"id": self.actors[1].id}, "associate_number": "0005", "role": "associate_ringer"},
+        ])
+
+        self.assertEqual(
+            result,
+            {"actors": [{}, {"associate_number": ["invalid"]}]},
+            "expect the number to be locked once a license card exists"
+        )
+
+    def test_license_serializer_associate_added_back_keeps_number_after_license_card(self):
+        license = self._create_license_with_relations([
+            (self.actors[0], "0000", LicenseRoleChoices.RINGER),
+            (self.actors[1], "0001", LicenseRoleChoices.ASSOCIATE_RINGER),
+        ])
+        self._create_license_card(self.actors[1])
+        # Remove the helper and commit, so they are only part of the history
+        self.assertIsNone(self._save_license_actors(license, [
+            {"actor": {"id": self.actors[0].id}, "associate_number": "0000", "role": "ringer"},
+        ]))
+        self.sequence.commit(license)
+
+        # Adding the former helper back with a new number is rejected
+        result = self._save_license_actors(license, [
+            {"actor": {"id": self.actors[0].id}, "associate_number": "0000", "role": "ringer"},
+            {"actor": {"id": self.actors[1].id}, "associate_number": "0002", "role": "associate_ringer"},
+        ])
+        self.assertEqual(
+            result,
+            {"actors": [{}, {"associate_number": ["invalid"]}]},
+            "expect a former associate to keep the number from their license card"
+        )
+
+        # Adding them back with their previous number is accepted
+        self.assertIsNone(self._save_license_actors(license, [
+            {"actor": {"id": self.actors[0].id}, "associate_number": "0000", "role": "ringer"},
+            {"actor": {"id": self.actors[1].id}, "associate_number": "0001", "role": "associate_ringer"},
+        ]))
+
+    def test_license_relation_model_rejects_changed_associate_number_after_license_card(self):
+        license = self._create_license_with_relations([
+            (self.actors[0], "0000", LicenseRoleChoices.RINGER),
+            (self.actors[1], "0001", LicenseRoleChoices.ASSOCIATE_RINGER),
+        ])
+        self._create_license_card(self.actors[1])
+        relation = license.actors.get(actor=self.actors[1])
+        relation.associate_number = "0007"
+        with self.assertRaises(DjangoValidationError):
+            relation.save()
     
     def test_license_serializer_errors(self):
         good_data = self._good_license_data()

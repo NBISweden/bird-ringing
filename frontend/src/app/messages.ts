@@ -91,6 +91,8 @@ const licenseFields = {
   licenseActor: "Actor",
   licenseRole: "Role",
   licenseRelationId: "Associate Number",
+  licenseRelationIdLocked:
+    "The associate number can not be changed after a license card has been created.",
 };
 
 const licenseForm = {

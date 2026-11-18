@@ -185,7 +185,7 @@ export function useLicenseValue<T>(
   const { data, isLoading, error } = useSWRImmutable(
     [client, valueId, ids],
     fetchLicenseValue<T>,
-    { fallback: [] },
+    { fallback: [], revalidateOnMount: true },
   );
   return {
     data: data,

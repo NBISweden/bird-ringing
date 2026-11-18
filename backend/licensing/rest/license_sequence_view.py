@@ -320,6 +320,9 @@ class LicenseActorRelationSerializer(serializers.ModelSerializer):
             # Only validate for existing associate numbers when a license instance is provided in the context
             if not LicenseRelation.validate_associate_number(attrs.get("associate_number"), license, attrs.get("actor")):
                 raise serializers.ValidationError({"associate_number": ["Associate number is already taken"]})
+            locked_number = self.context.get("locked_associate_numbers", {}).get(attrs.get("actor").id)
+            if locked_number is not None and locked_number != attrs.get("associate_number"):
+                raise serializers.ValidationError({"associate_number": ["Associate number can not be changed after a license card has been created"]})
         return attrs
 
     class Meta:
@@ -543,11 +546,16 @@ class LicenseSerializer(serializers.ModelSerializer):
         instance and thus can not be serialized with the standard flow.
         """
         if actors is not None:
+            locked_associate_numbers = LicenseRelation.get_locked_associate_numbers(instance.sequence)
             instance.actors.all().delete()
 
             relation_serializer = LicenseActorRelationSerializer(
                 data=actors,
-                context={**self.context, "license": instance},
+                context={
+                    **self.context,
+                    "license": instance,
+                    "locked_associate_numbers": locked_associate_numbers,
+                },
                 many=True
             )
             try:
@@ -731,6 +739,8 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet, ValueListMixin):
         return {
             "holder": LicenseSequenceViewSet.get_holder,
             "max_associate_number": LicenseSequenceViewSet.get_max_associate_number,
+            "associate_numbers": LicenseSequenceViewSet.get_associate_numbers,
+            "locked_associate_numbers": LicenseSequenceViewSet.get_locked_associate_numbers,
         }
     
     @staticmethod
@@ -773,6 +783,20 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet, ValueListMixin):
                 v["max_associate_number"]
             )
             for v in values
+        ]
+
+    @staticmethod
+    def get_associate_numbers(queryset):
+        return [
+            (sequence.license_number, LicenseRelation.get_established_associate_numbers(sequence))
+            for sequence in queryset
+        ]
+
+    @staticmethod
+    def get_locked_associate_numbers(queryset):
+        return [
+            (sequence.license_number, LicenseRelation.get_locked_associate_numbers(sequence))
+            for sequence in queryset
         ]
 
     def get_queryset(self):
