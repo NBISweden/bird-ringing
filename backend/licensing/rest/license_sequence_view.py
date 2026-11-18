@@ -791,7 +791,7 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet, ValueListMixin):
     def get_queryset(self):
         queryset = super().get_queryset()
 
-        if self.action in ["create", "update", "partial_update",  "document_upload",]:
+        if self.action in ["create", "update", "partial_update",  "document_upload", "document_download",]:
             return queryset
 
         search = self.request.query_params.get("search", None)
