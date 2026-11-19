@@ -2,10 +2,16 @@
 
 import { useRef, useState } from "react";
 import { useTranslation } from "../../internationalization";
-import { useRingSeries, useRingSpecifications } from "../../hooks";
+import { useClient } from "../../contexts";
+import {
+  useRingColors,
+  useRingSeries,
+  useRingSpecifications,
+} from "../../hooks";
 import { Accordion } from "@/components/Accordion";
 import { Alert } from "@/components/Alert";
 import { TextArea, VerticalField } from "@/components/InputFields";
+import { RingNumber } from "@/components/RingNumber";
 import {
   formatRingSequence,
   RingSequenceCartLine,
@@ -14,8 +20,10 @@ import {
 
 export default function RingOrderCreateView() {
   const { t } = useTranslation();
+  const client = useClient();
   const series = useRingSeries();
   const specifications = useRingSpecifications();
+  const colors = useRingColors();
   const [cart, setCart] = useState<RingSequenceCartLine[]>([]);
   const [note, setNote] = useState("");
   const nextKey = useRef(0);
@@ -78,11 +86,17 @@ export default function RingOrderCreateView() {
               <RingSequenceEntryForm
                 series={series.data}
                 specifications={specifications.data}
+                colors={colors.data}
                 cart={cart}
                 disabled={isLoading}
                 onAdd={(line) => {
                   const key = nextKey.current++;
                   setCart((prev) => [...prev, { ...line, key }]);
+                }}
+                onCreateSeries={async (values) => {
+                  const created = await client.createRingSeries(values);
+                  await series.mutate();
+                  return created;
                 }}
               />
               {cart.length > 0 ? (
@@ -105,7 +119,9 @@ export default function RingOrderCreateView() {
                         );
                         return (
                           <tr key={line.key}>
-                            <td>{sequence}</td>
+                            <td>
+                              <RingNumber value={sequence} />
+                            </td>
                             <td>{line.specification.name}</td>
                             <td>{line.quantity}</td>
                             <td>

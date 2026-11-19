@@ -386,6 +386,7 @@ const messagesBase = {
   ringSequenceFormQuantity: "Amount",
   ringSequenceFormLastNumber: "Last ring number: {number}",
   ringSequenceFormSelect: "Please select",
+  ringSequenceFormNewSeries: "+ New series",
   ringSequenceFormAdd: "Add to pre-order",
   ringSequenceFormRequired: "This field is required.",
   ringSequenceFormMinValue: "Enter a whole number of at least 1.",
@@ -402,6 +403,21 @@ const messagesBase = {
   ringSpecificationThickness: "Thickness",
   ringSpecificationHeight: "Height",
   ringSpecificationWeight: "Weight",
+  ringSeriesFormTitle: "New series",
+  ringSeriesFormPrefix: "Prefix",
+  ringSeriesFormIsEuring: "EURING",
+  ringSeriesFormHasWebAddress: "Web address",
+  ringSeriesFormColor: "Color",
+  ringSeriesFormNoColor: "No color",
+  ringSeriesFormAdd: "Create series",
+  ringSeriesFormPrefixHelp:
+    "Include the blanks, or periods for EURING. A prefix starting with a letter has its blanks after it, other prefixes have them before it. The digits fill the rest of the 8 characters, or 10 for EURING.",
+  ringSeriesFormPrefixBlanks:
+    "A prefix starting with a letter has its blanks after it, other prefixes have them before it. There can be no blanks inside the prefix.",
+  ringSeriesFormPrefixTooLong:
+    "The prefix can be at most {length} characters including blanks, so that at least one digit remains.",
+  ringSeriesFormPreview:
+    "Ring number format: {ringNumber} ({digits, plural, one {# digit} other {# digits}})",
 };
 
 function makeMessageMap<T extends { [P in keyof T]: Message | string }>(

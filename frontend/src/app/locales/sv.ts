@@ -385,6 +385,7 @@ export const locale: TranslationMap = {
   ringSequenceFormQuantity: "Antal",
   ringSequenceFormLastNumber: "Sista ringnummer: {number}",
   ringSequenceFormSelect: "Välj",
+  ringSequenceFormNewSeries: "+ Ny serie",
   ringSequenceFormAdd: "Lägg till i förbeställningen",
   ringSequenceFormRequired: "Fältet är obligatoriskt.",
   ringSequenceFormMinValue: "Ange ett heltal som är minst 1.",
@@ -401,4 +402,19 @@ export const locale: TranslationMap = {
   ringSpecificationThickness: "Tjocklek",
   ringSpecificationHeight: "Höjd",
   ringSpecificationWeight: "Vikt",
+  ringSeriesFormTitle: "Ny serie",
+  ringSeriesFormPrefix: "Prefix",
+  ringSeriesFormIsEuring: "EURING",
+  ringSeriesFormHasWebAddress: "Webbadress",
+  ringSeriesFormColor: "Färg",
+  ringSeriesFormNoColor: "Ingen färg",
+  ringSeriesFormAdd: "Skapa serie",
+  ringSeriesFormPrefixHelp:
+    "Ta med mellanslagen, eller punkterna för EURING. Ett prefix som börjar med en bokstav har mellanslagen efter sig, andra prefix har dem före sig. Siffrorna fyller ut resten av de 8 tecknen, eller 10 för EURING.",
+  ringSeriesFormPrefixBlanks:
+    "Ett prefix som börjar med en bokstav har mellanslagen efter sig, andra prefix har dem före sig. Prefixet får inte innehålla mellanslag.",
+  ringSeriesFormPrefixTooLong:
+    "Prefixet får vara högst {length} tecken inklusive mellanslag, så att minst en siffra återstår.",
+  ringSeriesFormPreview:
+    "Ringnummerformat: {ringNumber} ({digits, plural, one {# siffra} other {# siffror}})",
 };

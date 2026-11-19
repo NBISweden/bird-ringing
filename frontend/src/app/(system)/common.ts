@@ -450,12 +450,30 @@ export type RingOrderInput = {
   sequences: RingSequenceInput[];
 };
 
+export function getRingNumberLength(series: Pick<RingSeries, "is_euring">) {
+  return series.is_euring ? 10 : 8;
+}
+
+/**
+ * Formats a ring number: 8 characters padded with blanks, or 10
+ * characters padded with periods for EURING. The number is zero-padded to the
+ * number of digits. A code starting with a letter keeps the prefix to the left
+ * and the number to the right, other codes are adjusted to the right.
+ */
 export function formatRingNumber(
-  prefix: string,
-  numberOfDigits: number,
+  series: Pick<RingSeries, "prefix" | "number_of_digits" | "is_euring">,
   number: number,
 ) {
-  return `${prefix}${String(number).padStart(numberOfDigits, "0")}`;
+  const digits = String(number).padStart(series.number_of_digits, "0");
+  const fill = (series.is_euring ? "." : " ").repeat(
+    Math.max(
+      0,
+      getRingNumberLength(series) - series.prefix.length - digits.length,
+    ),
+  );
+  return /^\p{L}/u.test(series.prefix)
+    ? `${series.prefix}${fill}${digits}`
+    : `${fill}${series.prefix}${digits}`;
 }
 
 export function joinValueLists<TA, TB, TO>(

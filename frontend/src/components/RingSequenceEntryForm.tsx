@@ -1,8 +1,11 @@
 import {
   formatRingNumber,
+  RingColor,
   RingSeries,
+  RingSeriesInput,
   RingSpecification,
 } from "@/app/(system)/common";
+import { useModalsContext } from "@/app/(system)/contexts";
 import { useTranslation } from "@/app/(system)/internationalization";
 import {
   FieldErrorGroup,
@@ -11,6 +14,8 @@ import {
   TextInput,
   VerticalField,
 } from "./InputFields";
+import { RingNumber, withVisibleBlanks } from "./RingNumber";
+import { RingSeriesEntryForm } from "./RingSeriesEntryForm";
 import { useState } from "react";
 
 export type RingSequenceCartLine = {
@@ -27,11 +32,7 @@ export function formatRingSeries(series: RingSeries) {
     series.has_web_address ? "Web" : null,
     series.color ? series.color.name : null,
   ].filter((p) => p !== null);
-  const ringNumber = formatRingNumber(
-    series.prefix,
-    series.number_of_digits,
-    0,
-  );
+  const ringNumber = formatRingNumber(series, 0);
   return properties.length > 0
     ? `${ringNumber} (${properties.join(", ")})`
     : ringNumber;
@@ -42,16 +43,8 @@ export function formatRingSequence(
   startNumber: number,
   endNumber: number,
 ) {
-  const first = formatRingNumber(
-    series.prefix,
-    series.number_of_digits,
-    startNumber,
-  );
-  const last = formatRingNumber(
-    series.prefix,
-    series.number_of_digits,
-    endNumber,
-  );
+  const first = formatRingNumber(series, startNumber);
+  const last = formatRingNumber(series, endNumber);
   return `${first} – ${last}`;
 }
 
@@ -73,17 +66,22 @@ const fieldIds = {
 export function RingSequenceEntryForm({
   series,
   specifications,
+  colors,
   cart,
   disabled,
   onAdd,
+  onCreateSeries,
 }: {
   series: RingSeries[];
   specifications: RingSpecification[];
+  colors: RingColor[];
   cart: RingSequenceCartLine[];
   disabled?: boolean;
   onAdd: (line: Omit<RingSequenceCartLine, "key">) => void;
+  onCreateSeries: (values: RingSeriesInput) => Promise<RingSeries>;
 }) {
-  const { t } = useTranslation();
+  const { t, format } = useTranslation();
+  const modals = useModalsContext();
   const [seriesId, setSeriesId] = useState<number | "">("");
   const [specificationId, setSpecificationId] = useState<number | "">("");
   const [startNumber, setStartNumber] = useState("");
@@ -100,6 +98,22 @@ export function RingSequenceEntryForm({
     parsedStartNumber !== null && parsedQuantity !== null
       ? parsedStartNumber + parsedQuantity - 1
       : null;
+
+  const openNewSeriesForm = () => {
+    modals.add({
+      title: t("ringSeriesFormTitle"),
+      content: (
+        <RingSeriesEntryForm
+          colors={colors}
+          onSubmit={async (values) => {
+            const created = await onCreateSeries(values);
+            setSeriesId(created.id);
+          }}
+        />
+      ),
+      actions: [],
+    });
+  };
 
   const validate = (): FieldErrorGroup => {
     const nextErrors: FieldErrorGroup = {};
@@ -136,15 +150,15 @@ export function RingSequenceEntryForm({
     );
     if (overlapping) {
       nextErrors[fieldIds.startNumber] = t("ringSequenceFormOverlap", {
-        sequence: formatRingSequence(
-          selectedSeries,
-          parsedStartNumber,
-          endNumber,
+        sequence: withVisibleBlanks(
+          formatRingSequence(selectedSeries, parsedStartNumber, endNumber),
         ),
-        other: formatRingSequence(
-          overlapping.series,
-          overlapping.startNumber,
-          overlapping.startNumber + overlapping.quantity - 1,
+        other: withVisibleBlanks(
+          formatRingSequence(
+            overlapping.series,
+            overlapping.startNumber,
+            overlapping.startNumber + overlapping.quantity - 1,
+          ),
         ),
       });
     }
@@ -183,16 +197,19 @@ export function RingSequenceEntryForm({
           id={fieldIds.series}
           required
         >
-          <SelectInput<number | "">
+          <SelectInput<number | "" | "new">
             options={[
               { value: "", label: t("ringSequenceFormSelect") },
               ...series.map((s) => ({
                 value: s.id,
-                label: formatRingSeries(s),
+                label: withVisibleBlanks(formatRingSeries(s)),
               })),
+              { value: "new", label: t("ringSequenceFormNewSeries") },
             ]}
             value={seriesId}
-            onChange={(value) => setSeriesId(value)}
+            onChange={(value) =>
+              value === "new" ? openNewSeriesForm() : setSeriesId(value)
+            }
             disabled={disabled}
           />
         </VerticalField>
@@ -242,15 +259,17 @@ export function RingSequenceEntryForm({
           label={t("ringSequenceFormQuantity")}
           id={fieldIds.quantity}
           helpText={
-            selectedSeries && endNumber !== null
-              ? t("ringSequenceFormLastNumber", {
-                  number: formatRingNumber(
-                    selectedSeries.prefix,
-                    selectedSeries.number_of_digits,
-                    endNumber,
+            selectedSeries && endNumber !== null ? (
+              <>
+                {format("ringSequenceFormLastNumber", {
+                  number: (
+                    <RingNumber
+                      value={formatRingNumber(selectedSeries, endNumber)}
+                    />
                   ),
-                })
-              : undefined
+                })}
+              </>
+            ) : undefined
           }
           required
         >
