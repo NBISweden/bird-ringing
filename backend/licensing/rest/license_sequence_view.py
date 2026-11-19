@@ -1,9 +1,11 @@
 from rest_framework.decorators import action
 from rest_framework.reverse import reverse
-from rest_framework import serializers
+from rest_framework import serializers, status
+from rest_framework.parsers import MultiPartParser
 from django.db import models, transaction
 from django.db.models import functions
-from django.http import HttpResponse
+from django.http import HttpResponse, FileResponse
+from django.shortcuts import get_object_or_404
 from collections import defaultdict
 from django.core import mail
 from rest_framework.response import Response
@@ -66,6 +68,7 @@ from licensing.permit_service import (
 )
 
 import logging
+from io import BytesIO
 
 
 logger = logging.getLogger(__name__)
@@ -249,6 +252,16 @@ def _merge_response(resp: Response, extra: dict[str, object], *, status_code: in
     base.update(extra)
     return Response(base, status=resp.status_code if status_code is None else status_code)
 
+# Detect content type for files by looking for the s.c magic number(or file signature)
+# See https://growingswe.com/blog/file-formats
+def _detect_content_type(data: bytes) -> str | None:
+    if data.startswith(b"%PDF-"):
+        return "application/pdf"
+    if data.startswith(b"\xff\xd8\xff"):
+        return "image/jpeg"
+    if data.startswith(b"\x89PNG\r\n\x1a\n"):
+        return "image/png"
+    return None
 
 class LicenseActorSerializer(serializers.ModelSerializer):
     type = NameBasedChoiceField(choices=ActorTypeChoices, read_only=True)
@@ -401,7 +414,7 @@ class LicenseDocumentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = LicenseDocument
-        fields = ["actor", "actor_id", "type", "reference"]
+        fields = ["id", "actor", "actor_id", "type", "reference"]
 
 
 class LicenseCommunicationSerializer(serializers.ModelSerializer):
@@ -802,7 +815,7 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet, ValueListMixin):
     def get_queryset(self):
         queryset = super().get_queryset()
 
-        if self.action in ["create", "update", "partial_update"]:
+        if self.action in ["create", "update", "partial_update",  "document_upload", "document_download",]:
             return queryset
 
         search = self.request.query_params.get("search", None)
@@ -1307,3 +1320,95 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet, ValueListMixin):
         resp = HttpResponse(zip_bytes, content_type="application/zip")
         resp["Content-Disposition"] = 'attachment; filename="permits.zip"'
         return resp
+
+    @action(
+        detail=True,
+        methods=["post"],
+        url_path="document-upload",
+        parser_classes=[MultiPartParser],
+    )
+    def document_upload(self, request, license_number=None):
+        sequence = self.get_object()
+        license = sequence.latest
+
+        if license is None:
+            return Response(
+                {"detail": "No license found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        uploaded_file = request.FILES.get("file")
+
+        if uploaded_file is None:
+            return Response(
+                {"detail": "No file provided."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        file_data = uploaded_file.read()
+
+        if _detect_content_type(file_data) is None:
+            return Response(
+                {"detail": "Only PDF, JPEG and PNG files are supported."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        with transaction.atomic():
+            document = LicenseDocument.objects.create(
+                license_sequence=sequence,
+                actor=None,
+                is_permanent=True,
+                type=DocumentTypeChoices.DOCUMENT,
+                reference=uploaded_file.name,
+                data=file_data,
+                created_by=request.user,
+                updated_by=request.user,
+            )
+
+            license.documents.add(document)
+
+        return Response(
+            {
+                "id": document.id,
+                "reference": document.reference,
+                "type": document.get_type_display(),
+            },
+            status=status.HTTP_201_CREATED,
+        )
+
+    @action(
+        detail=True,
+        methods=["get"],
+        url_path=r"document-download/(?P<document_id>[0-9]+)",
+    )
+    def document_download(self, request, license_number=None, document_id=None):
+        sequence = self.get_object()
+        license_instance = sequence.latest
+
+        if license_instance is None:
+            return Response(
+                {"detail": "No current license found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        document = get_object_or_404(
+            license_instance.documents.all(),
+            pk=document_id,
+            type=DocumentTypeChoices.DOCUMENT,
+        )
+
+        if not document.data:
+            return Response(
+                {"detail": "Document is missing file data."},
+                status=status.HTTP_409_CONFLICT,
+            )
+
+        file_data = bytes(document.data)
+        content_type = _detect_content_type(file_data)
+
+        return FileResponse(
+            BytesIO(file_data),
+            as_attachment=False,
+            filename=document.reference or f"document-{document.pk}",
+            content_type=content_type,
+        )

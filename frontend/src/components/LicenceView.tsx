@@ -14,13 +14,14 @@ import {
 import { useSendLicenseEmailForActorsAction } from "../app/(system)/licenses/actions";
 import { useTranslation } from "@/app/(system)/internationalization";
 import { LicensePermissionItem } from "./LicensePermissionItem";
-import { useCallback, useState } from "react";
+import { useCallback, useState, useRef } from "react";
 import { LicenseRelationsForm } from "./LicenseRelationsForm";
 import { LicensePermissionEntryForm } from "./LicensePermissionEntryForm";
 import { LicenseEntryForm, LicenseFormData } from "./LiceneseEntryForm";
 import { useFormSubmission, useLicenseValue } from "@/app/(system)/hooks";
 import { FieldErrors } from "./InputFields";
 import { Alert } from "./Alert";
+import Icon from "./Icon";
 import { EditSection } from "./EditSection";
 import { LicenseActorList } from "./LicenseActorList";
 import { LicenseSendActions } from "./LicenseSendActions";
@@ -397,6 +398,139 @@ function LicensePermissionsDisplay({ license }: LicenseDisplayProps) {
   );
 }
 
+function LicenseDocumentUpload({
+  licenseNumber,
+  onUpdated,
+}: {
+  licenseNumber: string;
+  onUpdated: () => unknown | Promise<unknown>;
+}) {
+  const client = useClient();
+  const { t } = useTranslation();
+
+  const fileInput = useRef<HTMLInputElement>(null);
+  const submitting = useRef(false);
+
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+
+  async function upload() {
+    if (!selectedFile || submitting.current) return;
+
+    submitting.current = true;
+    setIsUploading(true);
+    setError("");
+    setMessage("");
+
+    try {
+      await client.uploadLicenseDocument(licenseNumber, selectedFile);
+    } catch (uploadError) {
+      setError(
+        uploadError instanceof Error
+          ? uploadError.message
+          : String(uploadError),
+      );
+      submitting.current = false;
+      setIsUploading(false);
+      return;
+    }
+
+    // The upload succeeded. Don't leave the file selected for re-upload.
+    setSelectedFile(null);
+    setMessage(t("licenseDocumentUploadSuccess"));
+
+    try {
+      await onUpdated();
+    } catch {
+      setError(t("licenseDocumentRefreshError"));
+    } finally {
+      submitting.current = false;
+      setIsUploading(false);
+    }
+  }
+
+  return (
+    <>
+      <input
+        ref={fileInput}
+        type="file"
+        hidden
+        onChange={(event) => {
+          const file = event.currentTarget.files?.[0] ?? null;
+          if (file) {
+            setSelectedFile(file);
+            setError("");
+            setMessage("");
+          }
+
+          // Allows the same file to be selected again later.
+          event.currentTarget.value = "";
+        }}
+      />
+
+      <button
+        type="button"
+        className="btn btn-outline-secondary ms-2 col-auto"
+        disabled={isUploading}
+        onClick={() => fileInput.current?.click()}
+      >
+        <Icon icon="file-earmark-plus" />
+        <span className="ms-2">{t("licenseDocumentAdd")}</span>
+      </button>
+      {selectedFile && (
+        <div
+          className="col-12 mt-3 p-3 border rounded"
+          role="group"
+          aria-label={t("licenseDocumentConfirm")}
+        >
+          <p>
+            {t("licenseDocumentSelected")}: <strong>{selectedFile.name}</strong>
+          </p>
+
+          <button
+            type="button"
+            className="btn btn-primary me-2"
+            disabled={isUploading}
+            onClick={upload}
+          >
+            {isUploading
+              ? t("licenseDocumentUploading")
+              : t("licenseDocumentUpload")}
+          </button>
+          <button
+            type="button"
+            className="btn btn-outline-secondary"
+            disabled={isUploading}
+            onClick={() => {
+              setSelectedFile(null);
+              setError("");
+              setMessage("");
+            }}
+          >
+            {t("licenseDocumentCancel")}
+          </button>
+          {error && (
+            <p role="alert" className="text-danger m-2">
+              <Icon icon="exclamation-triangle-fill me-1" />
+              {error}
+            </p>
+          )}
+        </div>
+      )}
+      {message && (
+        <p role="status" className="text-primary m-2">
+          {message === t("licenseDocumentUploadSuccess") && (
+            <Icon icon="check-circle-fill me-1" />
+          )}
+          {message}
+        </p>
+      )}
+    </>
+  );
+}
+
 export function LicenceView({
   license,
   licenseNumber,
@@ -506,8 +640,14 @@ export function LicenceView({
         />
       </div>
       {/* Documents */}
-      <div className="mb-3 pt-3">
-        <h3 className="h2">{t("licenseDocuments")}</h3>
+      <div className="mb-3 pt-3 ">
+        <div className="row align-items-center">
+          <h3 className="h2 col">{t("licenseDocuments")}</h3>
+          <LicenseDocumentUpload
+            licenseNumber={licenseNumber}
+            onUpdated={onUpdated}
+          />
+        </div>
         <LicenseDocumentList
           documents={license.documents}
           licenseNumber={licenseNumber}
