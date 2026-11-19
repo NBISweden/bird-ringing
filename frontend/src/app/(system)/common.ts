@@ -381,6 +381,83 @@ export type PermissionPropertyInput = PermissionInput & {
   related_type_id?: string | null;
 };
 
+export type RingNamedEntity = {
+  id: number;
+  name: string;
+};
+
+export type RingColor = RingNamedEntity;
+
+export type RingSeries = {
+  id: number;
+  prefix: string;
+  number_of_digits: number;
+  is_euring: boolean;
+  has_web_address: boolean;
+  color: RingColor | null;
+};
+
+export type RingSeriesInput = {
+  prefix: string;
+  number_of_digits: number;
+  is_euring: boolean;
+  has_web_address: boolean;
+  color_id?: number | null;
+};
+
+export type RingSpecification = {
+  id: number;
+  name: string;
+  type_code: RingNamedEntity;
+  variant: RingNamedEntity;
+  material: RingNamedEntity;
+  diameter: number;
+  thickness: number;
+  height: number;
+  weight: number;
+};
+
+export type RingSequence = {
+  id: number;
+  order_id: number;
+  series: RingSeries;
+  specification: RingSpecification;
+  start_number: number;
+  quantity: number;
+  end_number: number;
+  first_ring_number: string;
+  last_ring_number: string;
+  status: string;
+  created_at: string;
+};
+
+export type RingOrder = {
+  id: number;
+  note: string;
+  sequences: RingSequence[];
+  created_at: string;
+};
+
+export type RingSequenceInput = {
+  series_id: number;
+  specification_id: number;
+  start_number: number;
+  quantity: number;
+};
+
+export type RingOrderInput = {
+  note: string;
+  sequences: RingSequenceInput[];
+};
+
+export function formatRingNumber(
+  prefix: string,
+  numberOfDigits: number,
+  number: number,
+) {
+  return `${prefix}${String(number).padStart(numberOfDigits, "0")}`;
+}
+
 export function joinValueLists<TA, TB, TO>(
   a: ValueList<TA>["values"],
   b: ValueList<TB>["values"],
