@@ -145,6 +145,7 @@ const pageTitles = {
   actorsPageTitle: "Actors",
   actorPageTitle: "Actor: {name}",
   actorCreationPageTitle: "Add actor",
+  ringOrderCreationPageTitle: "Create pre-order",
 };
 
 const messagesBase = {
@@ -366,6 +367,11 @@ const messagesBase = {
   permissionsHeading: "Permissions",
   permissionPropertyEditAriaLabel: 'Edit property "{label}"',
   permissionTypeEditAriaLabel: 'Edit permission type "{label}"',
+
+  ringOrderCreateView: "Create pre-order",
+  ringOrderFormAddTitle: "Create pre-order",
+  ringOrderFormIntro:
+    "Add ring sequences to the pre-order. Each sequence is a range of rings in a series, with a ring type and an amount.",
 };
 
 function makeMessageMap<T extends { [P in keyof T]: Message | string }>(

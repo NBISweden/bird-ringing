@@ -142,6 +142,7 @@ const pageTitles = {
   actorsPageTitle: "Aktörer",
   actorPageTitle: "Aktör: {name}",
   actorCreationPageTitle: "Lägg till aktör",
+  ringOrderCreationPageTitle: "Skapa förbeställning",
 };
 
 export const locale: TranslationMap = {
@@ -365,4 +366,9 @@ export const locale: TranslationMap = {
   permissionsHeading: "Tillstånd",
   permissionPropertyEditAriaLabel: 'Redigera egenskap "{label}"',
   permissionTypeEditAriaLabel: 'Redigera tillståndstyp "{label}"',
+
+  ringOrderCreateView: "Skapa förbeställning",
+  ringOrderFormAddTitle: "Skapa förbeställning",
+  ringOrderFormIntro:
+    "Lägg till ringsekvenser i förbeställningen. Varje sekvens är ett intervall av ringar i en serie, med en ringtyp och ett antal.",
 };

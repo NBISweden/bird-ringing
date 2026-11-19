@@ -42,6 +42,14 @@ export default function SystemLayout({
       icon: "bi-award",
       permissions: ["view_licensepermissiontype"],
     },
+    {
+      type: "item",
+      label: t("ringOrderCreateView"),
+      href: "/ring-orders/create",
+      id: "ring-order-create",
+      icon: "bi-circle",
+      permissions: ["add_ringorder"],
+    },
   ];
 
   return (
