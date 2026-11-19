@@ -372,6 +372,36 @@ const messagesBase = {
   ringOrderFormAddTitle: "Create pre-order",
   ringOrderFormIntro:
     "Add ring sequences to the pre-order. Each sequence is a range of rings in a series, with a ring type and an amount.",
+  ringOrderLoadError: "Could not load ring series and ring types.",
+  ringOrderFormNote: "Note",
+  ringOrderCartSequence: "Sequence",
+  ringOrderCartActions: "Actions",
+  ringOrderCartRemove: "Remove {sequence}",
+  ringOrderCartEmpty: "No sequences added",
+  ringSequenceFormSeries: "Series",
+  ringSequenceFormSpecification: "Ring type",
+  ringSequenceFormSpecificationHelp:
+    "Type code {typeCode}, {variant}, {material}. Diameter {diameter}, thickness {thickness}, height {height}, weight {weight}.",
+  ringSequenceFormStartNumber: "Start number",
+  ringSequenceFormQuantity: "Amount",
+  ringSequenceFormLastNumber: "Last ring number: {number}",
+  ringSequenceFormSelect: "Please select",
+  ringSequenceFormAdd: "Add to pre-order",
+  ringSequenceFormRequired: "This field is required.",
+  ringSequenceFormMinValue: "Enter a whole number of at least 1.",
+  ringSequenceFormEndNumberTooLarge:
+    "The end number {endNumber} does not fit in {digits} digits.",
+  ringSequenceFormOverlap:
+    "The sequence {sequence} overlaps with {other} in this pre-order.",
+  ringSpecificationDefinitionsTitle: "Ring type definitions",
+  ringSpecificationName: "Name",
+  ringSpecificationTypeCode: "Type code",
+  ringSpecificationVariant: "Variant",
+  ringSpecificationMaterial: "Material",
+  ringSpecificationDiameter: "Diameter",
+  ringSpecificationThickness: "Thickness",
+  ringSpecificationHeight: "Height",
+  ringSpecificationWeight: "Weight",
 };
 
 function makeMessageMap<T extends { [P in keyof T]: Message | string }>(
