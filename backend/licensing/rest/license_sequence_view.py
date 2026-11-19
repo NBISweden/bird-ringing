@@ -1321,8 +1321,6 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet, ValueListMixin):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # TODO Add a limit to the uploaded file?
-
         file_data = uploaded_file.read()
 
         if _detect_content_type(file_data) is None:
