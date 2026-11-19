@@ -436,7 +436,7 @@ function LicenseDocumentUpload({
   }
 
   return (
-    <div>
+    <>
       <input
         ref={fileInput}
         type="file"
@@ -456,23 +456,23 @@ function LicenseDocumentUpload({
 
       <button
         type="button"
-        className="btn btn-outline-secondary ms-2"
+        className="btn btn-outline-secondary ms-2 col-auto"
         disabled={isUploading}
         onClick={() => fileInput.current?.click()}
       >
         <Icon icon="file-earmark-plus" />
         <span className="ms-2">{t("licenseDocumentAdd")}</span>
       </button>
-
       {selectedFile && (
         <div
-          className="mt-3"
+          className="col-12 mt-3 p-3 border rounded"
           role="group"
           aria-label={t("licenseDocumentConfirm")}
         >
           <p>
             {t("licenseDocumentSelected")}: <strong>{selectedFile.name}</strong>
           </p>
+
           <button
             type="button"
             className="btn btn-primary me-2"
@@ -495,20 +495,23 @@ function LicenseDocumentUpload({
           >
             {t("licenseDocumentCancel")}
           </button>
+          {error && (
+            <p role="alert" className="text-danger m-2">
+              <Icon icon="exclamation-triangle-fill me-1" />
+              {error}
+            </p>
+          )}
         </div>
       )}
-
       {message && (
-        <p role="status" className="mt-2">
+        <p role="status" className="text-primary m-2">
+          {message === t("licenseDocumentUploadSuccess") && (
+            <Icon icon="check-circle-fill me-1" />
+          )}
           {message}
         </p>
       )}
-      {error && (
-        <p role="alert" className="text-danger mt-2">
-          {error}
-        </p>
-      )}
-    </div>
+    </>
   );
 }
 
@@ -621,15 +624,14 @@ export function LicenceView({
         />
       </div>
       {/* Documents */}
-      <div className="mb-3 pt-3">
-        <div className="d-flex gap-4 justify-content-between align-items-center">
-          <h3 className="h2">{t("licenseDocuments")}</h3>
+      <div className="mb-3 pt-3 ">
+        <div className="row align-items-center">
+          <h3 className="h2 col">{t("licenseDocuments")}</h3>
           <LicenseDocumentUpload
             licenseNumber={licenseNumber}
             onUpdated={onUpdated}
           />
         </div>
-
         <LicenseDocumentList
           documents={license.documents}
           licenseNumber={licenseNumber}
