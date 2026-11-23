@@ -1305,7 +1305,7 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet, ValueListMixin):
     )
     def document_upload(self, request, license_number=None):
         sequence = self.get_object()
-        license = sequence.latest
+        license = sequence.current
 
         if license is None:
             return Response(
@@ -1342,6 +1342,7 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet, ValueListMixin):
             )
 
             license.documents.add(document)
+            sequence.commit(license, default_document_copy_policy)
 
         return Response(
             {

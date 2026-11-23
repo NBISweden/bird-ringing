@@ -11,6 +11,7 @@ from licensing.models import (
     ReportStatusChoices,
     DocumentTypeChoices,
 )
+from licensing.utils import default_document_copy_policy
 
 
 class LicenseDocumentUploadDownloadTests(APITestCase):
@@ -189,3 +190,65 @@ class LicenseDocumentUploadDownloadTests(APITestCase):
         )
 
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+
+    def test_uploaded_document_remains_after_license_update(self):
+        # Create a committed license version so current and latest differ
+        self.sequence.commit(self.license, default_document_copy_policy)
+        self.sequence.refresh_from_db()
+
+        self.assertNotEqual(
+            self.sequence.current.pk,
+            self.sequence.latest.pk,
+        )
+
+        uploaded_file = SimpleUploadedFile(
+            "test-document.pdf",
+            b"%PDF-1.4\nTest document\n",
+            content_type="application/pdf",
+        )
+
+        response = self.client.post(
+            self.url,
+            {"file": uploaded_file},
+            format="multipart",
+        )
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        document_id = response.data["id"]
+
+        # The uploaded document must belong to the current license
+        self.assertTrue(
+            self.sequence.current.documents.filter(pk=document_id).exists()
+        )
+
+        # And the latest committed license
+        self.sequence.refresh_from_db()
+        self.assertTrue(
+            self.sequence.latest.documents.filter(pk=document_id).exists()
+        )
+
+        # Make an edit
+        update_url = reverse(
+            "licensesequence-detail",
+            kwargs={"license_number": self.sequence.license_number},
+        )
+
+        response = self.client.patch(
+            update_url,
+            {"latest": {"description": "Updated description"}},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.sequence.refresh_from_db()
+
+        self.assertEqual(
+            self.sequence.latest.description,
+            "Updated description",
+        )
+
+        # The uploaded document must still exist on latest
+        self.assertTrue(
+            self.sequence.latest.documents.filter(pk=document_id).exists()
+        )
