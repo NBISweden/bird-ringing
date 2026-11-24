@@ -56,6 +56,7 @@ from licensing.utils import (
     get_flattened_license_and_relations,
     communication_language_context,
     default_document_copy_policy,
+    upload_document_policy,
     split_items,
     get_default_license_end_date,
 )
@@ -1342,7 +1343,7 @@ class LicenseSequenceViewSet(viewsets.ModelViewSet, ValueListMixin):
             )
 
             license.documents.add(document)
-            sequence.commit(license, default_document_copy_policy)
+            sequence.commit(license, upload_document_policy)
 
         return Response(
             {

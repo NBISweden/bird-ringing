@@ -252,3 +252,151 @@ class LicenseDocumentUploadDownloadTests(APITestCase):
         self.assertTrue(
             self.sequence.latest.documents.filter(pk=document_id).exists()
         )
+
+    def test_upload_document_keeps_existing_permit(self):
+        # Create a committed license version
+        self.sequence.commit(self.license, default_document_copy_policy)
+        self.sequence.refresh_from_db()
+
+        self.assertNotEqual(
+            self.sequence.current.pk,
+            self.sequence.latest.pk,
+        )
+
+        # Create an existing permit linked to latest
+        permit = LicenseDocument.objects.create(
+            license_sequence=self.sequence,
+            actor=None,
+            is_permanent=False,
+            type=DocumentTypeChoices.PERMIT,
+            reference="existing-permit.pdf",
+            data=b"%PDF-1.4\nExisting permit\n",
+            created_by=self.user,
+            updated_by=self.user,
+        )
+        self.sequence.latest.documents.add(permit)
+
+        # Upload a new document
+        uploaded_file = SimpleUploadedFile(
+            "test-document.pdf",
+            b"%PDF-1.4\nTest document\n",
+            content_type="application/pdf",
+        )
+
+        response = self.client.post(
+            self.url,
+            {"file": uploaded_file},
+            format="multipart",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_201_CREATED,
+            response.data,
+        )
+
+        document_id = response.data["id"]
+
+        self.sequence.refresh_from_db()
+
+        # The uploaded document should exist on current and latest
+        self.assertTrue(
+            self.sequence.current.documents.filter(pk=document_id).exists()
+        )
+        self.assertTrue(
+            self.sequence.latest.documents.filter(pk=document_id).exists()
+        )
+
+        # The existing permit should still be linked to latest
+        self.assertTrue(
+            self.sequence.latest.documents.filter(pk=permit.pk).exists()
+        )
+
+
+    def test_uploaded_document_remains_after_edit_with_existing_permit(self):
+        # Create an existing permanent document
+        existing_document = LicenseDocument.objects.create(
+            license_sequence=self.sequence,
+            actor=None,
+            is_permanent=True,
+            type=DocumentTypeChoices.DOCUMENT,
+            reference="existing-document.pdf",
+            data=b"%PDF-1.4\nExisting document\n",
+            created_by=self.user,
+            updated_by=self.user,
+        )
+        self.license.documents.add(existing_document)
+
+        # Create a committed license version
+        self.sequence.commit(self.license, default_document_copy_policy)
+        self.sequence.refresh_from_db()
+
+        # Create an existing permit on latest
+        permit = LicenseDocument.objects.create(
+            license_sequence=self.sequence,
+            actor=None,
+            is_permanent=False,
+            type=DocumentTypeChoices.PERMIT,
+            reference="existing-permit.pdf",
+            data=b"%PDF-1.4\nExisting permit\n",
+            created_by=self.user,
+            updated_by=self.user,
+        )
+        self.sequence.latest.documents.add(permit)
+
+        # Upload a new PNG document
+        uploaded_file = SimpleUploadedFile(
+            "screenshot.png",
+            b"\x89PNG\r\n\x1a\nTest image",
+            content_type="image/png",
+        )
+
+        response = self.client.post(
+            self.url,
+            {"file": uploaded_file},
+            format="multipart",
+        )
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        document_id = response.data["id"]
+        self.sequence.refresh_from_db()
+
+        # Both documents and the permit should exist after upload
+        self.assertTrue(
+            self.sequence.current.documents.filter(pk=document_id).exists()
+        )
+        self.assertTrue(
+            self.sequence.latest.documents.filter(pk=document_id).exists()
+        )
+        self.assertTrue(
+            self.sequence.latest.documents.filter(pk=permit.pk).exists()
+        )
+
+        # Edit the license description
+        update_url = reverse(
+            "licensesequence-detail",
+            kwargs={"license_number": self.sequence.license_number},
+        )
+
+        response = self.client.patch(
+            update_url,
+            {"latest": {"description": "Updated description"}},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK, response.data)
+
+        self.sequence.refresh_from_db()
+
+        # Both permanent documents must remain
+        self.assertTrue(
+            self.sequence.latest.documents.filter(pk=existing_document.pk).exists()
+        )
+        self.assertTrue(
+            self.sequence.latest.documents.filter(pk=document_id).exists(),
+            "The newly uploaded document disappeared after editing the license.",
+        )
+
+        # The old permit should not be carried over
+        self.assertFalse(
+            self.sequence.latest.documents.filter(pk=permit.pk).exists()
+        )
