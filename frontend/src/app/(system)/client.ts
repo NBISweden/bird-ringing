@@ -599,4 +599,33 @@ export class Client {
     );
     return this.fetchJson(String(url));
   }
+
+  async uploadLicenseDocument(
+    licenseNumber: string,
+    file: File,
+  ): Promise<void> {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const csrf = getCookie("csrftoken");
+    const url = new URL(
+      `license_sequence/${encodeURIComponent(licenseNumber)}/document-upload/`,
+      this._apiRoot,
+    );
+
+    const response = await fetch(url.href, {
+      method: "POST",
+      credentials: "same-origin",
+      headers: {
+        Accept: "application/json",
+        ...(csrf ? { "X-CSRFToken": csrf } : {}),
+      },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const data = await response.json();
+      throw new Error(data.detail);
+    }
+  }
 }

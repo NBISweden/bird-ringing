@@ -199,6 +199,7 @@ export type LicensePermission = Omit<
 };
 
 export type LicenseDocument = {
+  id: number;
   actor: string;
   actor_id: number;
   type: string;

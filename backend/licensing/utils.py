@@ -95,6 +95,18 @@ def default_document_copy_policy(latest: License, previous: License | None):
     documents_to_copy = list(document_query)
     latest.documents.add(*documents_to_copy)
 
+def upload_document_policy(latest: License, previous: License | None):
+    if previous is None:
+        return
+
+    documents_to_copy = previous.documents.filter(
+        is_permanent=False,
+    ).filter(
+        Q(actor__isnull=True) |
+        Q(actor__id__in=set(latest.actors.values_list("actor__id", flat=True)))
+    )
+
+    latest.documents.add(*documents_to_copy)
 
 @contextmanager
 def communication_language_context():
