@@ -377,6 +377,11 @@ export const locale: TranslationMap = {
   ringOrderCartActions: "Åtgärder",
   ringOrderCartRemove: "Ta bort {sequence}",
   ringOrderCartEmpty: "Inga sekvenser tillagda",
+  ringOrderFormSubmit: "Skapa förbeställning",
+  ringOrderCreateSuccessTitle: "Förbeställning skapad",
+  ringOrderCreateSuccessMessage:
+    "Förbeställning {id} har skapats med dessa sekvenser:",
+  ringOrderCreateErrorTitle: "Kunde inte skapa förbeställningen",
   ringSequenceFormSeries: "Serie",
   ringSequenceFormSpecification: "Ringtyp",
   ringSequenceFormSpecificationHelp:

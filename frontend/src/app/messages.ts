@@ -378,6 +378,11 @@ const messagesBase = {
   ringOrderCartActions: "Actions",
   ringOrderCartRemove: "Remove {sequence}",
   ringOrderCartEmpty: "No sequences added",
+  ringOrderFormSubmit: "Create pre-order",
+  ringOrderCreateSuccessTitle: "Pre-order created",
+  ringOrderCreateSuccessMessage:
+    "Pre-order {id} has been created with these sequences:",
+  ringOrderCreateErrorTitle: "Failed to create pre-order",
   ringSequenceFormSeries: "Series",
   ringSequenceFormSpecification: "Ring type",
   ringSequenceFormSpecificationHelp:
