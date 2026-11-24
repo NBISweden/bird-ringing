@@ -5,7 +5,6 @@ import {
   RingSeriesInput,
   RingSpecification,
 } from "@/app/(system)/common";
-import { useModalsContext } from "@/app/(system)/contexts";
 import { useTranslation } from "@/app/(system)/internationalization";
 import {
   FieldErrorGroup,
@@ -81,7 +80,7 @@ export function RingSequenceEntryForm({
   onCreateSeries: (values: RingSeriesInput) => Promise<RingSeries>;
 }) {
   const { t, format } = useTranslation();
-  const modals = useModalsContext();
+  const [showSeriesForm, setShowSeriesForm] = useState(false);
   const [seriesId, setSeriesId] = useState<number | "">("");
   const [specificationId, setSpecificationId] = useState<number | "">("");
   const [startNumber, setStartNumber] = useState("");
@@ -98,22 +97,6 @@ export function RingSequenceEntryForm({
     parsedStartNumber !== null && parsedQuantity !== null
       ? parsedStartNumber + parsedQuantity - 1
       : null;
-
-  const openNewSeriesForm = () => {
-    modals.add({
-      title: t("ringSeriesFormTitle"),
-      content: (
-        <RingSeriesEntryForm
-          colors={colors}
-          onSubmit={async (values) => {
-            const created = await onCreateSeries(values);
-            setSeriesId(created.id);
-          }}
-        />
-      ),
-      actions: [],
-    });
-  };
 
   const validate = (): FieldErrorGroup => {
     const nextErrors: FieldErrorGroup = {};
@@ -166,128 +149,154 @@ export function RingSequenceEntryForm({
   };
 
   return (
-    <form
-      onSubmit={(e) => {
-        e.preventDefault();
-        const nextErrors = validate();
-        setErrors(nextErrors);
-        if (
-          Object.keys(nextErrors).length > 0 ||
-          !selectedSeries ||
-          !selectedSpecification ||
-          parsedStartNumber === null ||
-          parsedQuantity === null
-        ) {
-          return;
-        }
-        onAdd({
-          series: selectedSeries,
-          specification: selectedSpecification,
-          startNumber: parsedStartNumber,
-          quantity: parsedQuantity,
-        });
-        setStartNumber("");
-        setQuantity("");
-      }}
-      noValidate
-    >
-      <FieldErrors errors={errors}>
-        <VerticalField
-          label={t("ringSequenceFormSeries")}
-          id={fieldIds.series}
-          required
-        >
-          <SelectInput<number | "" | "new">
-            options={[
-              { value: "", label: t("ringSequenceFormSelect") },
-              ...series.map((s) => ({
-                value: s.id,
-                label: withVisibleBlanks(formatRingSeries(s)),
-              })),
-              { value: "new", label: t("ringSequenceFormNewSeries") },
-            ]}
-            value={seriesId}
-            onChange={(value) =>
-              value === "new" ? openNewSeriesForm() : setSeriesId(value)
+    <>
+      {showSeriesForm ? (
+        <div className="card mb-3">
+          <div className="card-body">
+            <h5 className="card-title">{t("ringSeriesFormTitle")}</h5>
+            <RingSeriesEntryForm
+              colors={colors}
+              onSubmit={async (values) => {
+                const created = await onCreateSeries(values);
+                setSeriesId(created.id);
+              }}
+              onClose={() => setShowSeriesForm(false)}
+            />
+          </div>
+        </div>
+      ) : (
+        <div className="d-flex justify-content-end mb-2">
+          <button
+            type="button"
+            className="btn btn-outline-primary"
+            onClick={() => setShowSeriesForm(true)}
+            disabled={disabled}
+          >
+            <i className="bi bi-plus-lg me-2" aria-hidden="true" />
+            {t("ringSequenceFormNewSeries")}
+          </button>
+        </div>
+      )}
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          const nextErrors = validate();
+          setErrors(nextErrors);
+          if (
+            Object.keys(nextErrors).length > 0 ||
+            !selectedSeries ||
+            !selectedSpecification ||
+            parsedStartNumber === null ||
+            parsedQuantity === null
+          ) {
+            return;
+          }
+          onAdd({
+            series: selectedSeries,
+            specification: selectedSpecification,
+            startNumber: parsedStartNumber,
+            quantity: parsedQuantity,
+          });
+          setStartNumber("");
+          setQuantity("");
+        }}
+        noValidate
+      >
+        <FieldErrors errors={errors}>
+          <VerticalField
+            label={t("ringSequenceFormSeries")}
+            id={fieldIds.series}
+            required
+          >
+            <SelectInput<number | "">
+              options={[
+                { value: "", label: t("ringSequenceFormSelect") },
+                ...series.map((s) => ({
+                  value: s.id,
+                  label: withVisibleBlanks(formatRingSeries(s)),
+                })),
+              ]}
+              value={seriesId}
+              onChange={(value) => setSeriesId(value)}
+              disabled={disabled}
+            />
+          </VerticalField>
+          <VerticalField
+            label={t("ringSequenceFormSpecification")}
+            id={fieldIds.specification}
+            helpText={
+              selectedSpecification
+                ? t("ringSequenceFormSpecificationHelp", {
+                    typeCode: selectedSpecification.type_code.name,
+                    variant: selectedSpecification.variant.name,
+                    material: selectedSpecification.material.name,
+                    diameter: selectedSpecification.diameter,
+                    thickness: selectedSpecification.thickness,
+                    height: selectedSpecification.height,
+                    weight: selectedSpecification.weight,
+                  })
+                : undefined
             }
-            disabled={disabled}
-          />
-        </VerticalField>
-        <VerticalField
-          label={t("ringSequenceFormSpecification")}
-          id={fieldIds.specification}
-          helpText={
-            selectedSpecification
-              ? t("ringSequenceFormSpecificationHelp", {
-                  typeCode: selectedSpecification.type_code.name,
-                  variant: selectedSpecification.variant.name,
-                  material: selectedSpecification.material.name,
-                  diameter: selectedSpecification.diameter,
-                  thickness: selectedSpecification.thickness,
-                  height: selectedSpecification.height,
-                  weight: selectedSpecification.weight,
-                })
-              : undefined
-          }
-          required
-        >
-          <SelectInput<number | "">
-            options={[
-              { value: "", label: t("ringSequenceFormSelect") },
-              ...specifications.map((s) => ({ value: s.id, label: s.name })),
-            ]}
-            value={specificationId}
-            onChange={(value) => setSpecificationId(value)}
-            disabled={disabled}
-          />
-        </VerticalField>
-        <VerticalField
-          label={t("ringSequenceFormStartNumber")}
-          id={fieldIds.startNumber}
-          required
-        >
-          <TextInput
-            type="number"
-            min={1}
-            step={1}
-            value={startNumber}
-            onChange={(e) => setStartNumber(e.target.value)}
-            disabled={disabled}
-          />
-        </VerticalField>
-        <VerticalField
-          label={t("ringSequenceFormQuantity")}
-          id={fieldIds.quantity}
-          helpText={
-            selectedSeries && endNumber !== null ? (
-              <>
-                {format("ringSequenceFormLastNumber", {
-                  number: (
-                    <RingNumber
-                      value={formatRingNumber(selectedSeries, endNumber)}
-                    />
-                  ),
-                })}
-              </>
-            ) : undefined
-          }
-          required
-        >
-          <TextInput
-            type="number"
-            min={1}
-            step={1}
-            value={quantity}
-            onChange={(e) => setQuantity(e.target.value)}
-            disabled={disabled}
-          />
-        </VerticalField>
-      </FieldErrors>
-      <div className="d-flex justify-content-center">
-        <button type="submit" className="btn btn-primary" disabled={disabled}>
-          {t("ringSequenceFormAdd")}
-        </button>
-      </div>
-    </form>
+            required
+          >
+            <SelectInput<number | "">
+              options={[
+                { value: "", label: t("ringSequenceFormSelect") },
+                ...specifications.map((s) => ({ value: s.id, label: s.name })),
+              ]}
+              value={specificationId}
+              onChange={(value) => setSpecificationId(value)}
+              disabled={disabled}
+            />
+          </VerticalField>
+          <VerticalField
+            label={t("ringSequenceFormStartNumber")}
+            id={fieldIds.startNumber}
+            required
+          >
+            <TextInput
+              type="number"
+              min={1}
+              step={1}
+              value={startNumber}
+              onChange={(e) => setStartNumber(e.target.value)}
+              disabled={disabled}
+            />
+          </VerticalField>
+          <VerticalField
+            label={t("ringSequenceFormQuantity")}
+            id={fieldIds.quantity}
+            helpText={
+              selectedSeries && endNumber !== null ? (
+                <>
+                  {format("ringSequenceFormLastNumber", {
+                    number: (
+                      <RingNumber
+                        value={formatRingNumber(selectedSeries, endNumber)}
+                      />
+                    ),
+                  })}
+                </>
+              ) : undefined
+            }
+            required
+          >
+            <TextInput
+              type="number"
+              min={1}
+              step={1}
+              value={quantity}
+              onChange={(e) => setQuantity(e.target.value)}
+              disabled={disabled}
+            />
+          </VerticalField>
+        </FieldErrors>
+        <div className="d-flex justify-content-center">
+          <button type="submit" className="btn btn-primary" disabled={disabled}>
+            {t("ringSequenceFormAdd")}
+          </button>
+        </div>
+      </form>
+    </>
   );
 }

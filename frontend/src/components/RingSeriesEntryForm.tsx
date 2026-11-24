@@ -1,4 +1,3 @@
-import { useModalsContext } from "@/app/(system)/contexts";
 import { FieldValidationError } from "@/app/(system)/client";
 import {
   formatRingNumber,
@@ -48,12 +47,13 @@ function parsePrefix(value: string, isEuring: boolean): ParsedPrefix {
 export function RingSeriesEntryForm({
   colors,
   onSubmit,
+  onClose,
 }: {
   colors: RingColor[];
   onSubmit: (values: RingSeriesInput) => Promise<void>;
+  onClose: () => void;
 }) {
   const { t, format } = useTranslation();
-  const modals = useModalsContext();
   const [prefix, setPrefix] = useState("");
   const [isEuring, setIsEuring] = useState(false);
   const [hasWebAddress, setHasWebAddress] = useState(false);
@@ -62,13 +62,6 @@ export function RingSeriesEntryForm({
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const parsed = parsePrefix(prefix, isEuring);
-
-  const close = () => {
-    const current = modals.stack[0];
-    if (current) {
-      modals.remove(current);
-    }
-  };
 
   const fieldErrors = Object.fromEntries(
     Object.entries(errors?.fields || {}).map(([field, messages]) => [
@@ -106,7 +99,7 @@ export function RingSeriesEntryForm({
             has_web_address: hasWebAddress,
             color_id: colorId === "" ? null : colorId,
           });
-          close();
+          onClose();
         } catch (error) {
           if (error instanceof FieldValidationError) {
             setErrors({
@@ -216,10 +209,10 @@ export function RingSeriesEntryForm({
           <button
             type="button"
             className="btn btn-secondary"
-            onClick={close}
+            onClick={onClose}
             disabled={isSubmitting}
           >
-            {t("abortModal")}
+            {t("ringSeriesFormCancel")}
           </button>
           <button
             type="submit"

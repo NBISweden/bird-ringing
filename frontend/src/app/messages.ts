@@ -386,7 +386,7 @@ const messagesBase = {
   ringSequenceFormQuantity: "Amount",
   ringSequenceFormLastNumber: "Last ring number: {number}",
   ringSequenceFormSelect: "Please select",
-  ringSequenceFormNewSeries: "+ New series",
+  ringSequenceFormNewSeries: "Add new series",
   ringSequenceFormAdd: "Add to pre-order",
   ringSequenceFormRequired: "This field is required.",
   ringSequenceFormMinValue: "Enter a whole number of at least 1.",
@@ -410,6 +410,7 @@ const messagesBase = {
   ringSeriesFormColor: "Color",
   ringSeriesFormNoColor: "No color",
   ringSeriesFormAdd: "Create series",
+  ringSeriesFormCancel: "Cancel",
   ringSeriesFormPrefixHelp:
     "Include the blanks, or periods for EURING. A prefix starting with a letter has its blanks after it, other prefixes have them before it. The digits fill the rest of the 8 characters, or 10 for EURING.",
   ringSeriesFormPrefixBlanks:

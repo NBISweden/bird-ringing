@@ -385,7 +385,7 @@ export const locale: TranslationMap = {
   ringSequenceFormQuantity: "Antal",
   ringSequenceFormLastNumber: "Sista ringnummer: {number}",
   ringSequenceFormSelect: "Välj",
-  ringSequenceFormNewSeries: "+ Ny serie",
+  ringSequenceFormNewSeries: "Lägg till ny serie",
   ringSequenceFormAdd: "Lägg till i förbeställningen",
   ringSequenceFormRequired: "Fältet är obligatoriskt.",
   ringSequenceFormMinValue: "Ange ett heltal som är minst 1.",
@@ -409,6 +409,7 @@ export const locale: TranslationMap = {
   ringSeriesFormColor: "Färg",
   ringSeriesFormNoColor: "Ingen färg",
   ringSeriesFormAdd: "Skapa serie",
+  ringSeriesFormCancel: "Avbryt",
   ringSeriesFormPrefixHelp:
     "Ta med mellanslagen, eller punkterna för EURING. Ett prefix som börjar med en bokstav har mellanslagen efter sig, andra prefix har dem före sig. Siffrorna fyller ut resten av de 8 tecknen, eller 10 för EURING.",
   ringSeriesFormPrefixBlanks:
