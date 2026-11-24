@@ -12,7 +12,7 @@ import {
 import { FormErrors, RingOrderInput } from "../../common";
 import { Alert } from "@/components/Alert";
 import { FieldErrors, TextArea, VerticalField } from "@/components/InputFields";
-import { RingNumber } from "@/components/RingNumber";
+import { RingNumber, withVisibleBlanks } from "@/components/RingNumber";
 import {
   formatRingSequence,
   RingSequenceCartLine,
@@ -175,7 +175,7 @@ export default function RingOrderCreateView() {
                               <RingNumber value={sequence} />
                               {lineErrors.map((message, i) => (
                                 <div key={i} className="small text-danger">
-                                  {message}
+                                  {withVisibleBlanks(message)}
                                 </div>
                               ))}
                             </td>
