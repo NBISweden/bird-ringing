@@ -394,7 +394,9 @@ const messagesBase = {
     "The end number {endNumber} does not fit in {digits} digits.",
   ringSequenceFormOverlap:
     "The sequence {sequence} overlaps with {other} in this pre-order.",
-  ringSpecificationDefinitionsTitle: "Ring type definitions",
+  ringSpecificationDefinitionsShow: "Show ring type definitions",
+  ringSpecificationDefinitionsHide: "Hide ring type definitions",
+  ringSpecificationSelect: "Select {name}",
   ringSpecificationName: "Name",
   ringSpecificationTypeCode: "Type code",
   ringSpecificationVariant: "Variant",

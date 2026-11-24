@@ -8,7 +8,6 @@ import {
   useRingSeries,
   useRingSpecifications,
 } from "../../hooks";
-import { Accordion } from "@/components/Accordion";
 import { Alert } from "@/components/Alert";
 import { TextArea, VerticalField } from "@/components/InputFields";
 import { RingNumber } from "@/components/RingNumber";
@@ -44,45 +43,6 @@ export default function RingOrderCreateView() {
               {loadError ? (
                 <Alert type="danger">{t("ringOrderLoadError")}</Alert>
               ) : null}
-              <Accordion
-                items={{
-                  definitions: {
-                    header: t("ringSpecificationDefinitionsTitle"),
-                    content: (
-                      <div className="table-responsive">
-                        <table className="table mb-0">
-                          <thead>
-                            <tr>
-                              <th>{t("ringSpecificationName")}</th>
-                              <th>{t("ringSpecificationTypeCode")}</th>
-                              <th>{t("ringSpecificationVariant")}</th>
-                              <th>{t("ringSpecificationMaterial")}</th>
-                              <th>{t("ringSpecificationDiameter")}</th>
-                              <th>{t("ringSpecificationThickness")}</th>
-                              <th>{t("ringSpecificationHeight")}</th>
-                              <th>{t("ringSpecificationWeight")}</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {specifications.data.map((s) => (
-                              <tr key={s.id}>
-                                <td>{s.name}</td>
-                                <td>{s.type_code.name}</td>
-                                <td>{s.variant.name}</td>
-                                <td>{s.material.name}</td>
-                                <td>{s.diameter}</td>
-                                <td>{s.thickness}</td>
-                                <td>{s.height}</td>
-                                <td>{s.weight}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    ),
-                  },
-                }}
-              />
               <RingSequenceEntryForm
                 series={series.data}
                 specifications={specifications.data}

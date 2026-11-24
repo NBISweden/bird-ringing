@@ -81,6 +81,7 @@ export function RingSequenceEntryForm({
 }) {
   const { t, format } = useTranslation();
   const [showSeriesForm, setShowSeriesForm] = useState(false);
+  const [showDefinitions, setShowDefinitions] = useState(false);
   const [seriesId, setSeriesId] = useState<number | "">("");
   const [specificationId, setSpecificationId] = useState<number | "">("");
   const [startNumber, setStartNumber] = useState("");
@@ -249,6 +250,74 @@ export function RingSequenceEntryForm({
               disabled={disabled}
             />
           </VerticalField>
+          <div className="mb-3">
+            <button
+              type="button"
+              className="btn btn-link p-0"
+              aria-expanded={showDefinitions}
+              aria-controls="ring-specification-definitions"
+              onClick={() => setShowDefinitions((prev) => !prev)}
+            >
+              {showDefinitions
+                ? t("ringSpecificationDefinitionsHide")
+                : t("ringSpecificationDefinitionsShow")}
+            </button>
+            {showDefinitions ? (
+              <div
+                id="ring-specification-definitions"
+                className="table-responsive mt-2"
+              >
+                <table className="table table-sm table-hover mb-0">
+                  <thead>
+                    <tr>
+                      <th>{t("ringSpecificationName")}</th>
+                      <th>{t("ringSpecificationTypeCode")}</th>
+                      <th>{t("ringSpecificationVariant")}</th>
+                      <th>{t("ringSpecificationMaterial")}</th>
+                      <th>{t("ringSpecificationDiameter")}</th>
+                      <th>{t("ringSpecificationThickness")}</th>
+                      <th>{t("ringSpecificationHeight")}</th>
+                      <th>{t("ringSpecificationWeight")}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {specifications.map((s) => (
+                      <tr
+                        key={s.id}
+                        className={
+                          s.id === specificationId ? "table-active" : undefined
+                        }
+                        style={{ cursor: "pointer" }}
+                        onClick={() => {
+                          setSpecificationId(s.id);
+                          setShowDefinitions(false);
+                        }}
+                      >
+                        <td>
+                          <button
+                            type="button"
+                            className="btn btn-link p-0"
+                            aria-label={t("ringSpecificationSelect", {
+                              name: s.name,
+                            })}
+                          >
+                            {s.name}
+                          </button>
+                        </td>
+                        <td>{s.type_code.name}</td>
+                        <td>{s.variant.name}</td>
+                        <td>{s.material.name}</td>
+                        <td>{s.diameter}</td>
+                        <td>{s.thickness}</td>
+                        <td>{s.height}</td>
+                        <td>{s.weight}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : null}
+          </div>
           <VerticalField
             label={t("ringSequenceFormStartNumber")}
             id={fieldIds.startNumber}

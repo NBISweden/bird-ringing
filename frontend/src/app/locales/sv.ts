@@ -393,7 +393,9 @@ export const locale: TranslationMap = {
     "Slutnumret {endNumber} får inte plats i {digits} siffror.",
   ringSequenceFormOverlap:
     "Sekvensen {sequence} överlappar med {other} i denna förbeställning.",
-  ringSpecificationDefinitionsTitle: "Definitioner av ringtyper",
+  ringSpecificationDefinitionsShow: "Visa definitioner av ringtyper",
+  ringSpecificationDefinitionsHide: "Dölj definitioner av ringtyper",
+  ringSpecificationSelect: "Välj {name}",
   ringSpecificationName: "Namn",
   ringSpecificationTypeCode: "Typkod",
   ringSpecificationVariant: "Variant",
