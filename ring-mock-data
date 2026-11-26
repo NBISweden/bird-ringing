@@ -1,0 +1,106 @@
+#!/bin/sh -
+
+# Helper script to load mock ring data for development ONLY.
+# Run ./create-test-users first, the data is created by the 'admin' user.
+# Safe to run more than once, existing rows are reused.
+
+# Note: These mock data may not be faithful to the real data, but they are sufficient for development and testing.
+
+./compose-dev.sh exec backend \
+  python manage.py shell -v 0 -c "from django.contrib.auth import get_user_model
+from django.db import transaction
+from ring_management.models import (
+    RingColor,
+    RingMaterial,
+    RingOrder,
+    RingSequence,
+    RingSeries,
+    RingSpecification,
+    RingTypeCode,
+    RingVariant,
+)
+
+admin = get_user_model().objects.get(username='admin')
+tracking = {'created_by': admin, 'updated_by': admin}
+
+with transaction.atomic():
+    colors = {
+        name: RingColor.objects.get_or_create(name=name)[0]
+        for name in ['Red', 'Black', 'Blue', 'Yellow', 'Blueyellow']
+    }
+    variants = {
+        name: RingVariant.objects.get_or_create(name=name)[0]
+        for name in ['Closed', 'Open', 'Clip']
+    }
+    materials = {
+        name: RingMaterial.objects.get_or_create(name=name)[0]
+        for name in ['Aluminium', 'Steel', 'Titanium']
+    }
+    type_codes = {
+        name: RingTypeCode.objects.get_or_create(name=name)[0]
+        for name in ['0.5', '1', '2', '3', '5', '9']
+    }
+
+    specifications = [
+        ('Ring type A', '0.5', 'Closed', 'Aluminium', 2.0, 0.3, 4.0, 0.05),
+        ('Ring type B', '1', 'Open', 'Aluminium', 2.8, 0.4, 5.0, 0.08),
+        ('Ring type C', '2', 'Open', 'Steel', 4.0, 0.5, 6.0, 0.2),
+        ('Ring type D', '5', 'Clip', 'Steel', 7.0, 0.7, 8.0, 0.6),
+        ('Ring type E', '9', 'Closed', 'Titanium', 12.0, 1.0, 12.0, 1.5),
+    ]
+    for name, code, variant, material, diameter, thickness, height, weight in specifications:
+        RingSpecification.objects.get_or_create(
+            name=name,
+            defaults={
+                'type_code': type_codes[code],
+                'variant': variants[variant],
+                'material': materials[material],
+                'diameter': diameter,
+                'thickness': thickness,
+                'height': height,
+                'weight': weight,
+                **tracking,
+            },
+        )
+
+    # Ring numbers are 8 characters padded with blanks, or 10 padded with
+    # periods for EURING. The comments show ring number 0 of each series.
+    series = [
+        ('DD', 4, False, False, None),  # 'DD  0000'
+        ('1EG', 5, False, False, 'Black'),  # '1EG00000'
+        ('ABC', 3, False, True, 'Yellow'),  # 'ABC  000'
+        ('2D', 3, False, False, 'Red'),  # '   2D000'
+        ('D', 4, True, True, None),  # 'D.....0000'
+        ('KA', 5, True, True, 'Blueyellow'),  # 'KA...00000'
+    ]
+    for prefix, digits, is_euring, has_web_address, color in series:
+        RingSeries.objects.get_or_create(
+            prefix=prefix,
+            number_of_digits=digits,
+            defaults={
+                'is_euring': is_euring,
+                'has_web_address': has_web_address,
+                'color': colors[color] if color else None,
+                **tracking,
+            },
+        )
+
+    # An existing pre-order, to test overlaps reported by the backend.
+    # DD  0001 - DD  0100 and D.....0001 - D.....0500 are taken.
+    if not RingSequence.objects.exists():
+        order = RingOrder.objects.create(note='Mock pre-order', **tracking)
+        type_a = RingSpecification.objects.get(name='Ring type A')
+        for prefix, digits, start, end in [('DD', 4, 1, 100), ('D', 4, 1, 500)]:
+            RingSequence.objects.create(
+                order=order,
+                series=RingSeries.objects.filter(
+                    prefix=prefix, number_of_digits=digits
+                ).first(),
+                specification=type_a,
+                start_number=start,
+                end_number=end,
+                **tracking,
+            )
+
+print('Mock ring data loaded')
+"

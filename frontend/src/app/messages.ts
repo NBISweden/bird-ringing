@@ -145,6 +145,7 @@ const pageTitles = {
   actorsPageTitle: "Actors",
   actorPageTitle: "Actor: {name}",
   actorCreationPageTitle: "Add actor",
+  ringOrderCreationPageTitle: "Create pre-order",
 };
 
 const messagesBase = {
@@ -366,6 +367,65 @@ const messagesBase = {
   permissionsHeading: "Permissions",
   permissionPropertyEditAriaLabel: 'Edit property "{label}"',
   permissionTypeEditAriaLabel: 'Edit permission type "{label}"',
+
+  ringOrderCreateView: "Create pre-order",
+  ringOrderFormAddTitle: "Create pre-order",
+  ringOrderFormIntro:
+    "Add ring sequences to the pre-order. Each sequence is a range of rings in a series, with a ring type and an amount.",
+  ringOrderLoadError: "Could not load ring series and ring types.",
+  ringOrderFormNote: "Note",
+  ringOrderCartSequence: "Sequence",
+  ringOrderCartActions: "Actions",
+  ringOrderCartRemove: "Remove {sequence}",
+  ringOrderCartEmpty: "No sequences added",
+  ringOrderFormSubmit: "Create pre-order",
+  ringOrderCreateSuccessTitle: "Pre-order created",
+  ringOrderCreateSuccessMessage:
+    "Pre-order {id} has been created with these sequences:",
+  ringOrderCreateErrorTitle: "Failed to create pre-order",
+  ringSequenceFormSeries: "Series",
+  ringSequenceFormSpecification: "Ring type",
+  ringSequenceFormSpecificationHelp:
+    "Type code {typeCode}, {variant}, {material}. Diameter {diameter}, thickness {thickness}, height {height}, weight {weight}.",
+  ringSequenceFormStartNumber: "Start number",
+  ringSequenceFormQuantity: "Amount",
+  ringSequenceFormLastNumber: "Last ring number: {number}",
+  ringSequenceFormSelect: "Please select",
+  ringSequenceFormNewSeries: "Add new series",
+  ringSequenceFormAdd: "Add to pre-order",
+  ringSequenceFormRequired: "This field is required.",
+  ringSequenceFormMinValue: "Enter a whole number of at least 1.",
+  ringSequenceFormEndNumberTooLarge:
+    "The end number {endNumber} does not fit in {digits} digits.",
+  ringSequenceFormOverlap:
+    "The sequence {sequence} overlaps with {other} in this pre-order.",
+  ringSpecificationDefinitionsShow: "Show ring type definitions",
+  ringSpecificationDefinitionsHide: "Hide ring type definitions",
+  ringSpecificationSelect: "Select {name}",
+  ringSpecificationName: "Name",
+  ringSpecificationTypeCode: "Type code",
+  ringSpecificationVariant: "Variant",
+  ringSpecificationMaterial: "Material",
+  ringSpecificationDiameter: "Diameter",
+  ringSpecificationThickness: "Thickness",
+  ringSpecificationHeight: "Height",
+  ringSpecificationWeight: "Weight",
+  ringSeriesFormTitle: "New series",
+  ringSeriesFormPrefix: "Prefix",
+  ringSeriesFormIsEuring: "EURING",
+  ringSeriesFormHasWebAddress: "Web address",
+  ringSeriesFormColor: "Color",
+  ringSeriesFormNoColor: "No color",
+  ringSeriesFormAdd: "Create series",
+  ringSeriesFormCancel: "Cancel",
+  ringSeriesFormPrefixHelp:
+    "Include the blanks, or periods for EURING. A prefix starting with a letter has its blanks after it, other prefixes have them before it. The digits fill the rest of the 8 characters, or 10 for EURING.",
+  ringSeriesFormPrefixBlanks:
+    "A prefix starting with a letter has its blanks after it, other prefixes have them before it. There can be no blanks inside the prefix.",
+  ringSeriesFormPrefixTooLong:
+    "The prefix can be at most {length} characters including blanks, so that at least one digit remains.",
+  ringSeriesFormPreview:
+    "Ring number format: {ringNumber} ({digits, plural, one {# digit} other {# digits}})",
 };
 
 function makeMessageMap<T extends { [P in keyof T]: Message | string }>(

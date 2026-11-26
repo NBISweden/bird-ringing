@@ -14,6 +14,12 @@ import {
   PermissionInput,
   PermissionPropertyInput,
   PermissionProperty,
+  RingColor,
+  RingOrder,
+  RingOrderInput,
+  RingSeries,
+  RingSeriesInput,
+  RingSpecification,
   ValueList,
 } from "./common";
 import { getCookie, parseCompleteUrl } from "./utils";
@@ -578,6 +584,42 @@ export class Client {
         body: JSON.stringify(property),
       },
     );
+  }
+
+  async fetchRingSeries(): Promise<RingSeries[]> {
+    return this._getJson<RingSeries[]>("ring_series/");
+  }
+
+  async fetchRingSpecifications(): Promise<RingSpecification[]> {
+    return this._getJson<RingSpecification[]>("ring_specification/");
+  }
+
+  async fetchRingColors(): Promise<RingColor[]> {
+    return this._getJson<RingColor[]>("property/ring_color/");
+  }
+
+  async createRingSeries(series: RingSeriesInput): Promise<RingSeries> {
+    const csrf = getCookie("csrftoken");
+    return this.fetchJson<RingSeries>("ring_series/", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(csrf ? { "X-CSRFToken": csrf } : {}),
+      },
+      body: JSON.stringify(series),
+    });
+  }
+
+  async createRingOrder(order: RingOrderInput): Promise<RingOrder> {
+    const csrf = getCookie("csrftoken");
+    return this.fetchJson<RingOrder>("ring_order/", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(csrf ? { "X-CSRFToken": csrf } : {}),
+      },
+      body: JSON.stringify(order),
+    });
   }
 
   private async _fetchResourceValue<T>(

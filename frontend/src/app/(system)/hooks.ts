@@ -9,7 +9,15 @@ import {
 import useSWRMutation from "swr/mutation";
 import { useClient, useModalsContext } from "./contexts";
 import { useTranslation } from "./internationalization";
-import { FormErrors, Options, ValueList, LicenseDefaults } from "./common";
+import {
+  FormErrors,
+  Options,
+  ValueList,
+  LicenseDefaults,
+  RingColor,
+  RingSeries,
+  RingSpecification,
+} from "./common";
 import { Client, FieldValidationError } from "./client";
 import useSWRImmutable from "swr/immutable";
 
@@ -209,6 +217,61 @@ export function useLicenseDefaults(): {
     fetchLicenseDefaults,
   );
   return { data, isLoading, error };
+}
+
+async function fetchRingSeries([client]: [Client, "ring_series"]) {
+  return client.fetchRingSeries();
+}
+
+export function useRingSeries(): {
+  data: RingSeries[];
+  isLoading: boolean;
+  error: unknown;
+  mutate: () => Promise<unknown>;
+} {
+  const client = useClient();
+  const { data, isLoading, error, mutate } = useSWRImmutable(
+    [client, "ring_series"],
+    fetchRingSeries,
+  );
+  return { data: data || [], isLoading, error, mutate };
+}
+
+async function fetchRingSpecifications([client]: [
+  Client,
+  "ring_specification",
+]) {
+  return client.fetchRingSpecifications();
+}
+
+export function useRingSpecifications(): {
+  data: RingSpecification[];
+  isLoading: boolean;
+  error: unknown;
+} {
+  const client = useClient();
+  const { data, isLoading, error } = useSWRImmutable(
+    [client, "ring_specification"],
+    fetchRingSpecifications,
+  );
+  return { data: data || [], isLoading, error };
+}
+
+async function fetchRingColors([client]: [Client, "ring_color"]) {
+  return client.fetchRingColors();
+}
+
+export function useRingColors(): {
+  data: RingColor[];
+  isLoading: boolean;
+  error: unknown;
+} {
+  const client = useClient();
+  const { data, isLoading, error } = useSWRImmutable(
+    [client, "ring_color"],
+    fetchRingColors,
+  );
+  return { data: data || [], isLoading, error };
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

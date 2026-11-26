@@ -142,6 +142,7 @@ const pageTitles = {
   actorsPageTitle: "Aktörer",
   actorPageTitle: "Aktör: {name}",
   actorCreationPageTitle: "Lägg till aktör",
+  ringOrderCreationPageTitle: "Skapa förbeställning",
 };
 
 export const locale: TranslationMap = {
@@ -365,4 +366,63 @@ export const locale: TranslationMap = {
   permissionsHeading: "Tillstånd",
   permissionPropertyEditAriaLabel: 'Redigera egenskap "{label}"',
   permissionTypeEditAriaLabel: 'Redigera tillståndstyp "{label}"',
+
+  ringOrderCreateView: "Skapa förbeställning",
+  ringOrderFormAddTitle: "Skapa förbeställning",
+  ringOrderFormIntro:
+    "Lägg till ringsekvenser i förbeställningen. Varje sekvens är ett intervall av ringar i en serie, med en ringtyp och ett antal.",
+  ringOrderLoadError: "Kunde inte ladda ringserier och ringtyper.",
+  ringOrderFormNote: "Anteckning",
+  ringOrderCartSequence: "Sekvens",
+  ringOrderCartActions: "Åtgärder",
+  ringOrderCartRemove: "Ta bort {sequence}",
+  ringOrderCartEmpty: "Inga sekvenser tillagda",
+  ringOrderFormSubmit: "Skapa förbeställning",
+  ringOrderCreateSuccessTitle: "Förbeställning skapad",
+  ringOrderCreateSuccessMessage:
+    "Förbeställning {id} har skapats med dessa sekvenser:",
+  ringOrderCreateErrorTitle: "Kunde inte skapa förbeställningen",
+  ringSequenceFormSeries: "Serie",
+  ringSequenceFormSpecification: "Ringtyp",
+  ringSequenceFormSpecificationHelp:
+    "Typkod {typeCode}, {variant}, {material}. Diameter {diameter}, tjocklek {thickness}, höjd {height}, vikt {weight}.",
+  ringSequenceFormStartNumber: "Startnummer",
+  ringSequenceFormQuantity: "Antal",
+  ringSequenceFormLastNumber: "Sista ringnummer: {number}",
+  ringSequenceFormSelect: "Välj",
+  ringSequenceFormNewSeries: "Lägg till ny serie",
+  ringSequenceFormAdd: "Lägg till i förbeställningen",
+  ringSequenceFormRequired: "Fältet är obligatoriskt.",
+  ringSequenceFormMinValue: "Ange ett heltal som är minst 1.",
+  ringSequenceFormEndNumberTooLarge:
+    "Slutnumret {endNumber} får inte plats i {digits} siffror.",
+  ringSequenceFormOverlap:
+    "Sekvensen {sequence} överlappar med {other} i denna förbeställning.",
+  ringSpecificationDefinitionsShow: "Visa definitioner av ringtyper",
+  ringSpecificationDefinitionsHide: "Dölj definitioner av ringtyper",
+  ringSpecificationSelect: "Välj {name}",
+  ringSpecificationName: "Namn",
+  ringSpecificationTypeCode: "Typkod",
+  ringSpecificationVariant: "Variant",
+  ringSpecificationMaterial: "Material",
+  ringSpecificationDiameter: "Diameter",
+  ringSpecificationThickness: "Tjocklek",
+  ringSpecificationHeight: "Höjd",
+  ringSpecificationWeight: "Vikt",
+  ringSeriesFormTitle: "Ny serie",
+  ringSeriesFormPrefix: "Prefix",
+  ringSeriesFormIsEuring: "EURING",
+  ringSeriesFormHasWebAddress: "Webbadress",
+  ringSeriesFormColor: "Färg",
+  ringSeriesFormNoColor: "Ingen färg",
+  ringSeriesFormAdd: "Skapa serie",
+  ringSeriesFormCancel: "Avbryt",
+  ringSeriesFormPrefixHelp:
+    "Ta med mellanslagen, eller punkterna för EURING. Ett prefix som börjar med en bokstav har mellanslagen efter sig, andra prefix har dem före sig. Siffrorna fyller ut resten av de 8 tecknen, eller 10 för EURING.",
+  ringSeriesFormPrefixBlanks:
+    "Ett prefix som börjar med en bokstav har mellanslagen efter sig, andra prefix har dem före sig. Prefixet får inte innehålla mellanslag.",
+  ringSeriesFormPrefixTooLong:
+    "Prefixet får vara högst {length} tecken inklusive mellanslag, så att minst en siffra återstår.",
+  ringSeriesFormPreview:
+    "Ringnummerformat: {ringNumber} ({digits, plural, one {# siffra} other {# siffror}})",
 };

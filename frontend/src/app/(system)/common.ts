@@ -381,6 +381,101 @@ export type PermissionPropertyInput = PermissionInput & {
   related_type_id?: string | null;
 };
 
+export type RingNamedEntity = {
+  id: number;
+  name: string;
+};
+
+export type RingColor = RingNamedEntity;
+
+export type RingSeries = {
+  id: number;
+  prefix: string;
+  number_of_digits: number;
+  is_euring: boolean;
+  has_web_address: boolean;
+  color: RingColor | null;
+};
+
+export type RingSeriesInput = {
+  prefix: string;
+  number_of_digits: number;
+  is_euring: boolean;
+  has_web_address: boolean;
+  color_id?: number | null;
+};
+
+export type RingSpecification = {
+  id: number;
+  name: string;
+  type_code: RingNamedEntity;
+  variant: RingNamedEntity;
+  material: RingNamedEntity;
+  diameter: number;
+  thickness: number;
+  height: number;
+  weight: number;
+};
+
+export type RingSequence = {
+  id: number;
+  order_id: number;
+  series: RingSeries;
+  specification: RingSpecification;
+  start_number: number;
+  quantity: number;
+  end_number: number;
+  first_ring_number: string;
+  last_ring_number: string;
+  status: string;
+  created_at: string;
+};
+
+export type RingOrder = {
+  id: number;
+  note: string;
+  sequences: RingSequence[];
+  created_at: string;
+};
+
+export type RingSequenceInput = {
+  series_id: number;
+  specification_id: number;
+  start_number: number;
+  quantity: number;
+};
+
+export type RingOrderInput = {
+  note: string;
+  sequences: RingSequenceInput[];
+};
+
+export function getRingNumberLength(series: Pick<RingSeries, "is_euring">) {
+  return series.is_euring ? 10 : 8;
+}
+
+/**
+ * Formats a ring number: 8 characters padded with blanks, or 10
+ * characters padded with periods for EURING. The number is zero-padded to the
+ * number of digits. A code starting with a letter keeps the prefix to the left
+ * and the number to the right, other codes are adjusted to the right.
+ */
+export function formatRingNumber(
+  series: Pick<RingSeries, "prefix" | "number_of_digits" | "is_euring">,
+  number: number,
+) {
+  const digits = String(number).padStart(series.number_of_digits, "0");
+  const fill = (series.is_euring ? "." : " ").repeat(
+    Math.max(
+      0,
+      getRingNumberLength(series) - series.prefix.length - digits.length,
+    ),
+  );
+  return /^\p{L}/u.test(series.prefix)
+    ? `${series.prefix}${fill}${digits}`
+    : `${fill}${series.prefix}${digits}`;
+}
+
 export function joinValueLists<TA, TB, TO>(
   a: ValueList<TA>["values"],
   b: ValueList<TB>["values"],
