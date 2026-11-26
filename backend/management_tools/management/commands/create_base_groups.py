@@ -55,7 +55,9 @@ class Command(BaseCommand):
                         "ringvariant",
                         "ringmaterial",
                         "ringtypecode",
-                        "ringcolor"
+                        "ringcolor",
+                        "ringorder",
+                        "ringsequence",
                     ]
                 ],
             ]
