@@ -283,6 +283,22 @@ class RingOrderRestTests(RingTestData, TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertIn("quantity", response.json()["sequences"][0])
 
+    def test_ring_order_create_failing_when_saving(self):
+        series_d20 = self._create_series("X", 20, is_euring=True)
+        self._with_access()
+
+        response = self._post_order([
+            self._sequence_payload(self.series_d4, 1, 100),
+            self._sequence_payload(series_d20, 1, 2 ** 63),
+        ])
+
+        self.assertEqual(response.status_code, 400)
+        errors = response.json()["sequences"]
+        self.assertEqual(errors[0], {})
+        self.assertIn("quantity", errors[1])
+        self.assertEqual(RingSequence.objects.count(), 0)
+        self.assertEqual(RingOrder.objects.count(), 1)
+
     def test_ring_order_create_with_invalid_numbers(self):
         self._with_access()
 

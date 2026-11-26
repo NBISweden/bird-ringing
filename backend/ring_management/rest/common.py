@@ -240,10 +240,15 @@ class RingOrderSerializer(ChangeTrackingSerializer, serializers.ModelSerializer)
         sequences = validated_data.pop("sequences")
         order = super().create(validated_data)
 
-        try:
-            for sequence in sequences:
+        for i, sequence in enumerate(sequences):
+            try:
                 RingSequence.objects.create(order=order, **sequence)
-        except DjangoValidationError as error:
-            raise serializers.ValidationError({"sequences": error.messages})
+            except DjangoValidationError as error:
+                errors = [{} for _ in sequences]
+                errors[i] = {
+                    ("quantity" if field == "end_number" else field): messages
+                    for field, messages in error.message_dict.items()
+                }
+                raise serializers.ValidationError({"sequences": errors})
 
         return order
