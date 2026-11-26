@@ -69,6 +69,31 @@ class RingSeries(ChangeTracking):
     has_web_address = models.BooleanField()
     color = models.ForeignKey(RingColor, on_delete=models.PROTECT, blank=True, null=True)
 
+    def clean(self):
+        if self.pk is None:
+            return
+
+        previous = RingSeries.objects.filter(pk=self.pk).values("prefix", "number_of_digits").first()
+        if previous is None:
+            return
+
+        changed_fields = [
+            field
+            for field in ["prefix", "number_of_digits"]
+            if getattr(self, field) != previous[field]
+        ]
+        # Changing the numbering would change or invalidate the ring numbers
+        # of existing sequences
+        if changed_fields and self.ringsequence_set.exists():
+            raise ValidationError({
+                field: "This cannot be changed since the series has ring sequences."
+                for field in changed_fields
+            })
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
+
     def __str__(self):
         ring_num = f"{self.prefix}{"".zfill(self.number_of_digits)}"
         props = [

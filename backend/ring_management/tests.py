@@ -133,6 +133,41 @@ class RingSequenceModelTests(RingTestData, TestCase):
         self.assertEqual(sequence.end_number, 50)
 
 
+class RingSeriesModelTests(RingTestData, TestCase):
+    def setUp(self):
+        self.create_ring_data(create_user("user", "pwd"))
+
+    def test_numbering_of_series_with_sequences_cannot_change(self):
+        self.create_sequence(self.series_d4, 1, 100)
+
+        for field, value in [("prefix", "E"), ("number_of_digits", 3)]:
+            with self.subTest(field=field):
+                series = RingSeries.objects.get(pk=self.series_d4.pk)
+                setattr(series, field, value)
+
+                with self.assertRaises(ValidationError) as context:
+                    series.save()
+
+                self.assertIn(field, context.exception.message_dict)
+
+    def test_other_properties_of_series_with_sequences_can_change(self):
+        self.create_sequence(self.series_d4, 1, 100)
+
+        self.series_d4.has_web_address = True
+        self.series_d4.save()
+
+        self.series_d4.refresh_from_db()
+        self.assertTrue(self.series_d4.has_web_address)
+
+    def test_numbering_of_series_without_sequences_can_change(self):
+        self.series_d4.prefix = "E"
+        self.series_d4.number_of_digits = 3
+        self.series_d4.save()
+
+        self.series_d4.refresh_from_db()
+        self.assertEqual(self.series_d4.prefix, "E")
+
+
 class RingSequenceInlineFormSetTests(RingTestData, TestCase):
     FormSet = inlineformset_factory(
         RingOrder,
@@ -351,6 +386,19 @@ class RingOrderRestTests(RingTestData, TestCase):
             format="json",
         )
         self.assertEqual(response.status_code, 405)
+
+    def test_ring_series_numbering_change_with_sequences(self):
+        self.create_sequence(self.series_d4, 1, 100)
+        create_user("userwithseriesaccess", "pwd", ["change_ringseries"])
+        self.client.login(username="userwithseriesaccess", password="pwd")
+        url = f"/api/ring_series/{self.series_d4.pk}/"
+
+        response = self.client.patch(url, {"number_of_digits": 3}, format="json")
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("number_of_digits", response.json())
+
+        response = self.client.patch(url, {"has_web_address": True}, format="json")
+        self.assertEqual(response.status_code, 200)
 
     def _with_access(self):
         self.client.login(username="userwithaccess", password="pwd")

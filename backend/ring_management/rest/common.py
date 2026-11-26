@@ -124,6 +124,12 @@ class RingSeriesSerializer(ChangeTrackingSerializer, serializers.ModelSerializer
             "updated_by",
         ]
 
+    def update(self, instance, validated_data):
+        try:
+            return super().update(instance, validated_data)
+        except DjangoValidationError as error:
+            raise serializers.ValidationError(error.message_dict)
+
 
 class RingSequenceSerializer(ChangeTrackingSerializer, serializers.ModelSerializer):
     series = RelatedFieldSerializer(
